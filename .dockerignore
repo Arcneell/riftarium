@@ -1,0 +1,9 @@
+.git
+.gitignore
+README.md
+compose.yaml
+sources
+tools
+shots
+node_modules
+npm-debug.log

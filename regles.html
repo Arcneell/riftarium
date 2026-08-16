@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Texte intégral des règles officielles de Riftbound en français : règles du jeu et règles de tournoi, avec sommaire et recherche." />
+    <meta name="theme-color" content="#05070f" />
+    <title>Règles avancées — Le Codex Riftbound</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Forum&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/reader.css" />
+    <script src="/app.js" defer></script>
+    <script src="/reader.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark"></span>
+          <span class="brand-text"><strong>LE CODEX</strong><small>GUIDE RIFTBOUND</small></span>
+        </a>
+        <nav class="site-nav" id="nav">
+          <a href="/">Accueil</a>
+          <a href="/debuter.html">Règles simplifiées</a>
+          <a href="/regles.html" aria-current="page">Règles avancées</a>
+        </nav>
+        <div class="header-search reader-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="search" type="search" placeholder="Rechercher (mot-clé ou numéro)…" autocomplete="off" aria-label="Rechercher dans les règles" />
+          <kbd>Ctrl K</kbd>
+        </div>
+        <button class="toc-trigger" type="button" aria-expanded="false">Sommaire</button>
+        <button class="menu-trigger" type="button" aria-expanded="false" aria-controls="nav" aria-label="Ouvrir le menu">☰</button>
+      </div>
+    </header>
+
+    <div class="search-panel" hidden>
+      <div class="wrap search-panel-inner">
+        <p class="search-count"></p>
+        <div class="search-hits"></div>
+      </div>
+    </div>
+
+    <div class="reader">
+      <aside class="toc" id="toc">
+        <div class="doc-switch" role="tablist" aria-label="Choix du document"></div>
+        <div class="doc-meta"></div>
+        <nav class="toc-tree" aria-label="Sommaire des règles"></nav>
+      </aside>
+
+      <main class="reader-main">
+        <div class="loading">Chargement des règles…</div>
+      </main>
+    </div>
+
+    <div class="toc-scrim" hidden></div>
+  </body>
+</html>

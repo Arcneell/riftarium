@@ -1,0 +1,5 @@
+sources/*.pdf
+sources/*.txt
+sources/*.json
+shots/
+__pycache__/
