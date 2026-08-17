@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Logo Riftarium">
+  <title>Riftarium</title>
+  <defs>
+    <!-- Prisme des six domaines de Riftbound -->
+    <linearGradient id="prism" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"      stop-color="#e2574b"/>
+      <stop offset=".166"   stop-color="#e2574b"/>
+      <stop offset=".166"   stop-color="#d8a63c"/>
+      <stop offset=".333"   stop-color="#d8a63c"/>
+      <stop offset=".333"   stop-color="#55b368"/>
+      <stop offset=".5"     stop-color="#55b368"/>
+      <stop offset=".5"     stop-color="#3fbfae"/>
+      <stop offset=".666"   stop-color="#3fbfae"/>
+      <stop offset=".666"   stop-color="#8f6fe8"/>
+      <stop offset=".833"   stop-color="#8f6fe8"/>
+      <stop offset=".833"   stop-color="#e060b8"/>
+      <stop offset="1"      stop-color="#e060b8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Écusson octogonal (coins biseautés « hextech ») -->
+  <polygon points="46,20 194,20 220,46 220,194 194,220 46,220 20,194 20,46"
+           fill="#0c101f" stroke="#e5b455" stroke-width="4"/>
+  <polygon points="52,30 188,30 210,52 210,188 188,210 52,210 30,188 30,52"
+           fill="none" stroke="#e5b455" stroke-width="1" opacity=".28"/>
+
+  <!-- La Faille : fissure traversant l'écusson, lumière des six domaines -->
+  <path d="M132 34 L112 86 L128 92 L104 148 L122 154 L98 206 L110 206 L140 150 L122 144 L148 90 L130 84 L146 34 Z"
+        fill="url(#prism)" opacity=".9"/>
+
+  <!-- Monogramme R, tracé à la main (fût, panse, jambe) -->
+  <g fill="none" stroke="#edf0fb" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 172 L84 72"/>
+    <path d="M84 72 L124 72 Q152 72 152 96 Q152 120 124 120 L84 120"/>
+    <path d="M118 120 L156 172"/>
+  </g>
+
+  <!-- Empattements du fût -->
+  <g stroke="#edf0fb" stroke-width="7" stroke-linecap="round">
+    <path d="M70 72 L98 72"/>
+    <path d="M70 172 L98 172"/>
+  </g>
+
+  <!-- Bandeau prisme sous le monogramme -->
+  <rect x="66" y="190" width="108" height="7" fill="url(#prism)"/>
+</svg>

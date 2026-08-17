@@ -107,7 +107,7 @@ card_embeddings(card_id, embedding vector)         -- scan
 
 ## 5. Phases
 
-1. **Maquette** (`maquette/`) — démo visuelle à présenter à Riot pour la demande d'accès API. ✅ ce dépôt
+1. **Maquette** — démo visuelle initiale. ✅ remplacée par le produit fonctionnel (`riftarium/`), qui sert désormais de démonstration à Riot ; la maquette reste consultable dans l'historique git.
 2. **Socle** — monorepo (`apps/web` Vue, `apps/api` FastAPI, `infra/` compose), auth, cartothèque en lecture (données galerie publique), migration des guides Le Codex.
 3. **Collection + prix** — inventaire, import CSV, intégration Cardmarket.
 4. **Deck builder** — validation règles, mode libre, partage par lien.
@@ -120,7 +120,7 @@ card_embeddings(card_id, embedding vector)         -- scan
   « Jargon juridique » de Riot Games. Riot Games ne soutient ni ne sponsorise ce projet.
 - Cartes, illustrations, symboles et textes officiels © Riot Games, Inc.
 - La [politique développeur Riftbound](https://developer.riotgames.com/policies/riftbound)
-  impose une clé API applicative au-delà de l'usage personnel → **la maquette sert justement
+  impose une clé API applicative au-delà de l'usage personnel → **le produit `riftarium/` sert
   de dossier de présentation pour cette demande**.
-- Cardmarket est une marque de Cardmarket GmbH ; les prix affichés dans la maquette sont fictifs.
+- Cardmarket est une marque de Cardmarket GmbH ; aucune donnée Cardmarket n'est utilisée à ce jour.
 - Le code du projet reste sous licence MIT ; la licence ne couvre aucun actif Riot.
