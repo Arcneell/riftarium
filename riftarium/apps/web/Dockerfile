@@ -1,6 +1,6 @@
 # Contexte de build : racine du dépôt (voir compose.yaml) — les données des
 # règles (le-codex/data) sont servies sous /data/ pour la page Règles.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /build
 COPY riftarium/apps/web/package.json riftarium/apps/web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
