@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartes — Riftarium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="maquette.css" />
+</head>
+<body data-lang="fr">
+
+<div class="demo-note"><strong>Maquette</strong> — jeu d'exemple de 12 cartes. Traductions FR et prix fictifs, en attente des API Riot et Cardmarket.</div>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>RIFT<em>ARIUM</em></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html">Accueil</a>
+      <a href="cartes.html" aria-current="page">Cartes</a>
+      <a href="collection.html">Collection</a>
+      <a href="decks.html">Decks</a>
+      <a href="communaute.html">Communauté</a>
+      <a href="../le-codex/regles.html">Règles</a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="Langue des cartes">
+      <button data-lang="fr" aria-pressed="true">FR</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+<div class="prism"></div>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Cartothèque</p>
+        <h2>Toutes les cartes, dans les deux langues</h2>
+        <p class="lead">Recherchez par nom FR ou EN, code collector ou texte. Basculez la langue en haut à droite : chaque fiche existe en français et en anglais.</p>
+      </div>
+
+      <div class="toolbar">
+        <label class="search">
+          🔍 <input type="search" data-search placeholder="Nom, code, texte… (Jinx, OGN-202…)" aria-label="Rechercher une carte" />
+          <kbd>Ctrl K</kbd>
+        </label>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="Filtrer par domaine">
+          <button class="filter" data-filter-domain="fury" style="--chip:var(--fury)" aria-pressed="false">Fureur</button>
+          <button class="filter" data-filter-domain="calm" style="--chip:var(--calm)" aria-pressed="false">Calme</button>
+          <button class="filter" data-filter-domain="mind" style="--chip:var(--mind)" aria-pressed="false">Esprit</button>
+          <button class="filter" data-filter-domain="body" style="--chip:var(--body)" aria-pressed="false">Corps</button>
+          <button class="filter" data-filter-domain="chaos" style="--chip:var(--chaos)" aria-pressed="false">Chaos</button>
+          <button class="filter" data-filter-domain="order" style="--chip:var(--order)" aria-pressed="false">Ordre</button>
+        </div>
+        <div class="filters" role="group" aria-label="Filtrer par type">
+          <button class="filter" data-filter-type="unit" aria-pressed="false">Unités</button>
+          <button class="filter" data-filter-type="spell" aria-pressed="false">Sorts</button>
+          <button class="filter" data-filter-type="gear" aria-pressed="false">Équipements</button>
+          <button class="filter" data-filter-type="rune" aria-pressed="false">Runes</button>
+          <button class="filter" data-filter-type="legend" aria-pressed="false">Légendes</button>
+          <button class="filter" data-filter-type="battlefield" aria-pressed="false">Champs de bataille</button>
+        </div>
+      </div>
+
+      <p data-count style="color:var(--muted); font-size:.84rem; font-family:var(--font-mono); margin-bottom:18px"></p>
+
+      <div class="grid-cards" data-gallery></div>
+
+      <p style="color:var(--muted); font-size:.8rem; margin-top:26px">
+        Visuels de l'édition anglaise — seule version publiée dans la galerie officielle à ce jour.
+        Prix : exemples fictifs d'intégration Cardmarket.
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="legal-title">Mentions légales</p>
+    <p><strong>Riftarium</strong> est un projet fan-made, communautaire et à but non lucratif. Il n'est ni affilié à, ni soutenu, ni sponsorisé par Riot Games.</p>
+    <p>Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée « Jargon juridique » relative à l'utilisation d'actifs de Riot Games. Riot Games ne soutient ni ne sponsorise ce projet.</p>
+    <p>Riftbound, League of Legends ainsi que tous les visuels de cartes, illustrations, symboles de domaine et textes officiels affichés sont la propriété de © Riot Games, Inc. Les visuels sont servis directement depuis le CDN officiel de Riot et ne sont pas redistribués par ce site.</p>
+    <p>Cardmarket est une marque de Cardmarket GmbH. Les prix affichés dans cette maquette sont fictifs.</p>
+  </div>
+</footer>
+
+<script src="maquette.js"></script>
+</body>
+</html>

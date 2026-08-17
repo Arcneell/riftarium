@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deck builder — Riftarium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="maquette.css" />
+</head>
+<body data-lang="fr">
+
+<div class="demo-note"><strong>Maquette</strong> — decks et compteurs fictifs de démonstration.</div>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>RIFT<em>ARIUM</em></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html">Accueil</a>
+      <a href="cartes.html">Cartes</a>
+      <a href="collection.html">Collection</a>
+      <a href="decks.html" aria-current="page">Decks</a>
+      <a href="communaute.html">Communauté</a>
+      <a href="../le-codex/regles.html">Règles</a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="Langue des cartes">
+      <button data-lang="fr" aria-pressed="true">FR</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+<div class="prism"></div>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="section-head" style="display:flex; align-items:end; gap:20px; flex-wrap:wrap">
+        <div>
+          <p class="eyebrow">Deck builder</p>
+          <h2>« Étincelle de Fureur » <span style="font-size:.55em; color:var(--muted)">par CavernousLoup</span></h2>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:10px">
+          <button class="btn btn-ghost btn-sm" aria-pressed="true">Mode tournoi</button>
+          <button class="btn btn-ghost btn-sm" aria-pressed="false">Mode libre</button>
+          <button class="btn btn-gold btn-sm">Publier le deck</button>
+        </div>
+      </div>
+
+      <div class="cols-2">
+        <div class="panel">
+          <div class="deck-zone">
+            <h4>Légende <span class="ok">1 / 1 ✓</span></h4>
+            <div class="deck-line" style="--chip:var(--fury)"><span class="qty">1</span><span class="dot"></span><span class="fr-only">Fille du Néant</span><span class="en-only">Daughter of the Void</span><small>OGN-247</small></div>
+          </div>
+          <div class="deck-zone">
+            <h4>Champs de bataille <span class="ok">3 / 3 ✓</span></h4>
+            <div class="deck-line"><span class="qty">1</span><span class="dot"></span><span class="fr-only">Autel de l'Unité</span><span class="en-only">Altar to Unity</span><small>OGN-275</small></div>
+            <div class="deck-line"><span class="qty">1</span><span class="dot"></span><span class="fr-only">Ascension de l'Aspirant</span><span class="en-only">Aspirant's Climb</span><small>OGN-276</small></div>
+            <div class="deck-line"><span class="qty">1</span><span class="dot"></span><span class="fr-only">Bar des bas-fonds</span><span class="en-only">Back-Alley Bar</span><small>OGN-277</small></div>
+          </div>
+          <div class="deck-zone">
+            <h4>Runes <span class="ok">12 / 12 ✓</span></h4>
+            <div class="deck-line" style="--chip:var(--fury)"><span class="qty">9</span><span class="dot"></span><span class="fr-only">Rune de Fureur</span><span class="en-only">Fury Rune</span><small>OGN-007</small></div>
+            <div class="deck-line" style="--chip:var(--mind)"><span class="qty">3</span><span class="dot"></span><span class="fr-only">Rune d'Esprit</span><span class="en-only">Mind Rune</span><small>OGN-009</small></div>
+          </div>
+          <div class="deck-zone">
+            <h4>Deck principal <span class="ko">38 / 40 ✗</span></h4>
+            <div class="deck-line" style="--chip:var(--fury)"><span class="qty">3</span><span class="dot"></span><span class="fr-only">Phénix immortel</span><span class="en-only">Immortal Phoenix</span><small>OGN-037</small></div>
+            <div class="deck-line" style="--chip:var(--fury)"><span class="qty">3</span><span class="dot"></span><span class="fr-only">Sceau de rage</span><span class="en-only">Seal of Rage</span><small>OGN-040</small></div>
+            <div class="deck-line" style="--chip:var(--chaos)"><span class="qty">3</span><span class="dot"></span><span class="fr-only">Jinx, Rebelle</span><span class="en-only">Jinx, Rebel</span><small>OGN-202</small></div>
+            <div class="deck-line" style="--chip:var(--mind)"><span class="qty">2</span><span class="dot"></span><span class="fr-only">Ahri, Curieuse</span><span class="en-only">Ahri, Inquisitive</span><small>OGN-119</small></div>
+            <p style="font-size:.78rem; color:var(--muted); margin-top:6px">… + 27 autres cartes</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" style="margin-bottom:22px">
+            <h3 style="margin-bottom:14px">Validation — règles officielles de tournoi</h3>
+            <ul class="validator">
+              <li class="v-ok">Exactement 1 légende</li>
+              <li class="v-ok">3 champs de bataille distincts</li>
+              <li class="v-ok">12 runes</li>
+              <li class="v-ko">Deck principal : 38 / 40 cartes minimum — ajoutez 2 cartes</li>
+              <li class="v-ok">Maximum 3 exemplaires par carte respecté</li>
+              <li class="v-ok">Domaines conformes à la légende (Fureur / Esprit)</li>
+            </ul>
+            <p style="font-size:.78rem; color:var(--muted); margin-top:14px">
+              Chaque contrôle renvoie vers la règle officielle correspondante dans le module Règles.
+              Le <strong>mode libre</strong> désactive la validation pour tester des idées.
+            </p>
+          </div>
+
+          <div class="panel">
+            <h3 style="margin-bottom:10px">Guide intégré</h3>
+            <p style="font-size:.9rem; color:var(--muted)">
+              « Votre légende est Fureur / Esprit : le deck peut contenir des cartes de ces deux
+              domaines. Il vous manque 2 cartes — les sorts de pioche Esprit renforceraient
+              la régularité de votre plan Phénix. »
+            </p>
+            <p style="font-size:.78rem; color:var(--muted); margin-top:10px">Conseils contextuels adaptés au niveau du joueur (activables/désactivables).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Communauté</p>
+        <h2>Decks publics</h2>
+      </div>
+      <div class="cols-3">
+        <div class="panel">
+          <p class="eyebrow" style="--chip:var(--chaos); color:var(--chaos)">Chaos / Fureur</p>
+          <h3>Jinx Toute-Puissante</h3>
+          <p style="color:var(--muted); font-size:.86rem; margin:8px 0 14px">Aggro explosif autour de Jinx, Rebelle. Top 4 — tournoi local de Lyon.</p>
+          <div class="post-actions">
+            <button data-like aria-pressed="false">♥ <span>128</span></button>
+            <button>💬 24</button>
+            <button>Copier la liste</button>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="eyebrow" style="color:var(--calm)">Calme</p>
+          <h3>Le Poing tranquille</h3>
+          <p style="color:var(--muted); font-size:.86rem; margin:8px 0 14px">Contrôle Lee Sin : temporiser, renverser, conclure. Guide débutant inclus.</p>
+          <div class="post-actions">
+            <button data-like aria-pressed="false">♥ <span>93</span></button>
+            <button>💬 17</button>
+            <button>Copier la liste</button>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="eyebrow" style="color:var(--body)">Corps</p>
+          <h3>Jardin carnivore</h3>
+          <p style="color:var(--muted); font-size:.86rem; margin:8px 0 14px">Midrange Prédateur des fleurs-mortes — budget, idéal premier deck.</p>
+          <div class="post-actions">
+            <button data-like aria-pressed="false">♥ <span>61</span></button>
+            <button>💬 9</button>
+            <button>Copier la liste</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="legal-title">Mentions légales</p>
+    <p><strong>Riftarium</strong> est un projet fan-made, communautaire et à but non lucratif. Il n'est ni affilié à, ni soutenu, ni sponsorisé par Riot Games.</p>
+    <p>Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée « Jargon juridique » relative à l'utilisation d'actifs de Riot Games. Riot Games ne soutient ni ne sponsorise ce projet.</p>
+    <p>Noms de cartes et textes © Riot Games, Inc. Decks, pseudonymes et compteurs présentés ici : contenus fictifs de démonstration.</p>
+  </div>
+</footer>
+
+<script src="maquette.js"></script>
+</body>
+</html>

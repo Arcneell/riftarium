@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: riftarium-db
+    environment:
+      POSTGRES_DB: riftarium
+      POSTGRES_USER: riftarium
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-riftarium-dev}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riftarium -d riftarium"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: apps/api
+    container_name: riftarium-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://riftarium:${DB_PASSWORD:-riftarium-dev}@db:5432/riftarium
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      AUTO_SYNC: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8889}:8000"
+    restart: unless-stopped
+
+  web:
+    build: apps/web
+    container_name: riftarium-web
+    depends_on:
+      - api
+    ports:
+      - "${PORT:-8888}:80"
+    restart: unless-stopped
+
+volumes:
+  dbdata:
