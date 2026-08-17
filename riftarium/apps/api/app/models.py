@@ -51,6 +51,8 @@ class Card(Base):
     orientation: Mapped[str | None] = mapped_column(String(16), nullable=True)
     tags: Mapped[list] = mapped_column(JSON, default=list)
     alternate_art: Mapped[bool] = mapped_column(Boolean, default=False)
+    signature: Mapped[bool] = mapped_column(Boolean, default=False)
+    overnumbered: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_on: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
 

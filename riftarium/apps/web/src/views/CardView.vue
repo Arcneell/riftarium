@@ -1,13 +1,27 @@
 <script setup>
-import { ref, watch } from "vue"
-import { useRoute } from "vue-router"
+import { computed, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, session, DOMAINS, TYPES, RARITIES } from "../api.js"
+import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
+import CardText from "../components/CardText.vue"
 
 const route = useRoute()
+const router = useRouter()
 const card = ref(null)
 const error = ref("")
-const qty = ref(1)
+const qty = ref(0)
 const saved = ref("")
+
+const foil = computed(() => isFoil(card.value))
+const variants = computed(() => card.value?.variants || [])
+const landscape = computed(() => card.value?.orientation === "landscape")
+const domainLabel = computed(() => card.value?.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "—")
+const domainColor = computed(() => DOMAINS[card.value?.domains?.[0]]?.color)
+const energySrc = computed(() =>
+  card.value?.energy === null || card.value?.energy === undefined ? "" : glyphUrl(`energy_${card.value.energy}`)
+)
+const powerRunes = computed(() => powerRuneGlyphs(card.value))
+const mightSrc = glyphUrl("might")
 
 watch(
   () => route.params.id,
@@ -17,6 +31,7 @@ watch(
     saved.value = ""
     try {
       card.value = await api(`/api/cards/${id}`)
+      qty.value = card.value.owned_qty ?? 0
     } catch (e) {
       error.value = e.message
     }
@@ -32,84 +47,122 @@ async function addToCollection() {
       body: { qty: qty.value }
     })
     saved.value = `C'est noté : ${response.qty} exemplaire(s).`
+    card.value.owned_qty = response.qty
   } catch (e) {
     error.value = e.message
   }
 }
+
+function openVariant(id) {
+  if (id !== card.value?.id) router.push(`/cartes/${id}`)
+}
 </script>
 
 <template>
-  <section style="padding-top: 44px">
-    <div class="wrap">
-      <p style="margin-bottom: 26px"><RouterLink to="/cartes">← Cartothèque</RouterLink></p>
+  <section class="card-detail">
+    <div class="wrap cards-wrap">
+      <p class="card-back"><RouterLink to="/cartes">← Cartothèque</RouterLink></p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div class="card-sheet" v-if="card">
-        <div>
-          <img
-            v-tilt
-            class="full"
-            :class="{ landscape: card.orientation === 'landscape' }"
-            :src="cardThumb(card.image_url, 720)"
-            :alt="`Carte Riftbound : ${card.name}`"
-          />
+      <article v-if="card" class="card-sheet" :class="{ landscape }">
+        <aside class="sheet-visual">
+          <div v-tilt class="card-art sheet-art" :class="{ foil, landscape }">
+            <img
+              class="full"
+              :src="cardThumb(card.image_url, landscape ? 1100 : 720)"
+              :alt="`Carte Riftbound : ${card.name}`"
+            />
+            <span v-if="foil" class="card-foil"></span>
+          </div>
+          <div class="variant-switch" v-if="variants.length > 1">
+            <button
+              v-for="item in variants"
+              :key="item.id"
+              class="filter"
+              :aria-pressed="item.id === card.id"
+              @click="openVariant(item.id)"
+            >
+              {{ variantLabel(item) }}
+            </button>
+          </div>
           <p class="card-credit">
-            {{ card.riftbound_id.toUpperCase() }} · Illustration : {{ card.artist }} · © Riot Games
+            {{ card.riftbound_id.toUpperCase() }}
+            <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
+            · © Riot Games
           </p>
-        </div>
+        </aside>
 
-        <div>
-          <p class="eyebrow">{{ card.set_id }} · {{ RARITIES[card.rarity] || card.rarity }}</p>
+        <div class="sheet-copy">
+          <p class="eyebrow">
+            {{ card.set_id }} · {{ RARITIES[card.rarity] || card.rarity }}
+            <span v-if="landscape"> · Terrain</span>
+          </p>
           <h1>{{ card.name }}</h1>
 
+          <div class="sheet-tags">
+            <span class="sheet-tag">{{ TYPES[card.type] || card.type }}</span>
+            <span v-if="card.supertype" class="sheet-tag muted">{{ card.supertype }}</span>
+            <span class="sheet-tag" :style="{ color: domainColor }">{{ domainLabel }}</span>
+          </div>
+
           <div class="stat-row">
-            <div class="stat">
-              Type<b>{{ TYPES[card.type] || card.type }}</b>
+            <div class="stat" v-if="card.energy !== null && card.energy !== undefined">
+              Énergie
+              <b class="stat-glyphs">
+                <img
+                  class="rb-glyph energy"
+                  :src="energySrc"
+                  :alt="`Énergie ${card.energy}`"
+                  :title="`Énergie ${card.energy}`"
+                />
+              </b>
             </div>
-            <div class="stat">
-              Domaine<b :style="{ color: DOMAINS[card.domains?.[0]]?.color }">
-                {{ card.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "—" }}</b
-              >
+            <div class="stat" v-if="card.might !== null && card.might !== undefined">
+              Puissance
+              <b class="stat-glyphs">
+                <span
+                  class="rb-glyph ink"
+                  :style="{ '--glyph': `url(${mightSrc})` }"
+                  role="img"
+                  aria-label="Puissance"
+                  title="Puissance"
+                ></span>
+                {{ card.might }}
+              </b>
             </div>
-            <div class="stat" v-if="card.energy !== null">
-              Énergie<b>{{ card.energy }}</b>
-            </div>
-            <div class="stat" v-if="card.might !== null">
-              Puissance<b>{{ card.might }}</b>
-            </div>
-            <div class="stat" v-if="card.power !== null">
-              Pouvoir<b>{{ card.power }}</b>
+            <div class="stat" v-if="powerRunes.length">
+              Pouvoir
+              <b class="stat-glyphs">
+                <img
+                  v-for="(rune, i) in powerRunes"
+                  :key="i"
+                  class="rb-glyph rune"
+                  :src="rune.src"
+                  :alt="rune.label"
+                  :title="rune.label"
+                />
+              </b>
             </div>
           </div>
 
           <div class="rules-text" v-if="card.text">
-            <p>{{ card.text }}</p>
-            <p class="muted" style="font-size: 0.8rem; margin-top: 10px">
-              Texte anglais (VO). Le français viendra avec l'API Riot.
-            </p>
+            <CardText :text="card.text" />
           </div>
-          <p class="muted" v-if="card.flavour" style="font-style: italic; margin: 14px 0">« {{ card.flavour }} »</p>
+          <p class="flavour" v-if="card.flavour">« {{ card.flavour }} »</p>
 
-          <div class="panel" style="margin-top: 28px" v-if="session.token">
-            <h3 style="margin-bottom: 14px">Dans ma collection</h3>
-            <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap">
-              <input
-                type="number"
-                min="0"
-                max="999"
-                v-model.number="qty"
-                style="width: 100px"
-                aria-label="Quantité possédée"
-              />
+          <div class="panel sheet-collection" v-if="session.token">
+            <h3>Dans ma collection</h3>
+            <div class="sheet-qty">
+              <input type="number" min="0" max="999" v-model.number="qty" aria-label="Quantité possédée" />
               <button class="btn btn-gold btn-sm" @click="addToCollection">Enregistrer</button>
               <span v-if="saved" class="success">{{ saved }}</span>
             </div>
           </div>
-          <p v-else class="muted" style="margin-top: 28px">
+          <p v-else class="muted sheet-login">
             <RouterLink to="/connexion">Connectez-vous</RouterLink> pour suivre vos exemplaires.
           </p>
         </div>
-      </div>
+      </article>
     </div>
   </section>
 </template>

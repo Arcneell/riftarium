@@ -50,6 +50,8 @@ def _upsert_card(db: Session, payload: dict) -> None:
     row.orientation = payload.get("orientation")
     row.tags = payload.get("tags") or []
     row.alternate_art = bool(metadata.get("alternate_art"))
+    row.signature = bool(metadata.get("signature"))
+    row.overnumbered = bool(metadata.get("overnumbered"))
     row.updated_on = metadata.get("updated_on")
     db.merge(row)
 

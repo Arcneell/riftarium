@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .db import Base, SessionLocal, engine, get_db
+from .db import Base, SessionLocal, engine, ensure_schema, get_db
 from .models import Card
 from .routers import auth_routes, cards, collection, decks
 from .sync import run_sync
@@ -18,6 +18,7 @@ log = logging.getLogger("riftarium")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    ensure_schema()
     if settings.auto_sync:
         with SessionLocal() as db:
             count = db.scalar(select(func.count(Card.id))) or 0
