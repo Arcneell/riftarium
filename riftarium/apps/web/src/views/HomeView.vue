@@ -14,12 +14,12 @@ const FAN = [
 const cardImg = hash => `https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/${hash}?auto=format&fit=max&w=460&accountingTag=RB`;
 
 const MODULES = [
-  { icon: "🃏", chip: "var(--mind)", title: "Cartothèque", text: "Toutes les cartes du jeu, avec filtres par domaine, type, rareté et set.", to: "/cartes", go: "Parcourir" },
-  { icon: "📖", chip: "var(--order)", title: "Règles", text: "Le texte officiel complet, avec sommaire, recherche et renvois cliquables.", to: "/regles", go: "Consulter" },
-  { icon: "🛠️", chip: "var(--fury)", title: "Deck builder", text: "Construction en visuel, validation des règles de tournoi en direct.", to: "/decks", go: "Construire" },
-  { icon: "📦", chip: "var(--body)", title: "Collection", text: "Vos exemplaires, leur état et leur langue, carte par carte.", to: "/collection", go: "Inventorier" },
-  { icon: "💬", chip: "var(--chaos)", title: "Communauté", text: "Les decks publiés par les autres joueurs, à copier ou à voter.", to: "/communaute", go: "Découvrir" },
-  { icon: "⚙️", chip: "var(--calm)", title: "Code source", text: "Le site est open source. Idées et rapports de bug bienvenus.", href: "https://github.com/Arcneell/riftarium", go: "Voir sur GitHub" }
+  { icon: "cards", chip: "var(--mind)", title: "Cartothèque", text: "Retrouvez une carte, relisez-la, gardez-la sous la main — sans tout étaler sur la table.", to: "/cartes", go: "Parcourir" },
+  { icon: "book", chip: "var(--order)", title: "Règles", text: "Un doute en pleine partie ? Les règles sont là, comme si vous posiez la question à quelqu'un.", to: "/regles", go: "Consulter" },
+  { icon: "layers", chip: "var(--fury)", title: "Deck builder", text: "Montez un deck à l'écran. Le site vous dit s'il tient pour un tournoi, ou laissez-vous faire.", to: "/decks", go: "Construire" },
+  { icon: "box", chip: "var(--body)", title: "Collection", text: "Notez ce que vous avez vraiment. Plus besoin de tout recompter à chaque booster.", to: "/collection", go: "Inventorier" },
+  { icon: "users", chip: "var(--chaos)", title: "Communauté", text: "Regardez ce que les autres jouent, inspirez-vous, donnez un coup de pouce.", to: "/communaute", go: "Découvrir" },
+  { icon: "code", chip: "var(--calm)", title: "Fait par un joueur", text: "Un projet libre, sans pub ni boutique. Si quelque chose manque, dites-le.", href: "https://github.com/Arcneell/riftarium", go: "Voir sur GitHub" }
 ];
 
 onMounted(async () => {
@@ -36,11 +36,12 @@ onMounted(async () => {
            style="--splash: url('https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/9e26afe304d2c40664b119a9da0ef82cff692f54-3840x2160.png?auto=format&w=1920')">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">Compagnon Riftbound non officiel</p>
-        <h1>Tout Riftbound,<br />au même endroit.</h1>
+        <p class="eyebrow">Un compagnon pour Riftbound</p>
+        <h1>Pour jouer,<br />pas pour s'éparpiller.</h1>
         <p class="lead" style="margin-top:20px">
-          Les cartes, les règles officielles, votre collection et vos decks.
-          Un seul site, sur PC comme sur téléphone.
+          Riftarium rassemble ce dont on a besoin autour de la table :
+          connaître ses cartes, suivre sa collection, construire un deck
+          et retrouver une règle entre deux tours.
         </p>
         <div style="display:flex; gap:16px; margin-top:34px; flex-wrap:wrap">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
@@ -66,8 +67,8 @@ onMounted(async () => {
 
   <section style="padding-bottom:40px">
     <div class="wrap" style="margin-bottom:36px">
-      <p class="eyebrow" v-reveal>La cartothèque</p>
-      <h2 v-reveal>1 315 cartes, six sets, un moteur de recherche</h2>
+      <p class="eyebrow" v-reveal>Les cartes</p>
+      <h2 v-reveal>Feuilletez le jeu, comme sur la table</h2>
     </div>
     <CardRiver />
     <div class="wrap" style="text-align:center; margin-top:36px" v-reveal>
@@ -77,8 +78,8 @@ onMounted(async () => {
 
   <section>
     <div class="wrap">
-      <p class="eyebrow" v-reveal>Le site en six briques</p>
-      <h2 v-reveal style="margin-bottom:36px">Ce que vous trouverez ici</h2>
+      <p class="eyebrow" v-reveal>Autour de la table</p>
+      <h2 v-reveal style="margin-bottom:36px">Ce que le site vous propose</h2>
       <div class="modules">
         <component :is="module.to ? 'RouterLink' : 'a'"
                    v-for="(module, i) in MODULES" :key="module.title"
@@ -86,10 +87,10 @@ onMounted(async () => {
                    :to="module.to" :href="module.href"
                    :target="module.href ? '_blank' : undefined"
                    :style="{ '--chip': module.chip }">
-          <span class="m-icon">{{ module.icon }}</span>
+          <span class="m-icon"><Icon :name="module.icon" :size="24" /></span>
           <h3>{{ module.title }}</h3>
           <p>{{ module.text }}</p>
-          <span class="m-go">{{ module.go }} →</span>
+          <span class="m-go">{{ module.go }} <Icon name="arrow" :size="14" /></span>
         </component>
       </div>
     </div>
@@ -103,16 +104,15 @@ onMounted(async () => {
   <section>
     <div class="wrap cols-2">
       <div v-reveal>
-        <p class="eyebrow">À l'origine du projet</p>
-        <h2>Les règles, sans PDF</h2>
+        <p class="eyebrow">Pendant la partie</p>
+        <h2>Une règle, tout de suite</h2>
         <p class="lead" style="margin-bottom:18px">
-          Riftarium a d'abord été un lecteur de règles. Le texte officiel y est
-          découpé règle par règle, avec un sommaire, une recherche qui ignore
-          les accents et des renvois cliquables entre les règles.
+          Plus besoin de chercher dans un document. Dites ce qui vous bloque —
+          un effet, une interaction, un doute — et la réponse est là,
+          avec ce qui l'entoure.
         </p>
         <p class="muted" style="margin-bottom:26px">
-          Pratique en pleine partie : tapez un mot-clé ou un numéro,
-          la règle s'affiche avec son contexte.
+          Ça tient dans une pause entre deux tours, sur téléphone comme sur ordinateur.
         </p>
         <RouterLink class="btn btn-gold" to="/regles">Ouvrir les règles</RouterLink>
       </div>
@@ -130,20 +130,18 @@ onMounted(async () => {
   <section style="padding-top:32px; padding-bottom:104px">
     <div class="wrap cols-2">
       <div class="panel" v-reveal>
-        <h3 style="margin-bottom:10px">Les données</h3>
+        <h3 style="margin-bottom:10px">Pour jouer, simplement</h3>
         <p class="muted" style="font-size:.95rem">
-          Les cartes viennent de l'API communautaire Riftcodex et les images du
-          CDN de Riot. Les textes de cartes sont en anglais pour l'instant ;
-          une demande d'accès à l'API officielle est en cours pour le français.
+          Riftarium n'est pas un magasin et n'appartient pas à Riot.
+          C'est un compagnon gratuit, fait pour s'y retrouver autour du jeu.
         </p>
       </div>
       <div class="panel" v-reveal="1">
-        <h3 style="margin-bottom:10px">Développé par un joueur</h3>
+        <h3 style="margin-bottom:10px">Un projet de joueur</h3>
         <p class="muted" style="font-size:.95rem">
-          Riftarium est un projet personnel, développé seul et hébergé sans
-          contrepartie. Le code est sur
-          <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">GitHub</a> —
-          les idées et les rapports de bug sont bienvenus.
+          Le site est développé sur du temps libre, et le code est ouvert.
+          Si une idée vous vient, ou si quelque chose cloche, elle a sa place
+          sur <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">GitHub</a>.
         </p>
       </div>
     </div>

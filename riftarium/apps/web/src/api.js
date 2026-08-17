@@ -44,6 +44,12 @@ export async function api(path, { method = "GET", body } = {}) {
   return data;
 }
 
+/** Redimensionne une URL CDN Riot (`w=`) pour éviter de charger le visuel plein format. */
+export function cardThumb(url, width = 280) {
+  if (!url) return url;
+  return /[?&]w=\d+/.test(url) ? url.replace(/w=\d+/, `w=${width}`) : url;
+}
+
 export class ApiError extends Error {
   constructor(status, message) {
     super(message);

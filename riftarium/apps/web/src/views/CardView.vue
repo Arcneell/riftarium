@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { api, session, DOMAINS, TYPES, RARITIES } from "../api.js";
+import { api, cardThumb, session, DOMAINS, TYPES, RARITIES } from "../api.js";
 
 const route = useRoute();
 const card = ref(null);
@@ -9,13 +9,16 @@ const error = ref("");
 const qty = ref(1);
 const saved = ref("");
 
-onMounted(async () => {
+watch(() => route.params.id, async id => {
+  card.value = null;
+  error.value = "";
+  saved.value = "";
   try {
-    card.value = await api(`/api/cards/${route.params.id}`);
+    card.value = await api(`/api/cards/${id}`);
   } catch (e) {
     error.value = e.message;
   }
-});
+}, { immediate: true });
 
 async function addToCollection() {
   saved.value = "";
@@ -40,7 +43,7 @@ async function addToCollection() {
       <div class="card-sheet" v-if="card">
         <div>
           <img v-tilt class="full" :class="{ landscape: card.orientation === 'landscape' }"
-               :src="card.image_url" :alt="`Carte Riftbound : ${card.name}`" />
+               :src="cardThumb(card.image_url, 720)" :alt="`Carte Riftbound : ${card.name}`" />
           <p class="card-credit">{{ card.riftbound_id.toUpperCase() }} · Illustration : {{ card.artist }} · © Riot Games</p>
         </div>
 

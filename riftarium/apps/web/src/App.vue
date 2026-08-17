@@ -24,7 +24,9 @@ function logout() {
         <span class="brand-name">Riftarium</span>
       </RouterLink>
       <button class="burger" @click="menuOpen = !menuOpen"
-              :aria-expanded="menuOpen" aria-label="Menu">☰</button>
+              :aria-expanded="menuOpen" aria-label="Menu">
+        <Icon name="menu" :size="20" />
+      </button>
       <nav class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
         <RouterLink to="/cartes">Cartes</RouterLink>
         <RouterLink to="/regles">Règles</RouterLink>
@@ -42,9 +44,11 @@ function logout() {
   <div class="prism"></div>
 
   <main>
-    <RouterView v-slot="{ Component }">
+    <RouterView v-slot="{ Component, route: viewRoute }">
       <Transition name="page" mode="out-in">
-        <component :is="Component" />
+        <div class="page" :key="viewRoute.path">
+          <component :is="Component" />
+        </div>
       </Transition>
     </RouterView>
   </main>

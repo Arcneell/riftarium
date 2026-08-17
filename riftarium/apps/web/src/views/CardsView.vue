@@ -58,7 +58,8 @@ onMounted(async () => {
     <div class="wrap">
       <div class="toolbar">
         <label class="search">
-          🔍 <input type="search" v-model="state.q" placeholder="Jinx, ogn-202, reaction…" aria-label="Rechercher une carte" />
+          <Icon name="search" :size="18" />
+          <input type="search" v-model="state.q" placeholder="Jinx, ogn-202, reaction…" aria-label="Rechercher une carte" />
         </label>
         <select v-model="state.set_id" style="max-width:230px" aria-label="Filtrer par set">
           <option value="">Tous les sets</option>

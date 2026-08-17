@@ -183,7 +183,8 @@ onMounted(async () => {
           </button>
         </div>
         <label class="search" style="position:relative">
-          🔍 <input type="search" v-model="searchQuery" @input="onSearchInput"
+          <Icon name="search" :size="18" />
+          <input type="search" v-model="searchQuery" @input="onSearchInput"
                     placeholder="Mot-clé ou numéro de règle…" aria-label="Rechercher dans les règles" />
         </label>
       </div>

@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from "vue";
-import { api } from "../api.js";
+import { api, cardThumb } from "../api.js";
 
 const collection = ref({ total_cards: 0, unique_cards: 0, items: [] });
 const error = ref("");
@@ -54,7 +54,7 @@ onMounted(load);
           <thead><tr><th></th><th>Carte</th><th>Code</th><th>Qté</th><th>État</th><th>Langue</th><th></th></tr></thead>
           <tbody>
             <tr v-for="item in collection.items" :key="item.card.id">
-              <td style="width:52px"><img class="row-thumb" :src="item.card.image_url" :alt="''" loading="lazy" /></td>
+              <td style="width:52px"><img class="row-thumb" :src="cardThumb(item.card.image_url, 84)" :alt="''" loading="lazy" decoding="async" /></td>
               <td><RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink></td>
               <td class="num">{{ item.card.riftbound_id.toUpperCase() }}</td>
               <td class="num">{{ item.qty }}</td>

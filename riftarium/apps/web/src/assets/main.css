@@ -115,6 +115,9 @@ h3 { font-size: 1.15rem; color: var(--gold-deep); }
 .lead { color: var(--muted); font-size: 1.12rem; max-width: 58ch; }
 .muted { color: var(--muted); }
 .mono { font-family: var(--font-mono); }
+.icon { display: block; flex: none; }
+.search .icon { color: var(--muted); }
+.m-go .icon { display: inline-block; vertical-align: -2px; margin-left: 4px; }
 
 section { padding: 88px 0; }
 
@@ -122,7 +125,7 @@ section { padding: 88px 0; }
 .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.22, .8, .32, 1); }
 .reveal.visible { opacity: 1; transform: none; }
 
-/* ---------- Transition de page ---------- */
+.page { min-height: 40vh; }
 .page-enter-active, .page-leave-active { transition: opacity .22s ease, transform .22s ease; }
 .page-enter-from { opacity: 0; transform: translateY(14px); }
 .page-leave-to { opacity: 0; transform: translateY(-8px); }
@@ -469,14 +472,15 @@ td.num { font-family: var(--font-mono); }
 .module:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--line-strong); color: var(--ink); }
 .module .m-icon {
   width: 52px; height: 52px; border-radius: var(--r-full);
-  display: grid; place-items: center; font-size: 1.4rem;
+  display: grid; place-items: center;
+  color: color-mix(in srgb, var(--chip, var(--gold)) 82%, #000);
   background: color-mix(in srgb, var(--chip, var(--gold)) 16%, #fff);
   border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 40%, transparent);
   margin-bottom: 18px;
 }
+.module .m-go { display: inline-flex; align-items: center; margin-top: 14px; font-size: .86rem; font-weight: 600; color: var(--gold-deep); }
 .module h3 { color: var(--ink-strong); margin-bottom: 8px; }
 .module p { color: var(--muted); font-size: .92rem; }
-.module .m-go { display: inline-block; margin-top: 14px; font-size: .86rem; font-weight: 600; color: var(--gold-deep); }
 .module:hover .m-go { color: var(--hex); }
 
 /* ---------- Bannières de page ---------- */
@@ -612,18 +616,45 @@ footer {
 .rules-nav { display: flex; justify-content: space-between; gap: 14px; margin-top: 34px; flex-wrap: wrap; }
 
 /* ---------- Rivière de cartes ---------- */
-.river { display: flex; flex-direction: column; gap: 22px; padding: 10px 0; overflow: hidden; }
-.river-row { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-.river-track { display: flex; gap: 20px; width: max-content; animation: river 55s linear infinite; }
-.river-row.reverse .river-track { animation-direction: reverse; animation-duration: 65s; }
-.river-row:hover .river-track { animation-play-state: paused; }
-.river-track img {
-  width: 150px; aspect-ratio: 744/1039; object-fit: cover;
-  border-radius: 10px; box-shadow: 0 8px 20px rgba(74, 56, 22, .25);
-  transition: transform .25s;
+.river { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; overflow: hidden; }
+.river-row {
+  overflow: hidden;
+  padding: 20px 0 16px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
-.river-track img.landscape { width: 210px; aspect-ratio: 1038/744; }
-.river-track img:hover { transform: translateY(-8px) scale(1.04); }
+.river-track {
+  display: flex; gap: 20px; width: max-content;
+  animation: river 48s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.river-row.reverse .river-track { animation-direction: reverse; animation-duration: 58s; }
+.river.paused .river-track { animation-play-state: paused; }
+@media (hover: hover) and (pointer: fine) {
+  .river-row:hover .river-track { animation-play-state: paused; }
+}
+.river-card {
+  position: relative; z-index: 0; flex: none;
+  width: 150px; color: inherit;
+  transition: transform .25s, z-index 0s;
+}
+.river-card.landscape { width: 210px; }
+.river-card img {
+  width: 100%; height: auto; aspect-ratio: 744/1039; object-fit: cover;
+  border-radius: 10px; box-shadow: 0 8px 20px rgba(74, 56, 22, .25);
+  content-visibility: auto;
+  contain-intrinsic-size: 150px 209px;
+}
+.river-card.landscape img { aspect-ratio: 1038/744; contain-intrinsic-size: 210px 150px; }
+@media (hover: hover) {
+  .river-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    z-index: 3;
+  }
+  .river-card:hover img { box-shadow: 0 18px 36px rgba(74, 56, 22, .38); }
+}
+.river-card:focus-visible { outline: 2px solid var(--hex); outline-offset: 4px; border-radius: 12px; }
 @keyframes river { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* ---------- Bandeau de chiffres ---------- */
