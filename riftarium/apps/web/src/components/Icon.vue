@@ -2,13 +2,22 @@
 defineProps({
   name: { type: String, required: true },
   size: { type: [Number, String], default: 22 }
-});
+})
 </script>
 
 <template>
-  <svg class="icon" :width="size" :height="size" viewBox="0 0 24 24" fill="none"
-       stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-       aria-hidden="true">
+  <svg
+    class="icon"
+    :width="size"
+    :height="size"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
     <!-- deux cartes superposées -->
     <g v-if="name === 'cards'">
       <rect x="3.2" y="5.5" width="12.2" height="15.2" rx="1.8" />

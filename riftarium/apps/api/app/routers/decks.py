@@ -17,10 +17,7 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
     liked = False
     if viewer and db:
         liked = (
-            db.scalar(
-                select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id)
-            )
-            is not None
+            db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id)) is not None
         )
     return {
         "id": deck.id,

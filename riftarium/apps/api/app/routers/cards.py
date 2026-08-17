@@ -13,9 +13,7 @@ def find_card(db: Session, ident: str) -> Card | None:
     card = db.get(Card, ident)
     if card is None:
         card = db.scalar(
-            select(Card)
-            .where(func.lower(Card.riftbound_id) == ident.lower())
-            .order_by(Card.alternate_art, Card.id)
+            select(Card).where(func.lower(Card.riftbound_id) == ident.lower()).order_by(Card.alternate_art, Card.id)
         )
     return card
 
@@ -50,6 +48,7 @@ def list_cards(
     type: str | None = None,
     domain: str | None = None,
     rarity: str | None = None,
+    sort: str | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(30, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -73,9 +72,9 @@ def list_cards(
         query = query.where(cast(Card.domains, String).like(f'%"{domain}"%'))
 
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    rows = db.scalars(
-        query.order_by(Card.set_id, Card.collector_number).offset((page - 1) * size).limit(size)
-    ).all()
+    # sort=random : tirage à chaque appel, la pagination n'a alors plus de sens
+    order = [func.random()] if sort == "random" else [Card.set_id, Card.collector_number]
+    rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
     return {"total": total, "page": page, "size": size, "items": [card_out(c) for c in rows]}
 
 
@@ -91,6 +90,5 @@ def get_card(card_id: str, db: Session = Depends(get_db)):
 def list_sets(db: Session = Depends(get_db)):
     rows = db.scalars(select(CardSet).order_by(CardSet.published_on)).all()
     return [
-        {"set_id": s.set_id, "name": s.name, "card_count": s.card_count, "published_on": s.published_on}
-        for s in rows
+        {"set_id": s.set_id, "name": s.name, "card_count": s.card_count, "published_on": s.published_on} for s in rows
     ]

@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /riftarium/apps/web
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /riftarium/apps/api
+    schedule:
+      interval: weekly
+    groups:
+      pip:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /riftarium/apps/web
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /riftarium/apps/api
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -2,8 +2,8 @@
 # règles (le-codex/data) sont servies sous /data/ pour la page Règles.
 FROM node:22-alpine AS build
 WORKDIR /build
-COPY riftarium/apps/web/package.json ./
-RUN npm install --no-audit --no-fund
+COPY riftarium/apps/web/package.json riftarium/apps/web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY riftarium/apps/web/index.html riftarium/apps/web/vite.config.js ./
 COPY riftarium/apps/web/src/ src/
 RUN npm run build

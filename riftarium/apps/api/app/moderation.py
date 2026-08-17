@@ -9,10 +9,22 @@ import unicodedata
 
 BANNED_TERMS = [
     # insultes / toxicité (fr, en) — liste volontairement courte en V1
-    "connard", "connasse", "encule", "fdp", "ntm", "pute", "salope", "batard",
-    "fuck you", "asshole", "bitch", "retard",
+    "connard",
+    "connasse",
+    "encule",
+    "fdp",
+    "ntm",
+    "pute",
+    "salope",
+    "batard",
+    "fuck you",
+    "asshole",
+    "bitch",
+    "retard",
     # arnaques / hors-charte : vente hors plateforme
-    "paypal.me", "western union", "crypto wallet",
+    "paypal.me",
+    "western union",
+    "crypto wallet",
 ]
 
 _WORD = re.compile(r"[a-z0-9.\- ]+")
