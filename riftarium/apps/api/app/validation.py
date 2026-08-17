@@ -47,9 +47,7 @@ def validate_deck(entries: list[tuple[Card, int]]) -> list[dict]:
     if legend_count == 1:
         legend_domains = {d for d in (legends[0][0].domains or []) if d != "Colorless"}
         illegal = [
-            c.name
-            for c, _ in main + runes
-            if {d for d in (c.domains or []) if d != "Colorless"} - legend_domains
+            c.name for c, _ in main + runes if {d for d in (c.domains or []) if d != "Colorless"} - legend_domains
         ]
         add(
             "domains",

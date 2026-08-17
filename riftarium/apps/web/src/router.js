@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router";
-import { session } from "./api.js";
-import HomeView from "./views/HomeView.vue";
+import { createRouter, createWebHistory } from "vue-router"
+import { session } from "./api.js"
+import HomeView from "./views/HomeView.vue"
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -16,10 +16,10 @@ export const router = createRouter({
     { path: "/connexion", component: () => import("./views/AuthView.vue") }
   ],
   scrollBehavior: () => ({ top: 0 })
-});
+})
 
-router.beforeEach(to => {
+router.beforeEach((to) => {
   if (to.meta.auth && !session.token) {
-    return { path: "/connexion", query: { suite: to.fullPath } };
+    return { path: "/connexion", query: { suite: to.fullPath } }
   }
-});
+})

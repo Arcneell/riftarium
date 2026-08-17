@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue 3" />
   <img src="https://img.shields.io/badge/postgresql-16-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
   <img src="https://img.shields.io/badge/docker-compose-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose" />
-  <img src="https://img.shields.io/badge/tests-13%20passed-55b368?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-CI-55b368?style=flat-square" alt="Tests CI" />
 </p>
 
 <p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games.</em></p>
@@ -82,13 +82,28 @@ assets/             Identité visuelle (logo SVG fait main)
 
 ## 🧪 Tests
 
+Chaque pull request est bloquée tant que la CI GitHub n'est pas verte
+(lint, formatage, tests API, tests Vue, build Vite, `docker compose config`).
+
 ```bash
-cd riftarium
-docker compose run --rm api pytest -q     # 13 tests : auth, cartes, collection, decks, modération
+# API — depuis riftarium/
+docker compose run --rm api pytest -q
+
+# Qualité API en local (lint + format + couverture)
+cd riftarium/apps/api
+pip install -r requirements.txt -r requirements-dev.txt
+ruff check app tests
+ruff format --check app tests
+pytest -q --cov=app --cov-report=term-missing
+
+# Front — depuis riftarium/apps/web
+npm ci
+npm run check          # lint, Prettier, Vitest, build
 ```
 
-Le développement est vérifié par des tests unitaires (SQLite en mémoire) et un smoke test
-bout en bout sur la stack déployée (SPA, recherche, auth, deck 58 cartes validé, likes, modération).
+Le développement est vérifié par des tests unitaires API (SQLite en mémoire),
+des tests de composants Vue (hero Overnumbered, rivière aléatoire, vignettes CDN)
+et un smoke test bout en bout sur la stack déployée.
 
 ## 🗺️ Feuille de route
 

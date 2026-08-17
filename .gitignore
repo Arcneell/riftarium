@@ -3,6 +3,10 @@ dist/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
 *.db
 .env
 .claude/

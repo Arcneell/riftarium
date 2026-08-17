@@ -42,8 +42,13 @@ db         PostgreSQL 16
 
 ## Tests
 
+Chaque PR doit passer la CI (API, front, `docker compose config`). En local :
+
 ```bash
-docker compose run --rm api pytest -q       # 14 tests API (SQLite en mémoire)
+docker compose run --rm api pytest -q       # tests API (SQLite en mémoire)
+
+# depuis apps/web, après npm ci
+npm run check                               # lint, formatage, Vitest, build
 ```
 
 ## Sources de données

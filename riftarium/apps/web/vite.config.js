@@ -7,5 +7,9 @@ export default defineConfig({
     proxy: {
       "/api": { target: "http://localhost:8000", changeOrigin: true }
     }
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: "src/test/setup.js"
   }
 });

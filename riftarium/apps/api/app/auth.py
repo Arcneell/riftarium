@@ -1,6 +1,6 @@
 import hashlib
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException
@@ -35,7 +35,7 @@ def make_token(user: User) -> str:
     payload = {
         "sub": str(user.id),
         "handle": user.handle,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=settings.jwt_ttl_hours),
+        "exp": datetime.now(UTC) + timedelta(hours=settings.jwt_ttl_hours),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
@@ -49,7 +49,7 @@ def current_user(
     try:
         payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Jeton invalide ou expiré")
+        raise HTTPException(status_code=401, detail="Jeton invalide ou expiré") from None
     user = db.get(User, int(payload["sub"]))
     if user is None:
         raise HTTPException(status_code=401, detail="Utilisateur inconnu")
