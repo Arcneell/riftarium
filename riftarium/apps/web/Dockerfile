@@ -8,7 +8,7 @@ COPY riftarium/apps/web/index.html riftarium/apps/web/vite.config.js ./
 COPY riftarium/apps/web/src/ src/
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 COPY riftarium/apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /build/dist /usr/share/nginx/html
 COPY le-codex/data/rules-fr.json /usr/share/nginx/html/data/rules-fr.json
