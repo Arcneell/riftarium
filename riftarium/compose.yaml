@@ -30,7 +30,9 @@ services:
     restart: unless-stopped
 
   web:
-    build: apps/web
+    build:
+      context: ..
+      dockerfile: riftarium/apps/web/Dockerfile
     container_name: riftarium-web
     depends_on:
       - api

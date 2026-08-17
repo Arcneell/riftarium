@@ -27,6 +27,7 @@ function logout() {
               :aria-expanded="menuOpen" aria-label="Menu">☰</button>
       <nav class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
         <RouterLink to="/cartes">Cartes</RouterLink>
+        <a href="/regles/regles.html">Règles</a>
         <RouterLink to="/collection">Collection</RouterLink>
         <RouterLink to="/decks">Decks</RouterLink>
         <RouterLink to="/communaute">Communauté</RouterLink>
@@ -49,12 +50,40 @@ function logout() {
   </main>
 
   <footer>
-    <div class="wrap">
-      <p class="legal-title">Mentions légales</p>
-      <p><strong>Riftarium</strong> est un projet fan-made, communautaire et à but non lucratif. Il n'est ni affilié à, ni soutenu, ni sponsorisé par Riot Games.</p>
-      <p>Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée « Jargon juridique » relative à l'utilisation d'actifs de Riot Games. Riot Games ne soutient ni ne sponsorise ce projet.</p>
-      <p>Riftbound, League of Legends, les visuels de cartes, illustrations et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont servis depuis le CDN officiel de Riot, jamais copiés ni redistribués. Chaque carte mentionne son code collector et son illustrateur.</p>
-      <p>Données de cartes : API communautaire <a href="https://api.riftcodex.com/docs" target="_blank" rel="noopener">Riftcodex</a>. Textes de cartes en anglais pour le moment. Visuels d'arrière-plan officiels Riftbound © Riot Games, crédités sur chaque page.</p>
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><Logo /><b>Riftarium</b></div>
+        <p>
+          Un site fan-made pour tout retrouver sur Riftbound : les cartes, les règles
+          officielles, sa collection et ses decks. Développé par un joueur, sur son temps libre.
+          Gratuit et open source.
+        </p>
+      </div>
+      <div>
+        <h4>Explorer</h4>
+        <ul>
+          <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
+          <li><a href="/regles/regles.html">Règles officielles</a></li>
+          <li><a href="/regles/debuter.html">Guide du débutant</a></li>
+          <li><RouterLink to="/decks">Deck builder</RouterLink></li>
+          <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Le projet</h4>
+        <ul>
+          <li><a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">Code source (GitHub)</a></li>
+          <li><a href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener">Signaler un bug</a></li>
+          <li><a href="https://api.riftcodex.com/docs" target="_blank" rel="noopener">Données : API Riftcodex</a></li>
+          <li><a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <div class="wrap">
+        <p><strong>Riftarium</strong> est un projet fan-made à but non lucratif, ni affilié à, ni soutenu, ni sponsorisé par Riot Games. Créé en vertu de la politique juridique de Riot Games intitulée « Jargon juridique » relative à l'utilisation d'actifs de Riot Games.</p>
+        <p>Riftbound, League of Legends, les visuels de cartes, illustrations et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont servis depuis le CDN officiel de Riot, jamais copiés ni redistribués. Chaque carte mentionne son code collector et son illustrateur. Visuels d'arrière-plan officiels crédités sur chaque page.</p>
+      </div>
     </div>
   </footer>
 </template>
