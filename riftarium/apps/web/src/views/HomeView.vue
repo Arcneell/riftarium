@@ -15,20 +15,28 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section>
+  <section class="hero-splash"
+           style="--splash: url('https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/9e26afe304d2c40664b119a9da0ef82cff692f54-3840x2160.png?auto=format&w=1920')">
     <div class="wrap">
       <p class="eyebrow">Compagnon communautaire Riftbound</p>
-      <h1>Toutes vos cartes. Tous vos decks.<br />Une seule communauté.</h1>
+      <h1>Toutes vos cartes.<br />Tous vos decks.<br />Une seule communauté.</h1>
       <p class="lead" style="margin-top:16px">
         Cartothèque complète, collection personnelle, deck builder avec validation des règles
         officielles et decks partagés par la communauté — pour débutants comme pour experts.
       </p>
-      <div style="display:flex; gap:14px; margin-top:26px; flex-wrap:wrap">
+      <div style="display:flex; gap:14px; margin-top:28px; flex-wrap:wrap">
         <RouterLink class="btn btn-gold" to="/cartes">Explorer les cartes</RouterLink>
         <RouterLink class="btn btn-ghost" to="/decks">Construire un deck</RouterLink>
       </div>
+    </div>
+    <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
+  </section>
 
-      <div class="stat-row" style="margin-top:34px" v-if="cardCount !== null">
+  <div class="divider" role="presentation"><i></i></div>
+
+  <section style="padding-top:34px">
+    <div class="wrap">
+      <div class="stat-row" v-if="cardCount !== null">
         <div class="stat">Cartes référencées<b>{{ cardCount }}</b></div>
         <div class="stat" v-for="s in sets" :key="s.set_id">{{ s.name }}<b>{{ s.card_count }}</b></div>
       </div>

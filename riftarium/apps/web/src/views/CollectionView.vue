@@ -30,11 +30,16 @@ onMounted(load);
 </script>
 
 <template>
-  <section>
+  <div class="page-banner"
+       style="--banner: url('https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/2282ecab240f601b611ae89b5ade895e1b6b2de4-4676x2630.jpg?auto=format&w=1600')">
     <div class="wrap">
       <p class="eyebrow">Collection</p>
       <h2>Mon inventaire</h2>
-
+    </div>
+    <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
+  </div>
+  <section>
+    <div class="wrap">
       <div class="stat-row">
         <div class="stat">Cartes possédées<b>{{ collection.total_cards }}</b></div>
         <div class="stat">Cartes uniques<b>{{ collection.unique_cards }}</b></div>

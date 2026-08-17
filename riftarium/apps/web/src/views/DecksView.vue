@@ -43,12 +43,15 @@ onMounted(load);
 </script>
 
 <template>
-  <section>
+  <div class="page-banner">
     <div class="wrap">
       <p class="eyebrow">Deck builder</p>
       <h2>Mes decks</h2>
-
-      <div class="toolbar" style="margin-top:18px">
+    </div>
+  </div>
+  <section>
+    <div class="wrap">
+      <div class="toolbar">
         <input type="text" v-model="newName" placeholder="Nom du nouveau deck…" style="max-width:320px"
                aria-label="Nom du nouveau deck" @keyup.enter="createDeck" />
         <button class="btn btn-gold" @click="createDeck">Créer un deck</button>

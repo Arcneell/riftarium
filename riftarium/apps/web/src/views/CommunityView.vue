@@ -37,14 +37,20 @@ onMounted(load);
 </script>
 
 <template>
-  <section>
+  <div class="page-banner"
+       style="--banner: url('https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/91a720561b6cd9c649a9148782f34d96e78cd894-4320x2430.jpg?auto=format&w=1600')">
     <div class="wrap">
       <p class="eyebrow">Communauté</p>
       <h2>Decks partagés</h2>
-      <p class="lead" style="margin-bottom:24px">
+      <p class="lead">
         Les decks publics des membres, triés par popularité. Chaque publication passe par la
         modération automatique avant d'apparaître ici.
       </p>
+    </div>
+    <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
+  </div>
+  <section>
+    <div class="wrap">
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="panel" v-for="deck in decks" :key="deck.id" style="margin-bottom:16px">
