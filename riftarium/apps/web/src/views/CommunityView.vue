@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { api, session } from "../api.js";
+import { api, cardThumb, session } from "../api.js";
 
 const router = useRouter();
 const decks = ref([]);
@@ -60,7 +60,7 @@ onMounted(load);
               validation {{ okCount(deck) }}/{{ deck.checks.length }}
             </p>
             <div class="deck-preview" v-if="deck.cards.length">
-              <img v-for="card in preview(deck)" :key="card.id" :src="card.image_url" :alt="''" loading="lazy" />
+              <img v-for="card in preview(deck)" :key="card.id" :src="cardThumb(card.image_url, 140)" :alt="''" loading="lazy" decoding="async" />
             </div>
             <p class="muted" style="font-size:.9rem; margin-top:8px" v-if="deck.description">{{ deck.description }}</p>
           </div>

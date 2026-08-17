@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { api } from "../api.js";
+import { api, cardThumb } from "../api.js";
 
 const router = useRouter();
 const decks = ref([]);
@@ -70,7 +70,7 @@ onMounted(load);
               <span v-if="deck.moderation_status === 'pending'" style="color:var(--order)"> · en modération</span>
             </p>
             <div class="deck-preview" v-if="deck.cards.length">
-              <img v-for="card in preview(deck)" :key="card.id" :src="card.image_url" :alt="''" loading="lazy" />
+              <img v-for="card in preview(deck)" :key="card.id" :src="cardThumb(card.image_url, 140)" :alt="''" loading="lazy" decoding="async" />
             </div>
           </div>
           <span class="chip" style="--chip:var(--chaos)">♥ {{ deck.likes }}</span>

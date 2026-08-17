@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { api, DOMAINS } from "../api.js";
+import { api, cardThumb, DOMAINS } from "../api.js";
 
 const route = useRoute();
 const deck = ref(null);
@@ -99,7 +99,7 @@ async function save() {
   }
 }
 
-onMounted(load);
+watch(() => route.params.id, load, { immediate: true });
 </script>
 
 <template>
@@ -135,7 +135,7 @@ onMounted(load);
                    v-for="entry in grouped[zone.key]" :key="entry.card.id"
                    :class="{ landscape: entry.card.orientation === 'landscape' }">
                 <RouterLink :to="`/cartes/${entry.card.id}`">
-                  <img :src="entry.card.image_url" :alt="`Carte Riftbound : ${entry.card.name}`" loading="lazy" />
+                  <img :src="cardThumb(entry.card.image_url, 240)" :alt="`Carte Riftbound : ${entry.card.name}`" loading="lazy" decoding="async" />
                 </RouterLink>
                 <span class="dqty">{{ entry.qty }}×</span>
                 <div class="dcard-actions">
@@ -168,12 +168,13 @@ onMounted(load);
           <div class="panel">
             <h3 style="margin-bottom:14px">Ajouter des cartes</h3>
             <label class="search" style="margin-bottom:16px">
-              🔍 <input type="search" v-model="searchQuery" @input="onSearch" placeholder="Nom, code, texte…" aria-label="Rechercher une carte à ajouter" />
+              <Icon name="search" :size="18" />
+              <input type="search" v-model="searchQuery" @input="onSearch" placeholder="Nom, code, texte…" aria-label="Rechercher une carte à ajouter" />
             </label>
             <div class="hits-grid" v-if="searchResults.length">
               <button class="hit-card" v-for="card in searchResults" :key="card.id"
                       @click="setQty(card.id, 1, card)" :aria-label="`Ajouter ${card.name} au deck`">
-                <img :src="card.image_url" :alt="''" loading="lazy" />
+                <img :src="cardThumb(card.image_url, 180)" :alt="''" loading="lazy" decoding="async" />
                 <span>{{ card.name }}</span>
               </button>
             </div>
