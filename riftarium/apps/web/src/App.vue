@@ -27,7 +27,7 @@ function logout() {
               :aria-expanded="menuOpen" aria-label="Menu">☰</button>
       <nav class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
         <RouterLink to="/cartes">Cartes</RouterLink>
-        <a href="/regles/regles.html">Règles</a>
+        <RouterLink to="/regles">Règles</RouterLink>
         <RouterLink to="/collection">Collection</RouterLink>
         <RouterLink to="/decks">Decks</RouterLink>
         <RouterLink to="/communaute">Communauté</RouterLink>
@@ -63,8 +63,7 @@ function logout() {
         <h4>Explorer</h4>
         <ul>
           <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
-          <li><a href="/regles/regles.html">Règles officielles</a></li>
-          <li><a href="/regles/debuter.html">Guide du débutant</a></li>
+          <li><RouterLink to="/regles">Règles officielles</RouterLink></li>
           <li><RouterLink to="/decks">Deck builder</RouterLink></li>
           <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
         </ul>

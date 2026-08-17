@@ -9,6 +9,7 @@ import DecksView from "./views/DecksView.vue";
 import DeckEditView from "./views/DeckEditView.vue";
 import CommunityView from "./views/CommunityView.vue";
 import AuthView from "./views/AuthView.vue";
+import RulesView from "./views/RulesView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,7 @@ export const router = createRouter({
     { path: "/", component: HomeView },
     { path: "/cartes", component: CardsView },
     { path: "/cartes/:id", component: CardView },
+    { path: "/regles", component: RulesView },
     { path: "/collection", component: CollectionView, meta: { auth: true } },
     { path: "/decks", component: DecksView, meta: { auth: true } },
     { path: "/decks/:id", component: DeckEditView, meta: { auth: true } },
