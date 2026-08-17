@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { api, TYPES, DOMAINS } from "../api.js";
+import { api, DOMAINS } from "../api.js";
 
 const route = useRoute();
 const deck = ref(null);
@@ -27,6 +27,29 @@ const grouped = computed(() => {
   return groups;
 });
 
+/* Courbe d'énergie du deck principal (0 à 7+) */
+const curve = computed(() => {
+  const buckets = Array(8).fill(0);
+  for (const entry of grouped.value.main) {
+    const cost = Math.min(entry.card.energy ?? 0, 7);
+    buckets[cost] += entry.qty;
+  }
+  const max = Math.max(...buckets, 1);
+  return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }));
+});
+
+/* Répartition par domaine */
+const domainSpread = computed(() => {
+  const counts = {};
+  for (const entry of deck.value?.cards || []) {
+    for (const domain of entry.card.domains || []) {
+      if (domain === "Colorless") continue;
+      counts[domain] = (counts[domain] || 0) + entry.qty;
+    }
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+});
+
 async function load() {
   try {
     deck.value = await api(`/api/decks/${route.params.id}`);
@@ -39,7 +62,7 @@ function onSearch() {
   clearTimeout(timer);
   timer = setTimeout(async () => {
     if (searchQuery.value.trim().length < 2) { searchResults.value = []; return; }
-    const params = new URLSearchParams({ q: searchQuery.value.trim(), size: 12 });
+    const params = new URLSearchParams({ q: searchQuery.value.trim(), size: 18 });
     searchResults.value = (await api(`/api/cards?${params}`)).items;
   }, 250);
 }
@@ -69,8 +92,8 @@ async function save() {
         cards: deck.value.cards.map(entry => ({ card_id: entry.card.id, qty: entry.qty }))
       }
     });
-    saved.value = "Deck enregistré.";
-    setTimeout(() => (saved.value = ""), 2500);
+    saved.value = "Enregistré.";
+    setTimeout(() => (saved.value = ""), 2200);
   } catch (e) {
     error.value = e.message;
   }
@@ -80,78 +103,102 @@ onMounted(load);
 </script>
 
 <template>
-  <section>
-    <div class="wrap" v-if="deck">
-      <p style="margin-bottom:18px"><RouterLink to="/decks">← Mes decks</RouterLink></p>
+  <section style="padding-top:44px" v-if="deck">
+    <div class="wrap">
+      <p style="margin-bottom:22px"><RouterLink to="/decks">← Mes decks</RouterLink></p>
 
       <div class="toolbar">
-        <input type="text" v-model="deck.name" style="max-width:340px; font-size:1.1rem" aria-label="Nom du deck" />
-        <select v-model="deck.format" style="max-width:170px" aria-label="Format">
+        <input type="text" v-model="deck.name" style="max-width:340px; font-size:1.05rem" aria-label="Nom du deck" />
+        <select v-model="deck.format" style="max-width:180px" aria-label="Format">
           <option value="tournament">Mode tournoi</option>
           <option value="free">Mode libre</option>
         </select>
-        <label style="display:flex; gap:8px; align-items:center; font-size:.88rem">
-          <input type="checkbox" v-model="deck.is_public" style="width:auto" /> Public
+        <label class="switch">
+          <input type="checkbox" v-model="deck.is_public" /><i></i> Public
         </label>
         <button class="btn btn-gold" @click="save">Enregistrer</button>
         <span v-if="saved" class="success">{{ saved }}</span>
         <span v-if="error" class="error">{{ error }}</span>
       </div>
-      <p v-if="deck.moderation_status === 'pending'" class="error" style="margin-bottom:14px">
-        Contenu en attente de modération : ce deck n'est pas visible publiquement.
+      <p v-if="deck.moderation_status === 'pending'" class="error" style="margin-bottom:16px">
+        En attente de modération : ce deck n'est pas visible publiquement.
       </p>
 
-      <div class="cols-2">
+      <div class="builder">
         <div>
-          <div class="panel">
-            <h3 style="margin-bottom:10px">Liste ({{ deck.card_count }} cartes)</h3>
-            <div class="deck-zone" v-for="zone in ZONES" :key="zone.key">
-              <h4>{{ zone.label }} — {{ grouped[zone.key].reduce((total, entry) => total + entry.qty, 0) }}</h4>
-              <div class="deck-line" v-for="entry in grouped[zone.key]" :key="entry.card.id"
-                   :style="{ '--chip': DOMAINS[entry.card.domains?.[0]]?.color }">
-                <span class="qty">{{ entry.qty }}×</span>
-                <RouterLink :to="`/cartes/${entry.card.id}`">{{ entry.card.name }}</RouterLink>
-                <small>{{ entry.card.riftbound_id.toUpperCase() }}</small>
-                <button class="btn btn-ghost btn-sm" @click="setQty(entry.card.id, 1)" aria-label="Ajouter">+</button>
-                <button class="btn btn-ghost btn-sm" @click="setQty(entry.card.id, -1)" aria-label="Retirer">−</button>
+          <template v-for="zone in ZONES" :key="zone.key">
+            <p class="zone-title">{{ zone.label }}
+              <small>{{ grouped[zone.key].reduce((total, entry) => total + entry.qty, 0) }} carte(s)</small>
+            </p>
+            <div class="deck-grid" v-if="grouped[zone.key].length">
+              <div class="dcard" v-tilt
+                   v-for="entry in grouped[zone.key]" :key="entry.card.id"
+                   :class="{ landscape: entry.card.orientation === 'landscape' }">
+                <RouterLink :to="`/cartes/${entry.card.id}`">
+                  <img :src="entry.card.image_url" :alt="`Carte Riftbound : ${entry.card.name}`" loading="lazy" />
+                </RouterLink>
+                <span class="dqty">{{ entry.qty }}×</span>
+                <div class="dcard-actions">
+                  <button @click="setQty(entry.card.id, -1)" :aria-label="`Retirer un exemplaire de ${entry.card.name}`">−</button>
+                  <button @click="setQty(entry.card.id, 1)" :aria-label="`Ajouter un exemplaire de ${entry.card.name}`">+</button>
+                </div>
               </div>
-              <p v-if="!grouped[zone.key].length" class="muted" style="font-size:.8rem">Vide</p>
+            </div>
+            <p v-else class="muted" style="font-size:.85rem">Rien pour l'instant — cherchez une carte à droite.</p>
+          </template>
+
+          <div class="panel" style="margin-top:36px">
+            <h3 style="margin-bottom:6px">Courbe d'énergie</h3>
+            <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
+              <div class="bar" v-for="bucket in curve" :key="bucket.cost">
+                <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
+                <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px" v-if="domainSpread.length">
+              <span class="chip" v-for="[domain, count] in domainSpread" :key="domain"
+                    :style="{ '--chip': DOMAINS[domain]?.color }">
+                {{ DOMAINS[domain]?.label || domain }} · {{ count }}
+              </span>
             </div>
           </div>
+        </div>
 
-          <div class="panel" style="margin-top:20px">
-            <h3 style="margin-bottom:12px">
-              Validation {{ deck.format === "tournament" ? "(règles officielles)" : "(indicative — mode libre)" }}
+        <div class="builder-side">
+          <div class="panel">
+            <h3 style="margin-bottom:14px">Ajouter des cartes</h3>
+            <label class="search" style="margin-bottom:16px">
+              🔍 <input type="search" v-model="searchQuery" @input="onSearch" placeholder="Nom, code, texte…" aria-label="Rechercher une carte à ajouter" />
+            </label>
+            <div class="hits-grid" v-if="searchResults.length">
+              <button class="hit-card" v-for="card in searchResults" :key="card.id"
+                      @click="setQty(card.id, 1, card)" :aria-label="`Ajouter ${card.name} au deck`">
+                <img :src="card.image_url" :alt="''" loading="lazy" />
+                <span>{{ card.name }}</span>
+              </button>
+            </div>
+            <p v-else-if="searchQuery.length >= 2" class="muted" style="font-size:.85rem">Aucun résultat.</p>
+            <p v-else class="muted" style="font-size:.85rem">Un clic sur une carte l'ajoute au deck.</p>
+          </div>
+
+          <div class="panel">
+            <h3 style="margin-bottom:14px">
+              Validation <span class="muted" style="font-size:.75rem">{{ deck.format === "tournament" ? "règles de tournoi" : "mode libre, à titre indicatif" }}</span>
             </h3>
             <ul class="validator">
               <li v-for="checkItem in deck.checks" :key="checkItem.rule" :class="checkItem.ok ? 'v-ok' : 'v-ko'">
                 {{ checkItem.message }}
               </li>
             </ul>
-            <p class="muted" style="font-size:.78rem; margin-top:10px">
-              Les contrôles sont recalculés à chaque enregistrement.
-            </p>
           </div>
-        </div>
 
-        <div class="panel">
-          <h3 style="margin-bottom:12px">Ajouter des cartes</h3>
-          <label class="search" style="margin-bottom:14px">
-            🔍 <input type="search" v-model="searchQuery" @input="onSearch" placeholder="Rechercher une carte…" aria-label="Rechercher une carte à ajouter" />
-          </label>
-          <div class="deck-line" v-for="card in searchResults" :key="card.id"
-               :style="{ '--chip': DOMAINS[card.domains?.[0]]?.color }">
-            <span class="muted" style="font-size:.72rem; min-width:88px">{{ TYPES[card.type] || card.type }}</span>
-            <span>{{ card.name }}</span>
-            <small>{{ card.riftbound_id.toUpperCase() }}</small>
-            <button class="btn btn-gold btn-sm" @click="setQty(card.id, 1, card)">+ Ajouter</button>
+          <div class="panel">
+            <h3 style="margin-bottom:10px">Description</h3>
+            <textarea v-model="deck.description" placeholder="Plan de jeu, forces, faiblesses…" aria-label="Description du deck"></textarea>
           </div>
-          <p v-if="searchQuery.length >= 2 && !searchResults.length" class="muted" style="font-size:.84rem">Aucun résultat.</p>
-          <textarea v-model="deck.description" placeholder="Description du deck (plan de jeu, conseils…)"
-                    style="margin-top:16px" aria-label="Description du deck"></textarea>
         </div>
       </div>
     </div>
-    <div class="wrap" v-else><p v-if="error" class="error">{{ error }}</p></div>
   </section>
+  <section v-else><div class="wrap"><p v-if="error" class="error">{{ error }}</p></div></section>
 </template>

@@ -27,30 +27,35 @@ async function submit() {
 </script>
 
 <template>
-  <section>
-    <div class="wrap" style="max-width:460px">
+  <section style="padding-top:72px">
+    <div class="wrap" style="max-width:480px">
       <p class="eyebrow">Compte</p>
-      <h2>{{ mode === "login" ? "Connexion" : "Inscription" }}</h2>
+      <h2>{{ mode === "login" ? "Bon retour" : "Bienvenue dans la Faille" }}</h2>
 
-      <div class="filters" style="margin:16px 0 22px">
+      <div class="filters" style="margin:20px 0 26px">
         <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
         <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>
       </div>
 
       <form class="panel" @submit.prevent="submit">
         <div class="field" v-if="mode === 'register'">
-          <label for="handle">Pseudo (3–32 caractères, lettres/chiffres/-/_)</label>
-          <input id="handle" type="text" v-model="handle" autocomplete="username" required minlength="3" maxlength="32" />
+          <label for="handle">Pseudo</label>
+          <input id="handle" type="text" v-model="handle" autocomplete="username" required
+                 minlength="3" maxlength="32" placeholder="3 à 32 caractères" />
         </div>
         <div class="field">
           <label for="email">Email</label>
           <input id="email" type="email" v-model="email" autocomplete="email" required />
         </div>
         <div class="field">
-          <label for="password">Mot de passe (8 caractères minimum)</label>
-          <input id="password" type="password" v-model="password" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required minlength="8" />
+          <label for="password">Mot de passe</label>
+          <input id="password" type="password" v-model="password" required minlength="8"
+                 :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+                 placeholder="8 caractères minimum" />
         </div>
-        <button class="btn btn-gold" type="submit">{{ mode === "login" ? "Se connecter" : "Créer mon compte" }}</button>
+        <button class="btn btn-gold" type="submit" style="width:100%">
+          {{ mode === "login" ? "Se connecter" : "Créer mon compte" }}
+        </button>
         <p v-if="error" class="error">{{ error }}</p>
       </form>
     </div>

@@ -41,21 +41,26 @@ function toggle(key, value) {
 
 onMounted(async () => {
   load();
-  try { sets.value = await api("/api/sets"); } catch { /* filtres sets absents */ }
+  try { sets.value = await api("/api/sets"); } catch { /* filtre sets indisponible */ }
 });
 </script>
 
 <template>
-  <section>
+  <div class="page-banner">
     <div class="wrap">
       <p class="eyebrow">Cartothèque</p>
-      <h2>Toutes les cartes</h2>
+      <h2>Toutes les cartes du jeu</h2>
+      <p class="lead">Cherchez par nom, code ou texte. Filtrez par domaine, type ou set.</p>
+    </div>
+  </div>
 
+  <section style="padding-top:40px">
+    <div class="wrap">
       <div class="toolbar">
         <label class="search">
-          🔍 <input type="search" v-model="state.q" placeholder="Nom, code, texte… (Jinx, ogn-202…)" aria-label="Rechercher une carte" />
+          🔍 <input type="search" v-model="state.q" placeholder="Jinx, ogn-202, reaction…" aria-label="Rechercher une carte" />
         </label>
-        <select v-model="state.set_id" style="max-width:220px" aria-label="Filtrer par set">
+        <select v-model="state.set_id" style="max-width:230px" aria-label="Filtrer par set">
           <option value="">Tous les sets</option>
           <option v-for="s in sets" :key="s.set_id" :value="s.set_id">{{ s.name }} ({{ s.card_count }})</option>
         </select>
@@ -77,7 +82,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <p class="muted mono" style="font-size:.82rem; margin-bottom:16px">
+      <p class="muted mono" style="font-size:.82rem; margin-bottom:24px">
         {{ result.total }} carte(s) <span v-if="loading">— chargement…</span>
       </p>
       <p v-if="error" class="error">{{ error }}</p>

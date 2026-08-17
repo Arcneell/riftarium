@@ -35,27 +35,26 @@ onMounted(load);
     <div class="wrap">
       <p class="eyebrow">Collection</p>
       <h2>Mon inventaire</h2>
+      <p class="lead">Vos cartes, leurs états, leurs langues. L'estimation Cardmarket et le scan arrivent.</p>
     </div>
     <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
   </div>
-  <section>
+
+  <section style="padding-top:40px">
     <div class="wrap">
       <div class="stat-row">
-        <div class="stat">Cartes possédées<b>{{ collection.total_cards }}</b></div>
-        <div class="stat">Cartes uniques<b>{{ collection.unique_cards }}</b></div>
-        <div class="stat">Valeur estimée<b>— €</b></div>
+        <div class="stat" v-reveal>Cartes<b>{{ collection.total_cards }}</b></div>
+        <div class="stat" v-reveal="1">Uniques<b>{{ collection.unique_cards }}</b></div>
+        <div class="stat" v-reveal="2">Valeur estimée<b>—</b></div>
       </div>
-      <p class="muted" style="font-size:.8rem; margin-bottom:22px">
-        L'estimation Cardmarket et le scan mobile arrivent dans une prochaine version.
-        Ajoutez des cartes depuis leur fiche dans la <RouterLink to="/cartes">cartothèque</RouterLink>.
-      </p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div class="panel" v-if="collection.items.length">
+      <div class="panel" v-if="collection.items.length" v-reveal>
         <table>
-          <thead><tr><th>Carte</th><th>Set</th><th>Qté</th><th>État</th><th>Langue</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Carte</th><th>Code</th><th>Qté</th><th>État</th><th>Langue</th><th></th></tr></thead>
           <tbody>
             <tr v-for="item in collection.items" :key="item.card.id">
+              <td style="width:52px"><img class="row-thumb" :src="item.card.image_url" :alt="''" loading="lazy" /></td>
               <td><RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink></td>
               <td class="num">{{ item.card.riftbound_id.toUpperCase() }}</td>
               <td class="num">{{ item.qty }}</td>
@@ -69,7 +68,9 @@ onMounted(load);
           </tbody>
         </table>
       </div>
-      <p v-else class="muted">Collection vide pour l'instant — parcourez la <RouterLink to="/cartes">cartothèque</RouterLink> pour commencer.</p>
+      <p v-else class="muted">
+        Collection vide. Ouvrez une <RouterLink to="/cartes">fiche carte</RouterLink> et notez combien d'exemplaires vous possédez.
+      </p>
     </div>
   </section>
 </template>

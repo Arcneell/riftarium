@@ -5,7 +5,7 @@ defineProps({ card: { type: Object, required: true } });
 </script>
 
 <template>
-  <RouterLink class="card-tile" :class="{ landscape: card.orientation === 'landscape' }" :to="`/cartes/${card.id}`">
+  <RouterLink v-tilt class="card-tile" :class="{ landscape: card.orientation === 'landscape' }" :to="`/cartes/${card.id}`">
     <img :src="card.image_url" :alt="`Carte Riftbound : ${card.name}`" loading="lazy" />
     <div class="t-name">{{ card.name }}</div>
     <div class="t-meta">

@@ -30,14 +30,13 @@ async function createDeck() {
 }
 
 async function removeDeck(deck) {
-  if (!confirm(`Supprimer le deck « ${deck.name} » ?`)) return;
+  if (!confirm(`Supprimer « ${deck.name} » ?`)) return;
   await api(`/api/decks/${deck.id}`, { method: "DELETE" });
   await load();
 }
 
-function okCount(deck) {
-  return deck.checks.filter(c => c.ok).length;
-}
+const preview = deck => deck.cards.slice(0, 6).map(entry => entry.card);
+const okCount = deck => deck.checks.filter(c => c.ok).length;
 
 onMounted(load);
 </script>
@@ -47,34 +46,39 @@ onMounted(load);
     <div class="wrap">
       <p class="eyebrow">Deck builder</p>
       <h2>Mes decks</h2>
+      <p class="lead">Créez, testez, publiez. La validation tournoi vous suit à chaque carte.</p>
     </div>
   </div>
-  <section>
+
+  <section style="padding-top:40px">
     <div class="wrap">
       <div class="toolbar">
         <input type="text" v-model="newName" placeholder="Nom du nouveau deck…" style="max-width:320px"
                aria-label="Nom du nouveau deck" @keyup.enter="createDeck" />
-        <button class="btn btn-gold" @click="createDeck">Créer un deck</button>
+        <button class="btn btn-gold" @click="createDeck">Créer</button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div class="panel" v-for="deck in decks" :key="deck.id" style="margin-bottom:16px">
-        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <div style="flex:1">
+      <div class="panel" v-for="(deck, i) in decks" :key="deck.id" v-reveal="i" style="margin-bottom:22px">
+        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">
+          <div style="flex:1; min-width:240px">
             <h3><RouterLink :to="`/decks/${deck.id}`">{{ deck.name }}</RouterLink></h3>
-            <p class="muted mono" style="font-size:.76rem">
-              {{ deck.card_count }} cartes · {{ deck.format === "tournament" ? "mode tournoi" : "mode libre" }}
+            <p class="muted mono" style="font-size:.74rem; margin-top:4px">
+              {{ deck.card_count }} cartes · {{ deck.format === "tournament" ? "tournoi" : "libre" }}
               · validation {{ okCount(deck) }}/{{ deck.checks.length }}
               · {{ deck.is_public ? "public" : "privé" }}
-              <span v-if="deck.moderation_status === 'pending'" style="color:var(--order)"> · en attente de modération</span>
+              <span v-if="deck.moderation_status === 'pending'" style="color:var(--order)"> · en modération</span>
             </p>
+            <div class="deck-preview" v-if="deck.cards.length">
+              <img v-for="card in preview(deck)" :key="card.id" :src="card.image_url" :alt="''" loading="lazy" />
+            </div>
           </div>
           <span class="chip" style="--chip:var(--chaos)">♥ {{ deck.likes }}</span>
-          <RouterLink class="btn btn-ghost btn-sm" :to="`/decks/${deck.id}`">Modifier</RouterLink>
+          <RouterLink class="btn btn-ghost btn-sm" :to="`/decks/${deck.id}`">Ouvrir</RouterLink>
           <button class="btn btn-ghost btn-sm" @click="removeDeck(deck)">Supprimer</button>
         </div>
       </div>
-      <p v-if="!decks.length" class="muted">Aucun deck pour l'instant — créez le premier ci-dessus.</p>
+      <p v-if="!decks.length" class="muted">Pas encore de deck. Donnez-lui un nom ci-dessus, le reste se passe dans l'éditeur.</p>
     </div>
   </section>
 </template>

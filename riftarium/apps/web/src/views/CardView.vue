@@ -24,7 +24,7 @@ async function addToCollection() {
       method: "PUT",
       body: { qty: qty.value }
     });
-    saved.value = `Enregistré : ${response.qty} exemplaire(s) dans votre collection.`;
+    saved.value = `C'est noté : ${response.qty} exemplaire(s).`;
   } catch (e) {
     error.value = e.message;
   }
@@ -32,14 +32,14 @@ async function addToCollection() {
 </script>
 
 <template>
-  <section>
+  <section style="padding-top:44px">
     <div class="wrap">
-      <p style="margin-bottom:20px"><RouterLink to="/cartes">← Retour à la cartothèque</RouterLink></p>
+      <p style="margin-bottom:26px"><RouterLink to="/cartes">← Cartothèque</RouterLink></p>
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="card-sheet" v-if="card">
         <div>
-          <img class="full" :class="{ landscape: card.orientation === 'landscape' }"
+          <img v-tilt class="full" :class="{ landscape: card.orientation === 'landscape' }"
                :src="card.image_url" :alt="`Carte Riftbound : ${card.name}`" />
           <p class="card-credit">{{ card.riftbound_id.toUpperCase() }} · Illustration : {{ card.artist }} · © Riot Games</p>
         </div>
@@ -59,20 +59,20 @@ async function addToCollection() {
 
           <div class="rules-text" v-if="card.text">
             <p>{{ card.text }}</p>
-            <p class="muted" style="font-size:.8rem; margin-top:8px">Texte officiel anglais — le français arrivera avec l'API Riot.</p>
+            <p class="muted" style="font-size:.8rem; margin-top:10px">Texte anglais (VO). Le français viendra avec l'API Riot.</p>
           </div>
-          <p class="muted" v-if="card.flavour" style="font-style:italic; margin:12px 0">« {{ card.flavour }} »</p>
+          <p class="muted" v-if="card.flavour" style="font-style:italic; margin:14px 0">« {{ card.flavour }} »</p>
 
-          <div class="panel" style="margin-top:22px" v-if="session.token">
-            <h3 style="margin-bottom:12px">Ma collection</h3>
-            <div style="display:flex; gap:12px; align-items:center">
-              <input type="number" min="0" max="999" v-model.number="qty" style="width:90px" aria-label="Quantité" />
-              <button class="btn btn-gold btn-sm" @click="addToCollection">Enregistrer la quantité</button>
+          <div class="panel" style="margin-top:28px" v-if="session.token">
+            <h3 style="margin-bottom:14px">Dans ma collection</h3>
+            <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+              <input type="number" min="0" max="999" v-model.number="qty" style="width:100px" aria-label="Quantité possédée" />
+              <button class="btn btn-gold btn-sm" @click="addToCollection">Enregistrer</button>
+              <span v-if="saved" class="success">{{ saved }}</span>
             </div>
-            <p v-if="saved" class="success">{{ saved }}</p>
           </div>
-          <p v-else class="muted" style="margin-top:22px">
-            <RouterLink to="/connexion">Connectez-vous</RouterLink> pour ajouter cette carte à votre collection.
+          <p v-else class="muted" style="margin-top:28px">
+            <RouterLink to="/connexion">Connectez-vous</RouterLink> pour suivre vos exemplaires.
           </p>
         </div>
       </div>

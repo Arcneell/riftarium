@@ -29,9 +29,8 @@ async function toggleLike(deck) {
   }
 }
 
-function okCount(deck) {
-  return deck.checks.filter(c => c.ok).length;
-}
+const preview = deck => deck.cards.slice(0, 6).map(entry => entry.card);
+const okCount = deck => deck.checks.filter(c => c.ok).length;
 
 onMounted(load);
 </script>
@@ -42,36 +41,38 @@ onMounted(load);
     <div class="wrap">
       <p class="eyebrow">Communauté</p>
       <h2>Decks partagés</h2>
-      <p class="lead">
-        Les decks publics des membres, triés par popularité. Chaque publication passe par la
-        modération automatique avant d'apparaître ici.
-      </p>
+      <p class="lead">Les decks publics des membres, du plus aimé au plus récent.</p>
     </div>
     <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
   </div>
-  <section>
+
+  <section style="padding-top:40px">
     <div class="wrap">
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div class="panel" v-for="deck in decks" :key="deck.id" style="margin-bottom:16px">
-        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <div style="flex:1">
+      <div class="panel" v-for="(deck, i) in decks" :key="deck.id" v-reveal="i" style="margin-bottom:22px">
+        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">
+          <div style="flex:1; min-width:240px">
             <h3>{{ deck.name }}</h3>
-            <p class="muted mono" style="font-size:.76rem">
+            <p class="muted mono" style="font-size:.74rem; margin-top:4px">
               par {{ deck.owner }} · {{ deck.card_count }} cartes ·
               {{ deck.format === "tournament" ? "tournoi" : "libre" }} ·
               validation {{ okCount(deck) }}/{{ deck.checks.length }}
             </p>
-            <p class="muted" style="font-size:.88rem; margin-top:6px" v-if="deck.description">{{ deck.description }}</p>
+            <div class="deck-preview" v-if="deck.cards.length">
+              <img v-for="card in preview(deck)" :key="card.id" :src="card.image_url" :alt="''" loading="lazy" />
+            </div>
+            <p class="muted" style="font-size:.9rem; margin-top:8px" v-if="deck.description">{{ deck.description }}</p>
           </div>
           <button class="btn btn-ghost btn-sm" :aria-pressed="deck.liked_by_me"
-                  :style="deck.liked_by_me ? 'color:var(--chaos)' : ''" @click="toggleLike(deck)">
+                  :style="deck.liked_by_me ? 'color:var(--chaos); border-color:var(--chaos)' : ''"
+                  @click="toggleLike(deck)">
             ♥ {{ deck.likes }}
           </button>
         </div>
       </div>
       <p v-if="!decks.length && !error" class="muted">
-        Aucun deck public pour l'instant — soyez le premier à en <RouterLink to="/decks">publier un</RouterLink> !
+        Rien ici pour l'instant. Le premier deck publié depuis <RouterLink to="/decks">l'éditeur</RouterLink> ouvrira le bal.
       </p>
     </div>
   </section>

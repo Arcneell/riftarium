@@ -1,46 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Logo Riftarium">
   <title>Riftarium</title>
   <defs>
-    <!-- Prisme des six domaines de Riftbound -->
-    <linearGradient id="prism" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0"      stop-color="#e2574b"/>
-      <stop offset=".166"   stop-color="#e2574b"/>
-      <stop offset=".166"   stop-color="#d8a63c"/>
-      <stop offset=".333"   stop-color="#d8a63c"/>
-      <stop offset=".333"   stop-color="#55b368"/>
-      <stop offset=".5"     stop-color="#55b368"/>
-      <stop offset=".5"     stop-color="#3fbfae"/>
-      <stop offset=".666"   stop-color="#3fbfae"/>
-      <stop offset=".666"   stop-color="#8f6fe8"/>
-      <stop offset=".833"   stop-color="#8f6fe8"/>
-      <stop offset=".833"   stop-color="#e060b8"/>
-      <stop offset="1"      stop-color="#e060b8"/>
+    <!-- Arc des six domaines de Riftbound -->
+    <linearGradient id="prism" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0"    stop-color="#e2574b"/>
+      <stop offset=".2"   stop-color="#d8a63c"/>
+      <stop offset=".4"   stop-color="#55b368"/>
+      <stop offset=".6"   stop-color="#3fbfae"/>
+      <stop offset=".8"   stop-color="#8f6fe8"/>
+      <stop offset="1"    stop-color="#e060b8"/>
     </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0e6d2"/>
+      <stop offset=".5" stop-color="#c8aa6e"/>
+      <stop offset="1" stop-color="#785a28"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#0ac8b9" stop-opacity=".85"/>
+      <stop offset=".55" stop-color="#0397ab" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#0397ab" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- Écusson octogonal (coins biseautés « hextech ») -->
-  <polygon points="46,20 194,20 220,46 220,194 194,220 46,220 20,194 20,46"
-           fill="#0c101f" stroke="#e5b455" stroke-width="4"/>
-  <polygon points="52,30 188,30 210,52 210,188 188,210 52,210 30,188 30,52"
-           fill="none" stroke="#e5b455" stroke-width="1" opacity=".28"/>
+  <!-- Fond circulaire abysse -->
+  <circle cx="120" cy="120" r="112" fill="#010a13"/>
+  <circle cx="120" cy="120" r="112" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="120" cy="120" r="100" fill="none" stroke="#785a28" stroke-width="1" opacity=".5"/>
 
-  <!-- La Faille : fissure traversant l'écusson, lumière des six domaines -->
-  <path d="M132 34 L112 86 L128 92 L104 148 L122 154 L98 206 L110 206 L140 150 L122 144 L148 90 L130 84 L146 34 Z"
-        fill="url(#prism)" opacity=".9"/>
+  <!-- Portail : arc prisme des six domaines, ouvert en bas -->
+  <path d="M 120 34 A 86 86 0 1 1 119.9 34" fill="none" stroke="url(#prism)"
+        stroke-width="7" stroke-linecap="round" stroke-dasharray="460 80" stroke-dashoffset="-30"
+        opacity=".92" transform="rotate(118 120 120)"/>
 
-  <!-- Monogramme R, tracé à la main (fût, panse, jambe) -->
-  <g fill="none" stroke="#edf0fb" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M84 172 L84 72"/>
-    <path d="M84 72 L124 72 Q152 72 152 96 Q152 120 124 120 L84 120"/>
-    <path d="M118 120 L156 172"/>
+  <!-- Cœur lumineux -->
+  <circle cx="120" cy="120" r="58" fill="url(#glow)"/>
+
+  <!-- Carte stylisée traversant le portail, arrondie -->
+  <g transform="rotate(-12 120 120)">
+    <rect x="92" y="76" width="56" height="82" rx="9"
+          fill="#0a1c33" stroke="url(#gold)" stroke-width="3.5"/>
+    <rect x="99" y="83" width="42" height="42" rx="6" fill="none" stroke="#c8aa6e" stroke-width="1.4" opacity=".55"/>
+    <!-- gemme hextech au centre de la carte -->
+    <circle cx="120" cy="104" r="10" fill="#0ac8b9" opacity=".9"/>
+    <circle cx="120" cy="104" r="15" fill="none" stroke="#cdfafa" stroke-width="1.2" opacity=".55"/>
+    <!-- lignes de texte -->
+    <rect x="100" y="134" width="40" height="4" rx="2" fill="#c8aa6e" opacity=".75"/>
+    <rect x="100" y="143" width="28" height="4" rx="2" fill="#c8aa6e" opacity=".45"/>
   </g>
 
-  <!-- Empattements du fût -->
-  <g stroke="#edf0fb" stroke-width="7" stroke-linecap="round">
-    <path d="M70 72 L98 72"/>
-    <path d="M70 172 L98 172"/>
-  </g>
-
-  <!-- Bandeau prisme sous le monogramme -->
-  <rect x="66" y="190" width="108" height="7" fill="url(#prism)"/>
+  <!-- Étincelles -->
+  <circle cx="63" cy="74" r="3" fill="#cdfafa" opacity=".8"/>
+  <circle cx="182" cy="92" r="2.4" fill="#f0e6d2" opacity=".8"/>
+  <circle cx="168" cy="176" r="3" fill="#0ac8b9" opacity=".7"/>
 </svg>
