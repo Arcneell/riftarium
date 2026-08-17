@@ -77,11 +77,12 @@ export const TYPES = {
   Battlefield: "Champ de bataille"
 }
 
+/* Ordre officiel Riot : Commune → Peu commune → Rare → Épique, puis impressions spéciales. */
 export const RARITIES = {
   Common: "Commun",
   Uncommon: "Peu commun",
   Rare: "Rare",
   Epic: "Épique",
-  Showcase: "Vitrine",
+  Showcase: "Showcase",
   Promo: "Promo"
 }
