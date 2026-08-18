@@ -45,6 +45,7 @@ describe("BeginnerGuideView", () => {
     const alts = wrapper.findAll(".tb-bf img").map((i) => i.attributes("alt"))
     expect(alts).toContain("Back-Alley Bar")
     expect(alts).toContain("Monastery of Hirana")
+    await dots[3].trigger("click")
     expect(wrapper.findAll(".tb-card.inhand").length).toBeGreaterThanOrEqual(4)
     const imgs = wrapper.findAll(".tb-card img").map((i) => i.attributes("src"))
     expect(imgs.some((src) => src.includes("cmsassets.rgpub.io"))).toBe(true)
@@ -54,7 +55,7 @@ describe("BeginnerGuideView", () => {
     const { wrapper } = await mountGuide()
     const dots = wrapper.findAll(".guide-dot")
     expect(dots).toHaveLength(STEPS.length)
-    await dots[3].trigger("click")
+    await dots[4].trigger("click")
     expect(wrapper.text()).toContain("canaliser")
     await dots[STEPS.length - 1].trigger("click")
     expect(wrapper.text()).toContain(`Étape ${STEPS.length} / ${STEPS.length}`)
@@ -83,11 +84,11 @@ describe("BeginnerGuideView", () => {
         { path: "/regles/officielles", component: stub }
       ]
     })
-    await router.push("/regles/debutant?etape=8")
+    await router.push("/regles/debutant?etape=11")
     const wrapper = mount(BeginnerGuideView, {
       global: { plugins: [router], stubs: { Icon: true }, directives: { reveal: {} } }
     })
-    expect(wrapper.text()).toContain(`Étape 8 / ${STEPS.length}`)
+    expect(wrapper.text()).toContain(`Étape 11 / ${STEPS.length}`)
     expect(wrapper.text()).toContain("attaquant")
   })
 })

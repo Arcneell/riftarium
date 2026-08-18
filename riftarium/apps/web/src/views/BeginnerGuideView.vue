@@ -110,13 +110,18 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               v-for="bf in ['bfFoe', 'bfYou']"
               :key="bf"
               class="tb-bf"
-              :class="{ contested: contested(bf), controlled: controller(bf) === 'you' }"
+              :class="{
+                contested: contested(bf),
+                controlled: controller(bf) === 'you',
+                'controlled-foe': controller(bf) === 'foe'
+              }"
               :style="{ left: SPOTS[bf].x + '%', top: SPOTS[bf].y + '%' }"
             >
               <img :src="CARDS[bf].img" :alt="CARDS[bf].name" loading="lazy" />
               <span class="tb-bf-name mono">{{ bf === "bfFoe" ? "Champ adverse" : "Votre champ" }}</span>
               <span v-if="contested(bf)" class="tb-bf-flag">Contesté</span>
-              <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">Contrôlé</span>
+              <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">À vous</span>
+              <span v-else-if="controller(bf) === 'foe'" class="tb-bf-flag">À lui</span>
             </div>
 
             <!-- Main adverse : dos de cartes en haut -->

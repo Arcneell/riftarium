@@ -2050,7 +2050,7 @@ footer {
 }
 .tb {
   position: relative;
-  aspect-ratio: 16 / 9.5;
+  aspect-ratio: 16 / 11;
   border-radius: var(--r-lg);
   border: 1px solid var(--line-strong);
   background:
@@ -2062,7 +2062,7 @@ footer {
 }
 .tb-strip {
   position: absolute;
-  height: 16%;
+  height: 14%;
   border: 1.5px dashed var(--line-strong);
   border-radius: var(--r);
   pointer-events: none;
@@ -2077,7 +2077,7 @@ footer {
   color: var(--muted);
 }
 .tb-strip.foe {
-  top: 16%;
+  top: 15%;
   left: 21%;
   right: 22%;
 }
@@ -2117,7 +2117,7 @@ footer {
   position: absolute;
   left: 14.5%;
   width: 32%;
-  top: 78.5%;
+  top: 74.5%;
   bottom: 1.5%;
   border: 1.5px dashed var(--line-strong);
   border-bottom: none;
@@ -2136,9 +2136,9 @@ footer {
 }
 .tb-handzone {
   position: absolute;
-  left: 50%;
-  right: 10.5%;
-  top: 81%;
+  left: 56%;
+  right: 8%;
+  top: 79%;
   bottom: 1.5%;
   border: 1.5px dashed rgba(11, 143, 132, 0.45);
   border-bottom: none;
@@ -2171,7 +2171,7 @@ footer {
 .tb-bf {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 19%;
+  width: 17.5%;
   border-radius: 10px;
   transition:
     box-shadow 0.5s ease,
@@ -2204,6 +2204,9 @@ footer {
 .tb-bf.controlled {
   outline-color: var(--hex);
 }
+.tb-bf.controlled-foe {
+  outline-color: var(--fury);
+}
 @keyframes tb-alert {
   50% {
     outline-color: rgba(207, 68, 55, 0.35);
@@ -2230,7 +2233,7 @@ footer {
 }
 .tb-card {
   position: absolute;
-  width: 8%;
+  width: 7.2%;
   aspect-ratio: 744 / 1039;
   transform: translate(-50%, -50%) rotate(var(--r, 0deg));
   transition:
@@ -2248,11 +2251,11 @@ footer {
   box-shadow: 0 6px 14px rgba(74, 56, 22, 0.3);
 }
 .tb-card.wide {
-  width: 14%;
+  width: 15%;
   aspect-ratio: 1038 / 744;
 }
 .tb-card.inhand {
-  width: 9.5%;
+  width: 8.6%;
   z-index: 5;
 }
 .tb-card.inhand:hover {
@@ -2361,7 +2364,7 @@ footer {
 .tb-pool {
   position: absolute;
   left: 16%;
-  top: 76.5%;
+  top: 71.5%;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2611,7 +2614,7 @@ footer {
 }
 .guide-layout.full .tb {
   max-height: calc(100vh - 130px);
-  max-width: calc((100vh - 130px) * 16 / 9.5);
+  max-width: calc((100vh - 130px) * 16 / 11);
   width: 100%;
   margin: 0 auto;
 }
