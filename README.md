@@ -37,7 +37,7 @@ Voir [LICENSE](LICENSE).
 | **Règles** | Texte officiel intégral en français : 2 137 règles du jeu + 812 règles de tournoi, avec recherche |
 | **Deck builder** | Validation des règles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou mode libre |
 | **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
-| **Communauté** | Decks publics, likes, tri par popularité |
+| **Communauté** | Decks publics en boîtes, likes, vues uniques, filtres (légende, domaine, format, popularité) |
 | **Modération** | Chaque contenu publié passe par un filtre automatique avant mise en ligne ; le reste part en file de revue |
 
 ## Architecture

@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 import { CARDS, SPOTS, STEPS } from "../rules/guide.js"
 
 const route = useRoute()
@@ -65,16 +67,11 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Prise en main</p>
-      <h2>Prise en main : apprenez à jouer</h2>
-      <p class="lead">
-        Une partie de duel (1c1) rejouée sous vos yeux sur la disposition du tapis officiel, avec de vraies cartes, une
-        vraie main et une vraie pioche. Les termes officiels sont mis en évidence à chaque étape.
-      </p>
-    </div>
-  </div>
+  <PageBanner :art="BANNERS.rules" title="Prise en main : apprenez à jouer">
+    <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Prise en main </template>
+    Une partie de duel (1c1) rejouée sous vos yeux sur la disposition du tapis officiel, avec de vraies cartes, une
+    vraie main et une vraie pioche. Les termes officiels sont mis en évidence à chaque étape.
+  </PageBanner>
 
   <section style="padding-top: 28px">
     <div

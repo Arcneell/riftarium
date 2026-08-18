@@ -15,7 +15,7 @@ export const router = createRouter({
     { path: "/regles/officielles", component: () => import("./views/RulesView.vue") },
     { path: "/collection", component: () => import("./views/CollectionView.vue"), meta: { auth: true } },
     { path: "/decks", component: () => import("./views/DecksView.vue"), meta: { auth: true } },
-    { path: "/decks/:id", component: () => import("./views/DeckEditView.vue"), meta: { auth: true } },
+    { path: "/decks/:id", component: () => import("./views/DeckEditView.vue") },
     { path: "/communaute", component: () => import("./views/CommunityView.vue") },
     { path: "/connexion", component: () => import("./views/AuthView.vue") }
   ],

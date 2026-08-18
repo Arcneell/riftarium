@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
 import RuleText from "../components/RuleText.vue"
 import TopicDemo from "../components/TopicDemo.vue"
@@ -57,13 +59,13 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
 
 <template>
   <template v-if="topic">
-    <div class="page-banner">
-      <div class="wrap">
-        <p class="eyebrow">
-          <RouterLink to="/regles">Règles</RouterLink> › <RouterLink to="/regles/avancee">Aide avancée</RouterLink> ›
-          {{ categoryLabel }}
-        </p>
-        <h2>{{ topic.title }}</h2>
+    <PageBanner :art="BANNERS.rules" :title="topic.title">
+      <template #eyebrow>
+        <RouterLink to="/regles">Règles</RouterLink> › <RouterLink to="/regles/avancee">Aide avancée</RouterLink> ›
+        {{ categoryLabel }}
+      </template>
+      {{ topic.summary }}
+      <template #meta>
         <p v-if="keywordChips.length" style="margin: 6px 0 10px">
           <span
             v-for="chip in keywordChips"
@@ -74,9 +76,8 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
             >{{ chip.label }}</span
           >
         </p>
-        <p class="lead">{{ topic.summary }}</p>
-      </div>
-    </div>
+      </template>
+    </PageBanner>
 
     <section style="padding-top: 32px">
       <div class="wrap topic-layout">

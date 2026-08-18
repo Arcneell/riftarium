@@ -92,11 +92,14 @@ class Deck(Base):
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
     moderation_status: Mapped[str] = mapped_column(String(16), default="published")  # published | pending | rejected
     likes_count: Mapped[int] = mapped_column(Integer, default=0)
+    views_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     owner: Mapped[User] = relationship(lazy="joined")
     cards: Mapped[list["DeckCard"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
+    like_entries: Mapped[list["DeckLike"]] = relationship(cascade="all, delete-orphan")
+    view_entries: Mapped[list["DeckView"]] = relationship(cascade="all, delete-orphan")
 
 
 class DeckCard(Base):
@@ -118,3 +121,15 @@ class DeckLike(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+
+class DeckView(Base):
+    """Visite unique d'un deck public : un compteur par visiteur (compte ou IP)."""
+
+    __tablename__ = "deck_views"
+    __table_args__ = (UniqueConstraint("deck_id", "visitor_key", name="uq_deck_view"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id"), index=True)
+    visitor_key: Mapped[str] = mapped_column(String(40), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

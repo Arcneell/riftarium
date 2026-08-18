@@ -2,13 +2,14 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .cache import cache_clear, cache_get, cache_set
 from .config import settings
 from .db import Base, SessionLocal, engine, ensure_schema, get_db
+from .demo import seed_community
 from .models import Card
 from .routers import auth_routes, cards, collection, decks
 from .sync import run_sync
@@ -85,3 +86,21 @@ def admin_sync(db: Session = Depends(get_db)):
     cache_clear("cards:")
     cache_clear("sets:")
     return counts
+
+
+_DEMO_SECRETS = {"dev-secret-change-me", "test-secret"}
+
+
+@app.post("/api/admin/demo-community")
+def admin_demo_community(
+    reset: bool = True,
+    limit: int | None = Query(default=None, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Remplit la communauté de decks de démo (local uniquement)."""
+    if settings.jwt_secret not in _DEMO_SECRETS:
+        raise HTTPException(status_code=403, detail="Jeux de démo désactivés hors environnement local")
+    try:
+        return seed_community(db, reset=reset, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

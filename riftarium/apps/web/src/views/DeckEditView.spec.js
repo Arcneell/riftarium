@@ -77,6 +77,7 @@ function freshDeck() {
     moderation_status: "published",
     likes: 0,
     liked_by_me: false,
+    views: 0,
     owner: "testeur",
     card_count: 0,
     cards: [],
@@ -91,7 +92,9 @@ async function mountView() {
     routes: [
       { path: "/decks", component: { template: "<div />" } },
       { path: "/decks/:id", component: DeckEditView },
-      { path: "/cartes/:id", component: { template: "<div />" } }
+      { path: "/cartes/:id", component: { template: "<div />" } },
+      { path: "/communaute", component: { template: "<div />" } },
+      { path: "/connexion", component: { template: "<div />" } }
     ]
   })
   router.push("/decks/1")
@@ -109,6 +112,7 @@ const tile = (wrapper, name) => wrapper.findAll(".gcard").find((t) => t.attribut
 describe("DeckEditView", () => {
   beforeEach(() => {
     session.token = "jeton-test"
+    session.handle = "testeur"
     api.mockReset()
     api.mockImplementation((path, options = {}) => {
       if (path === "/api/decks/1" && options.method === "PUT") {
@@ -141,6 +145,7 @@ describe("DeckEditView", () => {
 
   afterEach(() => {
     session.token = null
+    session.handle = null
   })
 
   it("sans légende : galerie ouverte sur les légendes, ajout d'une autre carte refusé", async () => {
@@ -302,6 +307,40 @@ describe("DeckEditView", () => {
     nameCell.dispatchEvent(new MouseEvent("mouseleave"))
     await flushPromises()
     expect(document.body.querySelector(".builder-preview")).toBeNull()
+    wrapper.unmount()
+  })
+
+  it("en consultation publique : pas de galerie, une vue est comptée", async () => {
+    session.token = null
+    session.handle = null
+    const publicDeck = {
+      ...freshDeck(),
+      owner: "autre",
+      is_public: true,
+      moderation_status: "published",
+      views: 2,
+      cards: [{ card: legend, qty: 1 }]
+    }
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/1/view" && options.method === "POST") {
+        return Promise.resolve({ views: 3, counted: true })
+      }
+      if (path === "/api/decks/1") return Promise.resolve(publicDeck)
+      if (path.startsWith("/api/cards")) return Promise.resolve({ total: 0, page: 1, size: 24, items: [] })
+      if (path === "/api/sets") return Promise.resolve([])
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".dbuilder-gallery").exists()).toBe(false)
+    expect(wrapper.find(".dbuilder.readonly").exists()).toBe(false)
+    expect(wrapper.find(".deck-view").exists()).toBe(true)
+    expect(wrapper.find(".dvis").exists()).toBe(true)
+    expect(wrapper.get(".dbuilder-back").text()).toContain("Communauté")
+    expect(wrapper.text()).toContain("Liste Rift Atlas")
+    expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1/view" && options?.method === "POST")).toBe(
+      true
+    )
+    await vi.waitFor(() => expect(wrapper.text()).toContain("3"))
     wrapper.unmount()
   })
 })

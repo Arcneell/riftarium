@@ -15,6 +15,7 @@
     "check": "npm run lint && npm run format:check && npm run test && npm run build"
   },
   "dependencies": {
+    "@piltoverarchive/riftbound-deck-codes": "^1.4.0",
     "vue": "^3.5.13",
     "vue-router": "^5.2.0"
   },

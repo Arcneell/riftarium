@@ -1,19 +1,27 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { toggleValue } from "../cardText.js"
 
 const props = defineProps({
   label: { type: String, required: true },
   options: { type: Array, required: true },
-  modelValue: { type: Array, default: () => [] }
+  modelValue: { type: Array, default: () => [] },
+  searchable: { type: Boolean, default: false }
 })
 const emit = defineEmits(["update:modelValue"])
 
 const root = ref(null)
+const searchInput = ref(null)
 const open = ref(false)
+const needle = ref("")
 const selectedGlyphs = computed(() =>
   props.options.filter((option) => option.glyph && props.modelValue.includes(option.value))
 )
+const visibleOptions = computed(() => {
+  const q = needle.value.trim().toLowerCase()
+  if (!q) return props.options
+  return props.options.filter((option) => option.label.toLowerCase().includes(q))
+})
 
 function toggle(value) {
   emit("update:modelValue", toggleValue(props.modelValue, value))
@@ -31,6 +39,14 @@ function onPointerDown(event) {
 function onKeydown(event) {
   if (event.key === "Escape") open.value = false
 }
+
+watch(open, async (isOpen) => {
+  needle.value = ""
+  if (isOpen && props.searchable) {
+    await nextTick()
+    searchInput.value?.focus()
+  }
+})
 
 onMounted(() => {
   document.addEventListener("pointerdown", onPointerDown)
@@ -73,8 +89,18 @@ onBeforeUnmount(() => {
     </button>
 
     <div v-if="open" class="fsel-pop" role="group" :aria-label="label">
+      <input
+        v-if="searchable"
+        ref="searchInput"
+        type="search"
+        class="fsel-search"
+        v-model="needle"
+        :placeholder="`Filtrer les ${label.toLowerCase()}…`"
+        :aria-label="`Filtrer les ${label.toLowerCase()}`"
+        @click.stop
+      />
       <button
-        v-for="option in options"
+        v-for="option in visibleOptions"
         :key="option.value"
         type="button"
         class="fsel-opt"
@@ -95,6 +121,7 @@ onBeforeUnmount(() => {
         />
         {{ option.label }}
       </button>
+      <p v-if="searchable && !visibleOptions.length" class="fsel-empty">Aucun résultat</p>
       <button v-if="modelValue.length" type="button" class="fsel-clear" @click="clear">Tout décocher</button>
     </div>
   </div>

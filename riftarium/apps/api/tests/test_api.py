@@ -583,14 +583,19 @@ def test_deck_out_includes_owned_qty(client, auth):
     assert "owned_qty" not in anonymous["cards"][0]["card"]
 
 
-# ---------- communauté, likes, modération ----------
+# ---------- communauté, likes, vues, modération ----------
 
 
 def test_community_and_likes(client, auth):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
 
     community = client.get("/api/community/decks").json()
-    assert [d["id"] for d in community] == [deck_id]
+    assert community["total"] == 1
+    assert [d["id"] for d in community["items"]] == [deck_id]
+    listed = community["items"][0]
+    assert listed["legend"]["id"] == "ogn-247-298"
+    assert listed["views"] == 0
+    assert "cards" not in listed
 
     like = client.post(f"/api/decks/{deck_id}/like", headers=auth)
     assert like.json() == {"deck_id": deck_id, "likes": 1, "liked_by_me": True}
@@ -598,18 +603,114 @@ def test_community_and_likes(client, auth):
     assert unlike.json()["likes"] == 0
 
 
+def test_community_views_are_unique_and_skip_owner(client, auth):
+    deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
+
+    owner_view = client.post(f"/api/decks/{deck_id}/view", headers=auth)
+    assert owner_view.json() == {"deck_id": deck_id, "views": 0, "counted": False}
+
+    first = client.post(f"/api/decks/{deck_id}/view")
+    assert first.json() == {"deck_id": deck_id, "views": 1, "counted": True}
+    again = client.post(f"/api/decks/{deck_id}/view")
+    assert again.json() == {"deck_id": deck_id, "views": 1, "counted": False}
+
+    other = client.post(
+        "/api/auth/register",
+        json={"handle": "visiteur", "email": "visiteur@example.org", "password": "motdepasse123"},
+    )
+    token = {"Authorization": f"Bearer {other.json()['token']}"}
+    counted = client.post(f"/api/decks/{deck_id}/view", headers=token)
+    assert counted.json() == {"deck_id": deck_id, "views": 2, "counted": True}
+    assert client.get("/api/community/decks").json()["items"][0]["views"] == 2
+
+
+def test_community_filters_and_sort(client, auth):
+    import app.db as db_module
+    from app.models import Card
+
+    with db_module.SessionLocal() as session:
+        session.add(
+            Card(
+                id="ogn-248-298",
+                riftbound_id="ogn-248-298",
+                name="The Blind Monk",
+                set_id="OGN",
+                type="Legend",
+                rarity="Rare",
+                domains=["Calm", "Body"],
+                collector_number=248,
+                tags=["Lee Sin"],
+            )
+        )
+        session.commit()
+
+    fury = client.post("/api/decks", json=deck_payload(name="Fureur"), headers=auth).json()
+    calm = client.post(
+        "/api/decks",
+        json=deck_payload(name="Calme intérieur", cards=[{"card_id": "ogn-248-298", "qty": 1}]),
+        headers=auth,
+    ).json()
+    client.post(f"/api/decks/{fury['id']}/like", headers=auth)
+    client.post(f"/api/decks/{calm['id']}/view")
+
+    by_legend = client.get("/api/community/decks", params={"legend": "ogn-247-298"}).json()
+    assert by_legend["total"] == 1 and by_legend["items"][0]["id"] == fury["id"]
+
+    by_domain = client.get("/api/community/decks", params={"domain": "Calm"}).json()
+    assert by_domain["total"] == 1 and by_domain["items"][0]["id"] == calm["id"]
+
+    by_name = client.get("/api/community/decks", params={"q": "intérieur"}).json()
+    assert by_name["total"] == 1 and by_name["items"][0]["id"] == calm["id"]
+
+    by_likes = client.get("/api/community/decks", params={"sort": "likes"}).json()
+    assert [d["id"] for d in by_likes["items"]] == [fury["id"], calm["id"]]
+
+    by_views = client.get("/api/community/decks", params={"sort": "views"}).json()
+    assert [d["id"] for d in by_views["items"]] == [calm["id"], fury["id"]]
+
+    mine = client.get("/api/community/decks", params={"liked": "1"}, headers=auth).json()
+    assert [d["id"] for d in mine["items"]] == [fury["id"]]
+
+    legends = client.get("/api/community/legends").json()
+    assert {row["id"] for row in legends} == {"ogn-247-298", "ogn-248-298"}
+    assert next(row["deck_count"] for row in legends if row["id"] == "ogn-247-298") == 1
+
+
 def test_private_deck_hidden_from_community(client, auth):
     client.post("/api/decks", json=deck_payload(is_public=False), headers=auth)
-    assert client.get("/api/community/decks").json() == []
+    listed = client.get("/api/community/decks").json()
+    assert listed["total"] == 0 and listed["items"] == []
 
 
 def test_moderation_blocks_toxic_deck(client, auth):
     deck = client.post("/api/decks", json=deck_payload(name="deck de connard"), headers=auth).json()
     assert deck["moderation_status"] == "pending"
     # pas listé publiquement tant que non validé
-    assert client.get("/api/community/decks").json() == []
+    listed = client.get("/api/community/decks").json()
+    assert listed["total"] == 0 and listed["items"] == []
     # et invisible pour les autres via l'URL directe
     assert client.get(f"/api/decks/{deck['id']}").status_code == 404
+
+
+def test_demo_community_seed(client, auth):
+    first = client.post("/api/admin/demo-community", params={"limit": 2})
+    assert first.status_code == 200, first.text
+    payload = first.json()
+    assert payload["decks"] >= 1
+    assert payload["login"]["handle"] == "Kael"
+    listed = client.get("/api/community/decks").json()
+    assert listed["total"] >= 1
+    legends = client.get("/api/community/legends").json()
+    assert len(legends) >= 1
+    again = client.post("/api/admin/demo-community", params={"limit": 2})
+    assert again.json()["removed_demo_users"] >= 1
+
+
+def test_demo_community_blocked_outside_local(client, monkeypatch):
+    import app.main as main
+
+    monkeypatch.setattr(main.settings, "jwt_secret", "production-secret")
+    assert client.post("/api/admin/demo-community").status_code == 403
 
 
 # ---------- cache & protection de la source ----------

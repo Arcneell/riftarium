@@ -11,6 +11,7 @@ ignore = ["S101", "B008"]
 "tests/*" = ["S", "E402"]
 "tests/conftest.py" = ["S", "E402", "I001"]
 "app/config.py" = ["S105"]
+"app/demo.py" = ["S105", "S311"]
 
 [tool.coverage.run]
 source = ["app"]

@@ -4,9 +4,11 @@ import { useRoute, useRouter } from "vue-router"
 import { api, CONDITIONS, LANGS, TYPES, RARITIES } from "../api.js"
 import { cardsQuery, csvSplit, domainFilterOptions, glyphUrl } from "../cardText.js"
 import { useScrollMemory } from "../useScrollMemory.js"
+import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
+import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -267,19 +269,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="page-banner"
-    style="
-      --banner: url(&quot;https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/2282ecab240f601b611ae89b5ade895e1b6b2de4-4676x2630.jpg?auto=format&w=1600&quot;);
-    "
-  >
-    <div class="wrap">
-      <p class="eyebrow">Collection</p>
-      <h2>Mon inventaire</h2>
-      <p class="lead">Vos cartes, leurs états, leurs langues. L'estimation Cardmarket et le scan arrivent.</p>
-    </div>
-    <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
-  </div>
+  <PageBanner :art="BANNERS.collection" eyebrow="Collection" title="Mon inventaire">
+    Vos cartes, leurs états, leurs langues. L'estimation Cardmarket et le scan arrivent.
+  </PageBanner>
 
   <section style="padding-top: 40px">
     <div class="wrap cards-wrap">

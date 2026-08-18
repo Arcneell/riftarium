@@ -4,8 +4,10 @@ import { useRoute, useRouter } from "vue-router"
 import { api, TYPES, RARITIES } from "../api.js"
 import { cardsQuery, csvSplit, domainFilterOptions, glyphUrl } from "../cardText.js"
 import { useScrollMemory } from "../useScrollMemory.js"
+import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
+import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -194,13 +196,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow">Cartothèque</p>
-      <h2>Toutes les cartes du jeu</h2>
-      <p class="lead">Cumulez les filtres : domaine, type, rareté, coût. Cherchez aussi par nom, code ou texte.</p>
-    </div>
-  </div>
+  <PageBanner :art="BANNERS.cards" eyebrow="Cartothèque" title="Toutes les cartes du jeu">
+    Cumulez les filtres : domaine, type, rareté, coût. Cherchez aussi par nom, code ou texte.
+  </PageBanner>
 
   <section style="padding-top: 40px">
     <div class="wrap cards-wrap">

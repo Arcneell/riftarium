@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref } from "vue"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 import { CATEGORIES, TOPICS } from "../rules/topics.js"
 
 const query = ref("")
@@ -26,14 +28,11 @@ const grouped = computed(() =>
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Aide avancée</p>
-      <h2>Chaque mécanique a sa page</h2>
-      <p class="lead">
-        Un résumé par sujet ci-dessous ; ouvrez la page pour l'essentiel, les cas concrets, des cartes d'exemple et le
-        texte officiel intégral de la mécanique.
-      </p>
+  <PageBanner :art="BANNERS.rules" title="Chaque mécanique a sa page">
+    <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Aide avancée </template>
+    Un résumé par sujet ci-dessous ; ouvrez la page pour l'essentiel, les cas concrets, des cartes d'exemple et le texte
+    officiel intégral de la mécanique.
+    <template #after>
       <label class="search" style="max-width: 420px; margin-top: 18px">
         <Icon name="search" :size="18" />
         <input
@@ -43,8 +42,8 @@ const grouped = computed(() =>
           aria-label="Rechercher une mécanique"
         />
       </label>
-    </div>
-  </div>
+    </template>
+  </PageBanner>
 
   <section style="padding-top: 30px">
     <div class="wrap">

@@ -2,6 +2,8 @@
 import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, setSession } from "../api.js"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -31,12 +33,21 @@ async function submit() {
 </script>
 
 <template>
-  <section style="padding-top: 72px">
-    <div class="wrap" style="max-width: 480px">
-      <p class="eyebrow">Compte</p>
-      <h2>{{ mode === "login" ? "Bon retour" : "Bienvenue dans la Faille" }}</h2>
+  <PageBanner
+    :art="BANNERS.auth"
+    eyebrow="Compte"
+    :title="mode === 'login' ? 'Bon retour' : 'Bienvenue dans la Faille'"
+  >
+    {{
+      mode === "login"
+        ? "Connectez-vous pour retrouver vos decks et votre collection."
+        : "Créez un compte pour construire des decks et suivre vos cartes."
+    }}
+  </PageBanner>
 
-      <div class="filters" style="margin: 20px 0 26px">
+  <section style="padding-top: 36px">
+    <div class="wrap" style="max-width: 480px">
+      <div class="filters" style="margin: 0 0 26px">
         <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
         <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>
       </div>
