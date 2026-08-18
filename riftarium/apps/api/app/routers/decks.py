@@ -10,6 +10,7 @@ from ..db import get_db
 from ..deckbuild import assemble_list, has_champion, legends_in, load_pool, main_candidates
 from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from ..moderation import review
+from ..profiles import avatar_urls
 from ..schemas import DeckIn, ExampleDeckIn
 from ..validation import validate_deck
 from ..variants import copy_family
@@ -38,6 +39,7 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
         "liked_by_me": liked,
         "views": deck.views_count,
         "owner": deck.owner.handle,
+        "owner_avatar": avatar_urls(db, [deck.owner]).get(deck.owner.id) if db and deck.owner else None,
         "card_count": sum(dc.qty for dc in deck.cards),
         "cards": [
             {"card": card_out(dc.card, owned.get(dc.card_id, 0) if has_viewer else None), "qty": dc.qty}
@@ -241,7 +243,9 @@ def _legend_decks():
     return select(DeckCard.deck_id).join(Card, Card.id == DeckCard.card_id).where(Card.type == "Legend")
 
 
-def _community_deck_out(deck: Deck, *, legend: Card | None, card_count: int, liked: bool) -> dict:
+def _community_deck_out(
+    deck: Deck, *, legend: Card | None, card_count: int, liked: bool, owner_avatar: str | None = None
+) -> dict:
     domains = [d for d in (legend.domains or []) if d != "Colorless"] if legend else []
     return {
         "id": deck.id,
@@ -252,6 +256,7 @@ def _community_deck_out(deck: Deck, *, legend: Card | None, card_count: int, lik
         "liked_by_me": liked,
         "views": deck.views_count,
         "owner": deck.owner.handle,
+        "owner_avatar": owner_avatar,
         "card_count": card_count,
         "legend": card_out(legend) if legend else None,
         "domains": domains,
@@ -378,6 +383,7 @@ def community_decks(
         liked_ids = set(
             db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id, DeckLike.deck_id.in_(ids))).all()
         )
+    owner_pics = avatar_urls(db, [deck.owner for deck in decks if deck.owner])
 
     return {
         "total": total,
@@ -389,6 +395,7 @@ def community_decks(
                 legend=legends.get(deck.id),
                 card_count=int(counts.get(deck.id, 0)),
                 liked=deck.id in liked_ids,
+                owner_avatar=owner_pics.get(deck.owner.id) if deck.owner else None,
             )
             for deck in decks
         ],

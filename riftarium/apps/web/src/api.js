@@ -2,21 +2,27 @@ import { reactive } from "vue"
 
 const TOKEN_KEY = "riftarium_token"
 const HANDLE_KEY = "riftarium_handle"
+const AVATAR_KEY = "riftarium_avatar"
 
 export const session = reactive({
   token: localStorage.getItem(TOKEN_KEY),
-  handle: localStorage.getItem(HANDLE_KEY)
+  handle: localStorage.getItem(HANDLE_KEY),
+  avatarUrl: localStorage.getItem(AVATAR_KEY)
 })
 
-export function setSession(token, handle) {
+export function setSession(token, handle, avatarUrl = null) {
   session.token = token
   session.handle = handle
+  session.avatarUrl = avatarUrl || null
   if (token) {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(HANDLE_KEY, handle)
+    if (avatarUrl) localStorage.setItem(AVATAR_KEY, avatarUrl)
+    else localStorage.removeItem(AVATAR_KEY)
   } else {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(HANDLE_KEY)
+    localStorage.removeItem(AVATAR_KEY)
   }
 }
 

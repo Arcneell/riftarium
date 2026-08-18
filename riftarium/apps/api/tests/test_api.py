@@ -239,10 +239,125 @@ def test_register_login_me(client):
     token = login.json()["token"]
 
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert me.json()["handle"] == "maelle"
+    body = me.json()
+    assert body["handle"] == "maelle"
+    assert body["email"] == creds["email"]
+    assert body["bio"] == ""
+    assert body["avatar_card_id"] is None
+    assert body["stats"]["decks"] == 0
 
     bad = client.post("/api/auth/login", json={"email": creds["email"], "password": "mauvais-mdp"})
     assert bad.status_code == 401
+
+
+def test_profile_avatar_password_export_and_delete(client, auth):
+    me = client.get("/api/auth/me", headers=auth).json()
+    assert me["handle"] == "testeur"
+
+    avatars = client.get("/api/auth/avatars", headers=auth).json()
+    assert avatars[0]["id"] == "ogn-247-298"
+    assert avatars[0]["image_url"]
+
+    patched = client.patch(
+        "/api/auth/me",
+        json={"bio": "Main Ahri, ladder EU.", "avatar_card_id": "ogn-247-298"},
+        headers=auth,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["bio"] == "Main Ahri, ladder EU."
+    assert patched.json()["avatar_url"] == "https://cdn.example/ahri-legend.png"
+
+    renamed = client.patch(
+        "/api/auth/me",
+        json={"handle": "nyra", "current_password": "motdepasse123"},
+        headers=auth,
+    )
+    assert renamed.status_code == 200 and renamed.json()["handle"] == "nyra"
+
+    assert client.patch("/api/auth/me", json={"handle": "intrus"}, headers=auth).status_code == 401
+    assert (
+        client.patch(
+            "/api/auth/me",
+            json={"avatar_card_id": "ogn-037-298"},
+            headers=auth,
+        ).status_code
+        == 422
+    )
+
+    pwd = client.post(
+        "/api/auth/password",
+        json={"current_password": "motdepasse123", "new_password": "nouveausecret"},
+        headers=auth,
+    )
+    assert pwd.status_code == 200
+    auth = {"Authorization": f"Bearer {pwd.json()['token']}"}
+    assert (
+        client.post("/api/auth/login", json={"email": "testeur@example.org", "password": "nouveausecret"}).status_code
+        == 200
+    )
+
+    client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
+    client.post("/api/decks", json=deck_payload(), headers=auth)
+    export = client.get("/api/auth/export", headers=auth).json()
+    assert export["handle"] == "nyra"
+    assert export["collection"][0]["qty"] == 2
+    assert export["decks"][0]["name"] == "Étincelle de Fureur"
+
+    assert (
+        client.request(
+            "DELETE", "/api/auth/me", json={"password": "nouveausecret", "handle": "mauvais"}, headers=auth
+        ).status_code
+        == 400
+    )
+    gone = client.request("DELETE", "/api/auth/me", json={"password": "nouveausecret", "handle": "nyra"}, headers=auth)
+    assert gone.status_code == 204
+    assert client.get("/api/auth/me", headers=auth).status_code == 401
+    assert (
+        client.post("/api/auth/login", json={"email": "testeur@example.org", "password": "nouveausecret"}).status_code
+        == 401
+    )
+
+
+def test_profile_email_conflict_and_empty_patch(client, auth):
+    client.post(
+        "/api/auth/register",
+        json={"handle": "autre", "email": "autre@example.org", "password": "motdepasse123"},
+    )
+    assert client.patch("/api/auth/me", json={}, headers=auth).status_code == 400
+    assert (
+        client.patch(
+            "/api/auth/me",
+            json={"email": "autre@example.org", "current_password": "motdepasse123"},
+            headers=auth,
+        ).status_code
+        == 409
+    )
+    assert client.patch("/api/auth/me", json={"bio": "connard"}, headers=auth).status_code == 422
+    cleared = client.patch("/api/auth/me", json={"avatar_card_id": None}, headers=auth)
+    assert cleared.status_code == 200 and cleared.json()["avatar_card_id"] is None
+    assert (
+        client.post(
+            "/api/auth/password",
+            json={"current_password": "motdepasse123", "new_password": "motdepasse123"},
+            headers=auth,
+        ).status_code
+        == 400
+    )
+
+
+def test_delete_account_removes_likes(client, auth):
+    deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
+    other = client.post(
+        "/api/auth/register",
+        json={"handle": "fanclub", "email": "fan@example.org", "password": "motdepasse123"},
+    ).json()
+    other_auth = {"Authorization": f"Bearer {other['token']}"}
+    assert client.post(f"/api/decks/{deck_id}/like", headers=other_auth).json()["likes"] == 1
+    gone = client.request(
+        "DELETE", "/api/auth/me", json={"password": "motdepasse123", "handle": "fanclub"}, headers=other_auth
+    )
+    assert gone.status_code == 204
+    assert client.get(f"/api/decks/{deck_id}", headers=auth).json()["likes"] == 0
 
 
 def test_protected_routes_require_auth(client):
