@@ -11,6 +11,7 @@ export const router = createRouter({
     { path: "/regles", component: () => import("./views/RulesHubView.vue") },
     { path: "/regles/debutant", component: () => import("./views/BeginnerGuideView.vue") },
     { path: "/regles/avancee", component: () => import("./views/AdvancedHelpView.vue") },
+    { path: "/regles/avancee/:slug", component: () => import("./views/AdvancedTopicView.vue") },
     { path: "/regles/officielles", component: () => import("./views/RulesView.vue") },
     { path: "/collection", component: () => import("./views/CollectionView.vue"), meta: { auth: true } },
     { path: "/decks", component: () => import("./views/DecksView.vue"), meta: { auth: true } },

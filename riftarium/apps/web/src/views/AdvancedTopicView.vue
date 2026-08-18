@@ -1,0 +1,150 @@
+<script setup>
+import { computed, onMounted, ref, watch } from "vue"
+import { useRoute } from "vue-router"
+import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
+
+const route = useRoute()
+const topic = computed(() => topicBySlug(route.params.slug))
+const categoryLabel = computed(() => CATEGORIES.find((c) => c.key === topic.value?.category)?.label ?? "")
+
+const strong = (text) => text.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+
+/* Sujets voisins de la même catégorie. */
+const related = computed(() =>
+  TOPICS.filter((t) => t.category === topic.value?.category && t.slug !== topic.value?.slug).slice(0, 4)
+)
+
+/* Texte officiel : les sections référencées, chargées depuis les règles embarquées. */
+const officialSections = ref([])
+let documents = null
+
+async function loadOfficial() {
+  officialSections.value = []
+  if (!topic.value) return
+  try {
+    if (!documents) {
+      const response = await fetch("/data/rules-fr.json")
+      documents = await response.json()
+    }
+    const sections = []
+    for (const document of Object.values(documents)) {
+      for (const chapter of document.chapters) {
+        for (const section of chapter.sections) {
+          if (topic.value.sections?.includes(section.id)) sections.push(section)
+        }
+      }
+    }
+    officialSections.value = topic.value.sections.map((id) => sections.find((s) => s.id === id)).filter(Boolean)
+  } catch {
+    officialSections.value = []
+  }
+}
+onMounted(loadOfficial)
+watch(() => route.params.slug, loadOfficial)
+
+/* Zoom sur les cartes d'exemple. */
+const zoomCard = ref(null)
+const zoomUrl = (card) => card.img.replace("w=360", "w=860")
+</script>
+
+<template>
+  <template v-if="topic">
+    <div class="page-banner">
+      <div class="wrap">
+        <p class="eyebrow">
+          <RouterLink to="/regles">Règles</RouterLink> › <RouterLink to="/regles/avancee">Aide avancée</RouterLink> ›
+          {{ categoryLabel }}
+        </p>
+        <h2>{{ topic.title }}</h2>
+        <p class="lead">{{ topic.summary }}</p>
+      </div>
+    </div>
+
+    <section style="padding-top: 32px">
+      <div class="wrap topic-layout">
+        <div class="topic-main">
+          <h3 class="topic-part">L'essentiel</h3>
+          <ul class="guide-text">
+            <li v-for="(line, i) in topic.details" :key="i" v-html="strong(line)"></li>
+          </ul>
+
+          <template v-if="topic.cases?.length">
+            <h3 class="topic-part">Cas concrets</h3>
+            <div class="topic-case panel" v-for="(item, i) in topic.cases" :key="i" v-reveal="i % 3">
+              <p class="topic-q">{{ item.q }}</p>
+              <p class="topic-a">{{ item.a }}</p>
+            </div>
+          </template>
+
+          <template v-if="officialSections.length">
+            <h3 class="topic-part">Le texte officiel, en intégralité</h3>
+            <p class="muted" style="font-size: 0.8rem; margin-bottom: 16px">
+              Toutes les règles de cette mécanique, reproduites telles quelles. En cas de doute, ce texte fait foi —
+              <RouterLink :to="`/regles/officielles?doc=core&section=${topic.sections[0]}`"
+                >l'ouvrir dans le lecteur</RouterLink
+              >.
+            </p>
+            <article v-for="section in officialSections" :key="section.id" class="topic-official panel">
+              <h4 class="mono">{{ section.number }} {{ section.title }}</h4>
+              <p
+                v-for="entry in section.entries"
+                :key="entry.id"
+                class="topic-rule"
+                :style="{ marginLeft: Math.min(entry.depth, 4) * 16 + 'px' }"
+              >
+                <span class="mono topic-rule-num">{{ entry.number }}</span> {{ entry.text }}
+              </p>
+            </article>
+          </template>
+        </div>
+
+        <aside class="topic-side">
+          <template v-if="topic.examples?.length">
+            <h3 class="topic-part">Sur de vraies cartes</h3>
+            <div class="topic-examples">
+              <button
+                v-for="card in topic.examples"
+                :key="card.id"
+                class="topic-example"
+                @click="zoomCard = card"
+                :aria-label="`Agrandir ${card.name}`"
+              >
+                <img :src="card.img" :alt="card.name" loading="lazy" />
+                <span class="mono">{{ card.name }}</span>
+              </button>
+            </div>
+            <p class="muted" style="font-size: 0.68rem">Cliquez une carte pour la lire. © Riot Games.</p>
+          </template>
+
+          <h3 class="topic-part">Dans la même catégorie</h3>
+          <div class="topic-list">
+            <RouterLink v-for="t in related" :key="t.slug" class="topic-row" :to="`/regles/avancee/${t.slug}`">
+              <span class="topic-title">{{ t.title }}</span>
+              <Icon name="arrow" :size="14" />
+            </RouterLink>
+          </div>
+          <RouterLink class="btn btn-ghost" to="/regles/avancee" style="margin-top: 18px"
+            >← Toute l'aide avancée</RouterLink
+          >
+        </aside>
+      </div>
+
+      <div
+        v-if="zoomCard"
+        class="tb-zoom topic-zoom"
+        role="dialog"
+        aria-label="Carte en grand"
+        @click="zoomCard = null"
+      >
+        <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
+        <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
+      </div>
+    </section>
+  </template>
+
+  <section v-else>
+    <div class="wrap">
+      <p class="muted">Sujet introuvable. <RouterLink to="/regles/avancee">Retour à l'aide avancée</RouterLink></p>
+    </div>
+  </section>
+</template>

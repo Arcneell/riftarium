@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { describe, expect, it } from "vitest"
 import AdvancedHelpView from "./AdvancedHelpView.vue"
-import { ENTRIES } from "../rules/help.js"
+import { TOPICS } from "../rules/topics.js"
 
 const stub = { template: "<div />" }
 
@@ -10,7 +10,9 @@ async function mountHelp() {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: "/regles", component: stub },
       { path: "/regles/avancee", component: AdvancedHelpView },
+      { path: "/regles/avancee/:slug", component: stub },
       { path: "/regles/officielles", component: stub }
     ]
   })
@@ -21,27 +23,22 @@ async function mountHelp() {
 }
 
 describe("AdvancedHelpView", () => {
-  it("affiche toutes les fiches puis filtre par recherche, accents ignorés", async () => {
+  it("liste tous les sujets, groupés par catégorie, avec lien vers leur page", async () => {
     const wrapper = await mountHelp()
-    expect(wrapper.findAll(".help-card")).toHaveLength(ENTRIES.length)
-
-    await wrapper.find("input[type=search]").setValue("conquete")
-    const cards = wrapper.findAll(".help-card")
-    expect(cards.length).toBeGreaterThan(0)
-    expect(cards.length).toBeLessThan(ENTRIES.length)
-    expect(wrapper.text()).toContain("Conquête vs occupation")
+    const rows = wrapper.findAll("a.topic-row")
+    expect(rows).toHaveLength(TOPICS.length)
+    const hrefs = rows.map((r) => r.attributes("href"))
+    expect(hrefs).toContain("/regles/avancee/tank")
+    expect(hrefs).toContain("/regles/avancee/conquete-et-occupation")
+    expect(wrapper.text()).toContain("Mots-clés")
   })
 
-  it("filtre par catégorie et ouvre une fiche avec son renvoi officiel", async () => {
+  it("filtre par recherche, accents ignorés", async () => {
     const wrapper = await mountHelp()
-    const combat = wrapper.findAll(".filter").find((b) => b.text() === "Combat")
-    await combat.trigger("click")
-    const expected = ENTRIES.filter((e) => e.category === "combat").length
-    expect(wrapper.findAll(".help-card")).toHaveLength(expected)
-
-    await wrapper.find(".help-head").trigger("click")
-    const body = wrapper.find(".help-body")
-    expect(body.exists()).toBe(true)
-    expect(body.find("a").attributes("href")).toContain("/regles/officielles?doc=core&section=")
+    await wrapper.find("input[type=search]").setValue("extenuation")
+    const rows = wrapper.findAll("a.topic-row")
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length).toBeLessThan(TOPICS.length)
+    expect(wrapper.text()).toContain("exténuation")
   })
 })

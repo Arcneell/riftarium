@@ -27,7 +27,7 @@ const TIERS = [
     chip: "var(--gold)",
     kicker: "En pleine partie",
     title: "Aide avancée",
-    text: "Une fiche claire par mécanique : timing, combat, contrôle, mots-clés. Pour résoudre les situations compliquées sans ouvrir le PDF.",
+    text: "Une page complète par mécanique : l'essentiel, des cas concrets, des cartes d'exemple et le texte officiel intégral — timing, combat, points, mots-clés.",
     go: "Chercher une mécanique"
   },
   {

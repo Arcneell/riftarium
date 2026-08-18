@@ -1,95 +1,74 @@
 <script setup>
 import { computed, ref } from "vue"
-import { CATEGORIES, ENTRIES } from "../rules/help.js"
+import { CATEGORIES, TOPICS } from "../rules/topics.js"
 
 const query = ref("")
-const category = ref("")
-const open = ref(new Set())
 
 const normalize = (value) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
 const filtered = computed(() => {
   const tokens = normalize(query.value.trim()).split(/\s+/).filter(Boolean)
-  return ENTRIES.filter((entry) => {
-    if (category.value && entry.category !== category.value) return false
-    if (!tokens.length) return true
-    const haystack = normalize(`${entry.title} ${entry.summary} ${entry.details.join(" ")}`)
+  if (!tokens.length) return TOPICS
+  return TOPICS.filter((topic) => {
+    const haystack = normalize(
+      `${topic.title} ${topic.summary} ${topic.details.join(" ")} ${topic.cases.map((c) => c.q + " " + c.a).join(" ")}`
+    )
     return tokens.every((token) => haystack.includes(token))
   })
 })
 
-const label = (key) => CATEGORIES.find((c) => c.key === key)?.label ?? key
-
-function toggle(title) {
-  open.value.has(title) ? open.value.delete(title) : open.value.add(title)
-  open.value = new Set(open.value)
-}
+const grouped = computed(() =>
+  CATEGORIES.map((category) => ({
+    ...category,
+    topics: filtered.value.filter((topic) => topic.category === category.key)
+  })).filter((category) => category.topics.length)
+)
 </script>
 
 <template>
   <div class="page-banner">
     <div class="wrap">
-      <p class="eyebrow">Aide avancée</p>
-      <h2>Chaque mécanique, expliquée clairement</h2>
+      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Aide avancée</p>
+      <h2>Chaque mécanique a sa page</h2>
       <p class="lead">
-        Une situation bloque la partie ? Cherchez la mécanique concernée : timing, combat, points, mots-clés. Chaque
-        fiche renvoie à la règle officielle.
+        Un résumé par sujet ci-dessous ; ouvrez la page pour l'essentiel, les cas concrets, des cartes d'exemple et le
+        texte officiel intégral de la mécanique.
       </p>
+      <label class="search" style="max-width: 420px; margin-top: 18px">
+        <Icon name="search" :size="18" />
+        <input
+          type="search"
+          v-model="query"
+          placeholder="tank, conquête, réaction, recycler…"
+          aria-label="Rechercher une mécanique"
+        />
+      </label>
     </div>
   </div>
 
-  <section style="padding-top: 36px">
+  <section style="padding-top: 30px">
     <div class="wrap">
-      <div class="toolbar">
-        <div class="filters" role="tablist" aria-label="Catégorie">
-          <button class="filter" :aria-pressed="category === ''" @click="category = ''">Tout</button>
-          <button
-            v-for="c in CATEGORIES"
-            :key="c.key"
-            class="filter"
-            :aria-pressed="category === c.key"
-            @click="category = category === c.key ? '' : c.key"
-          >
-            {{ c.label }}
-          </button>
-        </div>
-        <label class="search">
-          <Icon name="search" :size="18" />
-          <input
-            type="search"
-            v-model="query"
-            placeholder="tank, conquête, réaction…"
-            aria-label="Rechercher une mécanique"
-          />
-        </label>
-      </div>
-
-      <p class="muted mono" v-if="!filtered.length" style="font-size: 0.8rem">
+      <p class="muted mono" v-if="!grouped.length" style="font-size: 0.8rem">
         Rien ici. Essayez un autre mot, ou passez par les
         <RouterLink to="/regles/officielles">règles officielles</RouterLink>.
       </p>
 
-      <div class="help-grid">
-        <article
-          v-for="(entry, i) in filtered"
-          :key="entry.title"
-          class="help-card"
-          :class="{ open: open.has(entry.title) }"
-          v-reveal="i % 3"
-        >
-          <button class="help-head" @click="toggle(entry.title)" :aria-expanded="open.has(entry.title)">
-            <span class="help-cat mono">{{ label(entry.category) }}</span>
-            <h3>{{ entry.title }}</h3>
-            <p class="help-summary">{{ entry.summary }}</p>
-            <span class="help-caret" aria-hidden="true">▾</span>
-          </button>
-          <div class="help-body" v-if="open.has(entry.title)">
-            <p v-for="(line, j) in entry.details" :key="j">{{ line }}</p>
-            <RouterLink class="rref" :to="`/regles/officielles?doc=core&section=${entry.ref}`">
-              → Règle {{ entry.ref }}
-            </RouterLink>
-          </div>
-        </article>
+      <div v-for="(category, i) in grouped" :key="category.key" class="topic-section" v-reveal="i % 3">
+        <h3 class="topic-heading">
+          {{ category.label }} <small class="mono">{{ category.topics.length }}</small>
+        </h3>
+        <div class="topic-list">
+          <RouterLink
+            v-for="topic in category.topics"
+            :key="topic.slug"
+            class="topic-row"
+            :to="`/regles/avancee/${topic.slug}`"
+          >
+            <span class="topic-title">{{ topic.title }}</span>
+            <span class="topic-summary">{{ topic.summary }}</span>
+            <Icon name="arrow" :size="16" />
+          </RouterLink>
+        </div>
       </div>
 
       <div style="text-align: center; margin-top: 44px" v-reveal>
