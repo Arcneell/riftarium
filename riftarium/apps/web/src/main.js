@@ -15,14 +15,19 @@ app.directive("tilt", {
   mounted(el) {
     if (!finePointer || reducedMotion) return
     el.classList.add("tilt")
+    let frame = null
     const onMove = (event) => {
-      const rect = el.getBoundingClientRect()
-      const x = (event.clientX - rect.left) / rect.width
-      const y = (event.clientY - rect.top) / rect.height
-      el.style.setProperty("--rx", `${(0.5 - y) * 12}deg`)
-      el.style.setProperty("--ry", `${(x - 0.5) * 12}deg`)
-      el.style.setProperty("--gx", `${x * 100}%`)
-      el.style.setProperty("--gy", `${y * 100}%`)
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        const rect = el.getBoundingClientRect()
+        const x = (event.clientX - rect.left) / rect.width
+        const y = (event.clientY - rect.top) / rect.height
+        el.style.setProperty("--rx", `${(0.5 - y) * 12}deg`)
+        el.style.setProperty("--ry", `${(x - 0.5) * 12}deg`)
+        el.style.setProperty("--gx", `${x * 100}%`)
+        el.style.setProperty("--gy", `${y * 100}%`)
+      })
     }
     const onLeave = () => {
       el.style.setProperty("--rx", "0deg")
@@ -31,6 +36,7 @@ app.directive("tilt", {
     el.addEventListener("mousemove", onMove)
     el.addEventListener("mouseleave", onLeave)
     el._tiltCleanup = () => {
+      cancelAnimationFrame(frame)
       el.removeEventListener("mousemove", onMove)
       el.removeEventListener("mouseleave", onLeave)
     }
@@ -50,7 +56,9 @@ const revealObserver = new IntersectionObserver(
       }
     }
   },
-  { threshold: 0.06, rootMargin: "40px 0px" }
+  /* Précharge large sous le viewport : en scroll rapide, l'élément est déjà révélé
+     quand il devient visible. */
+  { threshold: 0, rootMargin: "0px 0px 45% 0px" }
 )
 
 function inViewport(el) {
@@ -66,17 +74,18 @@ app.directive("reveal", {
     }
     el.classList.add("reveal")
     if (typeof binding.value === "number") {
-      el.style.transitionDelay = `${binding.value * 90}ms`
+      el.style.transitionDelay = `${Math.min(binding.value * 60, 180)}ms`
     }
-    const kick = () => {
-      if (inViewport(el)) el.classList.add("visible")
-      else revealObserver.observe(el)
-    }
-    /* laisse passer la transition de page (transform du parent) */
-    el._revealTimer = setTimeout(kick, 80)
+    /* deux frames : laisse passer la transition de page sans délai perceptible */
+    el._revealTimer = requestAnimationFrame(() => {
+      el._revealTimer = requestAnimationFrame(() => {
+        if (inViewport(el)) el.classList.add("visible")
+        else revealObserver.observe(el)
+      })
+    })
   },
   unmounted(el) {
-    clearTimeout(el._revealTimer)
+    cancelAnimationFrame(el._revealTimer)
     revealObserver.unobserve(el)
   }
 })
