@@ -20,7 +20,19 @@ docker compose up --build -d
 
 Au premier démarrage, l'API synchronise automatiquement les ~1 300 cartes des 6 sets
 depuis l'API communautaire [Riftcodex](https://api.riftcodex.com/docs) vers PostgreSQL
-(~30 s). Resynchroniser : `curl -X POST http://localhost:8080/api/admin/sync`.
+(~30 s). Resynchroniser : `curl -X POST http://localhost:8888/api/admin/sync`.
+
+## Développer (rechargement à chaud, sans rebuild)
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+```
+
+- Front : Vite avec HMR sur <http://localhost:8888> — toute modification dans
+  `apps/web/src` s'affiche immédiatement.
+- API : `uvicorn --reload` — toute modification dans `apps/api/app` redémarre le serveur.
+- Le code est monté en volume ; on ne rebuild une image que si `package.json`,
+  `requirements.txt` ou un Dockerfile change (`docker compose -f compose.yaml -f compose.dev.yaml up -d --build`).
 
 ## Architecture
 

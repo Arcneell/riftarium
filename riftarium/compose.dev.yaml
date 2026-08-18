@@ -1,0 +1,36 @@
+# Surcouche développement : code monté en volume, rechargement à chaud,
+# aucun rebuild d'image à chaque modification.
+#
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d
+#
+# Front : Vite (HMR) sur http://localhost:8888 — API : uvicorn --reload.
+
+services:
+  api:
+    volumes:
+      - ./apps/api/app:/srv/app
+      - ./apps/api/tests:/srv/tests
+    environment:
+      # bind mounts Windows : les événements fichiers ne remontent pas, on force le polling
+      WATCHFILES_FORCE_POLLING: "true"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web:
+    build:
+      context: apps/web
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./apps/web:/app
+      - webmodules:/app/node_modules
+      - ../le-codex/data:/rules-data:ro
+    environment:
+      API_PROXY: http://api:8000
+      RULES_DATA: /rules-data/rules-fr.json
+      VITE_POLLING: "1"
+    ports: !override
+      - "${PORT:-8888}:5173"
+    healthcheck:
+      disable: true
+
+volumes:
+  webmodules:
