@@ -29,7 +29,7 @@ const MODULES = [
     icon: "cards",
     chip: "var(--mind)",
     title: "Cartothèque",
-    text: "Retrouvez une carte, relisez-la, gardez-la sous la main — sans tout étaler sur la table.",
+    text: "Toutes les cartes du jeu, variantes incluses. Recherche plein texte, filtres par domaine, type, rareté et set.",
     to: "/cartes",
     go: "Parcourir"
   },
@@ -37,7 +37,7 @@ const MODULES = [
     icon: "book",
     chip: "var(--order)",
     title: "Règles",
-    text: "Un doute en pleine partie ? Les règles sont là, comme si vous posiez la question à quelqu'un.",
+    text: "Le texte officiel intégral en français, consultable et cherchable en quelques secondes.",
     to: "/regles",
     go: "Consulter"
   },
@@ -45,7 +45,7 @@ const MODULES = [
     icon: "layers",
     chip: "var(--fury)",
     title: "Deck builder",
-    text: "Montez un deck à l'écran. Le site vous dit s'il tient pour un tournoi, ou laissez-vous faire.",
+    text: "Construisez vos decks avec validation des règles de tournoi — ou en mode libre, sans contrainte.",
     to: "/decks",
     go: "Construire"
   },
@@ -53,7 +53,7 @@ const MODULES = [
     icon: "box",
     chip: "var(--body)",
     title: "Collection",
-    text: "Notez ce que vous avez vraiment. Plus besoin de tout recompter à chaque booster.",
+    text: "Suivez ce que vous possédez : quantités, état, langue. Votre inventaire, toujours à jour.",
     to: "/collection",
     go: "Inventorier"
   },
@@ -61,7 +61,7 @@ const MODULES = [
     icon: "users",
     chip: "var(--chaos)",
     title: "Communauté",
-    text: "Regardez ce que les autres jouent, inspirez-vous, donnez un coup de pouce.",
+    text: "Parcourez les decks publiés par les autres joueurs, votez pour vos préférés, partagez les vôtres.",
     to: "/communaute",
     go: "Découvrir"
   },
@@ -69,7 +69,7 @@ const MODULES = [
     icon: "code",
     chip: "var(--calm)",
     title: "Fait par un joueur",
-    text: "Un projet libre, sans pub ni boutique. Si quelque chose manque, dites-le.",
+    text: "Gratuit, open source, sans pub ni boutique. Les retours et les idées sont bienvenus.",
     href: "https://github.com/Arcneell/riftarium",
     go: "Voir sur GitHub"
   }
@@ -95,11 +95,11 @@ onMounted(async () => {
   >
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">Un compagnon pour Riftbound</p>
-        <h1>Pour jouer,<br />pas pour s'éparpiller.</h1>
+        <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
+        <h1>Vos cartes, vos decks,<br />vos règles. Un seul site.</h1>
         <p class="lead" style="margin-top: 20px">
-          Riftarium rassemble ce dont on a besoin autour de la table : connaître ses cartes, suivre sa collection,
-          construire un deck et retrouver une règle entre deux tours.
+          Cartothèque complète, suivi de collection, deck builder et règles officielles : tout ce qu'il faut pour jouer
+          à Riftbound, réuni au même endroit.
         </p>
         <div style="display: flex; gap: 16px; margin-top: 34px; flex-wrap: wrap">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
@@ -134,7 +134,7 @@ onMounted(async () => {
   <section style="padding-bottom: 40px">
     <div class="wrap" style="margin-bottom: 36px">
       <p class="eyebrow" v-reveal>Les cartes</p>
-      <h2 v-reveal>Feuilletez le jeu, comme sur la table</h2>
+      <h2 v-reveal>Toutes les cartes du jeu, à jour</h2>
     </div>
     <CardRiver />
     <div class="wrap" style="text-align: center; margin-top: 36px" v-reveal>
@@ -144,8 +144,8 @@ onMounted(async () => {
 
   <section>
     <div class="wrap">
-      <p class="eyebrow" v-reveal>Autour de la table</p>
-      <h2 v-reveal style="margin-bottom: 36px">Ce que le site vous propose</h2>
+      <p class="eyebrow" v-reveal>Tout-en-un</p>
+      <h2 v-reveal style="margin-bottom: 36px">Tout ce qu'il faut pour jouer</h2>
       <div class="modules">
         <component
           :is="module.to ? 'RouterLink' : 'a'"
@@ -184,12 +184,10 @@ onMounted(async () => {
         <p class="eyebrow">Pendant la partie</p>
         <h2>Une règle, tout de suite</h2>
         <p class="lead" style="margin-bottom: 18px">
-          Plus besoin de chercher dans un document. Dites ce qui vous bloque — un effet, une interaction, un doute — et
-          la réponse est là, avec ce qui l'entoure.
+          Un doute sur un effet ou une interaction ? Cherchez un mot-clé et retrouvez la règle exacte, avec son
+          contexte.
         </p>
-        <p class="muted" style="margin-bottom: 26px">
-          Ça tient dans une pause entre deux tours, sur téléphone comme sur ordinateur.
-        </p>
+        <p class="muted" style="margin-bottom: 26px">Sur téléphone comme sur ordinateur, en pleine partie.</p>
         <RouterLink class="btn btn-gold" to="/regles">Ouvrir les règles</RouterLink>
       </div>
       <div class="panel" v-reveal="1">
@@ -205,17 +203,16 @@ onMounted(async () => {
   <section style="padding-top: 32px; padding-bottom: 104px">
     <div class="wrap cols-2">
       <div class="panel" v-reveal>
-        <h3 style="margin-bottom: 10px">Pour jouer, simplement</h3>
+        <h3 style="margin-bottom: 10px">Gratuit, sans pub</h3>
         <p class="muted" style="font-size: 0.95rem">
-          Riftarium n'est pas un magasin et n'appartient pas à Riot. C'est un compagnon gratuit, fait pour s'y retrouver
-          autour du jeu.
+          Riftarium est un projet fan-made, non commercial et indépendant de Riot Games. Pas de boutique, pas de
+          publicité.
         </p>
       </div>
       <div class="panel" v-reveal="1">
         <h3 style="margin-bottom: 10px">Un projet de joueur</h3>
         <p class="muted" style="font-size: 0.95rem">
-          Le site est développé sur du temps libre, et le code est ouvert. Si une idée vous vient, ou si quelque chose
-          cloche, elle a sa place sur
+          Le code est ouvert et le site évolue avec vos retours. Une idée, un bug ? Rendez-vous sur
           <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">GitHub</a>.
         </p>
       </div>
