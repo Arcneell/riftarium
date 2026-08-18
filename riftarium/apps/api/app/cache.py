@@ -4,6 +4,7 @@ Sans REDIS_URL (tests, dev sans Redis), toutes les fonctions sont des no-op :
 l'API fonctionne à l'identique, simplement sans cache.
 """
 
+import contextlib
 import json
 import logging
 
@@ -47,10 +48,8 @@ def cache_set(key: str, value, ttl: int) -> None:
     client = _redis()
     if client is None:
         return
-    try:
+    with contextlib.suppress(Exception):
         client.setex(f"riftarium:{key}", ttl, json.dumps(value))
-    except Exception:
-        pass
 
 
 def cache_clear(prefix: str) -> int:
