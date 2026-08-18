@@ -146,17 +146,22 @@ const fan = (index, count, y = 42, spread = 10.5) => ({
 })
 
 /* Zones fixes une fois la table installée. */
-const board = (extra = []) => [
-  { key: "legend", card: CARDS.legend, spot: SPOTS.legend, label: "Légende" },
-  { key: "chosen", card: CARDS.chosen, spot: SPOTS.championZone, label: "Champion élu" },
-  { key: "mainDeck", card: CARDS.spell, spot: SPOTS.mainDeck, facedown: true, label: "Deck principal" },
-  { key: "runeDeck", card: CARDS.furyRune, spot: SPOTS.runeDeck, facedown: true, label: "Deck de runes" },
-  { key: "foeLegend", card: CARDS.foeLegend, spot: SPOTS.foeLegend, label: "Sa légende" },
-  { key: "foeChosen", card: CARDS.foeChosen, spot: SPOTS.foeChampion, label: "Son champion" },
-  { key: "foeMainDeck", card: CARDS.spell, spot: SPOTS.foeMainDeck, facedown: true, label: "Son deck" },
-  { key: "foeRuneDeck", card: CARDS.furyRune, spot: SPOTS.foeRuneDeck, facedown: true, label: "Ses runes" },
-  ...extra
-]
+const board = (extra = []) => {
+  const cards = [
+    { key: "legend", card: CARDS.legend, spot: SPOTS.legend, label: "Légende" },
+    { key: "chosen", card: CARDS.chosen, spot: SPOTS.championZone, label: "Champion élu" },
+    { key: "mainDeck", card: CARDS.spell, spot: SPOTS.mainDeck, facedown: true, label: "Deck principal" },
+    { key: "runeDeck", card: CARDS.furyRune, spot: SPOTS.runeDeck, facedown: true, label: "Deck de runes" },
+    { key: "foeLegend", card: CARDS.foeLegend, spot: SPOTS.foeLegend, label: "Sa légende" },
+    { key: "foeChosen", card: CARDS.foeChosen, spot: SPOTS.foeChampion, label: "Son champion" },
+    { key: "foeMainDeck", card: CARDS.spell, spot: SPOTS.foeMainDeck, facedown: true, label: "Son deck" },
+    { key: "foeRuneDeck", card: CARDS.furyRune, spot: SPOTS.foeRuneDeck, facedown: true, label: "Ses runes" },
+    ...extra
+  ]
+  const byKey = new Map()
+  for (const card of cards) byKey.set(card.key, card)
+  return [...byKey.values()]
+}
 
 /* Votre main de départ : 4 vraies cartes, faces visibles. */
 const HAND = [
@@ -259,7 +264,8 @@ export const STEPS = [
     ref: "315",
     terms: ["phase d'éveil", "canaliser", "piocher"],
     text: [
-      "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées. **Scores** : vous marquez pour chaque champ de bataille contrôlé — aucun pour l'instant.",
+      "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées.",
+      "**Étape des scores** : vous marquez 1 point par champ de bataille contrôlé.",
       "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles **restent en zone de runes de tour en tour** : 2 au premier tour, 4 au deuxième, 6 au troisième. (Le joueur qui commence en second en canalise 3 à son tout premier tour.)",
       "**Pioche** : **1 carte** — suivez-la, elle glisse du deck principal vers votre main : Get Excited!, le sort signature de Jinx."
     ],
@@ -283,10 +289,10 @@ export const STEPS = [
     ref: "160",
     terms: ["épuiser", "recycler", "énergie", "essence runique"],
     text: [
-      "Le coût d'une carte, en haut à gauche : un **chiffre**, à payer en **énergie**, et parfois des **symboles de domaine**, à payer en **essence runique** du bon domaine.",
-      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie** — elle se redressera à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes** (règle 416) et reviendra quand vous la canaliserez de nouveau.",
+      "Lisez la carte en gros plan — Jinx - Demolitionist. **① Le chiffre** : le coût en **énergie**. **② Les symboles de domaine** en dessous : le coût en **essence runique**. **③ La puissance** de l'unité. **④ Ses mots-clés et effets**. (Cliquez n'importe quelle carte de la table pour la lire en grand.)",
+      "Chaque rune de votre zone paie ces coûts de deux façons. **L'épuiser** (la tourner) : **+1 énergie** — elle se redressera à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est glissée **sous votre deck de runes** (règle 416) et reviendra quand vous la canaliserez.",
       "On épuise pour les chiffres ; on ne recycle que pour les symboles de domaine.",
-      "Regardez votre main : Legion Rearguard coûte **2 énergie**. Seal of Rage coûte **0 énergie + 1 symbole Fureur**. Vous avez exactement de quoi jouer les deux."
+      "Votre main : Legion Rearguard coûte **2 énergie**, Seal of Rage **0 énergie + 1 symbole Fureur**. Vous avez exactement de quoi jouer les deux."
     ],
     scene: {
       cards: board([
@@ -297,6 +303,15 @@ export const STEPS = [
           { k: "rune1", d: "C" }
         ])
       ]),
+      focus: {
+        card: CARDS.demolitionist,
+        notes: [
+          { n: 1, x: 12, y: 8.5 },
+          { n: 2, x: 12, y: 20 },
+          { n: 3, x: 88, y: 8.5 },
+          { n: 4, x: 50, y: 76 }
+        ]
+      },
       foeHand: 4,
       score: { you: 0, foe: 0 }
     }
@@ -386,7 +401,7 @@ export const STEPS = [
     terms: ["phase d'éveil", "canaliser"],
     text: [
       "Votre **éveil** redresse Legion Rearguard et votre rune. Vous **canalisez 2 runes** : 3 en zone de runes. Vous piochez.",
-      "3 runes épuisées = 3 énergie : **Flame Chompers** (coût 3) entre en jeu dans votre base, **épuisé**.",
+      "3 runes épuisées = 3 énergie : **Flame Chompers** (coût 3) entre en jeu dans votre base, **épuisé**. Remarquez Sunlit Guardian : lui reste épuisé — une carte ne se **prépare** qu'à l'éveil de **son** propriétaire.",
       "Votre base tient maintenant deux unités et un équipement. Fin de votre tour 2."
     ],
     scene: {
@@ -396,7 +411,7 @@ export const STEPS = [
         { key: "h1", card: CARDS.chompers, spot: SPOTS.youBaseC, tapped: true, might: true },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand2, hand: true },
-        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeBaseA, might: true },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeBaseA, tapped: true, might: true },
         ...runes([
           { k: "rune1", d: "C", t: true },
           { k: "rune2", d: "F", t: true },

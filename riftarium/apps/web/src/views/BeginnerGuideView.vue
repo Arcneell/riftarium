@@ -34,8 +34,15 @@ function goTo(index) {
 function onKeydown(event) {
   if (event.key === "ArrowRight") goTo(stepIndex.value + 1)
   if (event.key === "ArrowLeft") goTo(stepIndex.value - 1)
-  if (event.key === "Escape" && fullscreen.value) toggleFullscreen()
+  if (event.key === "Escape") {
+    if (zoomCard.value) zoomCard.value = null
+    else if (fullscreen.value) toggleFullscreen()
+  }
 }
+
+/* Zoom : cliquer une carte pour la lire en grand. */
+const zoomCard = ref(null)
+const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w=1024")
 
 /* Plein écran : API Fullscreen quand elle existe, sinon simple superposition. */
 const fullscreen = ref(false)
@@ -179,13 +186,15 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               v-for="placed in scene.cards"
               :key="placed.key"
               class="tb-card"
+              @click="!placed.facedown && (zoomCard = placed.card)"
               :class="{
                 tapped: placed.tapped,
                 dead: placed.dead,
                 wide: placed.wide,
                 glow: placed.glow,
                 ghost: placed.ghost,
-                inhand: placed.hand
+                inhand: placed.hand,
+                clickable: !placed.facedown
               }"
               :style="{
                 left: placed.spot.x + '%',
@@ -201,11 +210,29 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
             </div>
           </TransitionGroup>
 
+          <!-- Gros plan annoté : lire une carte -->
+          <div v-if="scene.focus" class="tb-focus" @click="zoomCard = scene.focus.card">
+            <img :src="zoomUrl(scene.focus.card)" :alt="scene.focus.card.name" />
+            <span
+              v-for="note in scene.focus.notes"
+              :key="note.n"
+              class="tb-focus-note"
+              :style="{ left: note.x + '%', top: note.y + '%' }"
+            >
+              {{ note.n }}
+            </span>
+          </div>
+
           <!-- Réserve runique -->
           <div v-if="scene.chips" class="tb-pool" aria-label="Réserve runique">
             <span v-for="i in scene.chips.energy" :key="'e' + i" class="tb-chip energy">1</span>
             <span v-for="i in scene.chips.essence" :key="'c' + i" class="tb-chip essence">✦</span>
             <i class="mono">Réserve runique</i>
+          </div>
+          <!-- Carte en grand au clic -->
+          <div v-if="zoomCard" class="tb-zoom" role="dialog" aria-label="Carte en grand" @click="zoomCard = null">
+            <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
+            <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
           </div>
         </div>
         <p class="tb-credit mono">Cartes et visuels officiels Riftbound — © Riot Games, servis par le CDN officiel.</p>
