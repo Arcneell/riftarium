@@ -1,5 +1,5 @@
 # Développement uniquement : le code est monté en volume, Vite recharge à chaud.
-FROM node:22-alpine
+FROM node:25-alpine
 WORKDIR /app
 EXPOSE 5173
 CMD ["sh", "-c", "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"]
