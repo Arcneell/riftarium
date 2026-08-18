@@ -48,6 +48,37 @@ const FAMILY_BY_KEYWORD = Object.entries(KEYWORD_FAMILIES).reduce((map, [family,
   return map
 }, {})
 
+/* Alias français des mots-clés (texte des règles et pages d'aide). */
+const KEYWORD_FR = {
+  accélération: "accelerate",
+  réaction: "reaction",
+  assaut: "assault",
+  bouclier: "shield",
+  "arrière-ligne": "backline",
+  protection: "deflect",
+  caché: "hidden",
+  embuscade: "ambush",
+  agonie: "deathknell",
+  temporaire: "temporary",
+  légion: "legion",
+  niveau: "level",
+  chasse: "hunt",
+  amplification: "empower",
+  amplifié: "empowered",
+  gank: "ganking",
+  flux: "flow",
+  répétition: "repeat",
+  "expert en armes": "weaponmaster",
+  équiper: "equip",
+  dégainer: "quick-draw",
+  étourdissement: "stun",
+  prédiction: "predict",
+  brûler: "burn",
+  ajout: "add",
+  ajoutez: "add",
+  "unité puissante": "mighty"
+}
+
 export function glyphUrl(token) {
   return `${GLYPH_BASE}/${token}.svg`
 }
@@ -70,7 +101,7 @@ export function decodeEntities(text) {
 
 export function keywordFamily(label) {
   const base = label.replace(/\s+\d+$/, "").toLowerCase()
-  return FAMILY_BY_KEYWORD[base] || "utility"
+  return FAMILY_BY_KEYWORD[KEYWORD_FR[base] ?? base] || "utility"
 }
 
 export function isFoil(card) {
