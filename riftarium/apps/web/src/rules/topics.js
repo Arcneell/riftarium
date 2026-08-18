@@ -92,13 +92,14 @@ export const TOPICS = [
     category: "tour",
     summary: "Piocher deck vide : la défausse redevient un deck, l'adversaire gagne 1 point.",
     details: [
-      "Si vous devez piocher alors que votre deck principal est vide, vous êtes **exténué** : votre défausse est remélangée pour former un nouveau deck, et **un adversaire de votre choix gagne 1 point**.",
-      "Ensuite, vous piochez normalement. S'exténuer n'élimine pas de la partie, mais chaque exténuation offre un point."
+      "Séquence exacte (règle 431.2) : faites l'action autant que possible, **mélangez votre défausse dans votre deck principal**, choisissez **un adversaire qui gagne 1 point**, puis terminez l'action qui a causé l'exténuation.",
+      "Regarder ou révéler des cartes ne cause PAS d'exténuation — seuls les déplacements de cartes du deck (piocher, défausser depuis le deck…) la déclenchent.",
+      "Deck ET défausse vides : chaque tentative répète l'exténuation — un point offert à chaque fois."
     ],
     cases: [
       {
         q: "Un effet me fait piocher 3 cartes et mon deck n'en a qu'une. Combien d'exténuations ?",
-        a: "Vous piochez la dernière carte, puis chaque pioche impossible déclenche le processus : remélange et point offert, autant de fois que nécessaire pour finir les pioches."
+        a: "Vous piochez la carte restante, puis UNE exténuation : défausse mélangée dans le deck, un adversaire de votre choix gagne 1 point, et vous piochez les 2 cartes manquantes (règle 431.2). Une nouvelle exténuation n'arrive que si le deck se vide encore."
       }
     ],
     sections: ["431", "413"]
@@ -316,7 +317,7 @@ export const TOPICS = [
     category: "cartes",
     summary: "Épuiser une rune : +1 énergie. La recycler : +1 essence, elle passe sous le deck de runes.",
     details: [
-      "Une rune de base s'**épuise** pour +1 énergie, ou se **recycle** (placée sous le deck de runes, règle 416) pour 1 essence de son domaine. Ces compétences sont des **Réactions** : utilisables à tout moment où un coût se paie.",
+      "Une rune de base s'**épuise** ([E]) pour +[1], ou se **recycle** (placée sous le deck de runes, règle 416) pour 1 essence de son domaine — [R] [G] [B] [O] [P] [Y]. Ces compétences sont des [Réaction] : utilisables à tout moment où un coût se paie.",
       "La **réserve runique** se vide au début de chaque phase principale et à la fin de chaque tour : impossible de stocker.",
       "Les runes canalisées restent en zone de runes de tour en tour — le total grandit de 2 chaque tour."
     ],
@@ -431,7 +432,7 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "Coût additionnel de 1 énergie + 1 essence : l'unité entre en jeu préparée.",
     details: [
-      "« Quand vous me jouez, vous pouvez payer un coût supplémentaire de [1][essence]. Si vous le faites, j'entre en jeu préparé. »",
+      "« Quand vous me jouez, vous pouvez payer un coût supplémentaire de [1] plus 1 essence de mon domaine. Si vous le faites, j'entre en jeu préparé. »",
       "Le choix se fait au moment de jouer la carte ; le coût s'ajoute au coût normal.",
       "Une unité entrée préparée peut immédiatement se déplacer ou payer des coûts d'épuisement."
     ],
@@ -495,7 +496,7 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "+X puissance tant que l'unité attaque.",
     details: [
-      "« Tant que j'attaque, j'ai +X puissance. »",
+      "« Tant que j'attaque, j'ai +X [M]. »",
       "Actif uniquement pendant un combat où l'unité a la désignation d'attaquant ; compte dans le total de puissance du camp."
     ],
     cases: [
@@ -519,7 +520,7 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "+X puissance tant que l'unité défend.",
     details: [
-      "« Tant que je défends, j'ai +X puissance. »",
+      "« Tant que je défends, j'ai +X [M]. »",
       "Actif dès que l'unité a la désignation de défenseur — il augmente aussi le seuil de dégâts mortels pendant le combat."
     ],
     cases: [
@@ -692,13 +693,18 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "« Lorsque ceci est joué, prédisez. »",
     details: [
-      "**Prédire** : regardez la carte du dessus de votre deck principal ; laissez-la ou placez-la dessous.",
-      "Vision se déclenche quand la carte est jouée — avant sa résolution complète."
+      "**Prédire** : regardez la carte du dessus de votre deck principal ; laissez-la, ou recyclez-la (placée sous le deck).",
+      "La condition de déclenchement est **l'entrée du permanent sur le plateau** (règle 817.1.c).",
+      "Plusieurs instances de Vision se déclenchent séparément : vous choisissez pour chacune de recycler ou non."
     ],
     cases: [
       {
         q: "Vision se déclenche-t-il si la carte est contrée ?",
-        a: "Le déclencheur « lorsque ceci est joué » part au moment où la carte est jouée : la prédiction a lieu même si la carte est ensuite contrée."
+        a: "Non : une carte contrée ne fait rien et n'entre pas sur le plateau (règle 425.1) — or Vision se déclenche à l'entrée du permanent sur le plateau. Pas de prédiction."
+      },
+      {
+        q: "Deux unités Vision jouées coup sur coup : je vois deux cartes ?",
+        a: "Chaque Vision se déclenche séparément. Si vous ne recyclez pas la carte regardée, la seconde Vision verra la même carte."
       }
     ],
     sections: ["817", "436"],
@@ -729,6 +735,7 @@ export const TOPICS = [
   {
     slug: "niveau",
     title: "Niveau (et XP)",
+    chips: ["Niveau"],
     category: "mots-cles",
     summary: "« Tant que vous avez N XP ou plus, cette carte a [Texte]. »",
     details: [
@@ -769,6 +776,7 @@ export const TOPICS = [
   {
     slug: "amplification",
     title: "Amplification / Amplifié",
+    chips: ["Amplification", "Amplifié"],
     category: "mots-cles",
     summary: "Payez une fois pour amplifier le permanent ; tant qu'il l'est, il gagne le texte Amplifié.",
     details: [
@@ -853,6 +861,7 @@ export const TOPICS = [
   {
     slug: "equiper-degainer",
     title: "Équiper et Dégainer",
+    chips: ["Équiper", "Dégainer"],
     category: "mots-cles",
     summary: "Équiper : compétence activée d'attache. Dégainer : équipe immédiatement, en Réaction.",
     details: [

@@ -2,12 +2,19 @@
 import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
+import RuleText from "../components/RuleText.vue"
+import { keywordFamily } from "../cardText.js"
 
 const route = useRoute()
 const topic = computed(() => topicBySlug(route.params.slug))
 const categoryLabel = computed(() => CATEGORIES.find((c) => c.key === topic.value?.category)?.label ?? "")
 
-const strong = (text) => text.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+/* Chips de mots-clés dans l'en-tête, colorés comme dans la cartothèque. */
+const keywordChips = computed(() => {
+  if (topic.value?.category !== "mots-cles") return []
+  const labels = topic.value.chips ?? [topic.value.title]
+  return labels.map((label) => ({ label, family: keywordFamily(label) }))
+})
 
 /* Sujets voisins de la même catégorie. */
 const related = computed(() =>
@@ -56,6 +63,16 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
           {{ categoryLabel }}
         </p>
         <h2>{{ topic.title }}</h2>
+        <p v-if="keywordChips.length" style="margin: 6px 0 10px">
+          <span
+            v-for="chip in keywordChips"
+            :key="chip.label"
+            class="rb-kw"
+            :class="chip.family"
+            style="margin-right: 6px"
+            >{{ chip.label }}</span
+          >
+        </p>
         <p class="lead">{{ topic.summary }}</p>
       </div>
     </div>
@@ -65,14 +82,14 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
         <div class="topic-main">
           <h3 class="topic-part">L'essentiel</h3>
           <ul class="guide-text">
-            <li v-for="(line, i) in topic.details" :key="i" v-html="strong(line)"></li>
+            <li v-for="(line, i) in topic.details" :key="i"><RuleText :text="line" /></li>
           </ul>
 
           <template v-if="topic.cases?.length">
             <h3 class="topic-part">Cas concrets</h3>
             <div class="topic-case panel" v-for="(item, i) in topic.cases" :key="i" v-reveal="i % 3">
-              <p class="topic-q">{{ item.q }}</p>
-              <p class="topic-a">{{ item.a }}</p>
+              <p class="topic-q"><RuleText :text="item.q" /></p>
+              <p class="topic-a"><RuleText :text="item.a" /></p>
             </div>
           </template>
 
@@ -92,7 +109,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
                 class="topic-rule"
                 :style="{ marginLeft: Math.min(entry.depth, 4) * 16 + 'px' }"
               >
-                <span class="mono topic-rule-num">{{ entry.number }}</span> {{ entry.text }}
+                <span class="mono topic-rule-num">{{ entry.number }}</span> <RuleText :text="entry.text" />
               </p>
             </article>
           </template>
