@@ -23,6 +23,10 @@ log = logging.getLogger("riftarium")
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     ensure_schema()
+    # Une instance précédente a pu mettre en cache un état partiel (sync en cours)
+    # ou obsolète (schéma/données modifiés) : on repart d'un cache propre.
+    cache_clear("cards:")
+    cache_clear("sets:")
     if settings.auto_sync:
         with SessionLocal() as db:
             count = db.scalar(select(func.count(Card.id))) or 0

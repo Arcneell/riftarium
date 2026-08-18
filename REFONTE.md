@@ -1,7 +1,6 @@
 # Riftarium — Plan de refonte
 
-> Reprise du projet **Le Codex** (guide de règles statique) vers **Riftarium** : compagnon
-> communautaire tout-en-un pour Riftbound, le TCG de Riot Games.
+> **Riftarium** : compagnon communautaire tout-en-un pour Riftbound, le TCG de Riot Games.
 > Projet fan-made, non commercial, non affilié à Riot Games.
 
 ## 1. Le nom
@@ -23,7 +22,7 @@ Riot lors de la demande d'accès API. Noms de repli prêts : **Faillecodex**, **
 | **Estimation** | Valeur de la collection et de chaque carte via l'API Cardmarket (prix tendance, min, moyenne 30 j) | P1 |
 | **Deck builder** | Construction avec validation des règles officielles (légende, 40 cartes, 12 runes, 3 champs de bataille, max 3 exemplaires) **ou mode libre** ; guide intégré pour débutants ; export/partage | P0 |
 | **Communauté** | Publication de decks, likes, commentaires, publication de réussites (pulls, tournois), profils, abonnements | P1 |
-| **Guides** | Reprise du contenu Le Codex : règles officielles intégrales + guide débutant (l'existant est conservé et migré) | P0 |
+| **Guides** | Règles officielles intégrales + guide débutant | P0 |
 | **Modération automatique** | Filtrage des contenus publiés avant mise en ligne (texte + images) | P1 (obligatoire avant ouverture publique) |
 
 ## 3. Architecture technique
@@ -108,7 +107,7 @@ card_embeddings(card_id, embedding vector)         -- scan
 ## 5. Phases
 
 1. **Maquette** — démo visuelle initiale. ✅ remplacée par le produit fonctionnel (`riftarium/`), qui sert désormais de démonstration à Riot ; la maquette reste consultable dans l'historique git.
-2. **Socle** — monorepo (`apps/web` Vue, `apps/api` FastAPI, `infra/` compose), auth, cartothèque en lecture (données galerie publique), migration des guides Le Codex.
+2. **Socle** — monorepo (`apps/web` Vue, `apps/api` FastAPI, `infra/` compose), auth, cartothèque en lecture (données galerie publique), intégration du module Règles.
 3. **Collection + prix** — inventaire, import CSV, intégration Cardmarket.
 4. **Deck builder** — validation règles, mode libre, partage par lien.
 5. **Communauté + modération** — feed, likes, profils ; pipeline de modération obligatoire avant ouverture.
