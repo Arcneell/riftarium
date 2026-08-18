@@ -34,6 +34,7 @@ def seed(session):
             rarity="Rare",
             domains=["Fury", "Mind"],
             collector_number=247,
+            tags=["Ahri"],
         ),
         Card(
             id="ogn-275-298",
@@ -94,11 +95,13 @@ def seed(session):
             name="Ahri, Inquisitive",
             set_id="OGN",
             type="Unit",
+            supertype="Champion",
             rarity="Epic",
             domains=["Mind"],
             energy=3,
             might=3,
             collector_number=119,
+            tags=["Ahri"],
         ),
         Card(
             id="ogn-078-298",
@@ -149,6 +152,7 @@ def seed(session):
             domains=["Mind"],
             energy=8,
             collector_number=200,
+            text_plain="[Unique] Destroy target unit.",
         ),
     ]
     session.add_all(cards)

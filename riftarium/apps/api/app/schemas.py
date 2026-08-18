@@ -49,6 +49,10 @@ class DeckCardIn(BaseModel):
     qty: int = Field(ge=1, le=12)
 
 
+class ExampleDeckIn(BaseModel):
+    mode: str = Field(default="owned", pattern=r"^(owned|discover)$")
+
+
 class DeckIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     description: str = Field(default="", max_length=2000)

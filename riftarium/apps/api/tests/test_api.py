@@ -419,6 +419,114 @@ def test_deck_update_delete_and_ownership(client, auth):
     assert client.delete(f"/api/decks/{deck_id}", headers=auth).status_code == 204
 
 
+def test_cards_owned_filter(client, auth):
+    client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
+
+    owned = client.get("/api/cards", params={"owned": "1"}, headers=auth).json()
+    assert owned["total"] == 1 and owned["items"][0]["id"] == "ogn-037-298"
+
+    not_owned = client.get("/api/cards", params={"owned": "0"}, headers=auth).json()
+    assert not_owned["total"] == 10
+    assert "ogn-037-298" not in {card["id"] for card in not_owned["items"]}
+
+    # anonyme : le paramètre est ignoré
+    assert client.get("/api/cards", params={"owned": "1"}).json()["total"] == 11
+
+
+def test_deck_missing_list(client, auth):
+    deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
+    # l'art alternatif du Phénix compte pour la famille : besoin 3, possédé 1 → manque 2
+    client.put("/api/collection/ogn-037a-298", json={"qty": 1}, headers=auth)
+    client.put("/api/collection/ogn-007-298", json={"qty": 12}, headers=auth)
+
+    data = client.get(f"/api/decks/{deck_id}/missing", headers=auth).json()
+    by_id = {item["card"]["id"]: item for item in data["items"]}
+    assert by_id["ogn-037-298"]["needed"] == 3
+    assert by_id["ogn-037-298"]["owned"] == 1
+    assert by_id["ogn-037-298"]["missing"] == 2
+    assert "ogn-007-298" not in by_id  # les 12 runes sont possédées
+    assert data["deck_total"] == 21
+    assert data["missing_total"] == sum(item["missing"] for item in data["items"])
+
+    assert client.get(f"/api/decks/{deck_id}/missing").status_code == 401
+
+
+def test_deck_copies_counted_across_variants(client, auth):
+    payload = deck_payload()
+    payload["cards"].append({"card_id": "ogn-037a-298", "qty": 1})  # 3 + 1 alt-art = 4 exemplaires
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    copies = check(deck["checks"], "copies")
+    assert not copies["ok"]
+    assert "Immortal Phoenix" in copies["message"]
+
+
+def test_deck_unique_rule(client, auth):
+    payload = deck_payload()
+    payload["cards"].append({"card_id": "ogn-200-298", "qty": 2})  # sort [Unique]
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    unique = check(deck["checks"], "unique")
+    assert not unique["ok"]
+    assert "Sky Splitter" in unique["message"]
+
+
+def test_deck_champion_rule(client, auth):
+    deck = client.post("/api/decks", json=deck_payload(), headers=auth).json()
+    assert check(deck["checks"], "champion")["ok"]  # Ahri (tag de la légende) est dans le deck principal
+
+    payload = deck_payload()
+    payload["cards"] = [card for card in payload["cards"] if card["card_id"] != "ogn-119-298"]
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    assert not check(deck["checks"], "champion")["ok"]
+
+
+def test_example_deck_owned_mode(client, auth):
+    for card_id, qty in [
+        ("ogn-247-298", 1),
+        ("ogn-275-298", 1),
+        ("ogn-276-298", 1),
+        ("ogn-277-298", 1),
+        ("ogn-007-298", 12),
+        ("ogn-037-298", 3),
+        ("ogn-119-298", 3),
+    ]:
+        client.put(f"/api/collection/{card_id}", json={"qty": qty}, headers=auth)
+
+    response = client.post("/api/decks/example", json={"mode": "owned"}, headers=auth)
+    assert response.status_code == 201
+    deck = response.json()
+    checks = {c["rule"]: c["ok"] for c in deck["checks"]}
+    assert checks["legend"] and checks["battlefields"] and checks["runes"]
+    assert checks["domains"] and checks["copies"] and checks["champion"] and checks["unique"]
+    # le seed de test n'a pas 40 cartes principales : le générateur remplit au mieux
+    by_type = {}
+    for entry in deck["cards"]:
+        by_type[entry["card"]["type"]] = by_type.get(entry["card"]["type"], 0) + entry["qty"]
+    assert by_type["Legend"] == 1 and by_type["Battlefield"] == 3 and by_type["Rune"] == 12
+    assert deck["format"] == "tournament" and deck["name"].startswith("Exemple ·")
+
+
+def test_example_deck_discover_mode_has_missing(client, auth):
+    response = client.post("/api/decks/example", json={"mode": "discover"}, headers=auth)
+    assert response.status_code == 201
+    deck = response.json()
+    missing = client.get(f"/api/decks/{deck['id']}/missing", headers=auth).json()
+    assert missing["missing_total"] > 0  # collection vide : tout est à trouver
+
+    assert client.post("/api/decks/example", json={"mode": "invalide"}, headers=auth).status_code == 422
+    assert client.post("/api/decks/example", json={"mode": "owned"}).status_code == 401
+
+
+def test_deck_out_includes_owned_qty(client, auth):
+    client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
+    deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
+    deck = client.get(f"/api/decks/{deck_id}", headers=auth).json()
+    entry = next(item for item in deck["cards"] if item["card"]["id"] == "ogn-037-298")
+    assert entry["card"]["owned_qty"] == 2
+    # anonyme sur un deck public : pas d'info de possession
+    anonymous = client.get(f"/api/decks/{deck_id}").json()
+    assert "owned_qty" not in anonymous["cards"][0]["card"]
+
+
 # ---------- communauté, likes, modération ----------
 
 

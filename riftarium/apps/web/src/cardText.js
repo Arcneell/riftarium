@@ -174,6 +174,18 @@ function pushBracket(parts, label, raw) {
   parts.push({ type: "keyword", label, family: keywordFamily(label), arrow: false, raw })
 }
 
+/* Miroir de variants.py : ogn-037a-298 / ogn-037*-298 → famille ogn-037-298. */
+const VARIANT_ID_RE = /^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$/i
+
+export function variantFamily(riftboundId) {
+  const ident = String(riftboundId || "")
+    .trim()
+    .toLowerCase()
+  const match = VARIANT_ID_RE.exec(ident)
+  if (!match) return ident
+  return `${match[1]}-${match[2]}-${match[4]}`
+}
+
 export function csvJoin(values) {
   return values.filter(Boolean).join(",")
 }
@@ -198,5 +210,6 @@ export function cardsQuery(state, size) {
   if (state.domain.length) params.set("domain", csvJoin(state.domain))
   if (state.rarity.length) params.set("rarity", csvJoin(state.rarity))
   if (state.energy.length) params.set("energy", csvJoin(state.energy))
+  if (state.owned) params.set("owned", state.owned)
   return params
 }
