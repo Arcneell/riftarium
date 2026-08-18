@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { STEPS, ZONES, slot } from "../rules/guide.js"
+import { CARDS, STEPS } from "../rules/guide.js"
 
 const route = useRoute()
 const router = useRouter()
@@ -9,33 +9,20 @@ const router = useRouter()
 const initial = Number.parseInt(route.query.etape, 10)
 const stepIndex = ref(initial >= 1 && initial <= STEPS.length ? initial - 1 : 0)
 watch(stepIndex, (value) => router.replace({ query: value ? { etape: value + 1 } : {} }))
+
 const step = computed(() => STEPS[stepIndex.value])
 const scene = computed(() => step.value.scene)
 
 const strong = (text) => text.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
 
-/* Positionne chaque jeton dans sa zone, avec un léger étalement. */
-const tokens = computed(() => {
-  const byZone = {}
-  for (const token of scene.value.tokens) (byZone[token.zone] ??= []).push(token)
-  return scene.value.tokens.map((token) => {
-    const group = byZone[token.zone]
-    const point = slot(token.zone, group.indexOf(token), group.length)
-    return { ...token, ...point }
-  })
-})
-
-const highlighted = (zone) => scene.value.highlight?.includes(zone)
-const contested = (zone) => scene.value.contested?.includes(zone)
-const controller = (zone) => scene.value.control?.[zone]
+const contested = (bf) => scene.value.contested?.includes(bf)
+const controller = (bf) => scene.value.control?.[bf]
 
 const arrowPath = computed(() => {
   const arrow = scene.value.arrow
   if (!arrow) return null
-  const from = ZONES[arrow.from]
-  const to = ZONES[arrow.to]
-  const midY = (from.y + to.y) / 2
-  return `M ${from.x} ${from.y - 34} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y + 46}`
+  const { from, to } = arrow
+  return `M ${from.x} ${from.y - 6} C ${from.x} ${(from.y + to.y) / 2}, ${to.x} ${(from.y + to.y) / 2}, ${to.x} ${to.y + 10}`
 })
 
 function goTo(index) {
@@ -50,135 +37,113 @@ function onKeydown(event) {
 <template>
   <div class="page-banner">
     <div class="wrap">
-      <p class="eyebrow">Guide du débutant</p>
-      <h2>Apprenez à jouer en dix étapes</h2>
+      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Guide du débutant</p>
+      <h2>Apprenez à jouer, cartes en main</h2>
       <p class="lead">
-        Le plateau ci-dessous s'anime à chaque étape : placement des cartes, déplacements, combat, points. Comptez cinq
-        minutes.
+        Une vraie table de duel (1c1) qui se joue sous vos yeux, avec de vraies cartes du set Origins : mise en place,
+        tour de jeu, combat, conquête. Les termes officiels sont mis en évidence à chaque étape.
       </p>
     </div>
   </div>
 
   <section style="padding-top: 36px">
     <div class="wrap guide-layout" @keydown="onKeydown" tabindex="0" aria-label="Guide interactif">
-      <div class="guide-board panel" v-reveal>
-        <svg viewBox="0 0 900 560" class="board" aria-hidden="true">
-          <defs>
-            <linearGradient id="bd-gold" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#d9bd82" />
-              <stop offset="1" stop-color="#8a6a2f" />
-            </linearGradient>
-            <marker
-              id="bd-arrow"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--hex)" />
-            </marker>
-          </defs>
+      <div class="guide-board" v-reveal>
+        <div class="tb" :class="{ bare: scene.hideBattlefields }">
+          <!-- Bandeaux de base -->
+          <template v-if="!scene.hideBattlefields">
+            <div class="tb-strip foe"><span>Base adverse</span></div>
+            <div class="tb-strip you"><span>Votre base</span></div>
+            <div class="tb-slot" style="left: 73.5%; top: 83%"><span>Défausse</span></div>
+          </template>
 
-          <!-- Zones -->
-          <g v-for="(zone, key) in ZONES" :key="key">
-            <rect
-              class="bd-zone"
-              :class="{
-                lit: highlighted(key),
-                contested: contested(key),
-                'ctrl-you': controller(key) === 'you',
-                'ctrl-foe': controller(key) === 'foe',
-                base: key.endsWith('Base')
-              }"
-              :x="zone.x - zone.w / 2"
-              :y="zone.y - zone.h / 2"
-              :width="zone.w"
-              :height="zone.h"
-              rx="16"
-            />
-            <text class="bd-zone-label" :x="zone.x" :y="zone.y + zone.h / 2 - 10">{{ zone.label }}</text>
-            <text v-if="contested(key)" class="bd-flag" :x="zone.x" :y="zone.y - zone.h / 2 + 20">contesté</text>
-            <text v-else-if="controller(key)" class="bd-flag ok" :x="zone.x" :y="zone.y - zone.h / 2 + 20">
-              contrôlé
-            </text>
-          </g>
+          <!-- Champs de bataille (2 en duel : un présenté par chaque joueur) -->
+          <template v-if="!scene.hideBattlefields">
+            <div
+              v-for="bf in ['bfFoe', 'bfYou']"
+              :key="bf"
+              class="tb-bf"
+              :class="{ contested: contested(bf), controlled: controller(bf) === 'you' }"
+              :style="{ left: (bf === 'bfFoe' ? 32 : 68) + '%', top: '42%' }"
+            >
+              <img :src="CARDS[bf].img" :alt="CARDS[bf].name" loading="lazy" />
+              <span class="tb-bf-name mono">{{ CARDS[bf].name }}</span>
+              <span v-if="contested(bf)" class="tb-bf-flag">Contesté</span>
+              <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">Contrôlé</span>
+            </div>
+          </template>
 
           <!-- Flèche de déplacement -->
-          <path v-if="arrowPath" class="bd-move" :d="arrowPath" marker-end="url(#bd-arrow)" />
+          <svg v-if="arrowPath" class="tb-arrows" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path class="tb-move" :d="arrowPath" />
+          </svg>
 
           <!-- Éclair de combat -->
-          <text v-if="scene.clash" class="bd-clash" :x="ZONES[scene.clash].x" :y="ZONES[scene.clash].y - 78">⚔</text>
+          <span v-if="scene.clash" class="tb-clash" aria-hidden="true">⚔</span>
 
-          <!-- Jetons unités -->
-          <g
-            v-for="token in tokens"
-            :key="token.id"
-            class="bd-token"
-            :class="{ foe: token.side === 'foe', exhausted: token.exhausted, dead: token.dead, enter: token.enter }"
-            :style="{ transform: `translate(${token.x}px, ${token.y}px)` }"
-          >
-            <circle r="24" class="bd-token-bg" />
-            <text class="bd-token-power" dy="7">{{ token.power }}</text>
-          </g>
+          <!-- Cartes -->
+          <TransitionGroup name="tb">
+            <div
+              v-for="placed in scene.cards"
+              :key="placed.key"
+              class="tb-card"
+              :class="{ tapped: placed.tapped, dead: placed.dead, wide: placed.wide, glow: placed.glow }"
+              :style="{
+                left: placed.spot.x + '%',
+                top: placed.spot.y + '%',
+                '--r': (placed.spot.r ?? 0) + 'deg'
+              }"
+            >
+              <span v-if="placed.facedown" class="tb-back" :title="placed.label"></span>
+              <img v-else :src="placed.card.img" :alt="placed.card.name" loading="lazy" />
+              <span v-if="placed.might && placed.card.might" class="tb-might">{{ placed.card.might }}</span>
+              <span v-if="placed.dmg" class="tb-dmg">−{{ placed.dmg }}</span>
+              <span v-if="placed.label" class="tb-slot-label mono">{{ placed.label }}</span>
+            </div>
+          </TransitionGroup>
 
-          <!-- Main, runes, ressources -->
-          <g v-if="scene.hand" class="bd-hand">
-            <rect
+          <!-- Main (dos de cartes) -->
+          <div v-if="scene.hand" class="tb-hand" aria-label="Votre main">
+            <span
               v-for="i in scene.hand"
               :key="i"
-              class="bd-card"
-              :x="30 + (i - 1) * 18"
-              y="470"
-              width="34"
-              height="50"
-              rx="5"
-              :style="{ transitionDelay: i * 60 + 'ms' }"
-            />
-            <text class="bd-zone-label" x="66" y="548">Main</text>
-          </g>
-          <g v-if="scene.runes" class="bd-runes">
-            <circle v-for="i in scene.runes" :key="i" class="bd-rune" :cx="846 - (i - 1) * 30" cy="492" r="13" />
-            <text class="bd-zone-label" x="830" y="548">Runes</text>
-          </g>
-          <g v-if="scene.energy" class="bd-pool">
-            <g v-for="i in scene.energy" :key="'en' + i" :style="{ transitionDelay: i * 80 + 'ms' }">
-              <circle class="bd-energy" :cx="846 - (i - 1) * 30" cy="430" r="11" />
-              <text class="bd-energy-num" :x="846 - (i - 1) * 30" y="435">1</text>
-            </g>
-            <circle v-if="scene.essence" class="bd-essence" cx="846" cy="368" r="11" />
-          </g>
+              class="tb-back small"
+              :style="{ rotate: (i - (scene.hand + 1) / 2) * 6 + 'deg' }"
+            ></span>
+            <i class="mono">Main · {{ scene.hand }}</i>
+          </div>
 
-          <!-- Score : gemmes de victoire -->
-          <g class="bd-score">
-            <text class="bd-zone-label" x="54" y="36">Vous</text>
-            <circle
+          <!-- Réserve runique -->
+          <div v-if="scene.chips" class="tb-pool" aria-label="Réserve runique">
+            <span v-for="i in scene.chips.energy" :key="'e' + i" class="tb-chip energy">1</span>
+            <span v-for="i in scene.chips.essence" :key="'c' + i" class="tb-chip essence">✦</span>
+            <i class="mono">Réserve runique</i>
+          </div>
+
+          <!-- Score -->
+          <div class="tb-score you" aria-label="Vos points">
+            <i class="mono">Vous</i>
+            <span
               v-for="i in 8"
-              :key="'sy' + i"
-              class="bd-gem"
+              :key="i"
+              class="tb-gem"
               :class="{ filled: i <= scene.score.you, pulse: scene.scorePulse && i === scene.score.you }"
-              :cx="30 + (i - 1) * 26"
-              cy="56"
-              r="9"
-            />
-            <text class="bd-zone-label" x="838" y="36">Adversaire</text>
-            <circle
-              v-for="i in 8"
-              :key="'sf' + i"
-              class="bd-gem foe"
-              :class="{ filled: i <= scene.score.foe }"
-              :cx="870 - (i - 1) * 26"
-              cy="56"
-              r="9"
-            />
-          </g>
-        </svg>
+            ></span>
+          </div>
+          <div class="tb-score foe" aria-label="Points adverses">
+            <i class="mono">Adversaire</i>
+            <span v-for="i in 8" :key="i" class="tb-gem foe" :class="{ filled: i <= scene.score.foe }"></span>
+          </div>
+        </div>
+        <p class="tb-credit mono">Cartes et visuels officiels Riftbound — © Riot Games, servis par le CDN officiel.</p>
       </div>
 
       <div class="guide-side" v-reveal="1">
         <p class="mono guide-count">Étape {{ stepIndex + 1 }} / {{ STEPS.length }}</p>
         <h3 class="guide-title">{{ step.title }}</h3>
+        <div class="guide-terms">
+          <span v-for="term in step.terms" :key="term" class="guide-term mono">{{ term }}</span>
+        </div>
         <Transition name="guide-text" mode="out-in">
           <ul class="guide-text" :key="step.key">
             <li v-for="(line, i) in step.text" :key="i" v-html="strong(line)"></li>
