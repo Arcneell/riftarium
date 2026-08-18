@@ -25,7 +25,9 @@ export default defineConfig({
     // Les bind mounts Windows/Docker ne propagent pas les événements de fichiers : polling.
     watch: process.env.VITE_POLLING ? { usePolling: true, interval: 300 } : undefined,
     proxy: {
-      "/api": { target: process.env.API_PROXY || "http://localhost:8000", changeOrigin: true }
+      // agent: false — pas de keep-alive : si le conteneur api est recréé (nouvelle IP),
+      // chaque requête re-résout le DNS au lieu de servir des 502 sur des sockets mortes.
+      "/api": { target: process.env.API_PROXY || "http://localhost:8000", changeOrigin: true, agent: false }
     }
   },
   test: {
