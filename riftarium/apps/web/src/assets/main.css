@@ -2050,7 +2050,7 @@ footer {
 }
 .tb {
   position: relative;
-  aspect-ratio: 16 / 11;
+  aspect-ratio: 16 / 12;
   border-radius: var(--r-lg);
   border: 1px solid var(--line-strong);
   background:
@@ -2085,7 +2085,7 @@ footer {
   bottom: 3px;
 }
 .tb-strip.you {
-  top: 56%;
+  top: 54%;
   left: 22%;
   right: 23%;
 }
@@ -2116,9 +2116,9 @@ footer {
 .tb-runezone {
   position: absolute;
   left: 14.5%;
-  width: 32%;
-  top: 74.5%;
-  bottom: 1.5%;
+  width: 33%;
+  top: 71.5%;
+  bottom: 13.5%;
   border: 1.5px dashed var(--line-strong);
   border-bottom: none;
   border-radius: var(--r) var(--r) 0 0;
@@ -2136,10 +2136,10 @@ footer {
 }
 .tb-handzone {
   position: absolute;
-  left: 52%;
-  right: 11.5%;
-  top: 79%;
-  bottom: 1.5%;
+  left: 51%;
+  right: 15.5%;
+  top: 85%;
+  bottom: 0.5%;
   border: 1.5px dashed rgba(11, 143, 132, 0.45);
   border-bottom: none;
   border-radius: var(--r) var(--r) 0 0;
@@ -2273,6 +2273,12 @@ footer {
   filter: grayscale(1) brightness(1.1);
   transition-delay: 1s;
 }
+.tb-card.ghost {
+  opacity: 0.55;
+}
+.tb-card.ghost img {
+  box-shadow: 0 0 0 2px rgba(194, 67, 155, 0.5);
+}
 .tb-card.glow img {
   box-shadow:
     0 0 0 3px rgba(11, 143, 132, 0.55),
@@ -2364,7 +2370,7 @@ footer {
 .tb-pool {
   position: absolute;
   left: 16%;
-  top: 71.5%;
+  top: 68%;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2614,7 +2620,7 @@ footer {
 }
 .guide-layout.full .tb {
   max-height: calc(100vh - 130px);
-  max-width: calc((100vh - 130px) * 16 / 11);
+  max-width: calc((100vh - 130px) * 16 / 12);
   width: 100%;
   margin: 0 auto;
 }

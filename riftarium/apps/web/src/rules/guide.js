@@ -96,46 +96,46 @@ export const SPOTS = {
   bfFoe: { x: 39, y: 44 },
   bfYou: { x: 61, y: 44 },
 
-  legend: { x: 8, y: 63 },
-  championZone: { x: 16.5, y: 63 },
-  mainDeck: { x: 92, y: 63 },
-  runeDeck: { x: 8, y: 82 },
-  discard: { x: 92, y: 82 },
+  legend: { x: 8, y: 61 },
+  championZone: { x: 16.5, y: 61 },
+  mainDeck: { x: 92, y: 61 },
+  runeDeck: { x: 8, y: 79 },
+  discard: { x: 92, y: 79 },
 
-  youBaseA: { x: 33, y: 63 },
-  youBaseB: { x: 41, y: 63 },
-  youBaseC: { x: 49, y: 63 },
+  youBaseA: { x: 33, y: 61 },
+  youBaseB: { x: 41, y: 61 },
+  youBaseC: { x: 49, y: 61 },
 
-  runeA: { x: 19, y: 82 },
-  runeB: { x: 25.5, y: 82 },
-  runeC: { x: 32, y: 82 },
-  runeD: { x: 38.5, y: 82 },
-  runeE: { x: 45, y: 82 },
-  runeF: { x: 51.5, y: 82 },
+  runeA: { x: 19, y: 79 },
+  runeB: { x: 25.5, y: 79 },
+  runeC: { x: 32, y: 79 },
+  runeD: { x: 38.5, y: 79 },
+  runeE: { x: 45, y: 79 },
+  runeF: { x: 51.5, y: 79 },
 
-  hand1: { x: 57, y: 92.5 },
-  hand2: { x: 63.5, y: 92.5 },
-  hand3: { x: 70, y: 92.5 },
-  hand4: { x: 76.5, y: 92.5 },
-  hand5: { x: 83, y: 92.5 },
+  hand1: { x: 57, y: 93 },
+  hand2: { x: 63.5, y: 93 },
+  hand3: { x: 70, y: 93 },
+  hand4: { x: 76.5, y: 93 },
+  hand5: { x: 83, y: 93 },
 
   foeLegend: { x: 92, y: 22 },
   foeChampion: { x: 83.5, y: 22 },
   foeMainDeck: { x: 8, y: 22 },
-  foeRuneDeck: { x: 92, y: 8.5 },
-  foeDiscard: { x: 8, y: 8.5 },
+  foeRuneDeck: { x: 92, y: 8 },
+  foeDiscard: { x: 8, y: 8 },
   foeBaseA: { x: 45, y: 22 },
 
-  onBfFoeA: { x: 33.5, y: 47.5 },
-  onBfFoeB: { x: 45, y: 47.5 },
-  onBfFoeDef: { x: 39, y: 36 },
-  onBfYouA: { x: 61, y: 47.5 },
+  onBfFoeA: { x: 33.5, y: 47 },
+  onBfFoeB: { x: 45, y: 47 },
+  onBfFoeDef: { x: 39, y: 35 },
+  onBfYouA: { x: 61, y: 47 },
 
-  chain: { x: 50, y: 62 },
+  chain: { x: 50, y: 60 },
 
-  discardA: { x: 92, y: 82 },
-  discardB: { x: 90.6, y: 80.4 },
-  foeDiscardA: { x: 8, y: 8.5 }
+  discardA: { x: 92, y: 80 },
+  discardB: { x: 91.2, y: 78.6, r: -9 },
+  foeDiscardA: { x: 8, y: 8, r: 7 }
 }
 
 const fan = (index, count, y = 42, spread = 10.5) => ({
@@ -275,12 +275,18 @@ export const STEPS = [
     terms: ["épuiser", "recycler", "énergie", "essence runique"],
     text: [
       "Le coût d'une carte, en haut à gauche : un **chiffre** (à payer en **énergie**) et parfois des **symboles de domaine** (à payer en **essence runique**).",
-      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie**, et elle se redresse à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes** (règle 416) ; elle reviendra en jeu quand vous la canaliserez de nouveau.",
+      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie**, et elle se redresse à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes**, comme la rune translucide à l'écran (règle 416) ; elle reviendra en jeu quand vous la canaliserez de nouveau.",
       "Réflexe de débutant : on **épuise** pour les chiffres, on ne **recycle** que pour les symboles de domaine.",
       "Ici vous épuisez vos 2 runes : **2 énergie** en réserve. Ce qui n'est pas dépensé se perd en fin de phase."
     ],
     scene: {
-      cards: board([...HAND, { key: "h5", card: CARDS.spell, spot: SPOTS.hand5, hand: true }, ...RUNES(2, 2)]),
+      cards: board([
+        ...HAND,
+        { key: "h5", card: CARDS.spell, spot: SPOTS.hand5, hand: true },
+        ...RUNES(2, 2),
+        { key: "runeGhost", card: CARDS.chaosRune, spot: { x: 9.5, y: 76.5, r: -6 }, ghost: true }
+      ]),
+      arrow: { from: { x: 30, y: 74 }, to: { x: 12, y: 74 } },
       chips: { energy: 2 },
       foeHand: 4,
       score: { you: 0, foe: 0 }
@@ -458,6 +464,7 @@ export const STEPS = [
         ...RUNES(4)
       ]),
       control: { bfFoe: "you" },
+      arrow: { from: { x: 48, y: 47 }, to: { x: 87, y: 74 } },
       foeHand: 3,
       score: { you: 1, foe: 1 },
       scorePulse: true

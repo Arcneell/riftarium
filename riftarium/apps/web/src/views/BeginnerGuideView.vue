@@ -184,6 +184,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
                 dead: placed.dead,
                 wide: placed.wide,
                 glow: placed.glow,
+                ghost: placed.ghost,
                 inhand: placed.hand
               }"
               :style="{
@@ -211,20 +212,6 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
       </div>
 
       <div class="guide-panel" v-reveal="1">
-        <div class="guide-copy">
-          <h3 class="guide-title">{{ step.title }}</h3>
-          <div class="guide-terms">
-            <span v-for="term in step.terms" :key="term" class="guide-term mono">{{ term }}</span>
-          </div>
-          <Transition name="guide-text" mode="out-in">
-            <ul class="guide-text" :key="step.key">
-              <li v-for="(line, i) in step.text" :key="i" v-html="strong(line)"></li>
-            </ul>
-          </Transition>
-          <p class="muted" style="font-size: 0.76rem">
-            <RouterLink :to="`/regles/officielles?doc=core&section=${step.ref}`">Règle {{ step.ref }} ↗</RouterLink>
-          </p>
-        </div>
         <div class="guide-controls">
           <div class="guide-nav">
             <button class="btn btn-ghost" :disabled="stepIndex === 0" @click="goTo(stepIndex - 1)">← Précédent</button>
@@ -246,6 +233,20 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
             ></button>
           </div>
           <p class="muted" style="font-size: 0.72rem">Astuce : flèches ← → du clavier pour naviguer.</p>
+        </div>
+        <div class="guide-copy">
+          <h3 class="guide-title">{{ step.title }}</h3>
+          <div class="guide-terms">
+            <span v-for="term in step.terms" :key="term" class="guide-term mono">{{ term }}</span>
+          </div>
+          <Transition name="guide-text" mode="out-in">
+            <ul class="guide-text" :key="step.key">
+              <li v-for="(line, i) in step.text" :key="i" v-html="strong(line)"></li>
+            </ul>
+          </Transition>
+          <p class="muted" style="font-size: 0.76rem">
+            <RouterLink :to="`/regles/officielles?doc=core&section=${step.ref}`">Règle {{ step.ref }} ↗</RouterLink>
+          </p>
         </div>
       </div>
     </div>
