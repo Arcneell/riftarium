@@ -113,17 +113,17 @@ export const SPOTS = {
   runeE: { x: 45, y: 82 },
   runeF: { x: 51.5, y: 82 },
 
-  hand1: { x: 61, y: 92.5 },
-  hand2: { x: 68, y: 92.5 },
-  hand3: { x: 75, y: 92.5 },
-  hand4: { x: 82, y: 92.5 },
-  hand5: { x: 89, y: 92.5 },
+  hand1: { x: 57, y: 92.5 },
+  hand2: { x: 63.5, y: 92.5 },
+  hand3: { x: 70, y: 92.5 },
+  hand4: { x: 76.5, y: 92.5 },
+  hand5: { x: 83, y: 92.5 },
 
   foeLegend: { x: 92, y: 22 },
   foeChampion: { x: 83.5, y: 22 },
   foeMainDeck: { x: 8, y: 22 },
-  foeRuneDeck: { x: 92, y: 6 },
-  foeDiscard: { x: 8, y: 6 },
+  foeRuneDeck: { x: 92, y: 8.5 },
+  foeDiscard: { x: 8, y: 8.5 },
   foeBaseA: { x: 45, y: 22 },
 
   onBfFoeA: { x: 33.5, y: 47.5 },
@@ -131,7 +131,11 @@ export const SPOTS = {
   onBfFoeDef: { x: 39, y: 36 },
   onBfYouA: { x: 61, y: 47.5 },
 
-  chain: { x: 50, y: 62 }
+  chain: { x: 50, y: 62 },
+
+  discardA: { x: 92, y: 82 },
+  discardB: { x: 90.6, y: 80.4 },
+  foeDiscardA: { x: 8, y: 8.5 }
 }
 
 const fan = (index, count, y = 42, spread = 10.5) => ({
@@ -238,8 +242,8 @@ export const STEPS = [
     terms: ["piocher", "mulligan", "recycler"],
     text: [
       "Chaque joueur **pioche 4 cartes** — les vôtres sont là, faces visibles. On détermine au hasard qui commence.",
-      "Main décevante ? Un seul **mulligan** : mettez jusqu'à **2 cartes de côté**, piochez-en autant, puis **recyclez** celles mises de côté dans le deck.",
-      "Ce qu'on cherche dans une main de départ : des cartes **peu chères** (coût 2-3) pour agir dès les premiers tours. Ici, Rearguard à 2 et Chompers à 3 : on garde tout."
+      "Main décevante ? Un seul **mulligan** : mettez jusqu'à **2 cartes de côté**, piochez-en autant, puis **recyclez** celles mises de côté : elles sont placées **sous votre deck principal**.",
+      "Ici, la main permet de jouer dès les premiers tours : on garde les 4 cartes."
     ],
     scene: {
       cards: board(HAND.map((c) => ({ ...c, glow: true }))),
@@ -254,7 +258,7 @@ export const STEPS = [
     terms: ["phase d'éveil", "canaliser", "piocher"],
     text: [
       "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées. **Scores** : vous marquez pour chaque champ de bataille contrôlé.",
-      "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles y **restent de tour en tour** — 2, puis 4, puis 6 : votre moteur grandit. (Le second joueur en canalise 3 à son tout premier tour.)",
+      "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles **restent en zone de runes de tour en tour** : 2 au premier tour, 4 au deuxième, 6 au troisième. (Le joueur qui commence en second en canalise 3 à son tout premier tour.)",
       "**Pioche** : **1 carte** — suivez-la, elle glisse du deck principal vers votre main : Get Excited!."
     ],
     scene: {
@@ -271,7 +275,7 @@ export const STEPS = [
     terms: ["épuiser", "recycler", "énergie", "essence runique"],
     text: [
       "Le coût d'une carte, en haut à gauche : un **chiffre** (à payer en **énergie**) et parfois des **symboles de domaine** (à payer en **essence runique**).",
-      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie**, et elle se redresse à votre prochain éveil. **La recycler** (la remettre sous le deck de runes) : **+1 essence** de son domaine — la rune quitte la table, vous la recanaliserez plus tard.",
+      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie**, et elle se redresse à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes** (règle 416) ; elle reviendra en jeu quand vous la canaliserez de nouveau.",
       "Réflexe de débutant : on **épuise** pour les chiffres, on ne **recycle** que pour les symboles de domaine.",
       "Ici vous épuisez vos 2 runes : **2 énergie** en réserve. Ce qui n'est pas dépensé se perd en fin de phase."
     ],
@@ -290,7 +294,7 @@ export const STEPS = [
     text: [
       "Vos 2 énergies paient **Legion Rearguard** (coût 2) : il quitte votre main et entre dans votre **base**, **épuisé** — couché sur le côté, il ne fera rien ce tour-ci (sauf mot-clé **Accélération**).",
       "**Seal of Rage** coûte 0 : posé aussi. Les équipements, eux, arrivent **préparés**, droits.",
-      "**Flame Chompers** coûte 3 : vos 2 runes ne produisent que 2 énergie, il attendra le tour prochain. C'est la logique du jeu : chaque tour, 2 runes de plus, des cartes plus grosses.",
+      "**Flame Chompers** coûte 3 : vos 2 runes ne produisent que 2 énergie, il attendra le tour prochain. Il sera jouable au tour suivant, quand la canalisation aura porté vos runes à 4.",
       "Plus rien à payer ? Vous annoncez la **fin de votre tour**."
     ],
     scene: {
@@ -332,7 +336,7 @@ export const STEPS = [
   },
   {
     key: "tour2",
-    title: "Tour 2 : le moteur monte en puissance",
+    title: "Tour 2 : quatre runes en jeu",
     ref: "165",
     terms: ["canaliser", "réserve runique"],
     text: [
@@ -439,7 +443,7 @@ export const STEPS = [
     ref: "466",
     terms: ["nettoyage", "conquête", "soigner"],
     text: [
-      "**Nettoyage de combat** : les éliminés partent à la défausse de leur propriétaire, les survivants sont **soignés** — Flame Chompers repart à pleine puissance.",
+      "**Nettoyage de combat** : chaque carte éliminée part dans la **défausse de son propriétaire** — Legion Rearguard et le sort résolu rejoignent la vôtre, Sunlit Guardian la sienne. Les survivants sont **soignés** : Flame Chompers repart à pleine puissance.",
       "Seul camp restant sur le champ : vous en prenez le **contrôle** → **conquête, +1 point**, immédiatement.",
       "Nuance utile : si les **deux** camps survivent, les attaquants sont **rappelés** à leur base et le défenseur garde le contrôle — attaquer sans assez de puissance ne sert à rien."
     ],
@@ -448,6 +452,9 @@ export const STEPS = [
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true },
         { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
         ...RUNES(4)
       ]),
       control: { bfFoe: "you" },
@@ -471,6 +478,9 @@ export const STEPS = [
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, might: true },
         { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
         ...RUNES(6)
       ]),
       control: { bfFoe: "you" },
@@ -481,19 +491,22 @@ export const STEPS = [
   },
   {
     key: "victoire",
-    title: "Gagner — et bien démarrer",
+    title: "Les deux façons de gagner",
     ref: "193",
     terms: ["score de la victoire", "conquête", "occupation", "exténuation"],
     text: [
       "Deux routes vers 8 points. La rapide : **conquérir les 2 champs dans le même tour** — le point de la victoire par conquête n'est accordé que si vous avez marqué sur chaque champ ce tour-là (sinon, vous piochez une carte à la place). La patiente : **tenir un champ** et laisser l'**occupation**, sans restriction, vous y porter.",
-      "Pièges des premières parties : oublier que les unités arrivent **épuisées** ; **recycler** une rune quand il suffisait de l'épuiser ; oublier qu'un champ ne rapporte qu'**un point par tour** ; piocher deck vide (**exténuation** : l'adversaire gagne 1 point).",
-      "Vous savez jouer. Pour les situations litigieuses en partie, direction l'**aide avancée** — et le texte officiel tranche toujours."
+      "Cas particulier : si vous devez piocher avec un deck principal vide, vous êtes **exténué** — votre défausse est remélangée en un nouveau deck et un adversaire de votre choix gagne 1 point.",
+      "Vous savez jouer. Pour chaque mécanique en détail, direction l'**aide avancée** — et le texte officiel tranche toujours."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, might: true },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.onBfYouA, might: true },
         { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
         ...RUNES(6)
       ]),
       control: { bfFoe: "you", bfYou: "you" },
