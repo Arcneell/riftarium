@@ -49,7 +49,7 @@ const MODULES = [
     icon: "layers",
     chip: "var(--fury)",
     title: "Deck builder",
-    text: "Construisez vos decks avec validation des règles de tournoi — ou en mode libre, sans contrainte.",
+    text: "Construisez vos decks avec validation des règles de tournoi — ou en mode libre, format non officiel.",
     to: "/decks",
     go: "Construire"
   },
@@ -81,9 +81,9 @@ const MODULES = [
 
 onMounted(async () => {
   try {
-    const [sets, health] = await Promise.all([api("/api/sets"), api("/api/health")])
+    const [sets, cards] = await Promise.all([api("/api/sets"), api("/api/cards?size=1")])
     setCount.value = sets.length
-    cardCount.value = health.cards
+    cardCount.value = cards.total
   } catch {
     /* les chiffres arriveront au prochain chargement */
   }

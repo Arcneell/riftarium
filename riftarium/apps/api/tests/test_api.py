@@ -28,7 +28,8 @@ def check(checks, rule):
 def test_health(client):
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json()["cards"] == 11
+    assert response.json() == {"status": "ok"}
+    assert "cards" not in response.json()
 
 
 def test_cards_list_and_filters(client):
@@ -230,9 +231,16 @@ def test_register_login_me(client):
         "handle": "maelle",
         "email": "maelle@example.org",
         "password": "supersecret1",
+        "accept_terms": True,
+        "confirm_age": True,
     }
     assert client.post("/api/auth/register", json=creds).status_code == 201
     assert client.post("/api/auth/register", json=creds).status_code == 409
+
+    refused = {**creds, "handle": "sansaccord", "email": "sansaccord@example.org", "accept_terms": False}
+    assert client.post("/api/auth/register", json=refused).status_code == 422
+    too_young = {**creds, "handle": "mineur", "email": "mineur@example.org", "confirm_age": False}
+    assert client.post("/api/auth/register", json=too_young).status_code == 422
 
     login = client.post("/api/auth/login", json={"email": creds["email"], "password": creds["password"]})
     assert login.status_code == 200
@@ -290,6 +298,7 @@ def test_profile_avatar_password_export_and_delete(client, auth):
         headers=auth,
     )
     assert pwd.status_code == 200
+    assert client.get("/api/auth/me", headers=auth).status_code == 401
     auth = {"Authorization": f"Bearer {pwd.json()['token']}"}
     assert (
         client.post("/api/auth/login", json={"email": "testeur@example.org", "password": "nouveausecret"}).status_code
@@ -321,7 +330,13 @@ def test_profile_avatar_password_export_and_delete(client, auth):
 def test_profile_email_conflict_and_empty_patch(client, auth):
     client.post(
         "/api/auth/register",
-        json={"handle": "autre", "email": "autre@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "autre",
+            "email": "autre@example.org",
+            "password": "motdepasse123",
+            "accept_terms": True,
+            "confirm_age": True,
+        },
     )
     assert client.patch("/api/auth/me", json={}, headers=auth).status_code == 400
     assert (
@@ -349,7 +364,13 @@ def test_delete_account_removes_likes(client, auth):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
     other = client.post(
         "/api/auth/register",
-        json={"handle": "fanclub", "email": "fan@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "fanclub",
+            "email": "fan@example.org",
+            "password": "motdepasse123",
+            "accept_terms": True,
+            "confirm_age": True,
+        },
     ).json()
     other_auth = {"Authorization": f"Bearer {other['token']}"}
     assert client.post(f"/api/decks/{deck_id}/like", headers=other_auth).json()["likes"] == 1
@@ -528,6 +549,8 @@ def test_deck_update_delete_and_ownership(client, auth):
             "handle": "intrus",
             "email": "intrus@example.org",
             "password": "motdepasse123",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     ).json()["token"]
     other_auth = {"Authorization": f"Bearer {other}"}
@@ -731,7 +754,13 @@ def test_community_views_are_unique_and_skip_owner(client, auth):
 
     other = client.post(
         "/api/auth/register",
-        json={"handle": "visiteur", "email": "visiteur@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "visiteur",
+            "email": "visiteur@example.org",
+            "password": "motdepasse123",
+            "accept_terms": True,
+            "confirm_age": True,
+        },
     )
     token = {"Authorization": f"Bearer {other.json()['token']}"}
     counted = client.post(f"/api/decks/{deck_id}/view", headers=token)
@@ -847,9 +876,12 @@ def test_admin_sync_is_throttled(client, monkeypatch):
 
     monkeypatch.setattr(main, "run_sync", lambda db: {"sets": 0, "cards": 0})
     main._last_sync_fallback = 0.0
+    headers = {"X-Admin-Token": "test-admin-token-ok"}
 
-    assert client.post("/api/admin/sync").status_code == 200
-    throttled = client.post("/api/admin/sync")
+    assert client.post("/api/admin/sync").status_code == 403
+    assert client.post("/api/admin/sync", headers={"X-Admin-Token": "nope"}).status_code == 403
+    assert client.post("/api/admin/sync", headers=headers).status_code == 200
+    throttled = client.post("/api/admin/sync", headers=headers)
     assert throttled.status_code == 429
     assert "réessayez" in throttled.json()["detail"]
     main._last_sync_fallback = 0.0

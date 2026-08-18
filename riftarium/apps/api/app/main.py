@@ -2,16 +2,17 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .cache import cache_clear, cache_get, cache_set
-from .config import settings
+from .config import settings, validate_production_settings
 from .db import Base, SessionLocal, engine, ensure_schema, get_db
 from .demo import seed_community
 from .models import Card
 from .routers import auth_routes, cards, collection, decks
+from .security import require_admin_token
 from .sync import run_sync
 
 _last_sync_fallback = 0.0  # utilisé quand Redis est absent
@@ -22,6 +23,7 @@ log = logging.getLogger("riftarium")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_production_settings()
     Base.metadata.create_all(engine)
     ensure_schema()
     # Une instance précédente a pu mettre en cache un état partiel (sync en cours)
@@ -49,6 +51,9 @@ app = FastAPI(
         "Données de cartes : API communautaire Riftcodex ; visuels servis par le CDN officiel Riot."
     ),
     lifespan=lifespan,
+    docs_url="/docs" if settings.expose_docs else None,
+    redoc_url="/redoc" if settings.expose_docs else None,
+    openapi_url="/openapi.json" if settings.expose_docs else None,
 )
 
 app.include_router(auth_routes.router)
@@ -58,17 +63,21 @@ app.include_router(decks.router)
 
 
 @app.get("/api/health")
-def health(db: Session = Depends(get_db)):
-    return {"status": "ok", "cards": db.scalar(select(func.count(Card.id))) or 0}
+def health():
+    return {"status": "ok"}
 
 
 @app.post("/api/admin/sync")
-def admin_sync(db: Session = Depends(get_db)):
+def admin_sync(
+    db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+):
     """Resynchronise depuis Riftcodex, au plus une fois par intervalle configuré.
 
-    L'API communautaire est gratuite : le garde-fou évite de la marteler
-    (et de se faire bloquer) si l'endpoint est appelé en boucle.
+    Protégé par ADMIN_TOKEN. L'API communautaire est gratuite : le garde-fou
+    évite de la marteler (et de se faire bloquer) si l'endpoint est appelé en boucle.
     """
+    require_admin_token(x_admin_token)
     global _last_sync_fallback
     now = time.time()
     interval = settings.sync_min_interval_minutes * 60
@@ -88,7 +97,7 @@ def admin_sync(db: Session = Depends(get_db)):
     return counts
 
 
-_DEMO_SECRETS = {"dev-secret-change-me", "test-secret"}
+_DEMO_SECRETS = {"dev-secret-change-me", "test-secret", "test-secret-not-for-production-use!"}
 
 
 @app.post("/api/admin/demo-community")

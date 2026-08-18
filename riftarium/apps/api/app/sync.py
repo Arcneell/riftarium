@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .models import Card, CardSet
+from .security import sanitize_image_url
 
 log = logging.getLogger("riftarium.sync")
 
@@ -50,7 +51,7 @@ def _upsert_card(db: Session, payload: dict) -> None:
     row.power = attributes.get("power")
     row.text_plain = text.get("plain")
     row.text_flavour = text.get("flavour")
-    row.image_url = media.get("image_url")
+    row.image_url = sanitize_image_url(media.get("image_url"))
     row.artist = media.get("artist")
     row.orientation = payload.get("orientation")
     row.tags = payload.get("tags") or []

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Logo Riftarium">
+  <title>Riftarium</title>
+  <defs>
+    <!-- Arc des six domaines de Riftbound (ordre du dégradé prism du site) -->
+    <linearGradient id="prism" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0"   stop-color="#cf4437"/>
+      <stop offset=".2"  stop-color="#ab7c1a"/>
+      <stop offset=".4"  stop-color="#3f8f50"/>
+      <stop offset=".6"  stop-color="#178f7f"/>
+      <stop offset=".8"  stop-color="#7355cf"/>
+      <stop offset="1"   stop-color="#c2439b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9bd82"/>
+      <stop offset=".5" stop-color="#b08a3e"/>
+      <stop offset="1" stop-color="#8a6a2f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#0b8f84" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#0b8f84" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Disque parchemin cerclé d'or -->
+  <circle cx="120" cy="120" r="112" fill="#fdfaf2"/>
+  <circle cx="120" cy="120" r="112" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="120" cy="120" r="100" fill="none" stroke="#8a6a2f" stroke-width="1" opacity=".3"/>
+
+  <!-- Portail : arc prisme des six domaines, ouvert en bas -->
+  <path d="M 120 34 A 86 86 0 1 1 119.9 34" fill="none" stroke="url(#prism)"
+        stroke-width="7" stroke-linecap="round" stroke-dasharray="460 80" stroke-dashoffset="-30"
+        transform="rotate(118 120 120)"/>
+
+  <!-- Halo hextech discret -->
+  <circle cx="120" cy="120" r="62" fill="url(#glow)"/>
+
+  <!-- Carte traversant le portail -->
+  <g transform="rotate(-12 120 120)">
+    <rect x="92" y="76" width="56" height="82" rx="9"
+          fill="#ffffff" stroke="url(#gold)" stroke-width="3.5"/>
+    <rect x="99" y="83" width="42" height="42" rx="6" fill="none" stroke="#b08a3e" stroke-width="1.4" opacity=".45"/>
+    <!-- gemme hextech au centre de la carte -->
+    <circle cx="120" cy="104" r="10" fill="#0b8f84"/>
+    <circle cx="120" cy="104" r="15" fill="none" stroke="#0b8f84" stroke-width="1.2" opacity=".35"/>
+    <!-- lignes de texte -->
+    <rect x="100" y="134" width="40" height="4" rx="2" fill="#b08a3e" opacity=".6"/>
+    <rect x="100" y="143" width="28" height="4" rx="2" fill="#b08a3e" opacity=".35"/>
+  </g>
+</svg>

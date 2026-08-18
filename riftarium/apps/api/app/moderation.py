@@ -4,7 +4,6 @@ Filtre lexical : un contenu contenant un terme interdit part en file « pending 
 au lieu d'être publié. À terme : classification ML + détection d'images + revue humaine.
 """
 
-import re
 import unicodedata
 
 BANNED_TERMS = [
@@ -27,12 +26,23 @@ BANNED_TERMS = [
     "crypto wallet",
 ]
 
-_WORD = re.compile(r"[a-z0-9.\- ]+")
+_LEET = str.maketrans(
+    {
+        "0": "o",
+        "1": "i",
+        "3": "e",
+        "4": "a",
+        "@": "a",
+        "$": "s",
+        "!": "i",
+    }
+)
 
 
 def _fold(text: str) -> str:
     text = unicodedata.normalize("NFD", text.lower())
-    return "".join(c for c in text if unicodedata.category(c) != "Mn")
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+    return text.translate(_LEET)
 
 
 def review(text: str) -> str:

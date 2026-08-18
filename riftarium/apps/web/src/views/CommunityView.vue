@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session } from "../api.js"
 import { csvJoin, csvSplit, domainFilterOptions } from "../cardText.js"
+import { FORMAT_OPTIONS } from "../deckDisplay.js"
 import { BANNERS } from "../banners.js"
 import DeckBox from "../components/DeckBox.vue"
 import FilterSelect from "../components/FilterSelect.vue"
@@ -12,11 +13,6 @@ const SORTS = [
   { value: "likes", label: "Tendance" },
   { value: "views", label: "Plus vus" },
   { value: "recent", label: "Récents" }
-]
-
-const FORMAT_OPTIONS = [
-  { value: "tournament", label: "Tournoi" },
-  { value: "free", label: "Libre" }
 ]
 
 const route = useRoute()
@@ -178,7 +174,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 <template>
   <PageBanner :art="BANNERS.community" eyebrow="Communauté" title="Decks partagés">
-    Filtrez par légende, domaine ou popularité — comme une vitrine de meta, à l'échelle du site.
+    Parcourez les decks publiés, filtrez par légende, domaine ou format — officiel ou non officiel.
   </PageBanner>
 
   <section style="padding-top: 40px">

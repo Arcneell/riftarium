@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 HANDLE_PATTERN = r"^[A-Za-z0-9_\-]+$"
 
@@ -7,6 +7,14 @@ class RegisterIn(BaseModel):
     handle: str = Field(min_length=3, max_length=32, pattern=HANDLE_PATTERN)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
+    accept_terms: bool
+    confirm_age: bool
+
+    @model_validator(mode="after")
+    def require_consents(self):
+        if not self.accept_terms or not self.confirm_age:
+            raise ValueError("L'inscription exige d'accepter les conditions et de confirmer avoir au moins 15 ans.")
+        return self
 
 
 class LoginIn(BaseModel):

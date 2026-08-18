@@ -7,6 +7,7 @@ import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
 import RuleText from "../components/RuleText.vue"
 import TopicDemo from "../components/TopicDemo.vue"
 import { keywordFamily } from "../cardText.js"
+import { applySeo } from "../seo.js"
 
 const route = useRoute()
 const topic = computed(() => topicBySlug(route.params.slug))
@@ -51,6 +52,18 @@ async function loadOfficial() {
 }
 onMounted(loadOfficial)
 watch(() => route.params.slug, loadOfficial)
+watch(
+  topic,
+  (item) => {
+    applySeo({
+      title: item ? `${item.title} — Aide Riftbound` : "Aide Riftbound",
+      description: item?.summary,
+      path: route.path,
+      noindex: !item
+    })
+  },
+  { immediate: true }
+)
 
 /* Zoom sur les cartes d'exemple. */
 const zoomCard = ref(null)

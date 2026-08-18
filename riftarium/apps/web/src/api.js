@@ -1,39 +1,65 @@
 import { reactive } from "vue"
 
-const TOKEN_KEY = "riftarium_token"
+const SESSION_FLAG_KEY = "riftarium_session"
 const HANDLE_KEY = "riftarium_handle"
 const AVATAR_KEY = "riftarium_avatar"
+const LEGACY_TOKEN_KEY = "riftarium_token"
+
+try {
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
+} catch {
+  /* stockage indisponible (tests / mode privé) */
+}
+
+function readFlag() {
+  try {
+    return localStorage.getItem(SESSION_FLAG_KEY)
+  } catch {
+    return null
+  }
+}
 
 export const session = reactive({
-  token: localStorage.getItem(TOKEN_KEY),
+  token: readFlag(),
   handle: localStorage.getItem(HANDLE_KEY),
   avatarUrl: localStorage.getItem(AVATAR_KEY)
 })
 
 export function setSession(token, handle, avatarUrl = null) {
-  session.token = token
-  session.handle = handle
-  session.avatarUrl = avatarUrl || null
-  if (token) {
-    localStorage.setItem(TOKEN_KEY, token)
-    localStorage.setItem(HANDLE_KEY, handle)
-    if (avatarUrl) localStorage.setItem(AVATAR_KEY, avatarUrl)
-    else localStorage.removeItem(AVATAR_KEY)
-  } else {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(HANDLE_KEY)
-    localStorage.removeItem(AVATAR_KEY)
+  const loggedIn = Boolean(token)
+  session.token = loggedIn ? "1" : null
+  session.handle = loggedIn ? handle : null
+  session.avatarUrl = loggedIn ? avatarUrl || null : null
+  try {
+    if (loggedIn) {
+      localStorage.setItem(SESSION_FLAG_KEY, "1")
+      localStorage.setItem(HANDLE_KEY, handle)
+      if (avatarUrl) localStorage.setItem(AVATAR_KEY, avatarUrl)
+      else localStorage.removeItem(AVATAR_KEY)
+    } else {
+      localStorage.removeItem(SESSION_FLAG_KEY)
+      localStorage.removeItem(HANDLE_KEY)
+      localStorage.removeItem(AVATAR_KEY)
+      localStorage.removeItem(LEGACY_TOKEN_KEY)
+    }
+  } catch {
+    /* ignore */
   }
+}
+
+function isJwt(value) {
+  return typeof value === "string" && value.split(".").length === 3
 }
 
 export async function api(path, { method = "GET", body } = {}) {
   const headers = {}
   if (body !== undefined) headers["Content-Type"] = "application/json"
-  if (session.token) headers["Authorization"] = `Bearer ${session.token}`
+  if (isJwt(session.token)) headers["Authorization"] = `Bearer ${session.token}`
 
   const response = await fetch(path, {
     method,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined
   })
 

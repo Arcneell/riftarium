@@ -34,7 +34,8 @@ async function mountView() {
     history: createMemoryHistory(),
     routes: [
       { path: "/", component: { template: "<div />" } },
-      { path: "/profil", component: ProfileView }
+      { path: "/profil", component: ProfileView },
+      { path: "/confidentialite", component: { template: "<div />" } }
     ]
   })
   router.push("/profil")

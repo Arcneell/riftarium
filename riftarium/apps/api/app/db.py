@@ -24,6 +24,8 @@ def ensure_schema(bind=None) -> None:
             extras.append("ALTER TABLE users ADD COLUMN bio VARCHAR(280) DEFAULT '' NOT NULL")
         if "avatar_card_id" not in cols:
             extras.append("ALTER TABLE users ADD COLUMN avatar_card_id VARCHAR(32)")
+        if "token_version" not in cols:
+            extras.append("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 1 NOT NULL")
         if extras:
             with target.begin() as conn:
                 for statement in extras:

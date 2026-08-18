@@ -12,19 +12,37 @@ const mode = ref("login")
 const handle = ref("")
 const email = ref("")
 const password = ref("")
+const acceptTerms = ref(false)
+const confirmAge = ref(false)
 const error = ref("")
 
 async function submit() {
   error.value = ""
+  if (mode.value === "register") {
+    if (!confirmAge.value) {
+      error.value = "L'inscription est réservée aux personnes d'au moins 15 ans."
+      return
+    }
+    if (!acceptTerms.value) {
+      error.value = "Veuillez accepter les conditions d'utilisation et la politique de confidentialité."
+      return
+    }
+  }
   try {
     const result =
       mode.value === "login"
         ? await api("/api/auth/login", { method: "POST", body: { email: email.value, password: password.value } })
         : await api("/api/auth/register", {
             method: "POST",
-            body: { handle: handle.value, email: email.value, password: password.value }
+            body: {
+              handle: handle.value,
+              email: email.value,
+              password: password.value,
+              accept_terms: true,
+              confirm_age: true
+            }
           })
-    setSession(result.token, result.handle, result.avatar_url)
+    setSession("1", result.handle, result.avatar_url)
     router.push(route.query.suite || "/")
   } catch (e) {
     error.value = e.message
@@ -82,6 +100,21 @@ async function submit() {
             placeholder="8 caractères minimum"
           />
         </div>
+        <template v-if="mode === 'register'">
+          <label class="legal-check">
+            <input type="checkbox" v-model="confirmAge" />
+            <span>J'ai au moins 15 ans.</span>
+          </label>
+          <label class="legal-check">
+            <input type="checkbox" v-model="acceptTerms" />
+            <span>
+              J'accepte les
+              <RouterLink to="/cgu">conditions d'utilisation</RouterLink>
+              et la
+              <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
+            </span>
+          </label>
+        </template>
         <button class="btn btn-gold" type="submit" style="width: 100%">
           {{ mode === "login" ? "Se connecter" : "Créer mon compte" }}
         </button>

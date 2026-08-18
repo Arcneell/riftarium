@@ -8,13 +8,15 @@ from sqlalchemy.orm import Session
 
 from .models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from .moderation import review
+from .security import sanitize_image_url
 
 
 def avatar_urls(db: Session, users: list[User]) -> dict[int, str | None]:
     ids = {user.avatar_card_id for user in users if user.avatar_card_id}
     cards: dict[str, str | None] = {}
     if ids:
-        cards = {card.id: card.image_url for card in db.scalars(select(Card).where(Card.id.in_(ids))).all()}
+        rows = db.scalars(select(Card).where(Card.id.in_(ids))).all()
+        cards = {card.id: sanitize_image_url(card.image_url) for card in rows}
     return {user.id: cards.get(user.avatar_card_id) if user.avatar_card_id else None for user in users}
 
 
@@ -92,7 +94,7 @@ def list_legend_avatars(db: Session) -> list[dict]:
             {
                 "id": card.id,
                 "name": card.name,
-                "image_url": card.image_url,
+                "image_url": sanitize_image_url(card.image_url),
                 "orientation": card.orientation,
                 "domains": card.domains or [],
             }
@@ -117,12 +119,12 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
     if "handle" in data and data["handle"] != user.handle:
         taken = db.scalar(select(User).where(User.handle == data["handle"], User.id != user.id))
         if taken:
-            raise HTTPException(status_code=409, detail="Pseudo ou email déjà utilisé")
+            raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
         user.handle = data["handle"]
     if "email" in data and data["email"] != user.email:
         taken = db.scalar(select(User).where(User.email == data["email"], User.id != user.id))
         if taken:
-            raise HTTPException(status_code=409, detail="Pseudo ou email déjà utilisé")
+            raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
         user.email = data["email"]
 
 

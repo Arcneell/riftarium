@@ -58,3 +58,12 @@ export function coverStyle(deck) {
 export function okCount(deck) {
   return deck?.checks?.filter((check) => check.ok).length ?? 0
 }
+
+export const FORMAT_OPTIONS = [
+  { value: "tournament", label: "Tournoi (officiel)" },
+  { value: "free", label: "Libre (non officiel)" }
+]
+
+export function formatLabel(format) {
+  return format === "free" ? "libre · non officiel" : "tournoi"
+}

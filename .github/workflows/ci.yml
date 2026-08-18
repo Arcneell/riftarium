@@ -5,9 +5,18 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  JWT_SECRET: ci-jwt-secret-must-be-24-chars
+  DB_PASSWORD: ci-db-password-long-enough
+  ADMIN_TOKEN: ci-admin-token-16ch
+  REDIS_PASSWORD: ci-redis-password-ok
 
 jobs:
   api:
@@ -29,7 +38,7 @@ jobs:
       - run: pytest -q --cov=app --cov-report=term-missing
 
   web:
-    name: web-build
+    name: web-check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,8 +57,23 @@ jobs:
       - run: npm run build
 
   compose:
-    name: compose-config
+    name: compose-security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker compose -f riftarium/compose.yaml config
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: docker compose -f riftarium/compose.yaml config --quiet
+      - run: python riftarium/scripts/check_compose_security.py
+      - name: nginx -t
+        run: >
+          docker run --rm --add-host api:127.0.0.1
+          -v ${{ github.workspace }}/riftarium/apps/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+          nginx:1.31-alpine nginx -t
+      - name: Pas de secrets d'exemple dans Compose
+        run: |
+          if grep -E 'dev-secret-change-me|riftarium-dev' riftarium/compose.yaml; then
+            echo "valeurs d'exemple encore présentes dans compose.yaml" >&2
+            exit 1
+          fi

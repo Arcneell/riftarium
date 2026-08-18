@@ -1,15 +1,17 @@
 import hashlib
+import hmac
 import os
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
 from .models import User
+from .security import SESSION_COOKIE
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -28,42 +30,82 @@ def verify_password(password: str, stored: str) -> bool:
     except ValueError:
         return False
     digest = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt_hex), **_SCRYPT)
-    return digest.hex() == digest_hex
+    return hmac.compare_digest(digest.hex(), digest_hex)
 
 
 def make_token(user: User) -> str:
     payload = {
         "sub": str(user.id),
         "handle": user.handle,
+        "ver": user.token_version,
         "exp": datetime.now(UTC) + timedelta(hours=settings.jwt_ttl_hours),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
 
+def set_session_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+        max_age=settings.jwt_ttl_hours * 3600,
+        path="/",
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(SESSION_COOKIE, path="/")
+
+
+def _raw_token(request: Request, credentials: HTTPAuthorizationCredentials | None) -> str | None:
+    if credentials is not None:
+        return credentials.credentials
+    cookie = request.cookies.get(SESSION_COOKIE)
+    return cookie or None
+
+
+def _user_from_token(token: str, db: Session) -> User | None:
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    try:
+        user = db.get(User, int(payload["sub"]))
+    except (TypeError, ValueError, KeyError):
+        return None
+    if user is None:
+        return None
+    try:
+        version = int(payload["ver"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if version != user.token_version:
+        return None
+    return user
+
+
 def current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> User:
-    if credentials is None:
+    token = _raw_token(request, credentials)
+    if token is None:
         raise HTTPException(status_code=401, detail="Authentification requise")
-    try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Jeton invalide ou expiré") from None
-    user = db.get(User, int(payload["sub"]))
+    user = _user_from_token(token, db)
     if user is None:
-        raise HTTPException(status_code=401, detail="Utilisateur inconnu")
+        raise HTTPException(status_code=401, detail="Jeton invalide ou expiré")
     return user
 
 
 def optional_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> User | None:
-    if credentials is None:
+    token = _raw_token(request, credentials)
+    if token is None:
         return None
-    try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
-    except jwt.PyJWTError:
-        return None
-    return db.get(User, int(payload["sub"]))
+    return _user_from_token(token, db)

@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { DOMAINS } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
-import { DECK_ZONES, groupDeck, runesOf } from "../deckDisplay.js"
+import { DECK_ZONES, formatLabel, groupDeck, runesOf } from "../deckDisplay.js"
 import DeckExportBar from "./DeckExportBar.vue"
 import DeckVisual from "./DeckVisual.vue"
 import UserAvatar from "./UserAvatar.vue"
@@ -52,7 +52,7 @@ const domainSpread = computed(() => {
         <RouterLink to="/communaute" class="dbuilder-back">← Communauté</RouterLink>
         <h2 class="deck-view-title">{{ deck.name }}</h2>
         <p class="muted mono deck-view-meta">
-          {{ deck.format === "tournament" ? "tournoi" : "libre" }}
+          {{ formatLabel(deck.format) }}
           ·
           <span class="deck-box-owner">
             <UserAvatar :src="deck.owner_avatar" :handle="deck.owner" :size="20" />
