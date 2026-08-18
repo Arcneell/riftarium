@@ -15,6 +15,17 @@ services:
       retries: 10
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: riftarium-redis
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build: apps/api
     container_name: riftarium-api
@@ -22,8 +33,11 @@ services:
       DATABASE_URL: postgresql+psycopg://riftarium:${DB_PASSWORD:-riftarium-dev}@db:5432/riftarium
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       AUTO_SYNC: "1"
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - "${API_PORT:-8889}:8000"

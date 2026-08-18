@@ -1,15 +1,19 @@
 import logging
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .cache import cache_clear, cache_get, cache_set
 from .config import settings
 from .db import Base, SessionLocal, engine, ensure_schema, get_db
 from .models import Card
 from .routers import auth_routes, cards, collection, decks
 from .sync import run_sync
+
+_last_sync_fallback = 0.0  # utilisé quand Redis est absent
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("riftarium")
@@ -55,4 +59,25 @@ def health(db: Session = Depends(get_db)):
 
 @app.post("/api/admin/sync")
 def admin_sync(db: Session = Depends(get_db)):
-    return run_sync(db)
+    """Resynchronise depuis Riftcodex, au plus une fois par intervalle configuré.
+
+    L'API communautaire est gratuite : le garde-fou évite de la marteler
+    (et de se faire bloquer) si l'endpoint est appelé en boucle.
+    """
+    global _last_sync_fallback
+    now = time.time()
+    interval = settings.sync_min_interval_minutes * 60
+    last = cache_get("sync:last") or _last_sync_fallback
+    if last and now - float(last) < interval:
+        wait = int(interval - (now - float(last)))
+        raise HTTPException(
+            status_code=429,
+            detail=f"Sync déjà effectuée récemment — réessayez dans {wait}s",
+        )
+
+    counts = run_sync(db)
+    _last_sync_fallback = now
+    cache_set("sync:last", now, interval)
+    cache_clear("cards:")
+    cache_clear("sets:")
+    return counts

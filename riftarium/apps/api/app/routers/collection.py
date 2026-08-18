@@ -17,7 +17,15 @@ def my_collection(user: User = Depends(current_user), db: Session = Depends(get_
     return {
         "total_cards": sum(i.qty for i in items),
         "unique_cards": len(items),
-        "items": [{"card": card_out(i.card), "qty": i.qty, "condition": i.condition, "lang": i.lang} for i in items],
+        "items": [
+            {
+                "card": card_out(i.card),
+                "qty": i.qty,
+                "condition": i.condition,
+                "lang": i.lang,
+            }
+            for i in items
+        ],
     }
 
 
@@ -46,4 +54,9 @@ def set_quantity(
     item.condition = payload.condition
     item.lang = payload.lang
     db.commit()
-    return {"card_id": card.id, "qty": item.qty, "condition": item.condition, "lang": item.lang}
+    return {
+        "card_id": card.id,
+        "qty": item.qty,
+        "condition": item.condition,
+        "lang": item.lang,
+    }

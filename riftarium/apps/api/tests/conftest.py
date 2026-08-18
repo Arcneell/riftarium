@@ -3,6 +3,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTO_SYNC"] = "0"
 os.environ["JWT_SECRET"] = "test-secret"
+os.environ["REDIS_URL"] = ""  # les tests tournent sans cache, même si un Redis est joignable
 
 import pytest
 from fastapi.testclient import TestClient
@@ -168,7 +169,11 @@ def client():
 def auth(client):
     response = client.post(
         "/api/auth/register",
-        json={"handle": "testeur", "email": "testeur@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "testeur",
+            "email": "testeur@example.org",
+            "password": "motdepasse123",
+        },
     )
     assert response.status_code == 201, response.text
     token = response.json()["token"]

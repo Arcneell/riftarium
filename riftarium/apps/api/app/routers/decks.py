@@ -69,7 +69,11 @@ def create_deck(payload: DeckIn, user: User = Depends(current_user), db: Session
 
 
 @router.get("/decks/{deck_id}")
-def get_deck(deck_id: int, viewer: User | None = Depends(optional_user), db: Session = Depends(get_db)):
+def get_deck(
+    deck_id: int,
+    viewer: User | None = Depends(optional_user),
+    db: Session = Depends(get_db),
+):
     deck = db.get(Deck, deck_id)
     if deck is None:
         raise HTTPException(status_code=404, detail="Deck introuvable")
@@ -80,7 +84,12 @@ def get_deck(deck_id: int, viewer: User | None = Depends(optional_user), db: Ses
 
 
 @router.put("/decks/{deck_id}")
-def update_deck(deck_id: int, payload: DeckIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def update_deck(
+    deck_id: int,
+    payload: DeckIn,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     deck = db.get(Deck, deck_id)
     if deck is None or deck.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Deck introuvable")

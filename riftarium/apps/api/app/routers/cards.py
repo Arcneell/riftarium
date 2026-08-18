@@ -1,14 +1,23 @@
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..auth import optional_user
+from ..cache import cache_get, cache_set
+from ..config import settings
 from ..db import get_db
 from ..models import Card, CardSet, CollectionItem, User
 
 router = APIRouter(prefix="/api", tags=["cards"])
+
+
+def _cacheable_headers(response: Response) -> None:
+    """Les réponses anonymes sont stables (les cartes changent à la sync) : le navigateur peut les garder."""
+    response.headers["Cache-Control"] = "public, max-age=300"
+    response.headers["Vary"] = "Authorization"
+
 
 # ogn-037a-298 / ogn-037*-298 → famille ogn-037-298. Les ids promo/rune (ven-sp4-006, ven-r04) restent uniques.
 _VARIANT_ID_RE = re.compile(r"^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$", re.IGNORECASE)
@@ -164,6 +173,7 @@ def apply_filters(query, *, q, set_id, type, domain, rarity, energy):
 
 @router.get("/cards")
 def list_cards(
+    response: Response,
     q: str | None = None,
     set_id: str | None = None,
     type: str | None = None,
@@ -176,7 +186,24 @@ def list_cards(
     db: Session = Depends(get_db),
     viewer: User | None = Depends(optional_user),
 ):
-    query = apply_filters(select(Card), q=q, set_id=set_id, type=type, domain=domain, rarity=rarity, energy=energy)
+    # Cache uniquement les réponses anonymes et déterministes (owned_qty est propre à chaque compte).
+    cache_key = None
+    if viewer is None and sort != "random":
+        _cacheable_headers(response)
+        cache_key = f"cards:list:{q}|{set_id}|{type}|{domain}|{rarity}|{energy}|{sort}|{page}|{size}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
+    query = apply_filters(
+        select(Card),
+        q=q,
+        set_id=set_id,
+        type=type,
+        domain=domain,
+        rarity=rarity,
+        energy=energy,
+    )
 
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     if sort == "random":
@@ -187,12 +214,15 @@ def list_cards(
         order = [Card.set_id, Card.collector_number, Card.id]
     rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
     owned = owned_quantities(db, viewer, [card.id for card in rows])
-    return {
+    payload = {
         "total": total,
         "page": page,
         "size": size,
         "items": [card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows],
     }
+    if cache_key:
+        cache_set(cache_key, payload, settings.cache_ttl_seconds)
+    return payload
 
 
 @router.get("/cards/{card_id}/variants")
@@ -212,9 +242,18 @@ def list_variants(
 @router.get("/cards/{card_id}")
 def get_card(
     card_id: str,
+    response: Response,
     db: Session = Depends(get_db),
     viewer: User | None = Depends(optional_user),
 ):
+    cache_key = None
+    if viewer is None:
+        _cacheable_headers(response)
+        cache_key = f"cards:detail:{card_id.lower()}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
     card = find_card(db, card_id)
     if card is None:
         raise HTTPException(status_code=404, detail="Carte introuvable")
@@ -222,12 +261,26 @@ def get_card(
     owned = owned_quantities(db, viewer, [row.id for row in rows] + [card.id])
     payload = card_out(card, owned.get(card.id, 0) if viewer else None)
     payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows]
+    if cache_key:
+        cache_set(cache_key, payload, settings.cache_ttl_seconds)
     return payload
 
 
 @router.get("/sets")
-def list_sets(db: Session = Depends(get_db)):
+def list_sets(response: Response, db: Session = Depends(get_db)):
+    _cacheable_headers(response)
+    cached = cache_get("sets:list")
+    if cached is not None:
+        return cached
     rows = db.scalars(select(CardSet).order_by(CardSet.published_on)).all()
-    return [
-        {"set_id": s.set_id, "name": s.name, "card_count": s.card_count, "published_on": s.published_on} for s in rows
+    payload = [
+        {
+            "set_id": s.set_id,
+            "name": s.name,
+            "card_count": s.card_count,
+            "published_on": s.published_on,
+        }
+        for s in rows
     ]
+    cache_set("sets:list", payload, settings.cache_ttl_seconds)
+    return payload

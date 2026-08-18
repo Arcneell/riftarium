@@ -154,7 +154,14 @@ def test_cards_owned_qty(client, auth):
 
 def test_cards_rarity_sort(client):
     items = client.get("/api/cards", params={"sort": "rarity", "size": 20}).json()["items"]
-    ranks = {"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Showcase": 4, "Promo": 5}
+    ranks = {
+        "Common": 0,
+        "Uncommon": 1,
+        "Rare": 2,
+        "Epic": 3,
+        "Showcase": 4,
+        "Promo": 5,
+    }
     values = [ranks[card["rarity"]] for card in items]
     assert values == sorted(values)
     assert items[0]["rarity"] == "Common"
@@ -216,7 +223,11 @@ def test_sets(client):
 
 
 def test_register_login_me(client):
-    creds = {"handle": "maelle", "email": "maelle@example.org", "password": "supersecret1"}
+    creds = {
+        "handle": "maelle",
+        "email": "maelle@example.org",
+        "password": "supersecret1",
+    }
     assert client.post("/api/auth/register", json=creds).status_code == 201
     assert client.post("/api/auth/register", json=creds).status_code == 409
 
@@ -240,7 +251,11 @@ def test_protected_routes_require_auth(client):
 
 
 def test_collection_crud(client, auth):
-    put = client.put("/api/collection/ogn-037-298", json={"qty": 3, "condition": "NM", "lang": "FR"}, headers=auth)
+    put = client.put(
+        "/api/collection/ogn-037-298",
+        json={"qty": 3, "condition": "NM", "lang": "FR"},
+        headers=auth,
+    )
     assert put.status_code == 200 and put.json()["qty"] == 3
 
     coll = client.get("/api/collection", headers=auth).json()
@@ -282,7 +297,11 @@ def test_deck_update_delete_and_ownership(client, auth):
 
     other = client.post(
         "/api/auth/register",
-        json={"handle": "intrus", "email": "intrus@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "intrus",
+            "email": "intrus@example.org",
+            "password": "motdepasse123",
+        },
     ).json()["token"]
     other_auth = {"Authorization": f"Bearer {other}"}
     assert client.put(f"/api/decks/{deck_id}", json=deck_payload(), headers=other_auth).status_code == 404
@@ -318,3 +337,30 @@ def test_moderation_blocks_toxic_deck(client, auth):
     assert client.get("/api/community/decks").json() == []
     # et invisible pour les autres via l'URL directe
     assert client.get(f"/api/decks/{deck['id']}").status_code == 404
+
+
+# ---------- cache & protection de la source ----------
+
+
+def test_anonymous_cards_get_cache_headers(client):
+    response = client.get("/api/cards")
+    assert response.headers["cache-control"] == "public, max-age=300"
+    assert response.headers["vary"] == "Authorization"
+
+
+def test_authenticated_cards_not_marked_cacheable(client, auth):
+    response = client.get("/api/cards", headers=auth)
+    assert "cache-control" not in response.headers
+
+
+def test_admin_sync_is_throttled(client, monkeypatch):
+    import app.main as main
+
+    monkeypatch.setattr(main, "run_sync", lambda db: {"sets": 0, "cards": 0})
+    main._last_sync_fallback = 0.0
+
+    assert client.post("/api/admin/sync").status_code == 200
+    throttled = client.post("/api/admin/sync")
+    assert throttled.status_code == 429
+    assert "réessayez" in throttled.json()["detail"]
+    main._last_sync_fallback = 0.0
