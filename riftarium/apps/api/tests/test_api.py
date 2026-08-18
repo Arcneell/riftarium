@@ -36,15 +36,11 @@ def test_cards_list_and_filters(client):
     assert client.get("/api/cards", params={"type": "Unit"}).json()["total"] == 5
     assert client.get("/api/cards", params={"domain": "Fury"}).json()["total"] == 5
     hits = client.get("/api/cards", params={"q": "phoenix"}).json()
-    assert hits["total"] == 3 and {item["id"] for item in hits["items"]} >= {
-        "ogn-037-298"
-    }
+    assert hits["total"] == 3 and {item["id"] for item in hits["items"]} >= {"ogn-037-298"}
 
 
 def test_cards_multi_filters(client):
-    payload = client.get(
-        "/api/cards", params={"rarity": "Epic,Rare", "type": "Unit,Spell"}
-    ).json()
+    payload = client.get("/api/cards", params={"rarity": "Epic,Rare", "type": "Unit,Spell"}).json()
     assert payload["total"] == 5
     ids = {card["id"] for card in payload["items"]}
     assert "ogn-037-298" in ids
@@ -148,22 +144,16 @@ def test_variants_do_not_mix_unrelated_collector_numbers(client):
 
 def test_cards_owned_qty(client, auth):
     client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
-    anonymous = client.get("/api/cards", params={"q": "Immortal Phoenix"}).json()[
-        "items"
-    ]
+    anonymous = client.get("/api/cards", params={"q": "Immortal Phoenix"}).json()["items"]
     assert all("owned_qty" not in card for card in anonymous)
-    owned = client.get(
-        "/api/cards", params={"q": "Immortal Phoenix"}, headers=auth
-    ).json()["items"]
+    owned = client.get("/api/cards", params={"q": "Immortal Phoenix"}, headers=auth).json()["items"]
     by_id = {card["id"]: card["owned_qty"] for card in owned}
     assert by_id["ogn-037-298"] == 2
     assert by_id["ogn-037a-298"] == 0
 
 
 def test_cards_rarity_sort(client):
-    items = client.get("/api/cards", params={"sort": "rarity", "size": 20}).json()[
-        "items"
-    ]
+    items = client.get("/api/cards", params={"sort": "rarity", "size": 20}).json()["items"]
     ranks = {
         "Common": 0,
         "Uncommon": 1,
@@ -180,16 +170,12 @@ def test_cards_rarity_sort(client):
 def test_cards_random_sort(client):
     """Le tirage aléatoire rebat les cartes sans en perdre ni en inventer."""
     ordered = client.get("/api/cards", params={"size": 20}).json()["items"]
-    shuffled = client.get("/api/cards", params={"sort": "random", "size": 20}).json()[
-        "items"
-    ]
+    shuffled = client.get("/api/cards", params={"sort": "random", "size": 20}).json()["items"]
     assert {c["id"] for c in shuffled} == {c["id"] for c in ordered}
 
 
 def test_cards_random_preserves_filters(client):
-    payload = client.get(
-        "/api/cards", params={"sort": "random", "type": "Unit", "size": 20}
-    ).json()
+    payload = client.get("/api/cards", params={"sort": "random", "type": "Unit", "size": 20}).json()
     assert payload["total"] == 5
     assert {card["id"] for card in payload["items"]} == {
         "ogn-037-298",
@@ -201,23 +187,13 @@ def test_cards_random_preserves_filters(client):
 
 
 def test_cards_unknown_sort_keeps_default_order(client):
-    default = [
-        card["id"]
-        for card in client.get("/api/cards", params={"size": 20}).json()["items"]
-    ]
-    unknown = [
-        card["id"]
-        for card in client.get(
-            "/api/cards", params={"sort": "name", "size": 20}
-        ).json()["items"]
-    ]
+    default = [card["id"] for card in client.get("/api/cards", params={"size": 20}).json()["items"]]
+    unknown = [card["id"] for card in client.get("/api/cards", params={"sort": "name", "size": 20}).json()["items"]]
     assert unknown == default
 
 
 def test_cards_random_page_meta(client):
-    payload = client.get(
-        "/api/cards", params={"sort": "random", "page": 1, "size": 3}
-    ).json()
+    payload = client.get("/api/cards", params={"sort": "random", "page": 1, "size": 3}).json()
     assert payload["total"] == 11
     assert payload["page"] == 1
     assert payload["size"] == 3
@@ -230,10 +206,7 @@ def test_cards_random_front_contract(client):
     payload = client.get("/api/cards", params={"sort": "random", "size": 40}).json()
     assert payload["total"] == 11
     assert len(payload["items"]) == 11
-    assert all(
-        "id" in card and "image_url" in card and "name" in card
-        for card in payload["items"]
-    )
+    assert all("id" in card and "image_url" in card and "name" in card for card in payload["items"])
 
 
 def test_card_detail_and_404(client):
@@ -258,18 +231,14 @@ def test_register_login_me(client):
     assert client.post("/api/auth/register", json=creds).status_code == 201
     assert client.post("/api/auth/register", json=creds).status_code == 409
 
-    login = client.post(
-        "/api/auth/login", json={"email": creds["email"], "password": creds["password"]}
-    )
+    login = client.post("/api/auth/login", json={"email": creds["email"], "password": creds["password"]})
     assert login.status_code == 200
     token = login.json()["token"]
 
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.json()["handle"] == "maelle"
 
-    bad = client.post(
-        "/api/auth/login", json={"email": creds["email"], "password": "mauvais-mdp"}
-    )
+    bad = client.post("/api/auth/login", json={"email": creds["email"], "password": "mauvais-mdp"})
     assert bad.status_code == 401
 
 
@@ -296,12 +265,7 @@ def test_collection_crud(client, auth):
     client.put("/api/collection/ogn-037-298", json={"qty": 0}, headers=auth)
     assert client.get("/api/collection", headers=auth).json()["unique_cards"] == 0
 
-    assert (
-        client.put(
-            "/api/collection/xxx-000-000", json={"qty": 1}, headers=auth
-        ).status_code
-        == 404
-    )
+    assert client.put("/api/collection/xxx-000-000", json={"qty": 1}, headers=auth).status_code == 404
 
 
 # ---------- decks & validation ----------
@@ -319,9 +283,7 @@ def test_deck_create_and_validation(client, auth):
 
 def test_deck_domain_violation(client, auth):
     payload = deck_payload()
-    payload["cards"].append(
-        {"card_id": "ogn-078-298", "qty": 1}
-    )  # Lee Sin : Calm, hors Fury/Mind
+    payload["cards"].append({"card_id": "ogn-078-298", "qty": 1})  # Lee Sin : Calm, hors Fury/Mind
     deck = client.post("/api/decks", json=payload, headers=auth).json()
     assert not check(deck["checks"], "domains")["ok"]
     assert "Lee Sin" in check(deck["checks"], "domains")["message"]
@@ -330,9 +292,7 @@ def test_deck_domain_violation(client, auth):
 def test_deck_update_delete_and_ownership(client, auth):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
 
-    updated = client.put(
-        f"/api/decks/{deck_id}", json=deck_payload(name="V2"), headers=auth
-    )
+    updated = client.put(f"/api/decks/{deck_id}", json=deck_payload(name="V2"), headers=auth)
     assert updated.json()["name"] == "V2"
 
     other = client.post(
@@ -344,12 +304,7 @@ def test_deck_update_delete_and_ownership(client, auth):
         },
     ).json()["token"]
     other_auth = {"Authorization": f"Bearer {other}"}
-    assert (
-        client.put(
-            f"/api/decks/{deck_id}", json=deck_payload(), headers=other_auth
-        ).status_code
-        == 404
-    )
+    assert client.put(f"/api/decks/{deck_id}", json=deck_payload(), headers=other_auth).status_code == 404
     assert client.delete(f"/api/decks/{deck_id}", headers=other_auth).status_code == 404
 
     assert client.delete(f"/api/decks/{deck_id}", headers=auth).status_code == 204
@@ -376,9 +331,7 @@ def test_private_deck_hidden_from_community(client, auth):
 
 
 def test_moderation_blocks_toxic_deck(client, auth):
-    deck = client.post(
-        "/api/decks", json=deck_payload(name="deck de connard"), headers=auth
-    ).json()
+    deck = client.post("/api/decks", json=deck_payload(name="deck de connard"), headers=auth).json()
     assert deck["moderation_status"] == "pending"
     # pas listé publiquement tant que non validé
     assert client.get("/api/community/decks").json() == []

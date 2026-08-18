@@ -26,9 +26,7 @@ class User(Base):
     handle: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class CardSet(Base):
@@ -43,12 +41,8 @@ class CardSet(Base):
 class Card(Base):
     __tablename__ = "cards"
 
-    id: Mapped[str] = mapped_column(
-        String(32), primary_key=True
-    )  # id Riftcodex (unique, variantes incluses)
-    riftbound_id: Mapped[str] = mapped_column(
-        String(32), index=True
-    )  # ex: ogn-209-298 (partagé entre variantes)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)  # id Riftcodex (unique, variantes incluses)
+    riftbound_id: Mapped[str] = mapped_column(String(32), index=True)  # ex: ogn-209-298 (partagé entre variantes)
     name: Mapped[str] = mapped_column(String(128), index=True)
     collector_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     set_id: Mapped[str] = mapped_column(ForeignKey("sets.set_id"), index=True)
@@ -73,9 +67,7 @@ class Card(Base):
 
 class CollectionItem(Base):
     __tablename__ = "collection_items"
-    __table_args__ = (
-        UniqueConstraint("user_id", "card_id", name="uq_collection_user_card"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "card_id", name="uq_collection_user_card"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
@@ -94,25 +86,15 @@ class Deck(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     name: Mapped[str] = mapped_column(String(80))
     description: Mapped[str] = mapped_column(Text, default="")
-    format: Mapped[str] = mapped_column(
-        String(16), default="tournament"
-    )  # tournament | free
+    format: Mapped[str] = mapped_column(String(16), default="tournament")  # tournament | free
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
-    moderation_status: Mapped[str] = mapped_column(
-        String(16), default="published"
-    )  # published | pending | rejected
+    moderation_status: Mapped[str] = mapped_column(String(16), default="published")  # published | pending | rejected
     likes_count: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow, onupdate=utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     owner: Mapped[User] = relationship(lazy="joined")
-    cards: Mapped[list["DeckCard"]] = relationship(
-        cascade="all, delete-orphan", lazy="selectin"
-    )
+    cards: Mapped[list["DeckCard"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
 
 
 class DeckCard(Base):

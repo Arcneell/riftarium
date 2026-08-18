@@ -67,9 +67,7 @@ def run_sync(db: Session) -> dict:
     counts = {"sets": 0, "cards": 0}
 
     with httpx.Client(timeout=30, headers=HEADERS) as client:
-        sets_payload = (
-            client.get(f"{base}/sets", params={"size": 50}).raise_for_status().json()
-        )
+        sets_payload = client.get(f"{base}/sets", params={"size": 50}).raise_for_status().json()
         for item in sets_payload.get("items", []):
             if item["set_id"].upper() in wanted:
                 _upsert_set(db, item)
@@ -89,9 +87,7 @@ def run_sync(db: Session) -> dict:
                     },
                 )
                 if response.status_code != 200:
-                    log.warning(
-                        "sync %s page %s -> HTTP %s", set_id, page, response.status_code
-                    )
+                    log.warning("sync %s page %s -> HTTP %s", set_id, page, response.status_code)
                     break
                 data = response.json()
                 for item in data.get("items", []):

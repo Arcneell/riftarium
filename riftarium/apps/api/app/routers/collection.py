@@ -13,9 +13,7 @@ router = APIRouter(prefix="/api/collection", tags=["collection"])
 
 @router.get("")
 def my_collection(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    items = db.scalars(
-        select(CollectionItem).where(CollectionItem.user_id == user.id)
-    ).all()
+    items = db.scalars(select(CollectionItem).where(CollectionItem.user_id == user.id)).all()
     return {
         "total_cards": sum(i.qty for i in items),
         "unique_cards": len(items),
@@ -42,11 +40,7 @@ def set_quantity(
     if card is None:
         raise HTTPException(status_code=404, detail="Carte introuvable")
 
-    item = db.scalar(
-        select(CollectionItem).where(
-            CollectionItem.user_id == user.id, CollectionItem.card_id == card.id
-        )
-    )
+    item = db.scalar(select(CollectionItem).where(CollectionItem.user_id == user.id, CollectionItem.card_id == card.id))
     if payload.qty == 0:
         if item:
             db.delete(item)

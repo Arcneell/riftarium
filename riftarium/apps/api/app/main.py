@@ -30,12 +30,8 @@ async def lifespan(app: FastAPI):
                 log.info("base vide : synchronisation initiale depuis Riftcodex…")
                 try:
                     run_sync(db)
-                except (
-                    Exception
-                ):  # le service démarre même si la source est indisponible
-                    log.exception(
-                        "synchronisation initiale échouée — réessayez via POST /api/admin/sync"
-                    )
+                except Exception:  # le service démarre même si la source est indisponible
+                    log.exception("synchronisation initiale échouée — réessayez via POST /api/admin/sync")
     yield
 
 

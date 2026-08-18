@@ -44,20 +44,13 @@ def find_card(db: Session, ident: str) -> Card | None:
     card = db.get(Card, ident)
     if card is None:
         card = db.scalar(
-            select(Card)
-            .where(func.lower(Card.riftbound_id) == ident.lower())
-            .order_by(Card.alternate_art, Card.id)
+            select(Card).where(func.lower(Card.riftbound_id) == ident.lower()).order_by(Card.alternate_art, Card.id)
         )
     return card
 
 
 def is_foil(card: Card) -> bool:
-    return bool(
-        card.alternate_art
-        or card.signature
-        or card.overnumbered
-        or card.rarity == "Showcase"
-    )
+    return bool(card.alternate_art or card.signature or card.overnumbered or card.rarity == "Showcase")
 
 
 def card_out(card: Card, owned_qty: int | None = None) -> dict:
@@ -90,9 +83,7 @@ def card_out(card: Card, owned_qty: int | None = None) -> dict:
     return payload
 
 
-def owned_quantities(
-    db: Session, user: User | None, card_ids: list[str]
-) -> dict[str, int]:
+def owned_quantities(db: Session, user: User | None, card_ids: list[str]) -> dict[str, int]:
     if user is None or not card_ids:
         return {}
     rows = db.execute(
@@ -163,9 +154,7 @@ def apply_filters(query, *, q, set_id, type, domain, rarity, energy):
         query = query.where(Card.rarity.in_(rarities))
     domains = csv_parts(domain)
     if domains:
-        query = query.where(
-            or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains])
-        )
+        query = query.where(or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains]))
     energies = csv_parts(energy)
     if energies:
         clauses = []
@@ -223,17 +212,13 @@ def list_cards(
         order = [RARITY_RANK, Card.set_id, Card.collector_number, Card.id]
     else:
         order = [Card.set_id, Card.collector_number, Card.id]
-    rows = db.scalars(
-        query.order_by(*order).offset((page - 1) * size).limit(size)
-    ).all()
+    rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
     owned = owned_quantities(db, viewer, [card.id for card in rows])
     payload = {
         "total": total,
         "page": page,
         "size": size,
-        "items": [
-            card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows
-        ],
+        "items": [card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows],
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
@@ -275,9 +260,7 @@ def get_card(
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows] + [card.id])
     payload = card_out(card, owned.get(card.id, 0) if viewer else None)
-    payload["variants"] = [
-        card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows
-    ]
+    payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows]
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
     return payload

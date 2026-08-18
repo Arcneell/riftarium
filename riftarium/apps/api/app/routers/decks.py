@@ -17,12 +17,7 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
     liked = False
     if viewer and db:
         liked = (
-            db.scalar(
-                select(DeckLike).where(
-                    DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id
-                )
-            )
-            is not None
+            db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id)) is not None
         )
     return {
         "id": deck.id,
@@ -54,24 +49,18 @@ def _apply(deck: Deck, payload: DeckIn, db: Session) -> None:
     for entry in payload.cards:
         card = find_card(db, entry.card_id)
         if card is None:
-            raise HTTPException(
-                status_code=422, detail=f"Carte inconnue : {entry.card_id}"
-            )
+            raise HTTPException(status_code=422, detail=f"Carte inconnue : {entry.card_id}")
         deck.cards.append(DeckCard(card_id=card.id, qty=entry.qty))
 
 
 @router.get("/decks/mine")
 def my_decks(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    decks = db.scalars(
-        select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())
-    ).all()
+    decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
     return [deck_out(d, user, db) for d in decks]
 
 
 @router.post("/decks", status_code=201)
-def create_deck(
-    payload: DeckIn, user: User = Depends(current_user), db: Session = Depends(get_db)
-):
+def create_deck(payload: DeckIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     deck = Deck(owner_id=user.id)
     _apply(deck, payload, db)
     db.add(deck)
@@ -110,9 +99,7 @@ def update_deck(
 
 
 @router.delete("/decks/{deck_id}", status_code=204)
-def delete_deck(
-    deck_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
-):
+def delete_deck(deck_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     deck = db.get(Deck, deck_id)
     if deck is None or deck.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Deck introuvable")
@@ -121,15 +108,11 @@ def delete_deck(
 
 
 @router.post("/decks/{deck_id}/like")
-def toggle_like(
-    deck_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
-):
+def toggle_like(deck_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     deck = db.get(Deck, deck_id)
     if deck is None or not (deck.is_public and deck.moderation_status == "published"):
         raise HTTPException(status_code=404, detail="Deck introuvable")
-    like = db.scalar(
-        select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == user.id)
-    )
+    like = db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == user.id))
     if like:
         db.delete(like)
         deck.likes_count = max(0, deck.likes_count - 1)
@@ -154,7 +137,5 @@ def community_decks(
         .where(Deck.is_public.is_(True), Deck.moderation_status == "published")
         .order_by(Deck.likes_count.desc(), Deck.updated_at.desc())
     )
-    decks = db.scalars(
-        query.offset((max(page, 1) - 1) * size).limit(min(size, 50))
-    ).all()
+    decks = db.scalars(query.offset((max(page, 1) - 1) * size).limit(min(size, 50))).all()
     return [deck_out(d, viewer, db) for d in decks]
