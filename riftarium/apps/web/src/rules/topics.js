@@ -1132,7 +1132,7 @@ export const TOPICS = [
     ],
     sections: ["811", "107"],
     examples: [
-      { id: "ogn-018-298", name: "Noxus Saboteur", img: img("b78f0c822cb984db24ac3f1956cc8c10f8f88b22-744x1039.png") }
+      { id: "ogn-121-298", name: "Teemo - Strategist", img: img("b05f31bf744972983f61a9f5801b4ffd68fb9ebf-744x1039.png") }
     ],
     demo: {
       title: "Caché : poser, attendre, surgir",
