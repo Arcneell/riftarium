@@ -10,17 +10,24 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-e5b455?style=flat-square" alt="Licence MIT" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-source%20accessible-e5b455?style=flat-square" alt="Licence source accessible" /></a>
   <img src="https://img.shields.io/badge/python-3.12-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue 3" />
   <img src="https://img.shields.io/badge/postgresql-16-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
-  <img src="https://img.shields.io/badge/docker-compose-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose" />
   <img src="https://img.shields.io/badge/tests-CI-55b368?style=flat-square" alt="Tests CI" />
 </p>
 
 <p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games.</em></p>
 
 ---
+
+## Licence
+
+Le code source de Riftarium est **accessible publiquement**, mais le projet **n'est pas
+open source** : il est publié à des fins de transparence et de consultation uniquement.
+Toute copie, reproduction, modification, redistribution, déploiement ou réutilisation du
+code, en tout ou partie, est interdite sans autorisation écrite préalable de l'auteur.
+Voir [LICENSE](LICENSE).
 
 ## Fonctionnalités
 
@@ -32,26 +39,6 @@
 | **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
 | **Communauté** | Decks publics, likes, tri par popularité |
 | **Modération** | Chaque contenu publié passe par un filtre automatique avant mise en ligne ; le reste part en file de revue |
-
-## Démarrage rapide
-
-```bash
-git clone https://github.com/Arcneell/riftarium.git
-cd riftarium/riftarium
-docker compose up --build -d
-```
-
-| Service | URL |
-| --- | --- |
-| Site | <http://localhost:8888> |
-| API (OpenAPI) | <http://localhost:8889/docs> |
-
-Au premier démarrage, l'API synchronise les ~1 300 cartes depuis
-l'API communautaire [Riftcodex](https://api.riftcodex.com/docs) (~30 s).
-Pour resynchroniser après une sortie de set : `curl -X POST http://localhost:8888/api/admin/sync`
-
-> **Windows** : les ports par défaut sont 8888/8889 car Hyper-V réserve souvent les plages
-> 7236-8035 et 8054-8553. Personnalisables : `PORT=3000 API_PORT=3001 docker compose up`.
 
 ## Architecture
 
@@ -76,37 +63,21 @@ riftarium/          Application (produit)
 ├── apps/api/       API FastAPI (Python 3.12) + tests pytest
 ├── data/           Règles officielles en français (JSON)
 └── compose.yaml    Orchestration Docker (web + api + db)
-REFONTE.md          Plan technique et feuille de route
 assets/             Identité visuelle (logo SVG)
 ```
 
-## Tests
+## Qualité
 
-Chaque pull request est bloquée tant que la CI GitHub n'est pas verte
-(lint, formatage, tests API, tests Vue, build Vite, `docker compose config`).
-
-```bash
-# API — depuis riftarium/
-docker compose run --rm api pytest -q
-
-# Qualité API en local (lint + format + couverture)
-cd riftarium/apps/api
-pip install -r requirements.txt -r requirements-dev.txt
-ruff check app tests
-ruff format --check app tests
-pytest -q --cov=app --cov-report=term-missing
-
-# Front — depuis riftarium/apps/web
-npm ci
-npm run check          # lint, Prettier, Vitest, build
-```
+Chaque pull request est bloquée tant que la CI GitHub n'est pas verte :
+lint et formatage (ruff, ESLint, Prettier), tests API (pytest), tests front
+(Vitest), build Vite et validation de la configuration Docker.
 
 ## Feuille de route
 
 - [x] Cartothèque, comptes, collection, deck builder, decks publics, modération V1
 - [ ] Scan mobile (PWA + caméra, reconnaissance par empreinte visuelle)
 - [ ] Estimation des prix via l'API Cardmarket
-- [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours — voir [REFONTE.md](REFONTE.md))
+- [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours)
 - [ ] Fil communautaire complet : pulls, résultats de tournoi, profils, commentaires
 
 ## Contribuer
@@ -114,7 +85,8 @@ npm run check          # lint, Prettier, Vitest, build
 Les issues et pull requests sont bienvenues. Avant de proposer une fonctionnalité qui
 touche aux données Riot (visuels, textes de cartes), vérifiez qu'elle respecte la
 [politique développeur Riftbound](https://developer.riotgames.com/policies/riftbound)
-et la politique « Jargon juridique » de Riot Games.
+et la politique « Jargon juridique » de Riot Games. En soumettant une contribution,
+vous acceptez qu'elle soit intégrée au projet sous les termes de la [licence](LICENSE).
 
 ## Mentions légales
 
@@ -126,9 +98,5 @@ Riftbound, League of Legends et l'ensemble des visuels de cartes, illustrations,
 de domaine et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont
 servis directement depuis le CDN officiel de Riot et ne sont ni copiés ni redistribués.
 Cardmarket est une marque de Cardmarket GmbH. Le projet est et restera non commercial.
-
-## Licence
-
-Le code source de Riftarium est publié sous licence [MIT](LICENSE). Cette licence ne
-couvre ni le texte des règles officielles, ni les illustrations, ni aucun actif
-appartenant à Riot Games, Inc.
+La [licence](LICENSE) du code ne couvre ni le texte des règles officielles, ni les
+illustrations, ni aucun actif appartenant à Riot Games, Inc.
