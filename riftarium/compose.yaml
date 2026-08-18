@@ -45,8 +45,8 @@ services:
 
   web:
     build:
-      context: ..
-      dockerfile: riftarium/apps/web/Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: riftarium-web
     depends_on:
       - api

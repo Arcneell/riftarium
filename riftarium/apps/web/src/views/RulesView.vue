@@ -17,7 +17,7 @@ let searchIndex = []
 let locate = new Map()
 let searchTimer = null
 
-/* --- utilitaires hérités du lecteur Le Codex --- */
+/* --- utilitaires du lecteur de règles --- */
 const escapeHtml = (value) =>
   value.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
 const normalize = (value) =>

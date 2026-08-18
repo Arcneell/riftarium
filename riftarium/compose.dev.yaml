@@ -22,7 +22,7 @@ services:
     volumes:
       - ./apps/web:/app
       - webmodules:/app/node_modules
-      - ../le-codex/data:/rules-data:ro
+      - ./data:/rules-data:ro
     environment:
       API_PROXY: http://api:8000
       RULES_DATA: /rules-data/rules-fr.json

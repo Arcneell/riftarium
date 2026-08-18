@@ -84,7 +84,7 @@ npm run check                               # lint, formatage, Vitest, build
 - Cartes : [API Riftcodex](https://api.riftcodex.com/docs) (communautaire, gratuite) —
   synchronisées en base locale pour ne pas la solliciter à chaque requête.
 - Visuels : CDN officiel Riot (`cmsassets.rgpub.io`) — jamais copiés ni rehébergés.
-- Règles officielles : module hérité du projet Le Codex (`../le-codex/`).
+- Règles officielles : texte français intégral embarqué dans le dépôt (`data/rules-fr.json`).
 
 ## Mentions légales
 

@@ -31,7 +31,7 @@
 | 🛠️ | **Deck builder** | Validation des règles officielles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou **mode libre** |
 | 💬 | **Communauté** | Decks publics, likes, tri par popularité |
 | 🛡️ | **Modération automatique** | Chaque contenu publié passe par un filtre avant mise en ligne ; le reste part en file de revue |
-| 📖 | **Règles** | Texte officiel intégral (2 137 règles + 812 règles de tournoi) via le module historique [Le Codex](le-codex/) |
+| 📖 | **Règles** | Texte officiel intégral (2 137 règles + 812 règles de tournoi) intégré à l'application |
 
 ## 🚀 Démarrage rapide
 
@@ -74,8 +74,8 @@ Resynchroniser après une sortie de set : `curl -X POST http://localhost:8888/ap
 riftarium/          Application (produit)
 ├── apps/web/       Front Vue 3 + Vite, servi par nginx
 ├── apps/api/       API FastAPI (Python 3.12) + tests pytest
+├── data/           Règles officielles en français (JSON)
 └── compose.yaml    Orchestration Docker (web + api + db)
-le-codex/           Module historique : règles officielles en français (site statique)
 REFONTE.md          Plan technique complet et feuille de route
 assets/             Identité visuelle (logo SVG fait main)
 ```
@@ -112,7 +112,6 @@ et un smoke test bout en bout sur la stack déployée.
 - [ ] Estimation des prix via l'API Cardmarket
 - [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours — voir [REFONTE.md](REFONTE.md))
 - [ ] Fil communautaire complet : pulls, résultats de tournoi, profils, commentaires
-- [ ] Migration du module Règles dans l'application
 
 ## 🤝 Contribuer
 

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 // En production, nginx sert /data/rules-fr.json ; en dev, ce middleware s'en charge.
-const rulesFile = process.env.RULES_DATA || path.resolve(here, "../../../le-codex/data/rules-fr.json");
+const rulesFile = process.env.RULES_DATA || path.resolve(here, "../../data/rules-fr.json");
 const serveRulesData = {
   name: "serve-rules-data",
   configureServer(server) {
