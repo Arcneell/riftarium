@@ -3,7 +3,10 @@ import {
   cardsQuery,
   csvSplit,
   decodeEntities,
+  domainFilterOptions,
   glyphUrl,
+  canonicalName,
+  copyFamily,
   isFoil,
   keywordFamily,
   parseCardText,
@@ -125,5 +128,32 @@ describe("cardsQuery", () => {
     expect(csvSplit("Epic, Rare")).toEqual(["Epic", "Rare"])
     expect(toggleValue(["Epic"], "Rare")).toEqual(["Epic", "Rare"])
     expect(toggleValue(["Epic", "Rare"], "Epic")).toEqual(["Rare"])
+  })
+})
+
+describe("copyFamily", () => {
+  it("regroupe reprints, overnumbered et titres « - » / « , »", () => {
+    expect(canonicalName("Jinx - Demolitionist")).toBe(canonicalName("Jinx, Demolitionist"))
+    expect(canonicalName("Seal of Discord (Overnumbered)")).toBe("seal of discord")
+    expect(copyFamily({ type: "Unit", name: "Jinx - Rebel", riftbound_id: "ogn-202-298" })).toBe(
+      copyFamily({ type: "Unit", name: "Jinx - Rebel", riftbound_id: "pr-202-298" })
+    )
+    expect(copyFamily({ type: "Gear", name: "Seal of Rage (Overnumbered)" })).toBe(
+      copyFamily({ type: "Gear", name: "Seal of Rage" })
+    )
+  })
+})
+
+describe("domainFilterOptions", () => {
+  it("expose les runes officielles, sans pastille de couleur", () => {
+    const options = domainFilterOptions()
+    expect(options.map((option) => option.value)).toEqual(["Fury", "Calm", "Mind", "Body", "Chaos", "Order"])
+    expect(options.every((option) => !option.color && option.glyphKind === "rune")).toBe(true)
+    expect(options[0]).toMatchObject({
+      value: "Fury",
+      label: "Fureur",
+      glyph: glyphUrl("rune_fury")
+    })
+    expect(options[5].glyph).toBe(glyphUrl("rune_order"))
   })
 })

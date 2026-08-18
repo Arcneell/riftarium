@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } from "../api.js"
-import { cardsQuery, csvSplit, glyphUrl } from "../cardText.js"
+import { api, CONDITIONS, LANGS, TYPES, RARITIES } from "../api.js"
+import { cardsQuery, csvSplit, domainFilterOptions, glyphUrl } from "../cardText.js"
 import { useScrollMemory } from "../useScrollMemory.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
+import ModalDialog from "../components/ModalDialog.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -40,12 +41,10 @@ let observer = null
 const selectMode = ref(false)
 const selected = ref(new Set())
 const bulk = reactive({ condition: "", lang: "", busy: false })
+const pendingRemove = ref(false)
+const removeError = ref("")
 
-const domainOptions = computed(() =>
-  Object.entries(DOMAINS)
-    .filter(([key]) => key !== "Colorless")
-    .map(([value, domain]) => ({ value, label: domain.label, color: domain.color }))
-)
+const domainOptions = computed(() => domainFilterOptions())
 const typeOptions = computed(() => Object.entries(TYPES).map(([value, label]) => ({ value, label })))
 const rarityOptions = computed(() => Object.entries(RARITIES).map(([value, label]) => ({ value, label })))
 const energyOptions = computed(() =>
@@ -168,20 +167,36 @@ function selectPage() {
   selected.value = next
 }
 
-async function applyBulk(payload, confirmText) {
+function askRemove() {
   if (!selected.value.size || bulk.busy) return
-  if (confirmText && !window.confirm(confirmText)) return
+  pendingRemove.value = true
+  removeError.value = ""
+}
+
+function cancelRemove() {
+  if (bulk.busy) return
+  pendingRemove.value = false
+  removeError.value = ""
+}
+
+async function applyBulk(payload) {
+  if (!selected.value.size || bulk.busy) return
   bulk.busy = true
   error.value = ""
+  removeError.value = ""
   try {
     await api("/api/collection/bulk", {
       method: "POST",
       body: { card_ids: [...selected.value], ...payload }
     })
-    if (payload.remove) selected.value = new Set()
+    if (payload.remove) {
+      selected.value = new Set()
+      pendingRemove.value = false
+    }
     await load()
   } catch (e) {
-    error.value = e.message
+    if (payload.remove) removeError.value = e.message
+    else error.value = e.message
   } finally {
     bulk.busy = false
   }
@@ -371,11 +386,7 @@ onBeforeUnmount(() => {
           Appliquer la langue
         </button>
         <span class="bulk-sep"></span>
-        <button
-          class="btn btn-ghost btn-sm bulk-danger"
-          :disabled="!selected.size || bulk.busy"
-          @click="applyBulk({ remove: true }, `Retirer ${selected.size} carte(s) de la collection ?`)"
-        >
+        <button class="btn btn-ghost btn-sm bulk-danger" :disabled="!selected.size || bulk.busy" @click="askRemove">
           Retirer de la collection
         </button>
       </div>
@@ -417,4 +428,15 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </section>
+
+  <ModalDialog v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
+    <p>{{ selected.size }} carte(s) seront retirées de votre inventaire. Cette action est irréversible.</p>
+    <p v-if="removeError" class="error">{{ removeError }}</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" :disabled="bulk.busy" @click="cancelRemove">Annuler</button>
+      <button type="button" class="btn btn-danger" :disabled="bulk.busy" @click="applyBulk({ remove: true })">
+        {{ bulk.busy ? "Retrait…" : "Retirer" }}
+      </button>
+    </div>
+  </ModalDialog>
 </template>

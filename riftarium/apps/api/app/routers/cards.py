@@ -1,5 +1,3 @@
-import re
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.orm import Session
@@ -9,6 +7,7 @@ from ..cache import cache_get, cache_set
 from ..config import settings
 from ..db import get_db
 from ..models import Card, CardSet, CollectionItem, User
+from ..variants import variant_family, variant_id_clause
 
 router = APIRouter(prefix="/api", tags=["cards"])
 
@@ -18,9 +17,6 @@ def _cacheable_headers(response: Response) -> None:
     response.headers["Cache-Control"] = "public, max-age=300"
     response.headers["Vary"] = "Authorization"
 
-
-# ogn-037a-298 / ogn-037*-298 → famille ogn-037-298. Les ids promo/rune (ven-sp4-006, ven-r04) restent uniques.
-_VARIANT_ID_RE = re.compile(r"^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$", re.IGNORECASE)
 
 RARITY_RANK = case(
     (Card.rarity == "Common", 0),
@@ -94,25 +90,6 @@ def owned_quantities(db: Session, user: User | None, card_ids: list[str]) -> dic
     return {card_id: qty for card_id, qty in rows}
 
 
-def variant_family(riftbound_id: str | None) -> str:
-    ident = (riftbound_id or "").strip().lower()
-    match = _VARIANT_ID_RE.match(ident)
-    if not match:
-        return ident
-    set_id, number, _marker, suffix = match.groups()
-    return f"{set_id}-{number}-{suffix}"
-
-
-def variant_id_clause(family: str):
-    """Correspond à l'id de base et aux variantes à une lettre (a, *)."""
-    lowered = func.lower(Card.riftbound_id)
-    clauses = [lowered == family]
-    prefix, sep, suffix = family.rpartition("-")
-    if sep and "-" in prefix:
-        clauses.append(lowered.like(f"{prefix}_-{suffix}"))
-    return or_(*clauses)
-
-
 def variant_cards(db: Session, card: Card) -> list[Card]:
     family = variant_family(card.riftbound_id)
     if not family:
@@ -180,6 +157,7 @@ def list_cards(
     domain: str | None = None,
     rarity: str | None = None,
     energy: str | None = None,
+    owned: str | None = None,
     sort: str | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(30, ge=1, le=100),
@@ -205,6 +183,11 @@ def list_cards(
         energy=energy,
     )
 
+    # Filtre possédé/manquant : dépend du compte, donc jamais atteint par le cache anonyme.
+    if viewer is not None and owned in {"0", "1"}:
+        owned_ids = select(CollectionItem.card_id).where(CollectionItem.user_id == viewer.id, CollectionItem.qty > 0)
+        query = query.where(Card.id.in_(owned_ids) if owned == "1" else Card.id.not_in(owned_ids))
+
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     if sort == "random":
         order = [func.random()]
@@ -213,12 +196,12 @@ def list_cards(
     else:
         order = [Card.set_id, Card.collector_number, Card.id]
     rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
-    owned = owned_quantities(db, viewer, [card.id for card in rows])
+    owned_map = owned_quantities(db, viewer, [card.id for card in rows])
     payload = {
         "total": total,
         "page": page,
         "size": size,
-        "items": [card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows],
+        "items": [card_out(card, owned_map.get(card.id, 0) if viewer else None) for card in rows],
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)

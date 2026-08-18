@@ -53,6 +53,30 @@ describe("FilterSelect", () => {
     await wrapper.get(".fsel-btn").trigger("click")
     const glyph = wrapper.get(".fsel-opt img.rb-glyph.energy")
     expect(glyph.attributes("src")).toBe("https://example/energy_3.svg")
+    expect(wrapper.find(".fsel-tick").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("montre les runes officielles à la place des pastilles de couleur", async () => {
+    const wrapper = mount(FilterSelect, {
+      props: {
+        label: "Domaines",
+        options: [
+          { value: "Fury", label: "Fureur", glyph: "https://example/rune_fury.svg", glyphKind: "rune" },
+          { value: "Calm", label: "Calme", glyph: "https://example/rune_calm.svg", glyphKind: "rune" }
+        ],
+        modelValue: ["Fury"]
+      },
+      attachTo: document.body
+    })
+    expect(wrapper.get(".fsel-glyphs img.rb-glyph.rune").attributes("src")).toContain("rune_fury.svg")
+    expect(wrapper.find(".fsel-count").exists()).toBe(false)
+
+    await wrapper.get(".fsel-btn").trigger("click")
+    const options = wrapper.findAll(".fsel-opt")
+    expect(options[0].find(".fsel-tick").exists()).toBe(false)
+    expect(options[0].get("img.rb-glyph.rune").attributes("src")).toContain("rune_fury.svg")
+    expect(options[1].get("img.rb-glyph.rune").attributes("src")).toContain("rune_calm.svg")
     wrapper.unmount()
   })
 
