@@ -87,6 +87,10 @@ const curve = computed(() => {
   return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }))
 })
 
+const energyTotal = computed(() =>
+  grouped.value.main.reduce((sum, entry) => sum + (entry.card.energy ?? 0) * entry.qty, 0)
+)
+
 const domainSpread = computed(() => {
   const counts = {}
   for (const entry of deck.value?.cards || []) {
@@ -358,16 +362,15 @@ const isOwned = (card) => !session.token || (card.owned_qty ?? 0) > 0
 
 /* ---------- Aperçu lisible au survol ---------- */
 
-const preview = ref(null) // { card, x, y }
+const preview = ref(null) // { card, x, y, large }
 
-function showPreview(card, event) {
+function showPreview(card, event, width = 320) {
   if (!finePointer || drag.active) return
   const rect = event.currentTarget.getBoundingClientRect()
-  const width = 320
   const rightSpace = window.innerWidth - rect.right
   const x = rightSpace > width + 28 ? rect.right + 14 : Math.max(10, rect.left - width - 14)
-  const y = Math.min(Math.max(12, rect.top - 40), Math.max(12, window.innerHeight - 480))
-  preview.value = { card, x, y }
+  const y = Math.min(Math.max(12, rect.top - 40), Math.max(12, window.innerHeight - (width > 320 ? 620 : 480)))
+  preview.value = { card, x, y, large: width > 320 }
 }
 
 function hidePreview() {
@@ -474,6 +477,11 @@ async function openMissing() {
   } catch (e) {
     missingError.value = e.message
   }
+}
+
+function closeMissing() {
+  hidePreview()
+  showMissing.value = false
 }
 
 async function copyMissing() {
@@ -779,49 +787,45 @@ onBeforeUnmount(() => {
             </TransitionGroup>
             <p v-if="!grouped[zone.key].length" class="zone-empty">Glissez des cartes ici.</p>
           </template>
-
-          <div class="deck-extra">
-            <h4>Courbe d'énergie</h4>
-            <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
-              <div class="bar" v-for="bucket in curve" :key="bucket.cost">
-                <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
-                <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
-              </div>
-            </div>
-            <div class="deck-domains" v-if="domainSpread.length">
-              <span
-                class="chip"
-                v-for="[domain, count] in domainSpread"
-                :key="domain"
-                :style="{ '--chip': DOMAINS[domain]?.color }"
-              >
-                {{ DOMAINS[domain]?.label || domain }} · {{ count }}
-              </span>
-            </div>
-
-            <h4>
-              Validation
-              <span class="muted" style="font-size: 0.72rem; letter-spacing: 0">
-                {{ deck.format === "tournament" ? "règles de tournoi" : "indicatif (mode libre)" }}
-              </span>
-            </h4>
-            <ul class="validator">
-              <li v-for="checkItem in deck.checks" :key="checkItem.rule" :class="checkItem.ok ? 'v-ok' : 'v-ko'">
-                {{ checkItem.message }}
-              </li>
-            </ul>
-
-            <button class="btn btn-gold missing-btn" @click="openMissing">Trouver les cartes manquantes</button>
-
-            <h4>Description</h4>
-            <textarea
-              v-model="deck.description"
-              placeholder="Plan de jeu, forces, faiblesses…"
-              aria-label="Description du deck"
-            ></textarea>
-          </div>
         </div>
       </aside>
+    </div>
+
+    <div class="dbuilder-overview">
+      <div class="overview-row">
+        <ul class="validator">
+          <li v-for="checkItem in deck.checks" :key="checkItem.rule" :class="checkItem.ok ? 'v-ok' : 'v-ko'">
+            {{ checkItem.message }}
+          </li>
+        </ul>
+        <button class="btn btn-gold btn-sm missing-btn" @click="openMissing">Trouver les cartes manquantes</button>
+      </div>
+      <div class="overview-row overview-cost">
+        <p class="overview-energy">
+          <b>{{ energyTotal }}</b> énergie
+        </p>
+        <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
+          <div class="bar" v-for="bucket in curve" :key="bucket.cost">
+            <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
+            <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
+          </div>
+        </div>
+        <div class="deck-domains" v-if="domainSpread.length">
+          <span
+            class="chip"
+            v-for="[domain, count] in domainSpread"
+            :key="domain"
+            :style="{ '--chip': DOMAINS[domain]?.color }"
+          >
+            {{ DOMAINS[domain]?.label || domain }} · {{ count }}
+          </span>
+        </div>
+      </div>
+      <textarea
+        v-model="deck.description"
+        placeholder="Plan de jeu, forces, faiblesses…"
+        aria-label="Description du deck"
+      ></textarea>
     </div>
 
     <!-- Fantôme de drag -->
@@ -844,13 +848,14 @@ onBeforeUnmount(() => {
       <div
         v-if="preview"
         class="builder-preview"
+        :class="{ large: preview.large }"
         :style="{ left: `${preview.x}px`, top: `${preview.y}px` }"
         aria-hidden="true"
       >
         <div class="card-art" :class="{ landscape: preview.card.orientation === 'landscape' }">
-          <img :src="cardThumb(preview.card.image_url, 460)" alt="" />
+          <img :src="cardThumb(preview.card.image_url, preview.large ? 720 : 460)" alt="" />
         </div>
-        <div class="builder-preview-copy">
+        <div class="builder-preview-copy" v-if="!preview.large">
           <h3>{{ preview.card.name }}</h3>
           <p class="muted mono" style="font-size: 0.7rem">
             {{ TYPES[preview.card.type] || preview.card.type }} ·
@@ -864,7 +869,7 @@ onBeforeUnmount(() => {
     </Teleport>
 
     <!-- Cartes manquantes -->
-    <ModalDialog v-if="showMissing" title="Cartes manquantes" wide @close="showMissing = false">
+    <ModalDialog v-if="showMissing" title="Cartes manquantes" wide @close="closeMissing">
       <p v-if="missingError" class="error">{{ missingError }}</p>
       <p v-else-if="!missing" class="muted">Analyse de votre collection…</p>
       <template v-else-if="missing.items.length">
@@ -884,8 +889,17 @@ onBeforeUnmount(() => {
           </thead>
           <tbody>
             <tr v-for="item in missing.items" :key="item.card.id">
-              <td><img class="row-thumb" :src="cardThumb(item.card.image_url, 84)" alt="" loading="lazy" /></td>
               <td>
+                <img
+                  class="row-thumb missing-zoom"
+                  :src="cardThumb(item.card.image_url, 84)"
+                  :alt="item.card.name"
+                  loading="lazy"
+                  @mouseenter="showPreview(item.card, $event, 400)"
+                  @mouseleave="hidePreview"
+                />
+              </td>
+              <td class="missing-zoom" @mouseenter="showPreview(item.card, $event, 400)" @mouseleave="hidePreview">
                 <RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
                 <span class="muted mono" style="font-size: 0.68rem; display: block">{{
                   item.card.riftbound_id.toUpperCase()

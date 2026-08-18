@@ -200,6 +200,22 @@ describe("DeckEditView", () => {
     wrapper.unmount()
   })
 
+  it("validation, coût, description et cartes manquantes sont sur la page, pas dans la zone de dépôt", async () => {
+    const { wrapper } = await mountView()
+    const overview = wrapper.get(".dbuilder-overview")
+    const dropZone = wrapper.get(".dbuilder-deck")
+    expect(overview.find(".validator").exists()).toBe(true)
+    expect(overview.find(".curve").exists()).toBe(true)
+    expect(overview.find(".missing-btn").exists()).toBe(true)
+    expect(overview.find("textarea").exists()).toBe(true)
+    expect(overview.text()).toContain("énergie")
+    expect(dropZone.find(".validator").exists()).toBe(false)
+    expect(dropZone.find(".curve").exists()).toBe(false)
+    expect(dropZone.find(".missing-btn").exists()).toBe(false)
+    expect(dropZone.find("textarea").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("signale les manquants et liste les cartes à trouver (sauvegarde déclenchée avant)", async () => {
     const { wrapper } = await mountView()
     await tile(wrapper, "Légende Fury").trigger("click")
@@ -216,6 +232,48 @@ describe("DeckEditView", () => {
     expect(modal.textContent).toContain("Phénix Immortel")
     expect(modal.querySelectorAll("tbody tr")).toHaveLength(1)
     expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1" && options?.method === "PUT")).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("affiche la carte en grand au survol du nom ou de la vignette manquante", async () => {
+    window.matchMedia = (query) => ({
+      matches: String(query).includes("hover: hover") || String(query).includes("pointer: fine"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent() {
+        return false
+      }
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".missing-btn").trigger("click")
+    await flushPromises()
+
+    const thumb = document.body.querySelector(".missing-table .row-thumb")
+    const nameCell = document.body.querySelector(".missing-table td.missing-zoom")
+    expect(thumb).not.toBeNull()
+    expect(nameCell).not.toBeNull()
+
+    thumb.dispatchEvent(new MouseEvent("mouseenter"))
+    await flushPromises()
+    let preview = document.body.querySelector(".builder-preview.large img")
+    expect(preview).not.toBeNull()
+    expect(preview.getAttribute("src")).toContain("cdn.example")
+
+    thumb.dispatchEvent(new MouseEvent("mouseleave"))
+    await flushPromises()
+    expect(document.body.querySelector(".builder-preview")).toBeNull()
+
+    nameCell.dispatchEvent(new MouseEvent("mouseenter"))
+    await flushPromises()
+    preview = document.body.querySelector(".builder-preview.large img")
+    expect(preview).not.toBeNull()
+
+    nameCell.dispatchEvent(new MouseEvent("mouseleave"))
+    await flushPromises()
+    expect(document.body.querySelector(".builder-preview")).toBeNull()
     wrapper.unmount()
   })
 })
