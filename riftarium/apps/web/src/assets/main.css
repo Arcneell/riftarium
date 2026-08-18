@@ -2025,7 +2025,15 @@ footer {
 
 /* ---------- Guide du débutant : table de jeu ---------- */
 .guide-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr);
+  gap: 30px;
+  align-items: start;
   outline: none;
+}
+.guide-board {
+  position: sticky;
+  top: 74px;
 }
 .guide-toolbar {
   display: flex;
@@ -2054,9 +2062,7 @@ footer {
 }
 .tb-strip {
   position: absolute;
-  left: 24%;
-  right: 27%;
-  height: 15%;
+  height: 16%;
   border: 1.5px dashed var(--line-strong);
   border-radius: var(--r);
   pointer-events: none;
@@ -2071,13 +2077,17 @@ footer {
   color: var(--muted);
 }
 .tb-strip.foe {
-  top: 16.5%;
+  top: 16%;
+  left: 21%;
+  right: 22%;
 }
 .tb-strip.foe span {
   bottom: 3px;
 }
 .tb-strip.you {
-  top: 55.5%;
+  top: 56%;
+  left: 22%;
+  right: 23%;
 }
 .tb-strip.you span {
   top: 3px;
@@ -2103,11 +2113,32 @@ footer {
   text-align: center;
   padding: 0 3px;
 }
+.tb-runezone {
+  position: absolute;
+  left: 14.5%;
+  width: 32%;
+  top: 78.5%;
+  bottom: 1.5%;
+  border: 1.5px dashed var(--line-strong);
+  border-bottom: none;
+  border-radius: var(--r) var(--r) 0 0;
+  pointer-events: none;
+}
+.tb-runezone span {
+  position: absolute;
+  left: 10px;
+  top: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .tb-handzone {
   position: absolute;
-  left: 28%;
-  right: 28%;
-  top: 85%;
+  left: 50%;
+  right: 10.5%;
+  top: 81%;
   bottom: 1.5%;
   border: 1.5px dashed rgba(11, 143, 132, 0.45);
   border-bottom: none;
@@ -2158,7 +2189,7 @@ footer {
   position: absolute;
   left: 50%;
   top: 100%;
-  margin-top: 4px;
+  margin-top: 5px;
   transform: translateX(-50%);
   font-size: 0.54rem;
   letter-spacing: 0.12em;
@@ -2329,8 +2360,8 @@ footer {
 }
 .tb-pool {
   position: absolute;
-  left: 56%;
-  top: 52.5%;
+  left: 16%;
+  top: 76.5%;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2464,11 +2495,10 @@ footer {
 
 /* Panneau d'explications sous le plateau */
 .guide-panel {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 40px;
-  align-items: start;
-  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 44px;
 }
 .guide-title {
   font-size: 1.45rem;
@@ -2576,21 +2606,28 @@ footer {
   overflow: auto;
   background: radial-gradient(90% 60% at 50% 0%, rgba(11, 143, 132, 0.06), transparent 60%), var(--paper);
 }
+.guide-layout.full {
+  align-items: center;
+}
 .guide-layout.full .tb {
-  max-height: calc(100vh - 220px);
-  max-width: calc((100vh - 220px) * 16 / 9.5);
+  max-height: calc(100vh - 130px);
+  max-width: calc((100vh - 130px) * 16 / 9.5);
   width: 100%;
   margin: 0 auto;
 }
+.guide-layout.full .guide-board {
+  position: static;
+}
 .guide-layout.full .guide-panel {
-  max-width: 1200px;
-  margin: 20px auto 0;
+  margin-top: 0;
 }
 
 @media (max-width: 980px) {
-  .guide-panel {
+  .guide-layout {
     grid-template-columns: 1fr;
-    gap: 20px;
+  }
+  .guide-board {
+    position: static;
   }
   .tb-bf-name,
   .tb-slot-label {

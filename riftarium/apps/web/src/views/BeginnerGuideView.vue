@@ -60,11 +60,11 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
 <template>
   <div class="page-banner">
     <div class="wrap">
-      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Guide du débutant</p>
-      <h2>Apprenez à jouer, cartes en main</h2>
+      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Prise en main</p>
+      <h2>Prise en main : apprenez à jouer</h2>
       <p class="lead">
-        Une partie de duel (1c1) rejouée sous vos yeux avec le deck préconstruit Jinx : la table officielle, de vraies
-        cartes, une vraie main, une vraie pioche. Les termes officiels sont mis en évidence à chaque étape.
+        Une partie de duel (1c1) rejouée sous vos yeux sur la disposition du tapis officiel, avec de vraies cartes, une
+        vraie main et une vraie pioche. Les termes officiels sont mis en évidence à chaque étape.
       </p>
     </div>
   </div>
@@ -102,6 +102,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
             <div class="tb-slot" :style="{ left: SPOTS.foeDiscard.x + '%', top: SPOTS.foeDiscard.y + '%' }">
               <span>Sa défausse</span>
             </div>
+            <div class="tb-runezone"><span>Runes</span></div>
             <div class="tb-handzone"><span>Votre main</span></div>
 
             <!-- Champs de bataille : 2 en duel, un présenté par chaque joueur -->
@@ -113,7 +114,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               :style="{ left: SPOTS[bf].x + '%', top: SPOTS[bf].y + '%' }"
             >
               <img :src="CARDS[bf].img" :alt="CARDS[bf].name" loading="lazy" />
-              <span class="tb-bf-name mono">{{ CARDS[bf].name }} — {{ bf === "bfFoe" ? "à lui" : "à vous" }}</span>
+              <span class="tb-bf-name mono">{{ bf === "bfFoe" ? "Champ adverse" : "Votre champ" }}</span>
               <span v-if="contested(bf)" class="tb-bf-flag">Contesté</span>
               <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">Contrôlé</span>
             </div>
