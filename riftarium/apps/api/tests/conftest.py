@@ -3,6 +3,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTO_SYNC"] = "0"
 os.environ["JWT_SECRET"] = "test-secret"
+os.environ["REDIS_URL"] = ""  # les tests tournent sans cache, même si un Redis est joignable
 
 import pytest
 from fastapi.testclient import TestClient
