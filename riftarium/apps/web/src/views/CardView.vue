@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, cardThumb, session, DOMAINS, TYPES, RARITIES } from "../api.js"
+import { api, cardThumb, session, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } from "../api.js"
 import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
 import CardText from "../components/CardText.vue"
 
@@ -9,8 +9,20 @@ const route = useRoute()
 const router = useRouter()
 const card = ref(null)
 const error = ref("")
-const qty = ref(0)
+const entries = ref([]) // lots possédés : [{ id, qty, condition, lang }]
+const draft = reactive({ qty: 1, condition: "NM", lang: "EN" })
+const busy = ref(false)
 const saved = ref("")
+
+const totalOwned = computed(() => entries.value.reduce((total, entry) => total + entry.qty, 0))
+
+/* Retour contextuel : revient à la collection (ou à la liste filtrée) telle qu'on l'a quittée. */
+const backLink = computed(() => {
+  void route.fullPath // history.state n'est pas réactif : on réévalue à chaque navigation
+  const back = window.history.state?.back
+  if (typeof back === "string" && back.startsWith("/collection")) return { label: "Ma collection", useBack: true }
+  return { label: "Cartothèque", useBack: typeof back === "string" && back.startsWith("/cartes") }
+})
 
 const foil = computed(() => isFoil(card.value))
 const variants = computed(() => card.value?.variants || [])
@@ -31,7 +43,11 @@ watch(
     saved.value = ""
     try {
       card.value = await api(`/api/cards/${id}`)
-      qty.value = card.value.owned_qty ?? 0
+      entries.value = []
+      if (session.token) {
+        const owned = await api(`/api/collection/${card.value.id}`)
+        entries.value = owned.entries
+      }
     } catch (e) {
       error.value = e.message
     }
@@ -39,29 +55,67 @@ watch(
   { immediate: true }
 )
 
-async function addToCollection() {
+function applyState(state, message) {
+  entries.value = state.entries
+  card.value.owned_qty = state.total_qty
+  saved.value = message
+}
+
+async function mutate(request, message) {
+  if (busy.value) return
+  busy.value = true
   saved.value = ""
+  error.value = ""
   try {
-    const response = await api(`/api/collection/${card.value.id}`, {
-      method: "PUT",
-      body: { qty: qty.value }
-    })
-    saved.value = `C'est noté : ${response.qty} exemplaire(s).`
-    card.value.owned_qty = response.qty
+    applyState(await request(), message)
   } catch (e) {
     error.value = e.message
+  } finally {
+    busy.value = false
   }
 }
 
+function addEntry() {
+  mutate(
+    () =>
+      api(`/api/collection/${card.value.id}/entries`, {
+        method: "POST",
+        body: { qty: draft.qty, condition: draft.condition, lang: draft.lang }
+      }),
+    "Lot ajouté."
+  ).then(() => {
+    draft.qty = 1
+  })
+}
+
+function saveEntry(entry) {
+  mutate(
+    () =>
+      api(`/api/collection/entries/${entry.id}`, {
+        method: "PATCH",
+        body: { qty: entry.qty, condition: entry.condition, lang: entry.lang }
+      }),
+    "Lot mis à jour."
+  )
+}
+
+function removeEntry(entry) {
+  mutate(() => api(`/api/collection/entries/${entry.id}`, { method: "PATCH", body: { qty: 0 } }), "Lot retiré.")
+}
+
+/* replace : passer d'une variante à l'autre ne pollue pas l'historique, le retour ramène à la liste. */
 function openVariant(id) {
-  if (id !== card.value?.id) router.push(`/cartes/${id}`)
+  if (id !== card.value?.id) router.replace(`/cartes/${id}`)
 }
 </script>
 
 <template>
   <section class="card-detail">
     <div class="wrap cards-wrap">
-      <p class="card-back"><RouterLink to="/cartes">← Cartothèque</RouterLink></p>
+      <p class="card-back">
+        <a v-if="backLink.useBack" href="#" @click.prevent="router.back()">← {{ backLink.label }}</a>
+        <RouterLink v-else to="/cartes">← Cartothèque</RouterLink>
+      </p>
       <p v-if="error" class="error">{{ error }}</p>
 
       <article v-if="card" class="card-sheet" :class="{ landscape }">
@@ -151,12 +205,44 @@ function openVariant(id) {
           <p class="flavour" v-if="card.flavour">« {{ card.flavour }} »</p>
 
           <div class="panel sheet-collection" v-if="session.token">
-            <h3>Dans ma collection</h3>
-            <div class="sheet-qty">
-              <input type="number" min="0" max="999" v-model.number="qty" aria-label="Quantité possédée" />
-              <button class="btn btn-gold btn-sm" @click="addToCollection">Enregistrer</button>
-              <span v-if="saved" class="success">{{ saved }}</span>
+            <h3>
+              Dans ma collection
+              <span v-if="totalOwned" class="muted">— {{ totalOwned }} exemplaire(s)</span>
+            </h3>
+
+            <div v-for="entry in entries" :key="entry.id" class="sheet-qty sheet-entry">
+              <input
+                type="number"
+                min="0"
+                max="999"
+                v-model.number="entry.qty"
+                :aria-label="`Quantité du lot ${entry.condition} ${entry.lang}`"
+              />
+              <select v-model="entry.condition" aria-label="État du lot">
+                <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+              </select>
+              <select v-model="entry.lang" aria-label="Langue du lot">
+                <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+              </select>
+              <button class="btn btn-gold btn-sm" :disabled="busy" @click="saveEntry(entry)">Enregistrer</button>
+              <button class="btn btn-ghost btn-sm" :disabled="busy" @click="removeEntry(entry)">Retirer</button>
             </div>
+            <p v-if="!entries.length" class="muted">Aucun exemplaire pour l'instant.</p>
+
+            <div class="sheet-qty sheet-entry sheet-add">
+              <input type="number" min="1" max="999" v-model.number="draft.qty" aria-label="Quantité à ajouter" />
+              <select v-model="draft.condition" aria-label="État du nouveau lot">
+                <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+              </select>
+              <select v-model="draft.lang" aria-label="Langue du nouveau lot">
+                <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" :disabled="busy || !draft.qty" @click="addEntry">
+                + Ajouter un lot
+              </button>
+            </div>
+
+            <p v-if="saved" class="success">{{ saved }}</p>
           </div>
           <p v-else class="muted sheet-login">
             <RouterLink to="/connexion">Connectez-vous</RouterLink> pour suivre vos exemplaires.

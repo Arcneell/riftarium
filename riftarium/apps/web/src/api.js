@@ -77,6 +77,28 @@ export const TYPES = {
   Battlefield: "Champ de bataille"
 }
 
+/* Échelle Cardmarket, du neuf au très abîmé. */
+export const CONDITIONS = {
+  MT: "Mint",
+  NM: "Near Mint",
+  EX: "Excellent",
+  GD: "Good",
+  LP: "Light Played",
+  PL: "Played",
+  PO: "Poor"
+}
+
+export const LANGS = {
+  EN: "Anglais",
+  FR: "Français",
+  DE: "Allemand",
+  ES: "Espagnol",
+  IT: "Italien",
+  JP: "Japonais",
+  KO: "Coréen",
+  ZH: "Chinois"
+}
+
 /* Ordre officiel Riot : Commune → Peu commune → Rare → Épique, puis impressions spéciales. */
 export const RARITIES = {
   Common: "Commun",

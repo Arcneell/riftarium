@@ -4,7 +4,10 @@ import { cardThumb, DOMAINS, TYPES, RARITIES } from "../api.js"
 import { isFoil, variantLabel } from "../cardText.js"
 import CardHoverPreview from "./CardHoverPreview.vue"
 
-const props = defineProps({ card: { type: Object, required: true } })
+const props = defineProps({
+  card: { type: Object, required: true },
+  preview: { type: Boolean, default: true }
+})
 const foil = computed(() => isFoil(props.card))
 const badge = computed(() => {
   const label = variantLabel(props.card)
@@ -13,7 +16,7 @@ const badge = computed(() => {
 </script>
 
 <template>
-  <CardHoverPreview :card="card">
+  <CardHoverPreview :card="card" :disabled="!preview">
     <RouterLink
       v-tilt
       class="card-tile"

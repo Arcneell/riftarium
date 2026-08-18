@@ -3,11 +3,13 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, DOMAINS, TYPES, RARITIES } from "../api.js"
 import { cardsQuery, csvSplit, glyphUrl } from "../cardText.js"
+import { useScrollMemory } from "../useScrollMemory.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 
 const route = useRoute()
 const router = useRouter()
+const { restoreScroll } = useScrollMemory()
 const ENERGIES = ["0", "1", "2", "3", "4", "5", "6", "7+"]
 
 function fromQuery(query) {
@@ -93,11 +95,17 @@ function scheduleMeasure() {
   resizeTimer = setTimeout(measure, 180)
 }
 
+let firstLoad = true
+
 async function load() {
   loading.value = true
   error.value = ""
   try {
     result.value = await api(`/api/cards?${cardsQuery(state, size.value)}`)
+    if (firstLoad) {
+      firstLoad = false
+      restoreScroll()
+    }
   } catch (e) {
     error.value = e.message
   } finally {
