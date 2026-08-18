@@ -22,7 +22,7 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Comptes (inscription, connexion, JWT) | ✅ |
 | Collection (quantités, état, langue) | ✅ |
 | Deck builder + validation règles tournoi / mode libre | ✅ |
-| Decks publics, likes | ✅ |
+| Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
 | Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 |
 

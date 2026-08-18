@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -185,17 +187,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Texte officiel</p>
-      <h2>Le texte intégral, consultable et cherchable</h2>
-      <p class="lead">
-        Reproduit tel quel depuis les documents officiels de Riot Games. Chaque renvoi est cliquable. Pour une
-        explication plus lisible, passez par le <RouterLink to="/regles/debutant">guide du débutant</RouterLink> ou
-        l'<RouterLink to="/regles/avancee">aide avancée</RouterLink>.
-      </p>
-    </div>
-  </div>
+  <PageBanner :art="BANNERS.rules" title="Le texte intégral, consultable et cherchable">
+    <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Texte officiel </template>
+    Reproduit tel quel depuis les documents officiels de Riot Games. Chaque renvoi est cliquable. Pour une explication
+    plus lisible, passez par le <RouterLink to="/regles/debutant">guide du débutant</RouterLink> ou l'<RouterLink
+      to="/regles/avancee"
+      >aide avancée</RouterLink
+    >.
+  </PageBanner>
 
   <section style="padding-top: 36px" v-if="documents">
     <div class="wrap">

@@ -93,4 +93,26 @@ describe("FilterSelect", () => {
     expect(wrapper.find(".fsel-pop").exists()).toBe(false)
     wrapper.unmount()
   })
+
+  it("filtre les options par saisie quand le sélecteur est searchable", async () => {
+    const wrapper = mount(FilterSelect, {
+      props: {
+        label: "Légendes",
+        searchable: true,
+        options: [
+          { value: "a", label: "Ahri" },
+          { value: "j", label: "Jinx" }
+        ],
+        modelValue: []
+      },
+      attachTo: document.body
+    })
+    await wrapper.get(".fsel-btn").trigger("click")
+    expect(wrapper.findAll(".fsel-opt")).toHaveLength(2)
+    const search = wrapper.get(".fsel-search")
+    await search.setValue("jinx")
+    expect(wrapper.findAll(".fsel-opt")).toHaveLength(1)
+    expect(wrapper.get(".fsel-opt").text()).toBe("Jinx")
+    wrapper.unmount()
+  })
 })

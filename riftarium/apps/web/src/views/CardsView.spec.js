@@ -79,6 +79,13 @@ describe("CardsView", () => {
     wrapper.unmount()
   })
 
+  it("habille la page d'une illustration officielle Riftbound", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.get(".page-banner").attributes("style")).toContain("4e9fa6cb")
+    expect(wrapper.get(".splash-credit").text()).toContain("© Riot Games")
+    wrapper.unmount()
+  })
+
   it("affiche les runes officielles dans le filtre des domaines", async () => {
     const { wrapper } = await mountView()
     await wrapper.findAll(".fsel-btn")[0].trigger("click")

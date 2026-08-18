@@ -1,29 +1,30 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, DOMAINS, TYPES, RARITIES, session } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, cardsQuery, copyFamily, domainFilterOptions, glyphUrl } from "../cardText.js"
 import CardText from "../components/CardText.vue"
+import DeckExportBar from "../components/DeckExportBar.vue"
+import DeckView from "../components/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
+import { DECK_ZONES, groupDeck, zoneOf } from "../deckDisplay.js"
 
 const route = useRoute()
+const router = useRouter()
 const deck = ref(null)
 const error = ref("")
 const saveState = ref("") // "" | "saving" | "saved" | "error"
 const limitMessage = ref("")
+const showExport = ref(false)
+const canEdit = computed(() => Boolean(session.handle && deck.value && session.handle === deck.value.owner))
 
 const finePointer = typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches
 const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 /* ---------- Zones du deck ---------- */
 
-const ZONES = [
-  { key: "Legend", label: "Légende", target: 1 },
-  { key: "Battlefield", label: "Champs de bataille", target: 3 },
-  { key: "Rune", label: "Runes", target: 12 },
-  { key: "main", label: "Deck principal", target: 40 }
-]
+const ZONES = DECK_ZONES
 
 /* La légende est affichée en vitrine : les listes ne montrent que les autres zones. */
 const LIST_ZONES = ZONES.filter((zone) => zone.key !== "Legend")
@@ -31,16 +32,7 @@ const LIST_ZONES = ZONES.filter((zone) => zone.key !== "Legend")
 /* Plafond d'exemplaires par carte, appliqué en mode tournoi (12 = limite du schéma en mode libre). */
 const TOURNAMENT_CAPS = { Legend: 1, Battlefield: 1, Rune: 12, main: 3 }
 
-const zoneOf = (card) => (card.type in TOURNAMENT_CAPS ? card.type : "main")
-
-const grouped = computed(() => {
-  const groups = { Legend: [], Battlefield: [], Rune: [], main: [] }
-  for (const entry of deck.value?.cards || []) groups[zoneOf(entry.card)].push(entry)
-  for (const zone of Object.values(groups)) {
-    zone.sort((a, b) => (a.card.energy ?? -1) - (b.card.energy ?? -1) || a.card.name.localeCompare(b.card.name))
-  }
-  return groups
-})
+const grouped = computed(() => groupDeck(deck.value))
 
 const zoneCounts = computed(() => {
   const counts = {}
@@ -129,7 +121,7 @@ function notifyLimit(message, cardId) {
 }
 
 function addCard(card) {
-  if (!deck.value) return false
+  if (!canEdit.value || !deck.value) return false
   const zone = zoneOf(card)
   if (deck.value.format === "tournament") {
     const cap = TOURNAMENT_CAPS[zone]
@@ -174,6 +166,7 @@ function addCard(card) {
 }
 
 function setQty(entry, delta) {
+  if (!canEdit.value) return
   if (delta > 0) {
     addCard(entry.card)
     return
@@ -205,15 +198,22 @@ async function load() {
   try {
     deck.value = await api(`/api/decks/${route.params.id}`)
     savedSnapshot = snapshot()
-    // Deck sans légende : la galerie démarre sur le choix de la légende.
-    if (!deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
+    if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
+    if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
+      try {
+        const seen = await api(`/api/decks/${deck.value.id}/view`, { method: "POST" })
+        deck.value.views = seen.views
+      } catch {
+        /* compteur de vues non bloquant */
+      }
+    }
   } catch (e) {
     error.value = e.message
   }
 }
 
 async function save() {
-  if (!deck.value || snapshot() === savedSnapshot) return
+  if (!canEdit.value || !deck.value || snapshot() === savedSnapshot) return
   saveState.value = "saving"
   const sent = snapshot()
   try {
@@ -247,7 +247,7 @@ function scheduleSave() {
 watch(
   () => (deck.value ? snapshot() : ""),
   (next, previous) => {
-    if (!deck.value || !previous || next === savedSnapshot) return
+    if (!canEdit.value || !deck.value || !previous || next === savedSnapshot) return
     error.value = ""
     scheduleSave()
   }
@@ -318,6 +318,7 @@ async function loadGallery() {
 }
 
 function scheduleGallery() {
+  if (!canEdit.value) return
   clearTimeout(galleryTimer)
   galleryTimer = setTimeout(loadGallery, 180)
 }
@@ -381,8 +382,23 @@ let dragStart = null
 let dragMoved = false
 let suppressClick = false
 
+async function toggleLike() {
+  if (!deck.value) return
+  if (!session.token) {
+    router.push({ path: "/connexion", query: { suite: `/decks/${deck.value.id}` } })
+    return
+  }
+  try {
+    const payload = await api(`/api/decks/${deck.value.id}/like`, { method: "POST" })
+    deck.value.likes = payload.likes
+    deck.value.liked_by_me = payload.liked_by_me
+  } catch (e) {
+    error.value = e.message
+  }
+}
+
 function onTilePointerDown(card, from, event) {
-  if (!finePointer || event.pointerType === "touch" || event.button !== 0) return
+  if (!canEdit.value || !finePointer || event.pointerType === "touch" || event.button !== 0) return
   if (event.target.closest(".row-actions")) return
   dragStart = { card, from, x: event.clientX, y: event.clientY }
   dragMoved = false
@@ -506,7 +522,6 @@ watch(
 
 onMounted(async () => {
   measure()
-  loadGallery()
   window.addEventListener("resize", scheduleMeasure)
   window.addEventListener("scroll", hidePreview, { passive: true })
   if (typeof ResizeObserver !== "undefined" && grid.value) {
@@ -517,6 +532,17 @@ onMounted(async () => {
     sets.value = await api("/api/sets")
   } catch {
     /* filtre sets indisponible */
+  }
+})
+
+watch(canEdit, async (edit) => {
+  if (!edit) return
+  loadGallery()
+  await nextTick()
+  measure()
+  if (typeof ResizeObserver !== "undefined" && grid.value && !observer) {
+    observer = new ResizeObserver(scheduleMeasure)
+    observer.observe(grid.value)
   }
 })
 
@@ -534,16 +560,50 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="dbuilder-page" v-if="deck">
+  <p v-if="error && !deck" class="error wrap" style="padding-top: 40px">{{ error }}</p>
+  <DeckView v-if="deck && !canEdit" :deck="deck" @like="toggleLike" />
+  <section class="dbuilder-page" v-else-if="deck">
     <div class="dbuilder-bar">
-      <RouterLink to="/decks" class="dbuilder-back">← Mes decks</RouterLink>
-      <input type="text" v-model="deck.name" class="dbuilder-name" maxlength="80" aria-label="Nom du deck" />
-      <select v-model="deck.format" aria-label="Format">
+      <RouterLink :to="canEdit ? '/decks' : '/communaute'" class="dbuilder-back">
+        {{ canEdit ? "← Mes decks" : "← Communauté" }}
+      </RouterLink>
+      <input
+        v-if="canEdit"
+        type="text"
+        v-model="deck.name"
+        class="dbuilder-name"
+        maxlength="80"
+        aria-label="Nom du deck"
+      />
+      <h2 v-else class="dbuilder-name">{{ deck.name }}</h2>
+      <select v-if="canEdit" v-model="deck.format" aria-label="Format">
         <option value="tournament">Mode tournoi</option>
         <option value="free">Mode libre</option>
       </select>
-      <label class="switch"> <input type="checkbox" v-model="deck.is_public" /><i></i> Public </label>
-      <span class="dbuilder-save" :class="saveState">
+      <span v-else class="muted mono">
+        {{ deck.format === "tournament" ? "tournoi" : "libre" }} · par {{ deck.owner }}
+      </span>
+      <label v-if="canEdit" class="switch"> <input type="checkbox" v-model="deck.is_public" /><i></i> Public </label>
+      <div class="deck-box-stats">
+        <button
+          v-if="deck.is_public && deck.moderation_status === 'published'"
+          type="button"
+          class="deck-box-stat"
+          :class="{ liked: deck.liked_by_me }"
+          :aria-pressed="deck.liked_by_me"
+          :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
+          @click="toggleLike"
+        >
+          <Icon name="heart" :size="14" />
+          {{ deck.likes }}
+        </button>
+        <span class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
+          <Icon name="eye" :size="14" />
+          {{ deck.views ?? 0 }}
+        </span>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" @click="showExport = true">Exporter</button>
+      <span v-if="canEdit" class="dbuilder-save" :class="saveState">
         <template v-if="saveState === 'saving'">Enregistrement…</template>
         <template v-else-if="saveState === 'saved'">Enregistré ✓</template>
         <template v-else-if="saveState === 'error'">Erreur de sauvegarde</template>
@@ -554,9 +614,9 @@ onBeforeUnmount(() => {
       En attente de modération : ce deck n'est pas visible publiquement.
     </p>
 
-    <div class="dbuilder">
+    <div class="dbuilder" :class="{ readonly: !canEdit }">
       <!-- Galerie : toutes les cartes du jeu, façon collection de jeu de cartes -->
-      <div class="dbuilder-gallery">
+      <div v-if="canEdit" class="dbuilder-gallery">
         <div class="filter-board">
           <label class="search filter-search">
             <Icon name="search" :size="18" />
@@ -700,6 +760,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <button
+            v-if="canEdit"
             type="button"
             class="deck-hero-remove"
             aria-label="Retirer la légende du deck"
@@ -709,8 +770,9 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <div v-else class="deck-hero empty">
-          <p><b>1.</b> Choisissez votre légende : elle fixe les deux domaines du deck.</p>
-          <button type="button" class="btn btn-ghost btn-sm" @click="setFilter('type', ['Legend'])">
+          <p v-if="canEdit"><b>1.</b> Choisissez votre légende : elle fixe les deux domaines du deck.</p>
+          <p v-else>Ce deck n'a pas encore de légende.</p>
+          <button v-if="canEdit" type="button" class="btn btn-ghost btn-sm" @click="setFilter('type', ['Legend'])">
             Voir les légendes
           </button>
         </div>
@@ -763,7 +825,7 @@ onBeforeUnmount(() => {
                   >!</span
                 >
                 <span class="row-qty">×{{ entry.qty }}</span>
-                <span class="row-actions">
+                <span class="row-actions" v-if="canEdit">
                   <button
                     type="button"
                     :aria-label="`Retirer un exemplaire de ${entry.card.name}`"
@@ -781,7 +843,9 @@ onBeforeUnmount(() => {
                 </span>
               </div>
             </TransitionGroup>
-            <p v-if="!grouped[zone.key].length" class="zone-empty">Glissez des cartes ici.</p>
+            <p v-if="!grouped[zone.key].length" class="zone-empty">
+              {{ canEdit ? "Glissez des cartes ici." : "Aucune carte dans cette zone." }}
+            </p>
           </template>
         </div>
       </aside>
@@ -794,7 +858,9 @@ onBeforeUnmount(() => {
             {{ checkItem.message }}
           </li>
         </ul>
-        <button class="btn btn-gold btn-sm missing-btn" @click="openMissing">Trouver les cartes manquantes</button>
+        <button v-if="canEdit" class="btn btn-gold btn-sm missing-btn" @click="openMissing">
+          Trouver les cartes manquantes
+        </button>
       </div>
       <div class="overview-row overview-cost">
         <p class="overview-energy">
@@ -820,10 +886,12 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <textarea
+        v-if="canEdit"
         v-model="deck.description"
         placeholder="Plan de jeu, forces, faiblesses…"
         aria-label="Description du deck"
       ></textarea>
+      <p v-else-if="deck.description" class="deck-read-desc">{{ deck.description }}</p>
     </div>
 
     <!-- Fantôme de drag -->
@@ -916,6 +984,10 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck. Bon match !</p>
+    </ModalDialog>
+
+    <ModalDialog v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
+      <DeckExportBar :deck="deck" />
     </ModalDialog>
   </section>
 

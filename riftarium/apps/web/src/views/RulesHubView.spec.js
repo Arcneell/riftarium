@@ -32,6 +32,8 @@ describe("RulesHubView", () => {
     expect(links).toEqual(["/regles/debutant", "/regles/avancee", "/regles/officielles"])
     expect(wrapper.text()).toContain("Dernier recours")
     expect(wrapper.text()).toContain("Règle d'or")
+    expect(wrapper.get(".page-banner").attributes("style")).toContain("bf44d943")
+    expect(wrapper.get(".splash-credit").text()).toContain("© Riot Games")
   })
 
   it("redirige les anciens liens ?doc=…&section=… vers le lecteur officiel", async () => {

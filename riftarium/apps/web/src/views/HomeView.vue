@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue"
 import { api } from "../api.js"
+import { BANNERS } from "../banners.js"
 import CardRiver from "../components/CardRiver.vue"
 
 const cardCount = ref(null)
@@ -23,6 +24,9 @@ const FAN = [
 ]
 const cardImg = (hash) =>
   `https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/${hash}?auto=format&fit=max&w=460&accountingTag=RB`
+
+const splashStyle = { "--splash": `url("${BANNERS.home}")` }
+const tableStyle = { "--art": `url("${BANNERS.table}")` }
 
 const MODULES = [
   {
@@ -87,12 +91,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section
-    class="hero-splash"
-    style="
-      --splash: url(&quot;https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/9e26afe304d2c40664b119a9da0ef82cff692f54-3840x2160.png?auto=format&w=1920&quot;);
-    "
-  >
+  <section class="hero-splash" :style="splashStyle">
     <div class="wrap hero-grid">
       <div>
         <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
@@ -167,14 +166,7 @@ onMounted(async () => {
     </div>
   </section>
 
-  <div
-    class="interlude"
-    role="img"
-    aria-label="Illustration officielle Riftbound"
-    style="
-      --art: url(&quot;https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/91a720561b6cd9c649a9148782f34d96e78cd894-4320x2430.jpg?auto=format&w=1800&quot;);
-    "
-  >
+  <div class="interlude" role="img" aria-label="Illustration officielle Riftbound" :style="tableStyle">
     <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
   </div>
 

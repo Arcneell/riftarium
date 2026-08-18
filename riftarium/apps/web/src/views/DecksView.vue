@@ -1,9 +1,11 @@
 <script setup>
 import { nextTick, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
-import { api, cardThumb } from "../api.js"
-import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
+import { api } from "../api.js"
+import { BANNERS } from "../banners.js"
+import DeckBox from "../components/DeckBox.vue"
 import ModalDialog from "../components/ModalDialog.vue"
+import PageBanner from "../components/PageBanner.vue"
 
 const router = useRouter()
 const decks = ref([])
@@ -93,38 +95,13 @@ async function confirmRemove() {
   }
 }
 
-const okCount = (deck) => deck.checks.filter((c) => c.ok).length
-
-/* Boîte de deck : la légende en couverture, ses domaines en runes. */
-const legendOf = (deck) => deck.cards.find((entry) => entry.card.type === "Legend")?.card || null
-
-function runesOf(deck) {
-  const legend = legendOf(deck)
-  return (legend?.domains || [])
-    .filter((domain) => domain !== "Colorless")
-    .map((domain) => ({
-      domain,
-      label: RUNE_LABELS[DOMAIN_RUNE[domain]] || domain,
-      src: glyphUrl(`rune_${DOMAIN_RUNE[domain]}`)
-    }))
-}
-
-function coverStyle(deck) {
-  const art = legendOf(deck)?.image_url || deck.cards[0]?.card.image_url
-  return art ? { "--cover": `url(${cardThumb(art, 480)})` } : {}
-}
-
 onMounted(load)
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow">Deck builder</p>
-      <h2>Mes decks</h2>
-      <p class="lead">Construisez vos decks, vérifiez les règles de tournoi et listez les cartes qui vous manquent.</p>
-    </div>
-  </div>
+  <PageBanner :art="BANNERS.decks" eyebrow="Deck builder" title="Mes decks">
+    Construisez vos decks, vérifiez les règles de tournoi et listez les cartes qui vous manquent.
+  </PageBanner>
 
   <section style="padding-top: 40px">
     <div class="wrap">
@@ -134,43 +111,14 @@ onMounted(load)
       <p v-if="error" class="error">{{ error }}</p>
 
       <div class="deck-boxes">
-        <article class="deck-box" v-for="(deck, i) in decks" :key="deck.id" v-reveal="i">
-          <RouterLink
-            class="deck-box-cover"
-            :class="{ blank: !legendOf(deck) }"
-            :to="`/decks/${deck.id}`"
-            :style="coverStyle(deck)"
-            :aria-label="`Ouvrir le deck ${deck.name}`"
-          >
-            <span v-if="!legendOf(deck)" class="deck-box-nolegend">Sans légende</span>
-            <span class="deck-box-runes" v-if="runesOf(deck).length">
-              <img
-                v-for="rune in runesOf(deck)"
-                :key="rune.domain"
-                :src="rune.src"
-                :alt="rune.label"
-                :title="rune.label"
-                width="24"
-                height="24"
-              />
-            </span>
-          </RouterLink>
-          <div class="deck-box-plate">
-            <h3>
-              <RouterLink :to="`/decks/${deck.id}`">{{ deck.name }}</RouterLink>
-            </h3>
-            <p class="muted mono">
-              {{ deck.card_count }} cartes · {{ deck.format === "tournament" ? "tournoi" : "libre" }} ·
-              {{ okCount(deck) }}/{{ deck.checks.length }} règles · {{ deck.is_public ? "public" : "privé" }}
-              <span v-if="deck.moderation_status === 'pending'" style="color: var(--order)"> · en modération</span>
-            </p>
-            <div class="deck-box-actions">
-              <span class="chip" style="--chip: var(--chaos)">♥ {{ deck.likes }}</span>
-              <RouterLink class="btn btn-ghost btn-sm" :to="`/decks/${deck.id}`">Ouvrir</RouterLink>
-              <button class="btn btn-ghost btn-sm" @click="askRemove(deck)">Supprimer</button>
-            </div>
-          </div>
-        </article>
+        <DeckBox
+          v-for="(deck, i) in decks"
+          :key="deck.id"
+          v-reveal="i"
+          :deck="deck"
+          :to="`/decks/${deck.id}`"
+          @remove="askRemove"
+        />
       </div>
       <p v-if="!decks.length" class="muted">
         Pas encore de deck. Cliquez sur « Nouveau deck », le reste se passe dans l'éditeur.

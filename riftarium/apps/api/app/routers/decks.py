@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+import hashlib
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import String, cast, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import current_user, optional_user
 from ..db import get_db
-from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, User
+from ..deckbuild import assemble_list, has_champion, legends_in, load_pool, main_candidates
+from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from ..moderation import review
 from ..schemas import DeckIn, ExampleDeckIn
-from ..validation import MAIN_TYPES, validate_deck
+from ..validation import validate_deck
 from ..variants import copy_family
-from .cards import card_out, find_card, owned_quantities
+from .cards import card_out, csv_parts, find_card, owned_quantities
 
 router = APIRouter(prefix="/api", tags=["decks"])
 
@@ -32,6 +36,7 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
         "moderation_status": deck.moderation_status,
         "likes": deck.likes_count,
         "liked_by_me": liked,
+        "views": deck.views_count,
         "owner": deck.owner.handle,
         "card_count": sum(dc.qty for dc in deck.cards),
         "cards": [
@@ -113,122 +118,27 @@ def create_example_deck(payload: ExampleDeckIn, user: User = Depends(current_use
     """
     prefer_owned = payload.mode == "owned"
     owned = _owned_families(db, user)
-    all_cards = db.scalars(select(Card).order_by(Card.set_id, Card.collector_number, Card.id)).all()
-    if not all_cards:
+    pool = load_pool(db)
+    if not pool:
         raise HTTPException(status_code=422, detail="Aucune carte en base : lancez une synchronisation")
 
-    def family(card: Card) -> str:
-        return copy_family(card)
-
-    def owned_qty(card: Card) -> int:
-        return owned.get(family(card), 0)
-
-    def is_base(card: Card) -> bool:
-        return not (card.alternate_art or card.signature or card.overnumbered)
-
-    def domains(card: Card) -> set[str]:
-        return {d for d in (card.domains or []) if d != "Colorless"}
-
-    # Une seule carte par famille, version de base de préférence.
-    families: dict[str, Card] = {}
-    for card in all_cards:
-        current = families.get(family(card))
-        if current is None or (is_base(card) and not is_base(current)):
-            families[family(card)] = card
-    pool = list(families.values())
-
-    legends = [c for c in pool if c.type == "Legend"]
+    legends = legends_in(pool)
     if not legends:
         raise HTTPException(status_code=422, detail="Aucune légende disponible")
 
-    def main_candidates(legend: Card) -> list[Card]:
-        return [c for c in pool if c.type in MAIN_TYPES and domains(c) <= domains(legend)]
-
-    def has_champion(legend: Card, candidates: list[Card]) -> bool:
-        tags = set(legend.tags or [])
-        return not tags or any(tags & set(c.tags or []) for c in candidates)
+    def owned_qty(card: Card) -> int:
+        return owned.get(copy_family(card), 0)
 
     def coverage(legend: Card) -> int:
-        return sum(min(owned_qty(c), 3) for c in main_candidates(legend))
+        return sum(min(owned_qty(c), 3) for c in main_candidates(pool, legend))
 
-    viable = [c for c in legends if has_champion(c, main_candidates(c))] or legends
+    viable = [card for card in legends if has_champion(card, main_candidates(pool, card))] or legends
     if prefer_owned:
         legend = max(viable, key=lambda c: (owned_qty(c) > 0, coverage(c)))
     else:
-        legend = max(viable, key=lambda c: len(main_candidates(c)))
+        legend = max(viable, key=lambda c: len(main_candidates(pool, c)))
 
-    def ownership_rank(card: Card) -> int:
-        # 0 = à prendre d'abord ; possédé d'abord en mode collection, l'inverse en découverte
-        return -int(owned_qty(card) > 0) if prefer_owned else int(owned_qty(card) > 0)
-
-    battlefields = sorted(
-        (c for c in pool if c.type == "Battlefield"),
-        key=lambda c: (ownership_rank(c), c.set_id or "", c.collector_number or 0),
-    )[:3]
-
-    rune_pool = sorted(
-        (c for c in pool if c.type == "Rune" and domains(c) <= domains(legend)),
-        key=lambda c: (ownership_rank(c), c.set_id or "", c.collector_number or 0),
-    )
-    rune_entries: list[tuple[Card, int]] = []
-    rune_total = 0
-    for rune in rune_pool:
-        if rune_total >= 12:
-            break
-        qty = min(12 - rune_total, owned_qty(rune)) if prefer_owned else 12 - rune_total
-        if qty > 0:
-            rune_entries.append((rune, qty))
-            rune_total += qty
-    if rune_total < 12 and rune_pool:  # complète avec la première rune disponible
-        top_up = 12 - rune_total
-        existing = next((entry for entry in rune_entries if entry[0].id == rune_pool[0].id), None)
-        if existing:
-            rune_entries[rune_entries.index(existing)] = (existing[0], existing[1] + top_up)
-        else:
-            rune_entries.append((rune_pool[0], top_up))
-
-    tags = set(legend.tags or [])
-
-    def is_champion(card: Card) -> bool:
-        return bool(tags & set(card.tags or []))
-
-    def copy_cap(card: Card) -> int:
-        return 1 if "[unique]" in (card.text_plain or "").lower() else 3
-
-    candidates = sorted(
-        main_candidates(legend),
-        key=lambda c: (
-            -int(is_champion(c)),  # garantit le champion élu en tête
-            ownership_rank(c),
-            c.energy if c.energy is not None else 99,
-            c.set_id or "",
-            c.collector_number or 0,
-        ),
-    )
-    main_entries: list[tuple[Card, int]] = []
-    main_total = 0
-    for card in candidates:  # premier passage : respecte la préférence de possession
-        if main_total >= 40:
-            break
-        qty = min(copy_cap(card), owned_qty(card)) if prefer_owned else copy_cap(card)
-        if qty > 0:
-            main_entries.append((card, qty))
-            main_total += qty
-    if main_total < 40:  # second passage : complète avec le reste du pool
-        for card in candidates:
-            if main_total >= 40:
-                break
-            already = next((entry for entry in main_entries if entry[0].id == card.id), None)
-            room = copy_cap(card) - (already[1] if already else 0)
-            qty = min(room, 40 - main_total)
-            if qty <= 0:
-                continue
-            if already:
-                main_entries[main_entries.index(already)] = (card, already[1] + qty)
-            else:
-                main_entries.append((card, qty))
-            main_total += qty
-
+    entries = assemble_list(pool, legend, owned=owned, prefer_owned=prefer_owned)
     deck = Deck(owner_id=user.id)
     deck.name = f"Exemple · {legend.name}"[:80]
     deck.description = (
@@ -240,12 +150,7 @@ def create_example_deck(payload: ExampleDeckIn, user: User = Depends(current_use
     deck.format = "tournament"
     deck.is_public = False
     deck.moderation_status = review(f"{deck.name}\n{deck.description}")
-    deck.cards.append(DeckCard(card_id=legend.id, qty=1))
-    for battlefield in battlefields:
-        deck.cards.append(DeckCard(card_id=battlefield.id, qty=1))
-    for rune, qty in rune_entries:
-        deck.cards.append(DeckCard(card_id=rune.id, qty=min(qty, 12)))
-    for card, qty in main_entries:
+    for card, qty in entries:
         deck.cards.append(DeckCard(card_id=card.id, qty=qty))
     db.add(deck)
     db.commit()
@@ -324,17 +229,167 @@ def toggle_like(deck_id: int, user: User = Depends(current_user), db: Session = 
     return {"deck_id": deck.id, "likes": deck.likes_count, "liked_by_me": liked}
 
 
-@router.get("/community/decks")
-def community_decks(
-    page: int = 1,
-    size: int = 20,
+def _visitor_key(user: User | None, request: Request) -> str:
+    if user:
+        return f"u:{user.id}"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "0")
+    return "a:" + hashlib.sha256(ip.encode()).hexdigest()[:24]
+
+
+def _legend_decks():
+    return select(DeckCard.deck_id).join(Card, Card.id == DeckCard.card_id).where(Card.type == "Legend")
+
+
+def _community_deck_out(deck: Deck, *, legend: Card | None, card_count: int, liked: bool) -> dict:
+    domains = [d for d in (legend.domains or []) if d != "Colorless"] if legend else []
+    return {
+        "id": deck.id,
+        "name": deck.name,
+        "description": deck.description,
+        "format": deck.format,
+        "likes": deck.likes_count,
+        "liked_by_me": liked,
+        "views": deck.views_count,
+        "owner": deck.owner.handle,
+        "card_count": card_count,
+        "legend": card_out(legend) if legend else None,
+        "domains": domains,
+        "updated_at": deck.updated_at.isoformat() if deck.updated_at else None,
+    }
+
+
+@router.post("/decks/{deck_id}/view")
+def record_view(
+    deck_id: int,
+    request: Request,
     viewer: User | None = Depends(optional_user),
     db: Session = Depends(get_db),
 ):
-    query = (
-        select(Deck)
-        .where(Deck.is_public.is_(True), Deck.moderation_status == "published")
-        .order_by(Deck.likes_count.desc(), Deck.updated_at.desc())
+    """Compte une visite unique par visiteur. Le propriétaire n'est pas compté."""
+    deck = db.get(Deck, deck_id)
+    if deck is None or not (deck.is_public and deck.moderation_status == "published"):
+        raise HTTPException(status_code=404, detail="Deck introuvable")
+    if viewer is not None and viewer.id == deck.owner_id:
+        return {"deck_id": deck.id, "views": deck.views_count, "counted": False}
+
+    key = _visitor_key(viewer, request)
+    if db.scalar(select(DeckView).where(DeckView.deck_id == deck.id, DeckView.visitor_key == key)):
+        return {"deck_id": deck.id, "views": deck.views_count, "counted": False}
+
+    db.add(DeckView(deck_id=deck.id, visitor_key=key))
+    deck.views_count += 1
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        deck = db.get(Deck, deck_id)
+        return {"deck_id": deck_id, "views": deck.views_count if deck else 0, "counted": False}
+    return {"deck_id": deck.id, "views": deck.views_count, "counted": True}
+
+
+@router.get("/community/legends")
+def community_legends(db: Session = Depends(get_db)):
+    """Légendes présentes dans au moins un deck public, pour le filtre."""
+    rows = db.execute(
+        select(Card.id, Card.name, Card.image_url, func.count(Deck.id))
+        .join(DeckCard, DeckCard.card_id == Card.id)
+        .join(Deck, Deck.id == DeckCard.deck_id)
+        .where(Card.type == "Legend", Deck.is_public.is_(True), Deck.moderation_status == "published")
+        .group_by(Card.id, Card.name, Card.image_url)
+        .order_by(func.count(Deck.id).desc(), Card.name)
+    ).all()
+    return [
+        {"id": card_id, "name": name, "image_url": image_url, "deck_count": n} for card_id, name, image_url, n in rows
+    ]
+
+
+@router.get("/community/decks")
+def community_decks(
+    q: str | None = None,
+    legend: str | None = None,
+    domain: str | None = None,
+    format: str | None = None,
+    sort: str = Query("likes"),
+    liked: str | None = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=50),
+    viewer: User | None = Depends(optional_user),
+    db: Session = Depends(get_db),
+):
+    query = select(Deck).where(Deck.is_public.is_(True), Deck.moderation_status == "published")
+    legend_ids = csv_parts(legend)
+    if legend_ids:
+        query = query.where(Deck.id.in_(_legend_decks().where(Card.id.in_(legend_ids))))
+    domains = csv_parts(domain)
+    if domains:
+        query = query.where(
+            Deck.id.in_(
+                _legend_decks().where(or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains]))
+            )
+        )
+    formats = csv_parts(format)
+    if formats:
+        query = query.where(Deck.format.in_(formats))
+    if liked in {"1", "true"} and viewer is not None:
+        query = query.where(Deck.id.in_(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id)))
+    if q:
+        needle = f"%{q.lower()}%"
+        query = query.where(
+            or_(
+                func.lower(Deck.name).like(needle),
+                func.lower(func.coalesce(Deck.description, "")).like(needle),
+                Deck.owner_id.in_(select(User.id).where(func.lower(User.handle).like(needle))),
+                Deck.id.in_(_legend_decks().where(func.lower(Card.name).like(needle))),
+            )
+        )
+
+    order = {
+        "views": (Deck.views_count.desc(), Deck.likes_count.desc(), Deck.updated_at.desc()),
+        "recent": (Deck.updated_at.desc(), Deck.likes_count.desc()),
+    }.get(sort, (Deck.likes_count.desc(), Deck.views_count.desc(), Deck.updated_at.desc()))
+    query = query.order_by(*order)
+
+    total = db.scalar(select(func.count()).select_from(query.order_by(None).subquery())) or 0
+    decks = db.scalars(query.offset((page - 1) * size).limit(size)).all()
+    ids = [deck.id for deck in decks]
+
+    counts = (
+        dict(
+            db.execute(
+                select(DeckCard.deck_id, func.coalesce(func.sum(DeckCard.qty), 0))
+                .where(DeckCard.deck_id.in_(ids))
+                .group_by(DeckCard.deck_id)
+            ).all()
+        )
+        if ids
+        else {}
     )
-    decks = db.scalars(query.offset((max(page, 1) - 1) * size).limit(min(size, 50))).all()
-    return [deck_out(d, viewer, db) for d in decks]
+    legends = {}
+    if ids:
+        for deck_id, card in db.execute(
+            select(DeckCard.deck_id, Card)
+            .join(Card, Card.id == DeckCard.card_id)
+            .where(DeckCard.deck_id.in_(ids), Card.type == "Legend")
+        ):
+            legends.setdefault(deck_id, card)
+    liked_ids: set[int] = set()
+    if viewer is not None and ids:
+        liked_ids = set(
+            db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id, DeckLike.deck_id.in_(ids))).all()
+        )
+
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [
+            _community_deck_out(
+                deck,
+                legend=legends.get(deck.id),
+                card_count=int(counts.get(deck.id, 0)),
+                liked=deck.id in liked_ids,
+            )
+            for deck in decks
+        ],
+    }

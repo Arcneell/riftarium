@@ -60,6 +60,19 @@ defineProps({
       <circle cx="10.4" cy="10.4" r="6.2" />
       <path d="M15 15.2 20.4 20.6" />
     </g>
+    <!-- cœur (likes) -->
+    <g v-else-if="name === 'heart'">
+      <path
+        d="M12 19.4s-7.2-4.4-8.8-9.1C2.2 7.4 3.8 5 6.4 5c1.6 0 2.6.9 3.6 2.2C11 5.9 12 5 13.6 5c2.6 0 4.2 2.4 3.2 5.3-1.6 4.7-8.8 9.1-8.8 9.1Z"
+        fill="currentColor"
+        stroke="none"
+      />
+    </g>
+    <!-- œil (vues) -->
+    <g v-else-if="name === 'eye'">
+      <path d="M2.6 12s3.4-6.2 9.4-6.2S21.4 12 21.4 12s-3.4 6.2-9.4 6.2S2.6 12 2.6 12Z" />
+      <circle cx="12" cy="12" r="2.4" />
+    </g>
     <!-- menu burger -->
     <g v-else-if="name === 'menu'">
       <path d="M4.2 7h15.6" />

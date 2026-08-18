@@ -29,6 +29,12 @@ def ensure_schema(bind=None) -> None:
                 for statement in extras:
                     conn.execute(text(statement))
 
+    if "decks" in tables:
+        cols = {column["name"] for column in inspector.get_columns("decks")}
+        if "views_count" not in cols:
+            with target.begin() as conn:
+                conn.execute(text("ALTER TABLE decks ADD COLUMN views_count INTEGER DEFAULT 0 NOT NULL"))
+
     # Collection : plusieurs lots par carte (état/langue) — l'ancienne unicité user+carte saute.
     if "collection_items" in tables:
         constraints = {uc["name"] for uc in inspector.get_unique_constraints("collection_items")}

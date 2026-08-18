@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { BANNERS } from "../banners.js"
+import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -42,16 +44,10 @@ const TIERS = [
 </script>
 
 <template>
-  <div class="page-banner">
-    <div class="wrap">
-      <p class="eyebrow">Règles</p>
-      <h2>Trouvez la bonne réponse, au bon niveau</h2>
-      <p class="lead">
-        Débutant ? Suivez le guide animé. Une situation litigieuse en partie ? L'aide avancée. Et si le doute persiste,
-        le texte officiel tranche.
-      </p>
-    </div>
-  </div>
+  <PageBanner :art="BANNERS.rules" eyebrow="Règles" title="Trouvez la bonne réponse, au bon niveau">
+    Débutant ? Suivez le guide animé. Une situation litigieuse en partie ? L'aide avancée. Et si le doute persiste, le
+    texte officiel tranche.
+  </PageBanner>
 
   <section style="padding-top: 36px">
     <div class="wrap">
