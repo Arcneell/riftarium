@@ -63,7 +63,7 @@ function logout() {
         <div class="footer-brand"><Logo /><b>Riftarium</b></div>
         <p>
           Un site fan-made pour tout retrouver sur Riftbound : les cartes, les règles officielles, sa collection et ses
-          decks. Développé par un joueur, sur son temps libre. Gratuit et open source.
+          decks. Développé par un joueur, sur son temps libre. Gratuit, au code source accessible.
         </p>
       </div>
       <div>
