@@ -1,0 +1,68 @@
+name: Déploiement production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: ci
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: vps
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://riftarium.re
+    steps:
+      - name: Déployer sur le VPS
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?secret DEPLOY_HOST manquant}"
+          : "${DEPLOY_USER:?secret DEPLOY_USER manquant}"
+          : "${DEPLOY_PATH:?secret DEPLOY_PATH manquant}"
+          : "${DEPLOY_SSH_KEY:?secret DEPLOY_SSH_KEY manquant}"
+          : "${DEPLOY_KNOWN_HOSTS:?secret DEPLOY_KNOWN_HOSTS manquant}"
+          case "$DEPLOY_PATH" in
+            *[!a-zA-Z0-9/_.-]*)
+              echo "DEPLOY_PATH contient des caractères non autorisés" >&2
+              exit 1
+              ;;
+          esac
+          PORT="${DEPLOY_PORT:-22}"
+          install -m 700 -d "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          REMOTE_PATH=$(printf '%q' "$DEPLOY_PATH")
+          ssh -i "$HOME/.ssh/deploy_key" -p "$PORT" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "set -euo pipefail
+             export GIT_TERMINAL_PROMPT=0
+             cd ${REMOTE_PATH}
+             git fetch origin main
+             git checkout -B main FETCH_HEAD
+             git --no-pager log -1 --oneline
+             bash riftarium/scripts/deploy.sh"

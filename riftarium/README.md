@@ -52,6 +52,51 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### CD depuis main
+
+Après une CI verte, GitHub Actions se connecte en SSH, aligne le clone du VPS
+sur `origin/main`, reconstruit les images et relance Compose. BunkerWeb n'est
+pas touché. Le `.env` du VPS n'est pas dans git : `git reset --hard` ne
+l'écrase pas.
+
+**Une fois sur le VPS**
+
+1. Clone HTTPS du dépôt **à la racine git** (fichier `.github/` + dossier
+   `riftarium/`), par exemple `/opt/riftarium`. Le dépôt est public : pas
+   besoin de clé GitHub sur le VPS. `DEPLOY_PATH` est ce chemin, pas le
+   sous-dossier Compose.
+2. Utilisateur SSH dédié, dans le groupe `docker`, sans mot de passe (clé
+   uniquement).
+3. `riftarium/.env` déjà rempli. `curl` et Docker Compose v2 installés.
+4. Clé publique de GitHub Actions dans `~/.ssh/authorized_keys` de cet
+   utilisateur. Clé privée **uniquement** dans les secrets GitHub, jamais
+   dans le dépôt.
+
+**Secrets GitHub** (Settings → Environments → `production`, ou secrets du
+dépôt) :
+
+| Secret | Exemple de contenu |
+| --- | --- |
+| `DEPLOY_HOST` | IP ou nom d'hôte SSH du VPS |
+| `DEPLOY_USER` | utilisateur SSH |
+| `DEPLOY_PATH` | racine du clone (`/opt/riftarium`, là où se trouve `.github/`) |
+| `DEPLOY_SSH_KEY` | clé privée Ed25519 complète (Actions → VPS) |
+| `DEPLOY_KNOWN_HOSTS` | sortie de `ssh-keyscan -t ed25519,rsa HOST` |
+| `DEPLOY_PORT` | optionnel, `22` par défaut |
+
+Empreinte du serveur, à coller dans `DEPLOY_KNOWN_HOSTS` :
+
+```bash
+ssh-keyscan -t ed25519,rsa HOST
+```
+
+Une fois les secrets renseignés, fusionner cette branche dans `main` déclenche
+le premier déploiement automatique. On peut aussi lancer *Run workflow* sur
+« Déploiement production », branche `main`.
+
+Ne pas modifier le code sur le VPS : le prochain déploiement écrase les
+fichiers suivis.
+
 ## Performances
 
 - **Redis** : les réponses publiques (`/api/cards*`, `/api/sets`) sont mises en cache

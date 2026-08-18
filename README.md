@@ -72,6 +72,9 @@ Chaque pull request est bloquée tant que la CI GitHub n'est pas verte :
 lint et formatage (ruff, ESLint, Prettier), tests API (pytest), tests front
 (Vitest), build Vite et validation de la configuration Docker.
 
+Un merge dans `main` relance cette CI, puis déploie sur le VPS (SSH +
+`docker compose`). Détail : [riftarium/README.md](riftarium/README.md#cd-depuis-main).
+
 ## Feuille de route
 
 - [x] Cartothèque, comptes, collection, deck builder, decks publics, modération V1
