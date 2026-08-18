@@ -262,10 +262,119 @@ def test_collection_crud(client, auth):
     assert coll["total_cards"] == 3 and coll["unique_cards"] == 1
     assert coll["items"][0]["card"]["name"] == "Immortal Phoenix"
 
-    client.put("/api/collection/ogn-037-298", json={"qty": 0}, headers=auth)
+    # la suppression vise le lot précis (état + langue)
+    client.put("/api/collection/ogn-037-298", json={"qty": 0, "condition": "NM", "lang": "FR"}, headers=auth)
     assert client.get("/api/collection", headers=auth).json()["unique_cards"] == 0
 
     assert client.put("/api/collection/xxx-000-000", json={"qty": 1}, headers=auth).status_code == 404
+
+
+def test_collection_get_item(client, auth):
+    empty = client.get("/api/collection/ogn-037-298", headers=auth).json()
+    assert empty == {"card_id": "ogn-037-298", "total_qty": 0, "entries": []}
+
+    client.put("/api/collection/ogn-037-298", json={"qty": 2, "condition": "EX", "lang": "FR"}, headers=auth)
+    item = client.get("/api/collection/ogn-037-298", headers=auth).json()
+    assert item["total_qty"] == 2
+    assert [(e["qty"], e["condition"], e["lang"]) for e in item["entries"]] == [(2, "EX", "FR")]
+
+    assert client.get("/api/collection/xxx-000-000", headers=auth).status_code == 404
+
+
+def test_collection_multiple_entries(client, auth):
+    # deux lots de la même carte : états et langues différents
+    add = client.post(
+        "/api/collection/ogn-037-298/entries", json={"qty": 2, "condition": "NM", "lang": "EN"}, headers=auth
+    )
+    assert add.status_code == 200
+    state = client.post(
+        "/api/collection/ogn-037-298/entries", json={"qty": 1, "condition": "PL", "lang": "FR"}, headers=auth
+    ).json()
+    assert state["total_qty"] == 3 and len(state["entries"]) == 2
+
+    coll = client.get("/api/collection", headers=auth).json()
+    assert coll["total_cards"] == 3 and coll["unique_cards"] == 1
+    assert coll["items"][0]["total_qty"] == 3 and len(coll["items"][0]["entries"]) == 2
+
+    # owned_qty agrège tous les lots
+    owned = client.get("/api/cards", params={"q": "Immortal Phoenix"}, headers=auth).json()["items"]
+    assert {card["id"]: card["owned_qty"] for card in owned}["ogn-037-298"] == 3
+
+    # ajout sur un lot existant : addition
+    state = client.post(
+        "/api/collection/ogn-037-298/entries", json={"qty": 3, "condition": "NM", "lang": "EN"}, headers=auth
+    ).json()
+    assert state["total_qty"] == 6
+
+    # PATCH : modifier un lot ; retomber sur un lot existant fusionne
+    pl_entry = next(e for e in state["entries"] if e["condition"] == "PL")
+    merged = client.patch(
+        f"/api/collection/entries/{pl_entry['id']}",
+        json={"condition": "NM", "lang": "EN"},
+        headers=auth,
+    ).json()
+    assert merged["total_qty"] == 6 and len(merged["entries"]) == 1
+
+    # PATCH qty 0 supprime le lot
+    entry_id = merged["entries"][0]["id"]
+    emptied = client.patch(f"/api/collection/entries/{entry_id}", json={"qty": 0}, headers=auth).json()
+    assert emptied == {"card_id": "ogn-037-298", "total_qty": 0, "entries": []}
+    assert client.patch(f"/api/collection/entries/{entry_id}", json={"qty": 1}, headers=auth).status_code == 404
+
+
+def test_collection_filters_and_pagination(client, auth):
+    client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
+    client.put("/api/collection/ogn-007-298", json={"qty": 4}, headers=auth)
+    client.put("/api/collection/ogn-200-298", json={"qty": 1}, headers=auth)
+
+    coll = client.get("/api/collection", headers=auth).json()
+    assert coll["total_cards"] == 7 and coll["unique_cards"] == 3 and coll["total"] == 3
+
+    units = client.get("/api/collection", params={"type": "Unit"}, headers=auth).json()
+    assert units["total"] == 1 and units["items"][0]["card"]["id"] == "ogn-037-298"
+    # les stats restent globales, indépendantes des filtres
+    assert units["total_cards"] == 7 and units["unique_cards"] == 3
+
+    hits = client.get("/api/collection", params={"q": "phoenix"}, headers=auth).json()
+    assert {item["card"]["id"] for item in hits["items"]} == {"ogn-037-298"}
+
+    high = client.get("/api/collection", params={"energy": "7+"}, headers=auth).json()
+    assert high["total"] == 1 and high["items"][0]["card"]["id"] == "ogn-200-298"
+
+    page = client.get("/api/collection", params={"size": 2, "page": 2}, headers=auth).json()
+    assert page["total"] == 3 and len(page["items"]) == 1
+
+
+def test_collection_bulk(client, auth):
+    for card_id in ("ogn-037-298", "ogn-007-298", "ogn-200-298"):
+        client.put(f"/api/collection/{card_id}", json={"qty": 1}, headers=auth)
+
+    res = client.post(
+        "/api/collection/bulk",
+        json={"card_ids": ["ogn-037-298", "ogn-007-298"], "qty_delta": 2, "condition": "EX", "lang": "FR"},
+        headers=auth,
+    )
+    assert res.status_code == 200 and res.json() == {"updated": 2, "removed": 0}
+    by_id = {item["card"]["id"]: item for item in client.get("/api/collection", headers=auth).json()["items"]}
+    assert by_id["ogn-037-298"]["total_qty"] == 3
+    assert by_id["ogn-037-298"]["entries"][0]["condition"] == "EX"
+    assert by_id["ogn-037-298"]["entries"][0]["lang"] == "FR"
+    assert by_id["ogn-200-298"]["total_qty"] == 1 and by_id["ogn-200-298"]["entries"][0]["condition"] == "NM"
+
+    # un delta qui passe sous zéro retire la carte
+    res = client.post("/api/collection/bulk", json={"card_ids": ["ogn-200-298"], "qty_delta": -5}, headers=auth)
+    assert res.json() == {"updated": 0, "removed": 1}
+
+    res = client.post(
+        "/api/collection/bulk",
+        json={"card_ids": ["ogn-037-298", "ogn-007-298"], "remove": True},
+        headers=auth,
+    )
+    assert res.json() == {"updated": 0, "removed": 2}
+    assert client.get("/api/collection", headers=auth).json()["unique_cards"] == 0
+
+    assert client.post("/api/collection/bulk", json={"card_ids": []}, headers=auth).status_code == 422
+    assert client.post("/api/collection/bulk", json=deck_payload()).status_code == 401
 
 
 # ---------- decks & validation ----------

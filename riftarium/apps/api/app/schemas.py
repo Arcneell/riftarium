@@ -23,6 +23,27 @@ class CollectionPut(BaseModel):
     lang: str = Field(default="EN", max_length=8)
 
 
+class CollectionEntryIn(BaseModel):
+    qty: int = Field(ge=1, le=999)
+    condition: str = Field(default="NM", max_length=8)
+    lang: str = Field(default="EN", max_length=8)
+
+
+class CollectionEntryPatch(BaseModel):
+    qty: int | None = Field(default=None, ge=0, le=999)
+    condition: str | None = Field(default=None, max_length=8)
+    lang: str | None = Field(default=None, max_length=8)
+
+
+class CollectionBulk(BaseModel):
+    card_ids: list[str] = Field(min_length=1, max_length=500)
+    qty: int | None = Field(default=None, ge=0, le=999)
+    qty_delta: int | None = Field(default=None, ge=-999, le=999)
+    condition: str | None = Field(default=None, max_length=8)
+    lang: str | None = Field(default=None, max_length=8)
+    remove: bool = False
+
+
 class DeckCardIn(BaseModel):
     card_id: str
     qty: int = Field(ge=1, le=12)

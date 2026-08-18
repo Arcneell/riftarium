@@ -87,9 +87,9 @@ def owned_quantities(db: Session, user: User | None, card_ids: list[str]) -> dic
     if user is None or not card_ids:
         return {}
     rows = db.execute(
-        select(CollectionItem.card_id, CollectionItem.qty).where(
-            CollectionItem.user_id == user.id, CollectionItem.card_id.in_(card_ids)
-        )
+        select(CollectionItem.card_id, func.sum(CollectionItem.qty))
+        .where(CollectionItem.user_id == user.id, CollectionItem.card_id.in_(card_ids))
+        .group_by(CollectionItem.card_id)
     ).all()
     return {card_id: qty for card_id, qty in rows}
 

@@ -66,8 +66,10 @@ class Card(Base):
 
 
 class CollectionItem(Base):
+    """Un lot d'exemplaires : même carte, même état, même langue."""
+
     __tablename__ = "collection_items"
-    __table_args__ = (UniqueConstraint("user_id", "card_id", name="uq_collection_user_card"),)
+    __table_args__ = (UniqueConstraint("user_id", "card_id", "condition", "lang", name="uq_collection_entry"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)

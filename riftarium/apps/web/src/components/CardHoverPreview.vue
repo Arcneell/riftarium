@@ -4,7 +4,10 @@ import { cardThumb } from "../api.js"
 import { isFoil, variantLabel } from "../cardText.js"
 import CardText from "./CardText.vue"
 
-const props = defineProps({ card: { type: Object, required: true } })
+const props = defineProps({
+  card: { type: Object, required: true },
+  disabled: { type: Boolean, default: false }
+})
 
 const HOVER_DELAY = 450
 
@@ -14,7 +17,7 @@ const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches
 let timer = 0
 
 function show() {
-  if (!fine) return
+  if (props.disabled || !fine) return
   clearTimeout(timer)
   timer = window.setTimeout(
     () => {

@@ -12,22 +12,35 @@ class Base(DeclarativeBase):
 
 
 def ensure_schema(bind=None) -> None:
-    """Ajoute les colonnes récentes sur une base déjà créée (create_all ne les pose pas)."""
+    """Ajuste une base déjà créée : colonnes récentes et contraintes (create_all ne les pose pas)."""
     target = bind or engine
     inspector = inspect(target)
-    if "cards" not in inspector.get_table_names():
-        return
-    cols = {column["name"] for column in inspector.get_columns("cards")}
-    extras = []
-    if "signature" not in cols:
-        extras.append("ALTER TABLE cards ADD COLUMN signature BOOLEAN DEFAULT FALSE NOT NULL")
-    if "overnumbered" not in cols:
-        extras.append("ALTER TABLE cards ADD COLUMN overnumbered BOOLEAN DEFAULT FALSE NOT NULL")
-    if not extras:
-        return
-    with target.begin() as conn:
-        for statement in extras:
-            conn.execute(text(statement))
+    tables = inspector.get_table_names()
+
+    if "cards" in tables:
+        cols = {column["name"] for column in inspector.get_columns("cards")}
+        extras = []
+        if "signature" not in cols:
+            extras.append("ALTER TABLE cards ADD COLUMN signature BOOLEAN DEFAULT FALSE NOT NULL")
+        if "overnumbered" not in cols:
+            extras.append("ALTER TABLE cards ADD COLUMN overnumbered BOOLEAN DEFAULT FALSE NOT NULL")
+        if extras:
+            with target.begin() as conn:
+                for statement in extras:
+                    conn.execute(text(statement))
+
+    # Collection : plusieurs lots par carte (état/langue) — l'ancienne unicité user+carte saute.
+    if "collection_items" in tables:
+        constraints = {uc["name"] for uc in inspector.get_unique_constraints("collection_items")}
+        if "uq_collection_user_card" in constraints:
+            with target.begin() as conn:
+                conn.execute(text("ALTER TABLE collection_items DROP CONSTRAINT uq_collection_user_card"))
+                conn.execute(
+                    text(
+                        "ALTER TABLE collection_items "
+                        "ADD CONSTRAINT uq_collection_entry UNIQUE (user_id, card_id, condition, lang)"
+                    )
+                )
 
 
 def get_db():
