@@ -40,7 +40,23 @@ docker compose -f compose.yaml -f compose.dev.yaml up -d
 apps/web   Vue 3 + Vite, servi par nginx (proxy /api vers l'API)
 apps/api   FastAPI (Python 3.12) : cartes, auth JWT, collection, decks, communauté
 db         PostgreSQL 16
+redis      Cache des lectures publiques (cartes, sets) + garde-fous
 ```
+
+## Performances
+
+- **Redis** : les réponses publiques (`/api/cards*`, `/api/sets`) sont mises en cache
+  6 h et invalidées à chaque sync. Les réponses authentifiées (quantités possédées)
+  ne sont jamais mises en cache.
+- **Cache navigateur** : `Cache-Control: public, max-age=300` sur les lectures anonymes.
+- **API Riftcodex ménagée** : une seule sync au premier démarrage, resync manuelle
+  limitée à une par 10 minutes (HTTP 429 sinon), pause entre chaque page et
+  `User-Agent` identifiant le projet. Le site ne requête jamais Riftcodex en direct :
+  tout passe par la base locale.
+- **Images** : servies par le CDN officiel de Riot (déjà mondialement distribué),
+  `preconnect` au chargement, miniatures redimensionnées côté CDN (`w=180/260`),
+  chargement paresseux. Elles ne sont volontairement pas rehébergées : la politique
+  « Jargon juridique » interdit de redistribuer les visuels.
 
 | Fonction | État |
 | --- | --- |

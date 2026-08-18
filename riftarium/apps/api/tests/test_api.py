@@ -318,3 +318,29 @@ def test_moderation_blocks_toxic_deck(client, auth):
     assert client.get("/api/community/decks").json() == []
     # et invisible pour les autres via l'URL directe
     assert client.get(f"/api/decks/{deck['id']}").status_code == 404
+
+
+# ---------- cache & protection de la source ----------
+
+def test_anonymous_cards_get_cache_headers(client):
+    response = client.get("/api/cards")
+    assert response.headers["cache-control"] == "public, max-age=300"
+    assert response.headers["vary"] == "Authorization"
+
+
+def test_authenticated_cards_not_marked_cacheable(client, auth):
+    response = client.get("/api/cards", headers=auth)
+    assert "cache-control" not in response.headers
+
+
+def test_admin_sync_is_throttled(client, monkeypatch):
+    import app.main as main
+
+    monkeypatch.setattr(main, "run_sync", lambda db: {"sets": 0, "cards": 0})
+    main._last_sync_fallback = 0.0
+
+    assert client.post("/api/admin/sync").status_code == 200
+    throttled = client.post("/api/admin/sync")
+    assert throttled.status_code == 429
+    assert "réessayez" in throttled.json()["detail"]
+    main._last_sync_fallback = 0.0

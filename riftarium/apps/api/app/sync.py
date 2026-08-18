@@ -5,6 +5,7 @@ Les visuels restent servis par le CDN officiel de Riot — rien n'est copié.
 """
 
 import logging
+import time
 
 import httpx
 from sqlalchemy.orm import Session
@@ -13,6 +14,10 @@ from .config import settings
 from .models import Card, CardSet
 
 log = logging.getLogger("riftarium.sync")
+
+# S'identifier auprès de l'API communautaire et espacer les requêtes :
+# Riftcodex est gratuite, on la ménage.
+HEADERS = {"User-Agent": "Riftarium/0.1 (+https://github.com/Arcneell/riftarium)"}
 
 
 def _upsert_set(db: Session, payload: dict) -> None:
@@ -61,7 +66,7 @@ def run_sync(db: Session) -> dict:
     wanted = {s.strip().upper() for s in settings.sync_sets.split(",") if s.strip()}
     counts = {"sets": 0, "cards": 0}
 
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=30, headers=HEADERS) as client:
         sets_payload = client.get(f"{base}/sets", params={"size": 50}).raise_for_status().json()
         for item in sets_payload.get("items", []):
             if item["set_id"].upper() in wanted:
@@ -87,6 +92,7 @@ def run_sync(db: Session) -> dict:
                 if page >= data.get("pages", 1):
                     break
                 page += 1
+                time.sleep(settings.riftcodex_page_delay)
 
     log.info("sync terminée : %s sets, %s cartes", counts["sets"], counts["cards"])
     return counts
