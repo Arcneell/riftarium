@@ -17,7 +17,8 @@ export const router = createRouter({
     { path: "/decks", component: () => import("./views/DecksView.vue"), meta: { auth: true } },
     { path: "/decks/:id", component: () => import("./views/DeckEditView.vue") },
     { path: "/communaute", component: () => import("./views/CommunityView.vue") },
-    { path: "/connexion", component: () => import("./views/AuthView.vue") }
+    { path: "/connexion", component: () => import("./views/AuthView.vue") },
+    { path: "/profil", component: () => import("./views/ProfileView.vue"), meta: { auth: true } }
   ],
   /* Ne remonte pas quand seule la query change (étapes du guide, filtres). */
   scrollBehavior: (to, from, savedPosition) => {

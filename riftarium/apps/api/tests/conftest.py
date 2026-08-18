@@ -35,6 +35,8 @@ def seed(session):
             domains=["Fury", "Mind"],
             collector_number=247,
             tags=["Ahri"],
+            image_url="https://cdn.example/ahri-legend.png",
+            orientation="landscape",
         ),
         Card(
             id="ogn-275-298",

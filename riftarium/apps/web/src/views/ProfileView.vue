@@ -1,0 +1,416 @@
+<script setup>
+import { computed, onMounted, reactive, ref } from "vue"
+import { useRouter } from "vue-router"
+import { api, session, setSession } from "../api.js"
+import { BANNERS } from "../banners.js"
+import ModalDialog from "../components/ModalDialog.vue"
+import PageBanner from "../components/PageBanner.vue"
+import UserAvatar from "../components/UserAvatar.vue"
+
+const router = useRouter()
+
+const me = ref(null)
+const avatars = ref([])
+const loading = ref(true)
+const error = ref("")
+const exporting = ref(false)
+
+const identity = reactive({ handle: "", bio: "", password: "", saving: false, error: "", ok: "" })
+const account = reactive({ email: "", password: "", saving: false, error: "", ok: "" })
+const secret = reactive({ current: "", next: "", confirm: "", saving: false, error: "", ok: "" })
+const danger = reactive({ open: false, password: "", handle: "", deleting: false, error: "" })
+const avatarBusy = ref(false)
+
+const memberSince = computed(() => {
+  if (!me.value?.created_at) return ""
+  return new Date(me.value.created_at).toLocaleDateString("fr-FR", { year: "numeric", month: "long" })
+})
+
+function applyProfile(profile) {
+  me.value = profile
+  identity.handle = profile.handle
+  identity.bio = profile.bio || ""
+  account.email = profile.email
+  setSession(session.token, profile.handle, profile.avatar_url)
+}
+
+async function load() {
+  loading.value = true
+  error.value = ""
+  try {
+    const [profile, faces] = await Promise.all([api("/api/auth/me"), api("/api/auth/avatars")])
+    applyProfile(profile)
+    avatars.value = faces
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function pickAvatar(cardId) {
+  if (avatarBusy.value) return
+  avatarBusy.value = true
+  error.value = ""
+  try {
+    applyProfile(await api("/api/auth/me", { method: "PATCH", body: { avatar_card_id: cardId } }))
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    avatarBusy.value = false
+  }
+}
+
+async function saveIdentity() {
+  if (identity.saving) return
+  identity.saving = true
+  identity.error = ""
+  identity.ok = ""
+  const body = { bio: identity.bio }
+  if (identity.handle !== me.value.handle) {
+    body.handle = identity.handle
+    body.current_password = identity.password
+  }
+  try {
+    applyProfile(await api("/api/auth/me", { method: "PATCH", body }))
+    identity.password = ""
+    identity.ok = "Profil mis à jour"
+  } catch (e) {
+    identity.error = e.message
+  } finally {
+    identity.saving = false
+  }
+}
+
+async function saveEmail() {
+  if (account.saving) return
+  account.saving = true
+  account.error = ""
+  account.ok = ""
+  try {
+    applyProfile(
+      await api("/api/auth/me", {
+        method: "PATCH",
+        body: { email: account.email, current_password: account.password }
+      })
+    )
+    account.password = ""
+    account.ok = "Email mis à jour"
+  } catch (e) {
+    account.error = e.message
+  } finally {
+    account.saving = false
+  }
+}
+
+async function savePassword() {
+  if (secret.saving) return
+  if (secret.next !== secret.confirm) {
+    secret.error = "Les mots de passe ne correspondent pas"
+    secret.ok = ""
+    return
+  }
+  secret.saving = true
+  secret.error = ""
+  secret.ok = ""
+  try {
+    const result = await api("/api/auth/password", {
+      method: "POST",
+      body: { current_password: secret.current, new_password: secret.next }
+    })
+    setSession(result.token, result.handle, result.avatar_url || me.value?.avatar_url)
+    secret.current = ""
+    secret.next = ""
+    secret.confirm = ""
+    secret.ok = "Mot de passe mis à jour"
+  } catch (e) {
+    secret.error = e.message
+  } finally {
+    secret.saving = false
+  }
+}
+
+async function downloadExport() {
+  if (exporting.value) return
+  exporting.value = true
+  error.value = ""
+  try {
+    const data = await api("/api/auth/export")
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `riftarium-${data.handle}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    exporting.value = false
+  }
+}
+
+function openDanger() {
+  danger.open = true
+  danger.password = ""
+  danger.handle = ""
+  danger.error = ""
+}
+
+async function deleteAccount() {
+  if (danger.deleting) return
+  danger.deleting = true
+  danger.error = ""
+  try {
+    await api("/api/auth/me", {
+      method: "DELETE",
+      body: { password: danger.password, handle: danger.handle }
+    })
+    setSession(null, null)
+    router.push("/")
+  } catch (e) {
+    danger.error = e.message
+  } finally {
+    danger.deleting = false
+  }
+}
+
+onMounted(load)
+</script>
+
+<template>
+  <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Mon profil">
+    Pseudo, portrait de légende, mot de passe et données de votre compte Riftarium.
+  </PageBanner>
+
+  <section style="padding-top: 28px">
+    <div class="wrap profile-page">
+      <p v-if="error" class="error">{{ error }}</p>
+      <p v-else-if="loading" class="muted">Chargement du profil…</p>
+
+      <template v-else-if="me">
+        <div class="profile-hero panel">
+          <UserAvatar :src="me.avatar_url" :handle="me.handle" :size="92" />
+          <div>
+            <h3>{{ me.handle }}</h3>
+            <p class="muted" v-if="me.bio">{{ me.bio }}</p>
+            <p class="muted mono" v-else>Pas encore de bio.</p>
+            <p class="muted mono" v-if="memberSince">Membre depuis {{ memberSince }}</p>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat">
+            Cartes uniques
+            <b>{{ me.stats.unique_cards }}</b>
+          </div>
+          <div class="stat">
+            Exemplaires
+            <b>{{ me.stats.total_cards }}</b>
+          </div>
+          <div class="stat">
+            Decks
+            <b>{{ me.stats.decks }}</b>
+          </div>
+          <div class="stat">
+            Decks publics
+            <b>{{ me.stats.public_decks }}</b>
+          </div>
+          <div class="stat">
+            Likes reçus
+            <b>{{ me.stats.likes_received }}</b>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <form class="panel" @submit.prevent="saveIdentity">
+            <h3>Identité</h3>
+            <p class="muted" style="margin-bottom: 16px">
+              Le pseudo apparaît sur vos decks publics. La bio est limitée à 280 caractères.
+            </p>
+            <div class="field">
+              <label for="profile-handle">Pseudo</label>
+              <input
+                id="profile-handle"
+                type="text"
+                v-model="identity.handle"
+                minlength="3"
+                maxlength="32"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="profile-bio">Bio</label>
+              <textarea
+                id="profile-bio"
+                v-model="identity.bio"
+                maxlength="280"
+                placeholder="Main, région, ce que vous cherchez en communauté…"
+              ></textarea>
+            </div>
+            <div class="field" v-if="identity.handle !== me.handle">
+              <label for="profile-handle-pwd">Mot de passe actuel</label>
+              <input
+                id="profile-handle-pwd"
+                type="password"
+                v-model="identity.password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <p v-if="identity.error" class="error">{{ identity.error }}</p>
+            <p v-if="identity.ok" class="success">{{ identity.ok }}</p>
+            <button class="btn btn-gold" type="submit" :disabled="identity.saving">
+              {{ identity.saving ? "Enregistrement…" : "Enregistrer" }}
+            </button>
+          </form>
+
+          <div class="panel">
+            <h3>Portrait de légende</h3>
+            <p class="muted" style="margin-bottom: 16px">
+              Une tête parmi les légendes Riftbound — visuels officiels, jamais rehébergés.
+            </p>
+            <div class="avatar-scroller" :class="{ busy: avatarBusy }" tabindex="0" aria-label="Choisir un portrait">
+              <div class="avatar-grid">
+                <button
+                  type="button"
+                  class="avatar-pick"
+                  :class="{ selected: !me.avatar_card_id }"
+                  :aria-pressed="!me.avatar_card_id"
+                  @click="pickAvatar(null)"
+                >
+                  <UserAvatar :handle="me.handle" :size="72" />
+                  <span>Initiales</span>
+                </button>
+                <button
+                  v-for="face in avatars"
+                  :key="face.id"
+                  type="button"
+                  class="avatar-pick"
+                  :class="{ selected: me.avatar_card_id === face.id }"
+                  :aria-pressed="me.avatar_card_id === face.id"
+                  :title="face.name"
+                  @click="pickAvatar(face.id)"
+                >
+                  <UserAvatar :src="face.image_url" :handle="face.name" :size="72" :orientation="face.orientation" />
+                  <span>{{ face.name }}</span>
+                </button>
+              </div>
+            </div>
+            <p v-if="!avatars.length" class="muted">Aucune légende disponible pour le moment.</p>
+          </div>
+
+          <form class="panel" @submit.prevent="saveEmail">
+            <h3>Email</h3>
+            <div class="field">
+              <label for="profile-email">Adresse</label>
+              <input id="profile-email" type="email" v-model="account.email" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="profile-email-pwd">Mot de passe actuel</label>
+              <input
+                id="profile-email-pwd"
+                type="password"
+                v-model="account.password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <p v-if="account.error" class="error">{{ account.error }}</p>
+            <p v-if="account.ok" class="success">{{ account.ok }}</p>
+            <button class="btn btn-gold" type="submit" :disabled="account.saving">
+              {{ account.saving ? "Enregistrement…" : "Changer l'email" }}
+            </button>
+          </form>
+
+          <form class="panel" @submit.prevent="savePassword">
+            <h3>Mot de passe</h3>
+            <div class="field">
+              <label for="profile-pwd-current">Mot de passe actuel</label>
+              <input
+                id="profile-pwd-current"
+                type="password"
+                v-model="secret.current"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="profile-pwd-new">Nouveau mot de passe</label>
+              <input
+                id="profile-pwd-new"
+                type="password"
+                v-model="secret.next"
+                minlength="8"
+                autocomplete="new-password"
+                required
+                placeholder="8 caractères minimum"
+              />
+            </div>
+            <div class="field">
+              <label for="profile-pwd-confirm">Confirmation</label>
+              <input
+                id="profile-pwd-confirm"
+                type="password"
+                v-model="secret.confirm"
+                minlength="8"
+                autocomplete="new-password"
+                required
+              />
+            </div>
+            <p v-if="secret.error" class="error">{{ secret.error }}</p>
+            <p v-if="secret.ok" class="success">{{ secret.ok }}</p>
+            <button class="btn btn-gold" type="submit" :disabled="secret.saving">
+              {{ secret.saving ? "Enregistrement…" : "Changer le mot de passe" }}
+            </button>
+          </form>
+
+          <div class="panel">
+            <h3>Vos données</h3>
+            <p class="muted" style="margin-bottom: 16px">
+              Téléchargez un export JSON de votre collection et de vos decks — utile pour une sauvegarde.
+            </p>
+            <button class="btn" type="button" :disabled="exporting" @click="downloadExport">
+              {{ exporting ? "Préparation…" : "Exporter mon compte" }}
+            </button>
+          </div>
+
+          <div class="panel profile-danger">
+            <h3>Zone sensible</h3>
+            <p class="muted" style="margin-bottom: 16px">
+              La suppression efface définitivement votre compte, votre collection et vos decks.
+            </p>
+            <button class="btn btn-danger" type="button" @click="openDanger">Supprimer mon compte</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <ModalDialog v-if="danger.open" title="Supprimer le compte" @close="danger.open = false">
+    <p>
+      Cette action est irréversible. Saisissez votre mot de passe et votre pseudo
+      <strong>{{ me?.handle }}</strong> pour confirmer.
+    </p>
+    <form class="modal-form" @submit.prevent="deleteAccount">
+      <label>
+        Mot de passe
+        <input type="password" v-model="danger.password" autocomplete="current-password" required />
+      </label>
+      <label>
+        Pseudo
+        <input type="text" v-model="danger.handle" autocomplete="off" required />
+      </label>
+      <p v-if="danger.error" class="error">{{ danger.error }}</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" :disabled="danger.deleting" @click="danger.open = false">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-danger" :disabled="danger.deleting">
+          {{ danger.deleting ? "Suppression…" : "Supprimer définitivement" }}
+        </button>
+      </div>
+    </form>
+  </ModalDialog>
+</template>

@@ -1,0 +1,169 @@
+"""Compte joueur : avatar Légende, stats, export et suppression."""
+
+from datetime import UTC, datetime
+
+from fastapi import HTTPException
+from sqlalchemy import delete, func, select
+from sqlalchemy.orm import Session
+
+from .models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
+from .moderation import review
+
+
+def avatar_urls(db: Session, users: list[User]) -> dict[int, str | None]:
+    ids = {user.avatar_card_id for user in users if user.avatar_card_id}
+    cards: dict[str, str | None] = {}
+    if ids:
+        cards = {card.id: card.image_url for card in db.scalars(select(Card).where(Card.id.in_(ids))).all()}
+    return {user.id: cards.get(user.avatar_card_id) if user.avatar_card_id else None for user in users}
+
+
+def find_avatar_card(db: Session, card_id: str) -> Card | None:
+    card = db.get(Card, card_id)
+    if (
+        card is None
+        or card.type != "Legend"
+        or card.alternate_art
+        or card.signature
+        or card.overnumbered
+        or not card.image_url
+    ):
+        return None
+    return card
+
+
+def user_stats(db: Session, user: User) -> dict:
+    unique, total = db.execute(
+        select(func.count(func.distinct(CollectionItem.card_id)), func.coalesce(func.sum(CollectionItem.qty), 0)).where(
+            CollectionItem.user_id == user.id
+        )
+    ).one()
+    decks = db.scalar(select(func.count()).select_from(Deck).where(Deck.owner_id == user.id)) or 0
+    public = (
+        db.scalar(select(func.count()).select_from(Deck).where(Deck.owner_id == user.id, Deck.is_public.is_(True))) or 0
+    )
+    likes = db.scalar(select(func.coalesce(func.sum(Deck.likes_count), 0)).where(Deck.owner_id == user.id)) or 0
+    return {
+        "unique_cards": unique,
+        "total_cards": int(total),
+        "decks": decks,
+        "public_decks": public,
+        "likes_received": int(likes),
+    }
+
+
+def user_out(db: Session, user: User, *, include_email: bool = False, include_stats: bool = False) -> dict:
+    payload = {
+        "id": user.id,
+        "handle": user.handle,
+        "bio": user.bio or "",
+        "avatar_card_id": user.avatar_card_id,
+        "avatar_url": avatar_urls(db, [user]).get(user.id),
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+    if include_email:
+        payload["email"] = user.email
+    if include_stats:
+        payload["stats"] = user_stats(db, user)
+    return payload
+
+
+def list_legend_avatars(db: Session) -> list[dict]:
+    rows = db.scalars(
+        select(Card)
+        .where(
+            Card.type == "Legend",
+            Card.alternate_art.is_(False),
+            Card.signature.is_(False),
+            Card.overnumbered.is_(False),
+        )
+        .order_by(Card.name, Card.id)
+    ).all()
+    seen: set[str] = set()
+    avatars: list[dict] = []
+    for card in rows:
+        if not card.image_url:
+            continue
+        key = (card.name or "").lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        avatars.append(
+            {
+                "id": card.id,
+                "name": card.name,
+                "image_url": card.image_url,
+                "orientation": card.orientation,
+                "domains": card.domains or [],
+            }
+        )
+    return avatars
+
+
+def apply_profile(db: Session, user: User, data: dict) -> None:
+    if "bio" in data:
+        bio = (data["bio"] or "").strip()
+        if review(bio) != "published":
+            raise HTTPException(status_code=422, detail="Cette biographie n'est pas autorisée")
+        user.bio = bio
+    if "avatar_card_id" in data:
+        card_id = data["avatar_card_id"]
+        if not card_id:
+            user.avatar_card_id = None
+        elif find_avatar_card(db, card_id) is None:
+            raise HTTPException(status_code=422, detail="Avatar invalide : choisissez une légende de la liste")
+        else:
+            user.avatar_card_id = card_id
+    if "handle" in data and data["handle"] != user.handle:
+        taken = db.scalar(select(User).where(User.handle == data["handle"], User.id != user.id))
+        if taken:
+            raise HTTPException(status_code=409, detail="Pseudo ou email déjà utilisé")
+        user.handle = data["handle"]
+    if "email" in data and data["email"] != user.email:
+        taken = db.scalar(select(User).where(User.email == data["email"], User.id != user.id))
+        if taken:
+            raise HTTPException(status_code=409, detail="Pseudo ou email déjà utilisé")
+        user.email = data["email"]
+
+
+def export_account(db: Session, user: User) -> dict:
+    items = db.scalars(select(CollectionItem).where(CollectionItem.user_id == user.id)).all()
+    decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
+    return {
+        "handle": user.handle,
+        "email": user.email,
+        "bio": user.bio or "",
+        "avatar_card_id": user.avatar_card_id,
+        "exported_at": datetime.now(UTC).isoformat(),
+        "collection": [
+            {"card_id": item.card_id, "qty": item.qty, "condition": item.condition, "lang": item.lang} for item in items
+        ],
+        "decks": [
+            {
+                "name": deck.name,
+                "description": deck.description,
+                "format": deck.format,
+                "is_public": deck.is_public,
+                "cards": [{"card_id": entry.card_id, "qty": entry.qty} for entry in deck.cards],
+            }
+            for deck in decks
+        ],
+    }
+
+
+def delete_user_account(db: Session, user: User) -> None:
+    liked_ids = list(db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == user.id)).all())
+    for deck_id in liked_ids:
+        deck = db.get(Deck, deck_id)
+        if deck is not None and deck.owner_id != user.id:
+            deck.likes_count = max(0, deck.likes_count - 1)
+    db.execute(delete(DeckLike).where(DeckLike.user_id == user.id))
+    db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
+    db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))
+    owned_ids = list(db.scalars(select(Deck.id).where(Deck.owner_id == user.id)).all())
+    if owned_ids:
+        db.execute(delete(DeckLike).where(DeckLike.deck_id.in_(owned_ids)))
+        db.execute(delete(DeckView).where(DeckView.deck_id.in_(owned_ids)))
+        db.execute(delete(DeckCard).where(DeckCard.deck_id.in_(owned_ids)))
+        db.execute(delete(Deck).where(Deck.id.in_(owned_ids)))
+    db.delete(user)

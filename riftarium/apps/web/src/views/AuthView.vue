@@ -24,7 +24,7 @@ async function submit() {
             method: "POST",
             body: { handle: handle.value, email: email.value, password: password.value }
           })
-    setSession(result.token, result.handle)
+    setSession(result.token, result.handle, result.avatar_url)
     router.push(route.query.suite || "/")
   } catch (e) {
     error.value = e.message

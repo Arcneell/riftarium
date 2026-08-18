@@ -17,6 +17,18 @@ def ensure_schema(bind=None) -> None:
     inspector = inspect(target)
     tables = inspector.get_table_names()
 
+    if "users" in tables:
+        cols = {column["name"] for column in inspector.get_columns("users")}
+        extras = []
+        if "bio" not in cols:
+            extras.append("ALTER TABLE users ADD COLUMN bio VARCHAR(280) DEFAULT '' NOT NULL")
+        if "avatar_card_id" not in cols:
+            extras.append("ALTER TABLE users ADD COLUMN avatar_card_id VARCHAR(32)")
+        if extras:
+            with target.begin() as conn:
+                for statement in extras:
+                    conn.execute(text(statement))
+
     if "cards" in tables:
         cols = {column["name"] for column in inspector.get_columns("cards")}
         extras = []

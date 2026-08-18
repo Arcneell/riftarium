@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .auth import hash_password
 from .deckbuild import assemble_list, has_champion, legends_in, load_pool, main_candidates
-from .models import Deck, DeckCard, DeckLike, DeckView, User
+from .models import CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from .moderation import review
 
 DEMO_PASSWORD = "demodemo1"
@@ -57,6 +57,8 @@ def _wipe_demo(db: Session) -> int:
         db.execute(delete(DeckCard).where(DeckCard.deck_id.in_(deck_ids)))
         db.execute(delete(Deck).where(Deck.id.in_(deck_ids)))
     db.execute(delete(DeckLike).where(DeckLike.user_id.in_(ids)))
+    db.execute(delete(CollectionItem).where(CollectionItem.user_id.in_(ids)))
+    db.execute(delete(DeckView).where(DeckView.visitor_key.in_([f"u:{uid}" for uid in ids])))
     db.execute(delete(User).where(User.id.in_(ids)))
     db.flush()
     return len(ids)
@@ -77,15 +79,17 @@ def seed_community(db: Session, *, reset: bool = True, limit: int | None = None)
 
     removed = _wipe_demo(db) if reset else 0
     password_hash = hash_password(DEMO_PASSWORD)
+    portrait_ids = [card.id for card in legends if card.image_url]
 
     authors: list[User] = []
-    for handle in DEMO_AUTHORS:
+    for index, handle in enumerate(DEMO_AUTHORS):
         user = db.scalar(select(User).where(User.handle == handle))
         if user is None:
             user = User(
                 handle=handle,
                 email=f"{handle.lower()}@{DEMO_EMAIL_DOMAIN}",
                 password_hash=password_hash,
+                avatar_card_id=portrait_ids[index % len(portrait_ids)] if portrait_ids else None,
             )
             db.add(user)
         authors.append(user)

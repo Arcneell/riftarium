@@ -1,5 +1,6 @@
 <script setup>
 import { coverStyle, legendOf, okCount, runesOf } from "../deckDisplay.js"
+import UserAvatar from "./UserAvatar.vue"
 
 defineProps({
   deck: { type: Object, required: true },
@@ -36,7 +37,13 @@ defineEmits(["like", "remove"])
         <RouterLink :to="to">{{ deck.name }}</RouterLink>
       </h3>
       <p class="muted mono">
-        <template v-if="community">par {{ deck.owner }} · </template>
+        <template v-if="community">
+          <span class="deck-box-owner">
+            <UserAvatar :src="deck.owner_avatar" :handle="deck.owner" :size="20" />
+            par {{ deck.owner }}
+          </span>
+          ·
+        </template>
         {{ deck.card_count }} cartes · {{ deck.format === "tournament" ? "tournoi" : "libre" }}
         <template v-if="deck.checks">
           · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·

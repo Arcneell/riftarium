@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch } from "vue"
+import { onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { session, setSession } from "./api.js"
+import { api, session, setSession } from "./api.js"
 import Logo from "./components/Logo.vue"
+import UserAvatar from "./components/UserAvatar.vue"
 
 const router = useRouter()
 const route = useRoute()
@@ -14,6 +15,16 @@ watch(
     menuOpen.value = false
   }
 )
+
+onMounted(async () => {
+  if (!session.token) return
+  try {
+    const me = await api("/api/auth/me")
+    setSession(session.token, me.handle, me.avatar_url)
+  } catch {
+    /* 401 déjà géré par api() */
+  }
+})
 
 function logout() {
   setSession(null, null)
@@ -38,11 +49,15 @@ function logout() {
         <RouterLink to="/decks">Decks</RouterLink>
         <RouterLink to="/communaute">Communauté</RouterLink>
         <template v-if="session.token">
-          <span class="chip" style="--chip: var(--calm)">{{ session.handle }}</span>
+          <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
+            <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
+            <span>{{ session.handle }}</span>
+          </RouterLink>
           <button class="btn btn-ghost btn-sm" @click="logout">Déconnexion</button>
         </template>
         <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
       </nav>
+      <span class="beta-mark">bêta</span>
     </div>
   </header>
   <div class="prism"></div>
@@ -74,6 +89,7 @@ function logout() {
           <li><RouterLink to="/regles">Règles</RouterLink></li>
           <li><RouterLink to="/decks">Deck builder</RouterLink></li>
           <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
+          <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
         </ul>
       </div>
       <div>

@@ -1,8 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 
+HANDLE_PATTERN = r"^[A-Za-z0-9_\-]+$"
+
 
 class RegisterIn(BaseModel):
-    handle: str = Field(min_length=3, max_length=32, pattern=r"^[A-Za-z0-9_\-]+$")
+    handle: str = Field(min_length=3, max_length=32, pattern=HANDLE_PATTERN)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
 
@@ -15,6 +17,25 @@ class LoginIn(BaseModel):
 class TokenOut(BaseModel):
     token: str
     handle: str
+    avatar_url: str | None = None
+
+
+class ProfilePatch(BaseModel):
+    handle: str | None = Field(default=None, min_length=3, max_length=32, pattern=HANDLE_PATTERN)
+    email: EmailStr | None = None
+    bio: str | None = Field(default=None, max_length=280)
+    avatar_card_id: str | None = None
+    current_password: str | None = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class AccountDelete(BaseModel):
+    password: str
+    handle: str = Field(min_length=3, max_length=32)
 
 
 class CollectionPut(BaseModel):
