@@ -187,9 +187,13 @@ onMounted(async () => {
 <template>
   <div class="page-banner">
     <div class="wrap">
-      <p class="eyebrow">Règles officielles</p>
+      <p class="eyebrow"><RouterLink to="/regles">Règles</RouterLink> › Texte officiel</p>
       <h2>Le texte intégral, consultable et cherchable</h2>
-      <p class="lead">Reproduit tel quel depuis les documents officiels de Riot Games. Chaque renvoi est cliquable.</p>
+      <p class="lead">
+        Reproduit tel quel depuis les documents officiels de Riot Games. Chaque renvoi est cliquable. Pour une
+        explication plus lisible, passez par le <RouterLink to="/regles/debutant">guide du débutant</RouterLink> ou
+        l'<RouterLink to="/regles/avancee">aide avancée</RouterLink>.
+      </p>
     </div>
   </div>
 

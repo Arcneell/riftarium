@@ -70,7 +70,8 @@ function logout() {
         <h4>Explorer</h4>
         <ul>
           <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
-          <li><RouterLink to="/regles">Règles officielles</RouterLink></li>
+          <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
+          <li><RouterLink to="/regles">Règles</RouterLink></li>
           <li><RouterLink to="/decks">Deck builder</RouterLink></li>
           <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
         </ul>
