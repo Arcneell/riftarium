@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..auth import current_user, optional_user
@@ -8,7 +8,7 @@ from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, User
 from ..moderation import review
 from ..schemas import DeckIn, ExampleDeckIn
 from ..validation import MAIN_TYPES, validate_deck
-from ..variants import variant_family
+from ..variants import copy_family
 from .cards import card_out, find_card, owned_quantities
 
 router = APIRouter(prefix="/api", tags=["decks"])
@@ -91,16 +91,15 @@ def get_deck(
 
 
 def _owned_families(db: Session, user: User) -> dict[str, int]:
-    """Quantités possédées agrégées par famille de variantes (l'art alternatif compte pour la base)."""
+    """Quantités possédées agrégées par nom de jeu (reprints et variantes confondus)."""
     rows = db.execute(
-        select(Card.riftbound_id, func.sum(CollectionItem.qty))
+        select(Card, CollectionItem.qty)
         .join(Card, Card.id == CollectionItem.card_id)
         .where(CollectionItem.user_id == user.id)
-        .group_by(Card.riftbound_id)
     ).all()
     owned_by_family: dict[str, int] = {}
-    for riftbound_id, qty in rows:
-        family = variant_family(riftbound_id)
+    for card, qty in rows:
+        family = copy_family(card)
         owned_by_family[family] = owned_by_family.get(family, 0) + int(qty or 0)
     return owned_by_family
 
@@ -119,7 +118,7 @@ def create_example_deck(payload: ExampleDeckIn, user: User = Depends(current_use
         raise HTTPException(status_code=422, detail="Aucune carte en base : lancez une synchronisation")
 
     def family(card: Card) -> str:
-        return variant_family(card.riftbound_id) or card.id
+        return copy_family(card)
 
     def owned_qty(card: Card) -> int:
         return owned.get(family(card), 0)
@@ -265,7 +264,7 @@ def deck_missing(deck_id: int, user: User = Depends(current_user), db: Session =
     # Deux variantes d'une même carte dans le deck partagent le même besoin.
     needs: dict[str, dict] = {}
     for dc in deck.cards:
-        family = variant_family(dc.card.riftbound_id) or dc.card.id
+        family = copy_family(dc.card)
         slot = needs.setdefault(family, {"card": dc.card, "needed": 0})
         slot["needed"] += dc.qty
 

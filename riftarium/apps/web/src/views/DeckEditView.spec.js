@@ -49,6 +49,14 @@ const unit = card({
   text: "[Assault 2]",
   owned_qty: 2
 })
+const phoenixOn = card({
+  id: "u1-on",
+  riftbound_id: "sfd-037-221",
+  name: "Phénix Immortel (Overnumbered)",
+  rarity: "Epic",
+  energy: 4,
+  owned_qty: 0
+})
 const ghost = card({ id: "g1", riftbound_id: "ogn-100-298", name: "Carte Fantôme", energy: 1 })
 const calmUnit = card({
   id: "c1",
@@ -119,7 +127,12 @@ describe("DeckEditView", () => {
         })
       }
       if (path.startsWith("/api/cards")) {
-        return Promise.resolve({ total: 5, page: 1, size: 24, items: [legend, legendCalm, unit, ghost, calmUnit] })
+        return Promise.resolve({
+          total: 6,
+          page: 1,
+          size: 24,
+          items: [legend, legendCalm, unit, phoenixOn, ghost, calmUnit]
+        })
       }
       if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN", name: "Origins" }])
       return Promise.resolve(null)
@@ -183,6 +196,21 @@ describe("DeckEditView", () => {
     await unitTile.trigger("click")
     expect(wrapper.find(".deck-limit").text()).toContain("Maximum 3 exemplaires")
     expect(wrapper.find(".deck-row .row-qty").text()).toBe("×3")
+    wrapper.unmount()
+  })
+
+  it("plafond 3 exemplaires : reprints et overnumbered comptent comme la même carte", async () => {
+    const { wrapper } = await mountView()
+    await tile(wrapper, "Légende Fury").trigger("click")
+    const unitTile = tile(wrapper, "Phénix Immortel")
+    await unitTile.trigger("click")
+    await unitTile.trigger("click")
+    await unitTile.trigger("click")
+
+    const reprint = tile(wrapper, "Overnumbered")
+    await reprint.trigger("click")
+    expect(wrapper.find(".deck-limit").text()).toContain("Maximum 3 exemplaires")
+    expect(wrapper.findAll(".deck-row")).toHaveLength(1)
     wrapper.unmount()
   })
 

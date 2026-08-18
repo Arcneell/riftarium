@@ -59,7 +59,7 @@ def test_cards_energy_filter(client):
 
 
 def test_variant_family_ignores_unrelated_ids():
-    from app.routers.cards import variant_family
+    from app.variants import canonical_name, variant_family
 
     assert variant_family("ogn-037-298") == "ogn-037-298"
     assert variant_family("OGN-037A-298") == "ogn-037-298"
@@ -68,6 +68,9 @@ def test_variant_family_ignores_unrelated_ids():
     assert variant_family("ven-004a-166") == "ven-004-166"
     assert variant_family("ven-sp4-006") == "ven-sp4-006"
     assert variant_family("ven-r04") == "ven-r04"
+    assert canonical_name("Jinx - Demolitionist") == canonical_name("Jinx, Demolitionist")
+    assert canonical_name("Seal of Discord (Overnumbered)") == "seal of discord"
+    assert canonical_name("Immortal Phoenix (Alternate Art)") == "immortal phoenix"
 
 
 def test_card_variants_and_foil(client):
@@ -458,6 +461,59 @@ def test_deck_copies_counted_across_variants(client, auth):
     copies = check(deck["checks"], "copies")
     assert not copies["ok"]
     assert "Immortal Phoenix" in copies["message"]
+
+
+def test_deck_copies_counted_across_reprints(client, auth):
+    import app.db as db_module
+    from app.models import Card
+
+    with db_module.SessionLocal() as session:
+        session.add_all(
+            [
+                Card(
+                    id="pr-037-298",
+                    riftbound_id="pr-037-298",
+                    name="Immortal Phoenix",
+                    set_id="OGN",
+                    type="Unit",
+                    domains=["Fury"],
+                    energy=4,
+                ),
+                Card(
+                    id="ven-030-166",
+                    riftbound_id="ven-030-166",
+                    name="Jinx, Demolitionist",
+                    set_id="OGN",
+                    type="Unit",
+                    domains=["Fury"],
+                    energy=2,
+                ),
+                Card(
+                    id="ogn-030-298",
+                    riftbound_id="ogn-030-298",
+                    name="Jinx - Demolitionist",
+                    set_id="OGN",
+                    type="Unit",
+                    domains=["Fury"],
+                    energy=2,
+                ),
+            ]
+        )
+        session.commit()
+
+    payload = deck_payload()
+    payload["cards"].extend(
+        [
+            {"card_id": "pr-037-298", "qty": 1},  # 3 phoenix + 1 reprint = 4
+            {"card_id": "ogn-030-298", "qty": 3},
+            {"card_id": "ven-030-166", "qty": 3},  # même nom, autre set
+        ]
+    )
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    copies = check(deck["checks"], "copies")
+    assert not copies["ok"]
+    assert "Immortal Phoenix" in copies["message"]
+    assert "Jinx" in copies["message"]
 
 
 def test_deck_unique_rule(client, auth):

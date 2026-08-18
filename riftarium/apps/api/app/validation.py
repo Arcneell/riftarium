@@ -5,13 +5,13 @@ Le mode « free » ne bloque rien : les contrôles sont renvoyés à titre indic
 """
 
 from .models import Card
-from .variants import variant_family
+from .variants import copy_family
 
 MAIN_TYPES = {"Unit", "Spell", "Gear"}
 
 
 def _family(card: Card) -> str:
-    return variant_family(card.riftbound_id) or card.id
+    return copy_family(card)
 
 
 def _is_unique(card: Card) -> bool:
@@ -54,7 +54,7 @@ def validate_deck(entries: list[tuple[Card, int]]) -> list[dict]:
         f"Deck principal : 40 cartes minimum ({main_count} actuellement)",
     )
 
-    # Règle 103.2.b : 3 exemplaires max par carte, toutes variantes confondues (même famille d'id).
+    # Règle 103.2.b : 3 exemplaires max par carte, reprints et variantes confondus (même nom).
     by_family: dict[str, dict] = {}
     for card, qty in main:
         slot = by_family.setdefault(_family(card), {"name": card.name, "qty": 0})

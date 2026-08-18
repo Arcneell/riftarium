@@ -13,6 +13,9 @@ const showCreate = ref(false)
 const creating = ref(false)
 const generating = ref(false)
 const createError = ref("")
+const pendingDelete = ref(null)
+const deleting = ref(false)
+const deleteError = ref("")
 const nameInput = ref(null)
 const draft = ref({ name: "", description: "", format: "tournament", is_public: false })
 
@@ -63,10 +66,31 @@ async function createExample(mode) {
   }
 }
 
-async function removeDeck(deck) {
-  if (!confirm(`Supprimer « ${deck.name} » ?`)) return
-  await api(`/api/decks/${deck.id}`, { method: "DELETE" })
-  await load()
+function askRemove(deck) {
+  pendingDelete.value = deck
+  deleteError.value = ""
+}
+
+function cancelRemove() {
+  if (deleting.value) return
+  pendingDelete.value = null
+  deleteError.value = ""
+}
+
+async function confirmRemove() {
+  const deck = pendingDelete.value
+  if (!deck || deleting.value) return
+  deleting.value = true
+  deleteError.value = ""
+  try {
+    await api(`/api/decks/${deck.id}`, { method: "DELETE" })
+    pendingDelete.value = null
+    await load()
+  } catch (e) {
+    deleteError.value = e.message
+  } finally {
+    deleting.value = false
+  }
 }
 
 const okCount = (deck) => deck.checks.filter((c) => c.ok).length
@@ -143,7 +167,7 @@ onMounted(load)
             <div class="deck-box-actions">
               <span class="chip" style="--chip: var(--chaos)">♥ {{ deck.likes }}</span>
               <RouterLink class="btn btn-ghost btn-sm" :to="`/decks/${deck.id}`">Ouvrir</RouterLink>
-              <button class="btn btn-ghost btn-sm" @click="removeDeck(deck)">Supprimer</button>
+              <button class="btn btn-ghost btn-sm" @click="askRemove(deck)">Supprimer</button>
             </div>
           </div>
         </article>
@@ -201,5 +225,18 @@ onMounted(load)
       </button>
     </div>
     <p v-if="generating" class="muted" style="margin-top: 10px">Génération du deck…</p>
+  </ModalDialog>
+
+  <ModalDialog v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
+    <p>
+      Le deck <strong>{{ pendingDelete.name }}</strong> sera définitivement retiré. Cette action est irréversible.
+    </p>
+    <p v-if="deleteError" class="error">{{ deleteError }}</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" :disabled="deleting" @click="cancelRemove">Annuler</button>
+      <button type="button" class="btn btn-danger" :disabled="deleting" @click="confirmRemove">
+        {{ deleting ? "Suppression…" : "Supprimer" }}
+      </button>
+    </div>
   </ModalDialog>
 </template>

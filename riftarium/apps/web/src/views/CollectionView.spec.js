@@ -101,4 +101,32 @@ describe("CollectionView", () => {
     expect(call[1].body).toEqual({ card_ids: ["card-1"], qty_delta: 1 })
     wrapper.unmount()
   })
+
+  it("retire de la collection après confirmation dans la modale du site", async () => {
+    const { wrapper } = await mountView()
+    const toggle = wrapper.findAll(".filter-board button").find((button) => button.text() === "Sélectionner")
+    await toggle.trigger("click")
+    await wrapper.get(".col-cell .card-tile").trigger("click")
+
+    const confirmSpy = vi.spyOn(window, "confirm")
+    const remove = wrapper.findAll(".bulk-bar button").find((button) => button.text().includes("Retirer"))
+    await remove.trigger("click")
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(api.mock.calls.some(([path]) => path === "/api/collection/bulk")).toBe(false)
+
+    const modal = document.body.querySelector(".modal")
+    expect(modal).not.toBeNull()
+    expect(modal.textContent).toContain("1 carte(s)")
+    const confirmButton = [...modal.querySelectorAll("button")].find(
+      (button) => button.textContent.trim() === "Retirer"
+    )
+    confirmButton.click()
+    await flushPromises()
+
+    const call = api.mock.calls.find(([path]) => path === "/api/collection/bulk")
+    expect(call[1].body).toEqual({ card_ids: ["card-1"], remove: true })
+    expect(document.body.querySelector(".modal")).toBeNull()
+    confirmSpy.mockRestore()
+    wrapper.unmount()
+  })
 })

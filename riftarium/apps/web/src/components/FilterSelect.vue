@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { toggleValue } from "../cardText.js"
 
 const props = defineProps({
@@ -11,6 +11,9 @@ const emit = defineEmits(["update:modelValue"])
 
 const root = ref(null)
 const open = ref(false)
+const selectedGlyphs = computed(() =>
+  props.options.filter((option) => option.glyph && props.modelValue.includes(option.value))
+)
 
 function toggle(value) {
   emit("update:modelValue", toggleValue(props.modelValue, value))
@@ -51,7 +54,19 @@ onBeforeUnmount(() => {
       @click="open = !open"
     >
       {{ label }}
-      <span v-if="modelValue.length" class="fsel-count">{{ modelValue.length }}</span>
+      <span v-if="selectedGlyphs.length" class="fsel-glyphs">
+        <img
+          v-for="option in selectedGlyphs"
+          :key="option.value"
+          class="rb-glyph"
+          :class="option.glyphKind"
+          :src="option.glyph"
+          :alt="option.label"
+          width="18"
+          height="18"
+        />
+      </span>
+      <span v-else-if="modelValue.length" class="fsel-count">{{ modelValue.length }}</span>
       <svg class="fsel-caret" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
       </svg>
@@ -65,18 +80,18 @@ onBeforeUnmount(() => {
         class="fsel-opt"
         :class="{ on: modelValue.includes(option.value) }"
         :aria-pressed="modelValue.includes(option.value)"
-        :style="option.color ? { '--chip': option.color } : null"
+        :style="!option.glyph && option.color ? { '--chip': option.color } : null"
         @click="toggle(option.value)"
       >
-        <span class="fsel-tick"></span>
+        <span v-if="!option.glyph" class="fsel-tick"></span>
         <img
           v-if="option.glyph"
           class="rb-glyph"
           :class="option.glyphKind"
           :src="option.glyph"
-          alt=""
-          width="18"
-          height="18"
+          :alt="option.label"
+          width="22"
+          height="22"
         />
         {{ option.label }}
       </button>

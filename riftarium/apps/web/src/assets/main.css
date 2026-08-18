@@ -422,6 +422,17 @@ section {
   color: #fff;
   box-shadow: var(--glow-gold);
 }
+.btn-danger {
+  background: var(--fury);
+  border-color: transparent;
+  color: #fdf8ec;
+  font-weight: 700;
+}
+.btn-danger:hover {
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 28px rgba(207, 68, 55, 0.35);
+}
 .btn-ghost {
   background: transparent;
   box-shadow: none;
@@ -460,6 +471,18 @@ section {
   border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 55%, transparent);
   background: color-mix(in srgb, var(--chip, var(--gold)) 12%, #fff);
   color: color-mix(in srgb, var(--chip, var(--gold)) 80%, #000);
+}
+.chip-rune {
+  --chip: transparent;
+  padding: 4px 12px 4px 8px;
+  border: 1px solid var(--line-strong);
+  background: rgba(253, 250, 242, 0.9);
+  color: var(--ink-strong);
+}
+.chip-rune .rb-glyph {
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 /* ---------- Formulaires ---------- */
@@ -666,15 +689,27 @@ textarea {
   background: color-mix(in srgb, var(--gold) 14%, transparent);
 }
 .fsel-count {
-  min-width: 19px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
+  display: grid;
+  place-items: center;
   border-radius: var(--r-full);
-  background: var(--gold-deep);
+  background: var(--gold-grad);
   color: #fdf8ec;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  line-height: 19px;
-  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.fsel-glyphs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.fsel-glyphs .rb-glyph {
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 .fsel-caret {
   transition: transform 0.18s;
@@ -708,9 +743,17 @@ textarea {
   text-align: left;
 }
 .fsel-opt .rb-glyph {
-  width: 1.2em;
-  height: 1.2em;
+  flex: none;
+  width: 22px;
+  height: 22px;
   margin: 0;
+}
+.fsel-opt .rb-glyph.rune {
+  width: 24px;
+  height: 24px;
+}
+.fsel-opt.on .rb-glyph.rune {
+  filter: drop-shadow(0 0 3px rgba(176, 138, 62, 0.55));
 }
 .fsel-opt:hover {
   background: rgba(138, 106, 47, 0.1);

@@ -1,3 +1,5 @@
+import { DOMAINS } from "./api.js"
+
 /* Glyphes officiels Riot : les noms de fichiers reprennent exactement les shortcodes `:rb_…:`. */
 const GLYPH_BASE = "https://assetcdn.rgpub.io/public/live/riot-shared/player-experiences/riot-glyphs/rb/latest"
 
@@ -81,6 +83,17 @@ const KEYWORD_FR = {
 
 export function glyphUrl(token) {
   return `${GLYPH_BASE}/${token}.svg`
+}
+
+export function domainFilterOptions() {
+  return Object.entries(DOMAINS)
+    .filter(([key]) => key !== "Colorless")
+    .map(([value, domain]) => ({
+      value,
+      label: domain.label,
+      glyph: glyphUrl(`rune_${DOMAIN_RUNE[value]}`),
+      glyphKind: "rune"
+    }))
 }
 
 export function powerRuneGlyphs(card) {
@@ -176,6 +189,8 @@ function pushBracket(parts, label, raw) {
 
 /* Miroir de variants.py : ogn-037a-298 / ogn-037*-298 → famille ogn-037-298. */
 const VARIANT_ID_RE = /^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$/i
+const VARIANT_SUFFIX_RE = /\s*\((?:alternate art|overnumbered|signature|starter|promo)\)\s*$/i
+const NAME_SEP_RE = /[\s,–—-]+/g
 
 export function variantFamily(riftboundId) {
   const ident = String(riftboundId || "")
@@ -184,6 +199,21 @@ export function variantFamily(riftboundId) {
   const match = VARIANT_ID_RE.exec(ident)
   if (!match) return ident
   return `${match[1]}-${match[2]}-${match[4]}`
+}
+
+export function canonicalName(name) {
+  return String(name || "")
+    .replace(VARIANT_SUFFIX_RE, "")
+    .trim()
+    .replace(NAME_SEP_RE, " ")
+    .toLowerCase()
+    .trim()
+}
+
+export function copyFamily(card) {
+  const name = canonicalName(card?.name)
+  if (name) return `${card?.type || ""}:${name}`
+  return variantFamily(card?.riftbound_id) || card?.id || ""
 }
 
 export function csvJoin(values) {

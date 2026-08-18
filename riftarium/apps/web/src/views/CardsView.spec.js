@@ -79,6 +79,16 @@ describe("CardsView", () => {
     wrapper.unmount()
   })
 
+  it("affiche les runes officielles dans le filtre des domaines", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.findAll(".fsel-btn")[0].trigger("click")
+    const runes = wrapper.findAll(".fsel-opt img.rb-glyph.rune")
+    expect(runes).toHaveLength(6)
+    expect(runes[0].attributes("src")).toContain("rune_fury.svg")
+    expect(wrapper.find(".fsel-opt .fsel-tick").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("charge plus de cartes sur un grand écran que sur mobile", async () => {
     const requestedSize = () => {
       const call = api.mock.calls.map(([path]) => path).findLast((path) => path.startsWith("/api/cards"))

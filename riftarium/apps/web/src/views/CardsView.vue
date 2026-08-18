@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, DOMAINS, TYPES, RARITIES } from "../api.js"
-import { cardsQuery, csvSplit, glyphUrl } from "../cardText.js"
+import { api, TYPES, RARITIES } from "../api.js"
+import { cardsQuery, csvSplit, domainFilterOptions, glyphUrl } from "../cardText.js"
 import { useScrollMemory } from "../useScrollMemory.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
@@ -36,11 +36,7 @@ let timer = null
 let resizeTimer = null
 let observer = null
 
-const domainOptions = computed(() =>
-  Object.entries(DOMAINS)
-    .filter(([key]) => key !== "Colorless")
-    .map(([value, domain]) => ({ value, label: domain.label, color: domain.color }))
-)
+const domainOptions = computed(() => domainFilterOptions())
 const typeOptions = computed(() => Object.entries(TYPES).map(([value, label]) => ({ value, label })))
 const rarityOptions = computed(() => Object.entries(RARITIES).map(([value, label]) => ({ value, label })))
 const energyOptions = computed(() =>

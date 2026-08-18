@@ -34,6 +34,7 @@ describe("DecksView", () => {
       if (path === "/api/decks/mine") return Promise.resolve([])
       if (path === "/api/decks" && options.method === "POST") return Promise.resolve({ id: 7 })
       if (path === "/api/decks/example" && options.method === "POST") return Promise.resolve({ id: 9 })
+      if (options.method === "DELETE") return Promise.resolve(null)
       return Promise.resolve(null)
     })
   })
@@ -85,6 +86,46 @@ describe("DecksView", () => {
     await flushPromises()
     expect(document.body.querySelector(".modal")).toBeNull()
     expect(api.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("supprime un deck après confirmation dans la modale du site", async () => {
+    const deck = {
+      id: 4,
+      name: "Jinx — prêt à jouer",
+      format: "tournament",
+      is_public: false,
+      likes: 0,
+      card_count: 56,
+      checks: [{ ok: true }, { ok: true }],
+      cards: []
+    }
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([deck])
+      if (options.method === "DELETE") return Promise.resolve(null)
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    const confirmSpy = vi.spyOn(window, "confirm")
+
+    await wrapper.find(".deck-box-actions button").trigger("click")
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(api.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
+
+    const modal = document.body.querySelector(".modal")
+    expect(modal).not.toBeNull()
+    expect(modal.textContent).toContain("Jinx — prêt à jouer")
+    expect(modal.textContent).toContain("Cette action est irréversible")
+
+    const confirmButton = [...modal.querySelectorAll("button")].find(
+      (button) => button.textContent.trim() === "Supprimer"
+    )
+    confirmButton.click()
+    await flushPromises()
+
+    expect(api.mock.calls.some(([path, options]) => path === "/api/decks/4" && options?.method === "DELETE")).toBe(true)
+    expect(document.body.querySelector(".modal")).toBeNull()
+    confirmSpy.mockRestore()
     wrapper.unmount()
   })
 })

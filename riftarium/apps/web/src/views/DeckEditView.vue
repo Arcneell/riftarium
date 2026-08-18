@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { api, cardThumb, DOMAINS, TYPES, RARITIES, session } from "../api.js"
-import { DOMAIN_RUNE, RUNE_LABELS, cardsQuery, glyphUrl, variantFamily } from "../cardText.js"
+import { DOMAIN_RUNE, RUNE_LABELS, cardsQuery, copyFamily, domainFilterOptions, glyphUrl } from "../cardText.js"
 import CardText from "../components/CardText.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
@@ -48,17 +48,17 @@ const zoneCounts = computed(() => {
   return counts
 })
 
-/* Quantités par famille de variantes : l'art alternatif compte comme la carte de base. */
+/* Quantités par nom de jeu : reprints et variantes comptent comme la même carte. */
 const familyQty = computed(() => {
   const map = new Map()
   for (const entry of deck.value?.cards || []) {
-    const family = variantFamily(entry.card.riftbound_id) || entry.card.id
+    const family = copyFamily(entry.card)
     map.set(family, (map.get(family) || 0) + entry.qty)
   }
   return map
 })
 
-const inDeckQty = (card) => familyQty.value.get(variantFamily(card.riftbound_id) || card.id) || 0
+const inDeckQty = (card) => familyQty.value.get(copyFamily(card)) || 0
 
 /* ---------- Légende d'abord : elle fixe l'identité de domaines du deck ---------- */
 
@@ -267,11 +267,7 @@ let galleryTimer = null
 let resizeTimer = null
 let observer = null
 
-const domainOptions = computed(() =>
-  Object.entries(DOMAINS)
-    .filter(([key]) => key !== "Colorless")
-    .map(([value, domain]) => ({ value, label: domain.label, color: domain.color }))
-)
+const domainOptions = computed(() => domainFilterOptions())
 const typeOptions = computed(() => Object.entries(TYPES).map(([value, label]) => ({ value, label })))
 const rarityOptions = computed(() => Object.entries(RARITIES).map(([value, label]) => ({ value, label })))
 const energyOptions = computed(() =>
@@ -811,12 +807,14 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="deck-domains" v-if="domainSpread.length">
-          <span
-            class="chip"
-            v-for="[domain, count] in domainSpread"
-            :key="domain"
-            :style="{ '--chip': DOMAINS[domain]?.color }"
-          >
+          <span class="chip chip-rune" v-for="[domain, count] in domainSpread" :key="domain">
+            <img
+              class="rb-glyph rune"
+              :src="glyphUrl(`rune_${DOMAIN_RUNE[domain] || 'rainbow'}`)"
+              :alt="RUNE_LABELS[DOMAIN_RUNE[domain]] || domain"
+              width="18"
+              height="18"
+            />
             {{ DOMAINS[domain]?.label || domain }} · {{ count }}
           </span>
         </div>
