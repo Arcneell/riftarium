@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
 import RuleText from "../components/RuleText.vue"
+import TopicDemo from "../components/TopicDemo.vue"
 import { keywordFamily } from "../cardText.js"
 
 const route = useRoute()
@@ -51,7 +52,7 @@ watch(() => route.params.slug, loadOfficial)
 
 /* Zoom sur les cartes d'exemple. */
 const zoomCard = ref(null)
-const zoomUrl = (card) => card.img.replace("w=360", "w=860")
+const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w=1024")
 </script>
 
 <template>
@@ -85,6 +86,11 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
             <li v-for="(line, i) in topic.details" :key="i"><RuleText :text="line" /></li>
           </ul>
 
+          <template v-if="topic.demo">
+            <h3 class="topic-part">En animation</h3>
+            <TopicDemo :demo="topic.demo" :key="topic.slug" />
+          </template>
+
           <template v-if="topic.cases?.length">
             <h3 class="topic-part">Cas concrets</h3>
             <div class="topic-case panel" v-for="(item, i) in topic.cases" :key="i" v-reveal="i % 3">
@@ -117,7 +123,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
 
         <aside class="topic-side">
           <template v-if="topic.examples?.length">
-            <h3 class="topic-part">Sur de vraies cartes</h3>
+            <h3 class="topic-part">Exemple</h3>
             <div class="topic-examples">
               <button
                 v-for="card in topic.examples"
@@ -130,7 +136,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860")
                 <span class="mono">{{ card.name }}</span>
               </button>
             </div>
-            <p class="muted" style="font-size: 0.68rem">Cliquez une carte pour la lire. © Riot Games.</p>
+            <p class="muted" style="font-size: 0.68rem">Cliquez la carte pour la lire en plein écran. © Riot Games.</p>
           </template>
 
           <h3 class="topic-part">Dans la même catégorie</h3>

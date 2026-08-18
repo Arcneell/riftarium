@@ -2885,3 +2885,188 @@ footer {
     display: none;
   }
 }
+
+/* ---------- Mini-scenes animees des pages d'aide ---------- */
+.demo {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  overflow: hidden;
+  background:
+    radial-gradient(80% 70% at 50% 0%, rgba(11, 143, 132, 0.07), transparent 60%),
+    linear-gradient(180deg, #fbf6ea, #f2ebd9);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 18px;
+}
+.demo-stage {
+  position: relative;
+  aspect-ratio: 16 / 7;
+}
+.demo-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.9s cubic-bezier(0.22, 0.8, 0.32, 1),
+    top 0.9s cubic-bezier(0.22, 0.8, 0.32, 1),
+    transform 0.6s ease,
+    opacity 0.5s ease;
+}
+.demo-item.unit {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--hex);
+  border: 2.5px solid #fdfaf2;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.demo-item.unit.foe {
+  background: var(--fury);
+}
+.demo-unit-n {
+  color: #fdfaf2;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+.demo-item.unit.tapped {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0.8;
+}
+.demo-item.unit.dead {
+  opacity: 0;
+  transform: translate(-50%, -80%) scale(0.5);
+}
+.demo-item.card {
+  width: 46px;
+  height: 64px;
+  border-radius: 7px;
+  background: #fdfaf2;
+  border: 2px solid var(--gold);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-align: center;
+  padding: 3px;
+  color: var(--ink-strong);
+  line-height: 1.25;
+}
+.demo-item.card.foe {
+  border-color: var(--fury);
+}
+.demo-item.card.tapped {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.demo-item.card.dead {
+  opacity: 0;
+}
+.demo-item.card.glow {
+  box-shadow:
+    0 0 0 3px rgba(11, 143, 132, 0.5),
+    var(--shadow-soft);
+}
+.demo-item.zone {
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 12px;
+  width: 26%;
+  height: 52%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 4px;
+  pointer-events: none;
+}
+.demo-item.zone.hot {
+  border-color: var(--fury);
+}
+.demo-item.chip {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  background: var(--fury);
+  color: #fdfaf2;
+  border: 2px solid #fdfaf2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  box-shadow: var(--shadow-soft);
+  animation: bd-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.demo-item.chip.ok {
+  background: var(--hex);
+}
+.demo-item.label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  background: rgba(217, 189, 130, 0.2);
+  border: 1px solid var(--gold-soft);
+  border-radius: var(--r-full);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.demo-item.label.glow {
+  background: var(--gold);
+  color: #fdfaf2;
+}
+.demo-enter-from,
+.demo-leave-to {
+  opacity: 0;
+}
+.demo-leave-active {
+  transition: opacity 0.4s ease;
+}
+.demo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: rgba(253, 250, 242, 0.7);
+}
+.demo-caption {
+  font-size: 0.82rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.demo-dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.demo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.demo-dot.active {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+/* Exemple : carte agrandie dans la colonne laterale */
+.topic-example {
+  width: 100%;
+  max-width: 320px;
+}
+.topic-example img {
+  border-radius: 12px;
+}
