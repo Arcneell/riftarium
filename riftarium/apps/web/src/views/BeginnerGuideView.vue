@@ -15,7 +15,10 @@ watch(stepIndex, (value) => router.replace({ query: value ? { etape: value + 1 }
 const step = computed(() => STEPS[stepIndex.value])
 const scene = computed(() => step.value.scene)
 
-const strong = (text) => text.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+const strong = (text) =>
+  String(text)
+    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
 
 const contested = (bf) => scene.value.contested?.includes(bf)
 const controller = (bf) => scene.value.control?.[bf]

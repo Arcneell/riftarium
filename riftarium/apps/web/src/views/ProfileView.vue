@@ -118,7 +118,7 @@ async function savePassword() {
       method: "POST",
       body: { current_password: secret.current, new_password: secret.next }
     })
-    setSession(result.token, result.handle, result.avatar_url || me.value?.avatar_url)
+    setSession("1", result.handle, result.avatar_url || me.value?.avatar_url)
     secret.current = ""
     secret.next = ""
     secret.confirm = ""
@@ -369,7 +369,8 @@ onMounted(load)
           <div class="panel">
             <h3>Vos données</h3>
             <p class="muted" style="margin-bottom: 16px">
-              Téléchargez un export JSON de votre collection et de vos decks — utile pour une sauvegarde.
+              Export JSON de votre compte (collection, decks, profil) — droit d'accès RGPD. Détail des traitements :
+              <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
             </p>
             <button class="btn" type="button" :disabled="exporting" @click="downloadExport">
               {{ exporting ? "Préparation…" : "Exporter mon compte" }}

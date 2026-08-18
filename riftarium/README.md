@@ -29,10 +29,27 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 ## Architecture
 
 ```
-apps/web   Vue 3 + Vite, servi par nginx (proxy /api vers l'API)
-apps/api   FastAPI (Python 3.12) : cartes, auth JWT, collection, decks, communauté
+apps/web   Vue 3 + Vite, servi par nginx (proxy /api vers l'API, port 8080 non-root)
+apps/api   FastAPI (Python 3.12) : cartes, auth JWT (cookie HTTP-only), collection, decks
 db         PostgreSQL 16
-redis      Cache des lectures publiques (cartes, sets) + garde-fous
+redis      Cache des lectures publiques + rate limit, mot de passe obligatoire
+```
+
+## Déploiement
+
+```
+Internet ──HTTPS──▶ BunkerWeb ──HTTP──▶ nginx (web:8080) ──▶ API (interne)
+```
+
+Copier `.env.example` vers `.env` et renseigner `JWT_SECRET`, `DB_PASSWORD`,
+`ADMIN_TOKEN` et `REDIS_PASSWORD` (pas de valeurs par défaut en production).
+La resync cartes se fait avec l'en-tête `X-Admin-Token`. L'API n'est pas
+publiée ; le front n'écoute que `127.0.0.1` (BunkerWeb le joint via le réseau
+Docker : `http://riftarium-web:8080`). Réglages WAF : `bunkerweb.env.example`.
+
+```bash
+cp .env.example .env
+docker compose up -d --build
 ```
 
 ## Performances
@@ -59,9 +76,12 @@ redis      Cache des lectures publiques (cartes, sets) + garde-fous
 
 ## Mentions légales
 
-Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée
-« Jargon juridique » relative à l'utilisation d'actifs de Riot Games. Riot Games ne
-soutient ni ne sponsorise ce projet. Riftbound, League of Legends et tous les visuels
-et textes de cartes sont © Riot Games, Inc. Le code de Riftarium est propriétaire,
-publié en source accessible (voir [LICENSE](../LICENSE)) ; la licence ne couvre
-aucun actif Riot.
+Riftarium was created under Riot Games' "Legal Jibber Jabber" policy using assets
+owned by Riot Games. Riot Games does not endorse or sponsor this project.
+
+Riftarium a été créé en vertu de la politique « Legal Jibber Jabber » (Jargon juridique)
+de Riot Games, à partir d'actifs appartenant à Riot Games. Riot Games ne soutient ni
+ne sponsorise ce projet. Riftbound, League of Legends et tous les visuels et textes de
+cartes sont © Riot Games, Inc. En bêta, les textes de cartes viennent de Riftcodex en
+attendant l'API officielle Riot. Le code de Riftarium est propriétaire, publié en source
+accessible (voir [LICENSE](../LICENSE)) ; la licence ne couvre aucun actif Riot.

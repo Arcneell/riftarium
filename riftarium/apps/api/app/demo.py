@@ -37,7 +37,7 @@ PITCH = [
     "Techée contre les decks de Fureur qui tournent en ce moment.",
     "Un peu greedy, mais ça passe des boards impossibles à rattraper.",
     "Side à affiner — les champs de bataille ne sont pas figés.",
-    "Idée volée à un match de qualifier, retravaillée en mode ladder.",
+    "Idée reprise d'un match de qualifier, retravaillée à la table.",
 ]
 
 

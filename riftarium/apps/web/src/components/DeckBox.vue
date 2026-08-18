@@ -1,5 +1,5 @@
 <script setup>
-import { coverStyle, legendOf, okCount, runesOf } from "../deckDisplay.js"
+import { coverStyle, formatLabel, legendOf, okCount, runesOf } from "../deckDisplay.js"
 import UserAvatar from "./UserAvatar.vue"
 
 defineProps({
@@ -44,7 +44,7 @@ defineEmits(["like", "remove"])
           </span>
           ·
         </template>
-        {{ deck.card_count }} cartes · {{ deck.format === "tournament" ? "tournoi" : "libre" }}
+        {{ deck.card_count }} cartes · {{ formatLabel(deck.format) }}
         <template v-if="deck.checks">
           · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·
           {{ deck.is_public ? "public" : "privé" }}

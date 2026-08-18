@@ -12,6 +12,7 @@ ignore = ["S101", "B008"]
 "tests/conftest.py" = ["S", "E402", "I001"]
 "app/config.py" = ["S105"]
 "app/demo.py" = ["S105", "S311"]
+"app/main.py" = ["S105"]
 
 [tool.coverage.run]
 source = ["app"]
@@ -19,6 +20,6 @@ branch = true
 omit = ["app/sync.py"]
 
 [tool.coverage.report]
-fail_under = 70
+fail_under = 80
 show_missing = true
 skip_covered = true

@@ -44,7 +44,7 @@ describe("HomeView", () => {
     api.mockReset()
     api.mockImplementation((path) => {
       if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN" }, { set_id: "SFD" }])
-      if (path === "/api/health") return Promise.resolve({ cards: 1315 })
+      if (path === "/api/cards?size=1") return Promise.resolve({ total: 1315, items: [] })
       return Promise.resolve({})
     })
   })

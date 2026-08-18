@@ -90,13 +90,18 @@ vous acceptez qu'elle soit intégrée au projet sous les termes de la [licence](
 
 ## Mentions légales
 
-Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée
-« Jargon juridique » relative à l'utilisation d'actifs de Riot Games. **Riot Games ne
-soutient ni ne sponsorise ce projet.**
+Riftarium was created under Riot Games' "Legal Jibber Jabber" policy using assets
+owned by Riot Games. Riot Games does not endorse or sponsor this project.
+
+Riftarium a été créé en vertu de la politique « Legal Jibber Jabber » (Jargon juridique)
+de Riot Games, à partir d'actifs appartenant à Riot Games. Riot Games ne soutient ni
+ne sponsorise ce projet.
 
 Riftbound, League of Legends et l'ensemble des visuels de cartes, illustrations, symboles
 de domaine et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont
 servis directement depuis le CDN officiel de Riot et ne sont ni copiés ni redistribués.
-Cardmarket est une marque de Cardmarket GmbH. Le projet est et restera non commercial.
-La [licence](LICENSE) du code ne couvre ni le texte des règles officielles, ni les
-illustrations, ni aucun actif appartenant à Riot Games, Inc.
+En bêta, les textes de cartes sont synchronisés depuis l'API communautaire Riftcodex
+en attendant l'API officielle Riot. Cardmarket est une marque de Cardmarket GmbH. Le
+projet est et restera non commercial. La [licence](LICENSE) du code ne couvre ni le
+texte des règles officielles, ni les illustrations, ni aucun actif appartenant à
+Riot Games, Inc.

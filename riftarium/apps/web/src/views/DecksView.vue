@@ -143,7 +143,7 @@ onMounted(load)
         Format
         <select v-model="draft.format">
           <option value="tournament">Mode tournoi — règles officielles vérifiées</option>
-          <option value="free">Mode libre — aucune contrainte</option>
+          <option value="free">Mode libre — format non officiel</option>
         </select>
       </label>
       <label>

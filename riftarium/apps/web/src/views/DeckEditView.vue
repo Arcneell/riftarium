@@ -8,7 +8,8 @@ import DeckExportBar from "../components/DeckExportBar.vue"
 import DeckView from "../components/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
-import { DECK_ZONES, groupDeck, zoneOf } from "../deckDisplay.js"
+import { DECK_ZONES, formatLabel, groupDeck, zoneOf } from "../deckDisplay.js"
+import { applySeo } from "../seo.js"
 
 const route = useRoute()
 const router = useRouter()
@@ -207,6 +208,15 @@ async function load() {
         /* compteur de vues non bloquant */
       }
     }
+    const publicDeck = deck.value.is_public && deck.value.moderation_status === "published"
+    applySeo({
+      title: `${deck.value.name} — Deck Riftbound`,
+      description:
+        (deck.value.description || "").trim().slice(0, 160) ||
+        `Deck Riftbound « ${deck.value.name} » (${formatLabel(deck.value.format)}) sur Riftarium.`,
+      path: route.path,
+      noindex: !publicDeck
+    })
   } catch (e) {
     error.value = e.message
   }
@@ -577,12 +587,10 @@ onBeforeUnmount(() => {
       />
       <h2 v-else class="dbuilder-name">{{ deck.name }}</h2>
       <select v-if="canEdit" v-model="deck.format" aria-label="Format">
-        <option value="tournament">Mode tournoi</option>
-        <option value="free">Mode libre</option>
+        <option value="tournament">Mode tournoi — règles officielles</option>
+        <option value="free">Mode libre — format non officiel</option>
       </select>
-      <span v-else class="muted mono">
-        {{ deck.format === "tournament" ? "tournoi" : "libre" }} · par {{ deck.owner }}
-      </span>
+      <span v-else class="muted mono"> {{ formatLabel(deck.format) }} · par {{ deck.owner }} </span>
       <label v-if="canEdit" class="switch"> <input type="checkbox" v-model="deck.is_public" /><i></i> Public </label>
       <div class="deck-box-stats">
         <button

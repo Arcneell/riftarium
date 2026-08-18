@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: riftarium
       POSTGRES_USER: riftarium
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-riftarium-dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     volumes:
       - dbdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,29 +18,36 @@ services:
   redis:
     image: redis:7-alpine
     container_name: riftarium-redis
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     restart: unless-stopped
 
   api:
     build: apps/api
     container_name: riftarium-api
     environment:
-      DATABASE_URL: postgresql+psycopg://riftarium:${DB_PASSWORD:-riftarium-dev}@db:5432/riftarium
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      RIFTARIUM_ENV: prod
+      DATABASE_URL: postgresql+psycopg://riftarium:${DB_PASSWORD}@db:5432/riftarium
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN must be set}
+      COOKIE_SECURE: "1"
       AUTO_SYNC: "1"
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "${API_PORT:-8889}:8000"
     restart: unless-stopped
 
   web:
@@ -51,7 +58,9 @@ services:
     depends_on:
       - api
     ports:
-      - "${PORT:-8888}:80"
+      - "127.0.0.1:${PORT:-8888}:8080"
+    expose:
+      - "8080"
     restart: unless-stopped
 
 volumes:

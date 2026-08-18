@@ -11,8 +11,12 @@ services:
       - ./apps/api/app:/srv/app
       - ./apps/api/tests:/srv/tests
     environment:
+      RIFTARIUM_ENV: dev
+      COOKIE_SECURE: "0"
       # bind mounts Windows : les événements fichiers ne remontent pas, on force le polling
       WATCHFILES_FORCE_POLLING: "true"
+    ports:
+      - "127.0.0.1:${API_PORT:-8889}:8000"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   web:
@@ -28,7 +32,7 @@ services:
       RULES_DATA: /rules-data/rules-fr.json
       VITE_POLLING: "1"
     ports: !override
-      - "${PORT:-8888}:5173"
+      - "127.0.0.1:${PORT:-8888}:5173"
     healthcheck:
       disable: true
 

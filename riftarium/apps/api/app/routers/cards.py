@@ -7,6 +7,7 @@ from ..cache import cache_get, cache_set
 from ..config import settings
 from ..db import get_db
 from ..models import Card, CardSet, CollectionItem, User
+from ..security import sanitize_image_url
 from ..variants import variant_family, variant_id_clause
 
 router = APIRouter(prefix="/api", tags=["cards"])
@@ -65,7 +66,7 @@ def card_out(card: Card, owned_qty: int | None = None) -> dict:
         "power": card.power,
         "text": card.text_plain,
         "flavour": card.text_flavour,
-        "image_url": card.image_url,
+        "image_url": sanitize_image_url(card.image_url),
         "artist": card.artist,
         "orientation": card.orientation,
         "tags": card.tags or [],

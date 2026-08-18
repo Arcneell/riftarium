@@ -28,6 +28,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     bio: Mapped[str] = mapped_column(String(280), default="")
     avatar_card_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    token_version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

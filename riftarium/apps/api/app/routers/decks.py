@@ -12,6 +12,7 @@ from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, U
 from ..moderation import review
 from ..profiles import avatar_urls
 from ..schemas import DeckIn, ExampleDeckIn
+from ..security import client_ip, sanitize_image_url
 from ..validation import validate_deck
 from ..variants import copy_family
 from .cards import card_out, csv_parts, find_card, owned_quantities
@@ -234,8 +235,7 @@ def toggle_like(deck_id: int, user: User = Depends(current_user), db: Session = 
 def _visitor_key(user: User | None, request: Request) -> str:
     if user:
         return f"u:{user.id}"
-    forwarded = request.headers.get("x-forwarded-for", "")
-    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "0")
+    ip = client_ip(request)
     return "a:" + hashlib.sha256(ip.encode()).hexdigest()[:24]
 
 
@@ -305,7 +305,8 @@ def community_legends(db: Session = Depends(get_db)):
         .order_by(func.count(Deck.id).desc(), Card.name)
     ).all()
     return [
-        {"id": card_id, "name": name, "image_url": image_url, "deck_count": n} for card_id, name, image_url, n in rows
+        {"id": card_id, "name": name, "image_url": sanitize_image_url(image_url), "deck_count": n}
+        for card_id, name, image_url, n in rows
     ]
 
 

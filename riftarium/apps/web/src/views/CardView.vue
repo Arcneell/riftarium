@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, session, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } from "../api.js"
 import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
+import { applySeo } from "../seo.js"
 import CardText from "../components/CardText.vue"
 
 const route = useRoute()
@@ -48,6 +49,12 @@ watch(
         const owned = await api(`/api/collection/${card.value.id}`)
         entries.value = owned.entries
       }
+      applySeo({
+        title: `${card.value.name} — Carte Riftbound`,
+        description: `${card.value.name} (${card.value.set_id}) : ${TYPES[card.value.type] || card.value.type} Riftbound. Fiche, visuel officiel et variantes sur Riftarium.`,
+        path: route.path,
+        image: card.value.image_url
+      })
     } catch (e) {
       error.value = e.message
     }

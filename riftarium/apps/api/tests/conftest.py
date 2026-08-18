@@ -2,8 +2,12 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTO_SYNC"] = "0"
-os.environ["JWT_SECRET"] = "test-secret"
+os.environ["RIFTARIUM_ENV"] = "test"
+os.environ["JWT_SECRET"] = "test-secret-not-for-production-use!"
+os.environ["ADMIN_TOKEN"] = "test-admin-token-ok"
+os.environ["AUTH_RATE_LIMIT"] = "10000"
 os.environ["REDIS_URL"] = ""  # les tests tournent sans cache, même si un Redis est joignable
+os.environ["COOKIE_SECURE"] = "0"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -179,8 +183,11 @@ def auth(client):
             "handle": "testeur",
             "email": "testeur@example.org",
             "password": "motdepasse123",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     )
     assert response.status_code == 201, response.text
     token = response.json()["token"]
+    client.cookies.clear()  # les tests Bearer ne doivent pas aussi envoyer le cookie HTTP-only
     return {"Authorization": f"Bearer {token}"}
