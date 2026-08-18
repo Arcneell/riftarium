@@ -5,8 +5,8 @@
 <h1 align="center">Riftarium</h1>
 
 <p align="center">
-  <strong>Le compagnon communautaire tout-en-un pour Riftbound, le TCG de Riot Games.</strong><br />
-  Cartothèque complète · Collection · Deck builder validé · Communauté modérée
+  <strong>Le compagnon tout-en-un pour Riftbound, le TCG de Riot Games.</strong><br />
+  Cartothèque · Collection · Deck builder · Règles officielles · Communauté
 </p>
 
 <p align="center">
@@ -22,18 +22,18 @@
 
 ---
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-| | Fonction | Description |
-| :-: | --- | --- |
-| 🃏 | **Cartothèque** | Les 1 315 cartes des 6 sets (Origins → Vendetta), recherche plein texte, filtres par domaine, type, rareté et set, variantes alt-art incluses |
-| 📦 | **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
-| 🛠️ | **Deck builder** | Validation des règles officielles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou **mode libre** |
-| 💬 | **Communauté** | Decks publics, likes, tri par popularité |
-| 🛡️ | **Modération automatique** | Chaque contenu publié passe par un filtre avant mise en ligne ; le reste part en file de revue |
-| 📖 | **Règles** | Texte officiel intégral (2 137 règles + 812 règles de tournoi) intégré à l'application |
+| Fonction | Description |
+| --- | --- |
+| **Cartothèque** | Les 1 315 cartes des 6 sets (Origins → Vendetta), variantes alt-art incluses. Recherche plein texte, filtres par domaine, type, rareté et set |
+| **Règles** | Texte officiel intégral en français : 2 137 règles du jeu + 812 règles de tournoi, avec recherche |
+| **Deck builder** | Validation des règles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou mode libre |
+| **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
+| **Communauté** | Decks publics, likes, tri par popularité |
+| **Modération** | Chaque contenu publié passe par un filtre automatique avant mise en ligne ; le reste part en file de revue |
 
-## 🚀 Démarrage rapide
+## Démarrage rapide
 
 ```bash
 git clone https://github.com/Arcneell/riftarium.git
@@ -46,14 +46,14 @@ docker compose up --build -d
 | Site | <http://localhost:8888> |
 | API (OpenAPI) | <http://localhost:8889/docs> |
 
-Au premier démarrage, l'API synchronise automatiquement les ~1 300 cartes depuis
+Au premier démarrage, l'API synchronise les ~1 300 cartes depuis
 l'API communautaire [Riftcodex](https://api.riftcodex.com/docs) (~30 s).
-Resynchroniser après une sortie de set : `curl -X POST http://localhost:8888/api/admin/sync`
+Pour resynchroniser après une sortie de set : `curl -X POST http://localhost:8888/api/admin/sync`
 
 > **Windows** : les ports par défaut sont 8888/8889 car Hyper-V réserve souvent les plages
 > 7236-8035 et 8054-8553. Personnalisables : `PORT=3000 API_PORT=3001 docker compose up`.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
@@ -61,14 +61,14 @@ Resynchroniser après une sortie de set : `curl -X POST http://localhost:8888/ap
 │  nginx + SPA        │ /api│  auth JWT · decks    │     │  cartes · users  │
 │  proxy /api         │     │  validation · modo   │     │  decks · likes   │
 └────────────────────┘     └──────────┬──────────┘     └──────────────────┘
-                                      │ sync quotidienne possible
+                                      │ resync manuelle possible
                            ┌──────────▼──────────┐
                            │ api.riftcodex.com    │  (données de cartes)
                            │ cmsassets.rgpub.io   │  (visuels — CDN Riot)
                            └─────────────────────┘
 ```
 
-## 🗂️ Structure du dépôt
+## Structure du dépôt
 
 ```
 riftarium/          Application (produit)
@@ -76,11 +76,11 @@ riftarium/          Application (produit)
 ├── apps/api/       API FastAPI (Python 3.12) + tests pytest
 ├── data/           Règles officielles en français (JSON)
 └── compose.yaml    Orchestration Docker (web + api + db)
-REFONTE.md          Plan technique complet et feuille de route
-assets/             Identité visuelle (logo SVG fait main)
+REFONTE.md          Plan technique et feuille de route
+assets/             Identité visuelle (logo SVG)
 ```
 
-## 🧪 Tests
+## Tests
 
 Chaque pull request est bloquée tant que la CI GitHub n'est pas verte
 (lint, formatage, tests API, tests Vue, build Vite, `docker compose config`).
@@ -101,11 +101,7 @@ npm ci
 npm run check          # lint, Prettier, Vitest, build
 ```
 
-Le développement est vérifié par des tests unitaires API (SQLite en mémoire),
-des tests de composants Vue (hero Overnumbered, rivière aléatoire, vignettes CDN)
-et un smoke test bout en bout sur la stack déployée.
-
-## 🗺️ Feuille de route
+## Feuille de route
 
 - [x] Cartothèque, comptes, collection, deck builder, decks publics, modération V1
 - [ ] Scan mobile (PWA + caméra, reconnaissance par empreinte visuelle)
@@ -113,14 +109,14 @@ et un smoke test bout en bout sur la stack déployée.
 - [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours — voir [REFONTE.md](REFONTE.md))
 - [ ] Fil communautaire complet : pulls, résultats de tournoi, profils, commentaires
 
-## 🤝 Contribuer
+## Contribuer
 
 Les issues et pull requests sont bienvenues. Avant de proposer une fonctionnalité qui
 touche aux données Riot (visuels, textes de cartes), vérifiez qu'elle respecte la
 [politique développeur Riftbound](https://developer.riotgames.com/policies/riftbound)
 et la politique « Jargon juridique » de Riot Games.
 
-## ⚖️ Mentions légales
+## Mentions légales
 
 Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée
 « Jargon juridique » relative à l'utilisation d'actifs de Riot Games. **Riot Games ne
@@ -131,7 +127,7 @@ de domaine et textes officiels sont la propriété de © Riot Games, Inc. Les vi
 servis directement depuis le CDN officiel de Riot et ne sont ni copiés ni redistribués.
 Cardmarket est une marque de Cardmarket GmbH. Le projet est et restera non commercial.
 
-## 📄 Licence
+## Licence
 
 Le code source de Riftarium est publié sous licence [MIT](LICENSE). Cette licence ne
 couvre ni le texte des règles officielles, ni les illustrations, ni aucun actif
