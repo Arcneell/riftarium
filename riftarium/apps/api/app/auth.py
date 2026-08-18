@@ -47,9 +47,13 @@ def current_user(
     if credentials is None:
         raise HTTPException(status_code=401, detail="Authentification requise")
     try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(
+            credentials.credentials, settings.jwt_secret, algorithms=["HS256"]
+        )
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Jeton invalide ou expiré") from None
+        raise HTTPException(
+            status_code=401, detail="Jeton invalide ou expiré"
+        ) from None
     user = db.get(User, int(payload["sub"]))
     if user is None:
         raise HTTPException(status_code=401, detail="Utilisateur inconnu")
@@ -63,7 +67,9 @@ def optional_user(
     if credentials is None:
         return None
     try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(
+            credentials.credentials, settings.jwt_secret, algorithms=["HS256"]
+        )
     except jwt.PyJWTError:
         return None
     return db.get(User, int(payload["sub"]))

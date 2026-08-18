@@ -18,6 +18,7 @@ def _cacheable_headers(response: Response) -> None:
     response.headers["Cache-Control"] = "public, max-age=300"
     response.headers["Vary"] = "Authorization"
 
+
 # ogn-037a-298 / ogn-037*-298 → famille ogn-037-298. Les ids promo/rune (ven-sp4-006, ven-r04) restent uniques.
 _VARIANT_ID_RE = re.compile(r"^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$", re.IGNORECASE)
 
@@ -43,13 +44,20 @@ def find_card(db: Session, ident: str) -> Card | None:
     card = db.get(Card, ident)
     if card is None:
         card = db.scalar(
-            select(Card).where(func.lower(Card.riftbound_id) == ident.lower()).order_by(Card.alternate_art, Card.id)
+            select(Card)
+            .where(func.lower(Card.riftbound_id) == ident.lower())
+            .order_by(Card.alternate_art, Card.id)
         )
     return card
 
 
 def is_foil(card: Card) -> bool:
-    return bool(card.alternate_art or card.signature or card.overnumbered or card.rarity == "Showcase")
+    return bool(
+        card.alternate_art
+        or card.signature
+        or card.overnumbered
+        or card.rarity == "Showcase"
+    )
 
 
 def card_out(card: Card, owned_qty: int | None = None) -> dict:
@@ -82,7 +90,9 @@ def card_out(card: Card, owned_qty: int | None = None) -> dict:
     return payload
 
 
-def owned_quantities(db: Session, user: User | None, card_ids: list[str]) -> dict[str, int]:
+def owned_quantities(
+    db: Session, user: User | None, card_ids: list[str]
+) -> dict[str, int]:
     if user is None or not card_ids:
         return {}
     rows = db.execute(
@@ -153,7 +163,9 @@ def apply_filters(query, *, q, set_id, type, domain, rarity, energy):
         query = query.where(Card.rarity.in_(rarities))
     domains = csv_parts(domain)
     if domains:
-        query = query.where(or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains]))
+        query = query.where(
+            or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains])
+        )
     energies = csv_parts(energy)
     if energies:
         clauses = []
@@ -194,7 +206,15 @@ def list_cards(
         if cached is not None:
             return cached
 
-    query = apply_filters(select(Card), q=q, set_id=set_id, type=type, domain=domain, rarity=rarity, energy=energy)
+    query = apply_filters(
+        select(Card),
+        q=q,
+        set_id=set_id,
+        type=type,
+        domain=domain,
+        rarity=rarity,
+        energy=energy,
+    )
 
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     if sort == "random":
@@ -203,13 +223,17 @@ def list_cards(
         order = [RARITY_RANK, Card.set_id, Card.collector_number, Card.id]
     else:
         order = [Card.set_id, Card.collector_number, Card.id]
-    rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
+    rows = db.scalars(
+        query.order_by(*order).offset((page - 1) * size).limit(size)
+    ).all()
     owned = owned_quantities(db, viewer, [card.id for card in rows])
     payload = {
         "total": total,
         "page": page,
         "size": size,
-        "items": [card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows],
+        "items": [
+            card_out(card, owned.get(card.id, 0) if viewer else None) for card in rows
+        ],
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
@@ -251,7 +275,9 @@ def get_card(
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows] + [card.id])
     payload = card_out(card, owned.get(card.id, 0) if viewer else None)
-    payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows]
+    payload["variants"] = [
+        card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows
+    ]
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
     return payload
@@ -265,7 +291,13 @@ def list_sets(response: Response, db: Session = Depends(get_db)):
         return cached
     rows = db.scalars(select(CardSet).order_by(CardSet.published_on)).all()
     payload = [
-        {"set_id": s.set_id, "name": s.name, "card_count": s.card_count, "published_on": s.published_on} for s in rows
+        {
+            "set_id": s.set_id,
+            "name": s.name,
+            "card_count": s.card_count,
+            "published_on": s.published_on,
+        }
+        for s in rows
     ]
     cache_set("sets:list", payload, settings.cache_ttl_seconds)
     return payload

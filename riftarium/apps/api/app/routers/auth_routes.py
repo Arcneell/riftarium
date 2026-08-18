@@ -12,10 +12,18 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenOut, status_code=201)
 def register(payload: RegisterIn, db: Session = Depends(get_db)):
-    exists = db.scalar(select(User).where((User.handle == payload.handle) | (User.email == payload.email)))
+    exists = db.scalar(
+        select(User).where(
+            (User.handle == payload.handle) | (User.email == payload.email)
+        )
+    )
     if exists:
         raise HTTPException(status_code=409, detail="Pseudo ou email déjà utilisé")
-    user = User(handle=payload.handle, email=payload.email, password_hash=hash_password(payload.password))
+    user = User(
+        handle=payload.handle,
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+    )
     db.add(user)
     db.commit()
     return TokenOut(token=make_token(user), handle=user.handle)

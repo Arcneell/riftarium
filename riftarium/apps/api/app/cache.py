@@ -24,7 +24,9 @@ def _redis():
         try:
             import redis
 
-            _client = redis.Redis.from_url(settings.redis_url, socket_timeout=1, socket_connect_timeout=1)
+            _client = redis.Redis.from_url(
+                settings.redis_url, socket_timeout=1, socket_connect_timeout=1
+            )
             _client.ping()
         except Exception:
             log.warning("Redis injoignable (%s) : cache désactivé", settings.redis_url)

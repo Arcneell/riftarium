@@ -13,7 +13,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # Base SQLite en mémoire partagée entre les connexions du test
-db_module.engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+db_module.engine = create_engine(
+    "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+)
 db_module.SessionLocal = sessionmaker(bind=db_module.engine, expire_on_commit=False)
 
 from app.db import Base
@@ -168,7 +170,11 @@ def client():
 def auth(client):
     response = client.post(
         "/api/auth/register",
-        json={"handle": "testeur", "email": "testeur@example.org", "password": "motdepasse123"},
+        json={
+            "handle": "testeur",
+            "email": "testeur@example.org",
+            "password": "motdepasse123",
+        },
     )
     assert response.status_code == 201, response.text
     token = response.json()["token"]

@@ -21,13 +21,19 @@ def validate_deck(entries: list[tuple[Card, int]]) -> list[dict]:
         checks.append({"rule": rule, "ok": ok, "message": message})
 
     legend_count = sum(q for _, q in legends)
-    add("legend", legend_count == 1, f"Exactement 1 légende ({legend_count} actuellement)")
+    add(
+        "legend",
+        legend_count == 1,
+        f"Exactement 1 légende ({legend_count} actuellement)",
+    )
 
     battlefield_count = sum(q for _, q in battlefields)
     distinct_battlefields = len(battlefields) == len({c.id for c, _ in battlefields})
     add(
         "battlefields",
-        battlefield_count == 3 and all(q == 1 for _, q in battlefields) and distinct_battlefields,
+        battlefield_count == 3
+        and all(q == 1 for _, q in battlefields)
+        and distinct_battlefields,
         f"3 champs de bataille distincts ({battlefield_count} actuellement)",
     )
 
@@ -35,19 +41,27 @@ def validate_deck(entries: list[tuple[Card, int]]) -> list[dict]:
     add("runes", rune_count == 12, f"12 runes ({rune_count} actuellement)")
 
     main_count = sum(q for _, q in main)
-    add("main_size", main_count >= 40, f"Deck principal : 40 cartes minimum ({main_count} actuellement)")
+    add(
+        "main_size",
+        main_count >= 40,
+        f"Deck principal : 40 cartes minimum ({main_count} actuellement)",
+    )
 
     over = [c.name for c, q in main if q > 3]
     add(
         "copies",
         not over,
-        "Maximum 3 exemplaires par carte" if not over else f"Plus de 3 exemplaires : {', '.join(over)}",
+        "Maximum 3 exemplaires par carte"
+        if not over
+        else f"Plus de 3 exemplaires : {', '.join(over)}",
     )
 
     if legend_count == 1:
         legend_domains = {d for d in (legends[0][0].domains or []) if d != "Colorless"}
         illegal = [
-            c.name for c, _ in main + runes if {d for d in (c.domains or []) if d != "Colorless"} - legend_domains
+            c.name
+            for c, _ in main + runes
+            if {d for d in (c.domains or []) if d != "Colorless"} - legend_domains
         ]
         add(
             "domains",

@@ -30,8 +30,12 @@ async def lifespan(app: FastAPI):
                 log.info("base vide : synchronisation initiale depuis Riftcodex…")
                 try:
                     run_sync(db)
-                except Exception:  # le service démarre même si la source est indisponible
-                    log.exception("synchronisation initiale échouée — réessayez via POST /api/admin/sync")
+                except (
+                    Exception
+                ):  # le service démarre même si la source est indisponible
+                    log.exception(
+                        "synchronisation initiale échouée — réessayez via POST /api/admin/sync"
+                    )
     yield
 
 
@@ -70,7 +74,10 @@ def admin_sync(db: Session = Depends(get_db)):
     last = cache_get("sync:last") or _last_sync_fallback
     if last and now - float(last) < interval:
         wait = int(interval - (now - float(last)))
-        raise HTTPException(status_code=429, detail=f"Sync déjà effectuée récemment — réessayez dans {wait}s")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Sync déjà effectuée récemment — réessayez dans {wait}s",
+        )
 
     counts = run_sync(db)
     _last_sync_fallback = now
