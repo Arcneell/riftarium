@@ -84,11 +84,11 @@ describe("BeginnerGuideView", () => {
         { path: "/regles/officielles", component: stub }
       ]
     })
-    await router.push("/regles/debutant?etape=11")
+    await router.push("/regles/debutant?etape=13")
     const wrapper = mount(BeginnerGuideView, {
       global: { plugins: [router], stubs: { Icon: true }, directives: { reveal: {} } }
     })
-    expect(wrapper.text()).toContain(`Étape 11 / ${STEPS.length}`)
+    expect(wrapper.text()).toContain(`Étape 13 / ${STEPS.length}`)
     expect(wrapper.text()).toContain("attaquant")
   })
 })

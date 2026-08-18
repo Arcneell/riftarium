@@ -135,6 +135,7 @@ export const SPOTS = {
 
   discardA: { x: 92, y: 80 },
   discardB: { x: 91.2, y: 78.6, r: -9 },
+  discardC: { x: 92.8, y: 77.2, r: 8 },
   foeDiscardA: { x: 8, y: 8, r: 7 }
 }
 
@@ -165,14 +166,15 @@ const HAND = [
   { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand4, hand: true }
 ]
 
-/* Les runes restent en zone de runes tant qu'on ne les recycle pas ;
-   on en canalise 2 de plus chaque tour. */
-const RUNES = (count, tappedCount = 0) =>
-  [SPOTS.runeA, SPOTS.runeB, SPOTS.runeC, SPOTS.runeD, SPOTS.runeE, SPOTS.runeF].slice(0, count).map((spot, i) => ({
-    key: "rune" + i,
-    card: i % 2 ? CARDS.chaosRune : CARDS.furyRune,
-    spot,
-    tapped: i < tappedCount
+/* Zone de runes : positions fixes, clés stables pour animer chaque rune.
+   rune0 (Fureur) sera recyclée au tour 1 ; les suivantes arrivent 2 par tour. */
+const RUNE_SPOTS = [SPOTS.runeA, SPOTS.runeB, SPOTS.runeC, SPOTS.runeD, SPOTS.runeE, SPOTS.runeF]
+const runes = (list) =>
+  list.map((r, i) => ({
+    key: r.k,
+    card: r.d === "F" ? CARDS.furyRune : CARDS.chaosRune,
+    spot: RUNE_SPOTS[i],
+    tapped: !!r.t
   }))
 
 export const STEPS = [
@@ -184,7 +186,7 @@ export const STEPS = [
     text: [
       "Quatre éléments : un **deck principal** d'au moins 40 cartes (unités, sorts, équipements), un **deck de runes** de 12 runes, une **légende de champion** et 3 **champs de bataille**.",
       "La légende fixe les **domaines** du deck — ici Fureur + Chaos pour la démonstration : chaque carte du deck doit appartenir à ces domaines.",
-      "Le **champion élu** est une carte du deck mise à part : elle commence la partie visible, dans sa propre zone, jouable comme si elle était dans votre main."
+      "Le **champion élu** est une carte du deck mise à part : elle commence la partie visible, dans sa propre zone. Vous la jouerez plus tard, comme si elle était dans votre main."
     ],
     scene: {
       cards: [
@@ -241,9 +243,9 @@ export const STEPS = [
     ref: "110",
     terms: ["piocher", "mulligan", "recycler"],
     text: [
-      "Chaque joueur **pioche 4 cartes** — les vôtres sont là, faces visibles. On détermine au hasard qui commence.",
+      "Chaque joueur **pioche 4 cartes** — les vôtres sont là, faces visibles. On détermine au hasard qui commence : ce sera vous.",
       "Main décevante ? Un seul **mulligan** : mettez jusqu'à **2 cartes de côté**, piochez-en autant, puis **recyclez** celles mises de côté : elles sont placées **sous votre deck principal**.",
-      "Ici, la main permet de jouer dès les premiers tours : on garde les 4 cartes."
+      "Ici, on garde les 4 cartes."
     ],
     scene: {
       cards: board(HAND.map((c) => ({ ...c, glow: true }))),
@@ -257,51 +259,84 @@ export const STEPS = [
     ref: "315",
     terms: ["phase d'éveil", "canaliser", "piocher"],
     text: [
-      "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées. **Scores** : vous marquez pour chaque champ de bataille contrôlé.",
+      "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées. **Scores** : vous marquez pour chaque champ de bataille contrôlé — aucun pour l'instant.",
       "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles **restent en zone de runes de tour en tour** : 2 au premier tour, 4 au deuxième, 6 au troisième. (Le joueur qui commence en second en canalise 3 à son tout premier tour.)",
-      "**Pioche** : **1 carte** — suivez-la, elle glisse du deck principal vers votre main : Get Excited!."
+      "**Pioche** : **1 carte** — suivez-la, elle glisse du deck principal vers votre main : Get Excited!, le sort signature de Jinx."
     ],
     scene: {
-      cards: board([...HAND, { key: "h5", card: CARDS.spell, spot: SPOTS.hand5, hand: true, glow: true }, ...RUNES(2)]),
-      arrow: { from: { x: 92, y: 56 }, to: { x: 89, y: 86 } },
+      cards: board([
+        ...HAND,
+        { key: "h5", card: CARDS.spell, spot: SPOTS.hand5, hand: true, glow: true },
+        ...runes([
+          { k: "rune0", d: "F" },
+          { k: "rune1", d: "C" }
+        ])
+      ]),
+      arrow: { from: { x: 92, y: 54 }, to: { x: 85, y: 87 } },
       foeHand: 4,
       score: { you: 0, foe: 0 }
     }
   },
   {
     key: "energie",
-    title: "Les runes paient tout",
+    title: "Payer ses cartes : énergie et essence",
     ref: "160",
     terms: ["épuiser", "recycler", "énergie", "essence runique"],
     text: [
-      "Le coût d'une carte, en haut à gauche : un **chiffre** (à payer en **énergie**) et parfois des **symboles de domaine** (à payer en **essence runique**).",
-      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie**, et elle se redresse à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes**, comme la rune translucide à l'écran (règle 416) ; elle reviendra en jeu quand vous la canaliserez de nouveau.",
-      "Réflexe de débutant : on **épuise** pour les chiffres, on ne **recycle** que pour les symboles de domaine.",
-      "Ici vous épuisez vos 2 runes : **2 énergie** en réserve. Ce qui n'est pas dépensé se perd en fin de phase."
+      "Le coût d'une carte, en haut à gauche : un **chiffre**, à payer en **énergie**, et parfois des **symboles de domaine**, à payer en **essence runique** du bon domaine.",
+      "Chaque rune de votre zone offre deux usages. **L'épuiser** (la tourner) : **+1 énergie** — elle se redressera à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est alors glissée **sous votre deck de runes** (règle 416) et reviendra quand vous la canaliserez de nouveau.",
+      "On épuise pour les chiffres ; on ne recycle que pour les symboles de domaine.",
+      "Regardez votre main : Legion Rearguard coûte **2 énergie**. Seal of Rage coûte **0 énergie + 1 symbole Fureur**. Vous avez exactement de quoi jouer les deux."
     ],
     scene: {
       cards: board([
         ...HAND,
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand5, hand: true },
-        ...RUNES(2, 2),
-        { key: "runeGhost", card: CARDS.chaosRune, spot: { x: 9.5, y: 76.5, r: -6 }, ghost: true }
+        ...runes([
+          { k: "rune0", d: "F" },
+          { k: "rune1", d: "C" }
+        ])
       ]),
-      arrow: { from: { x: 30, y: 74 }, to: { x: 12, y: 74 } },
-      chips: { energy: 2 },
       foeHand: 4,
       score: { you: 0, foe: 0 }
     }
   },
   {
     key: "jouer",
-    title: "Jouer sa première unité",
+    title: "Tour 1 : jouer une unité",
     ref: "140",
-    terms: ["épuisé", "préparé", "phase principale"],
+    terms: ["épuisé", "préparé", "phase principale", "Accélération"],
     text: [
-      "Vos 2 énergies paient **Legion Rearguard** (coût 2) : il quitte votre main et entre dans votre **base**, **épuisé** — couché sur le côté, il ne fera rien ce tour-ci (sauf mot-clé **Accélération**).",
-      "**Seal of Rage** coûte 0 : posé aussi. Les équipements, eux, arrivent **préparés**, droits.",
-      "**Flame Chompers** coûte 3 : vos 2 runes ne produisent que 2 énergie, il attendra le tour prochain. Il sera jouable au tour suivant, quand la canalisation aura porté vos runes à 4.",
-      "Plus rien à payer ? Vous annoncez la **fin de votre tour**."
+      "Vous **épuisez vos 2 runes** : 2 énergie, le coût exact de **Legion Rearguard**. Il quitte votre main et entre dans votre **base**, **épuisé** — couché sur le côté, il ne fera rien ce tour-ci.",
+      "Son texte propose **Accélération** : payer 1 énergie + 1 Fureur de plus pour qu'il arrive **préparé**. Vous n'avez plus de quoi payer — ce sera pour une autre partie.",
+      "Les unités, équipements et sorts se jouent pendant votre **phase principale**, dans l'ordre que vous voulez, tant que vos runes peuvent payer."
+    ],
+    scene: {
+      cards: board([
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.youBaseA, tapped: true, might: true },
+        { key: "h1", card: CARDS.chompers, spot: SPOTS.hand1, hand: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.hand2, hand: true },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand3, hand: true },
+        { key: "h5", card: CARDS.spell, spot: SPOTS.hand4, hand: true },
+        ...runes([
+          { k: "rune0", d: "F", t: true },
+          { k: "rune1", d: "C", t: true }
+        ])
+      ]),
+      chips: { energy: 2 },
+      foeHand: 4,
+      score: { you: 0, foe: 0 }
+    }
+  },
+  {
+    key: "recycler",
+    title: "Tour 1 : payer une essence en recyclant",
+    ref: "416",
+    terms: ["recycler", "essence runique", "Réaction"],
+    text: [
+      "**Seal of Rage** coûte 0 énergie + **1 symbole Fureur**. Vos runes sont épuisées, mais une rune épuisée peut toujours être **recyclée**.",
+      "Vous recyclez votre **Fury Rune** : regardez-la glisser **sous le deck de runes**. Elle produit 1 essence Fureur, qui paie l'équipement. Il ne reste qu'une rune en zone.",
+      "Seal of Rage arrive **préparé** (c'est un équipement) — et lisez son texte : « Épuiser : Réaction — Ajoutez 1 Fureur. » Il produira lui-même de l'essence Fureur, à n'importe quel moment où un coût se paie. Fin de votre tour 1."
     ],
     scene: {
       cards: board([
@@ -310,8 +345,12 @@ export const STEPS = [
         { key: "h1", card: CARDS.chompers, spot: SPOTS.hand1, hand: true },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand2, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand3, hand: true },
-        ...RUNES(2, 2)
+        { key: "rune0", card: CARDS.furyRune, spot: { x: 9.5, y: 76.5, r: -6 }, ghost: true },
+        ...runes([{ k: "runePad", d: "F", t: true }]).slice(1),
+        { key: "rune1", card: CARDS.chaosRune, spot: SPOTS.runeA, tapped: true }
       ]),
+      arrow: { from: { x: 22, y: 79 }, to: { x: 12, y: 78 } },
+      chips: { essence: 1 },
       foeHand: 4,
       score: { you: 0, foe: 0 }
     }
@@ -322,9 +361,9 @@ export const STEPS = [
     ref: "301",
     terms: ["joueur du tour", "ordre des tours"],
     text: [
-      "À lui : mêmes phases, dans le même ordre. Il canalise ses runes (3 à son premier tour, puisqu'il joue en second), pioche, puis joue **Sunlit Guardian** dans **sa** base — épuisé, comme toute unité qui arrive.",
-      "Pendant **son** tour, vous ne restez pas spectateur : vos sorts **Action** et **Réaction** pourront s'inviter au bon moment (vous le verrez pendant le combat).",
-      "Les tours alternent ainsi jusqu'à ce qu'un joueur atteigne 8 points."
+      "À lui : mêmes phases, dans le même ordre. Il canalise **3 runes** (bonus du joueur qui commence en second), pioche, puis joue **Sunlit Guardian** dans **sa** base — **épuisé**, comme toute unité qui arrive.",
+      "Lisez sa carte : **Bouclier** (+1 puissance quand il défend) et **Tank** (les dégâts de combat doivent lui être attribués en premier). Un défenseur né.",
+      "Il termine son tour. Les tours alternent ainsi jusqu'à 8 points."
     ],
     scene: {
       cards: board([
@@ -334,7 +373,7 @@ export const STEPS = [
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand2, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand3, hand: true },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeBaseA, tapped: true, might: true },
-        ...RUNES(2, 2)
+        { key: "rune1", card: CARDS.chaosRune, spot: SPOTS.runeA, tapped: true }
       ]),
       foeHand: 3,
       score: { you: 0, foe: 0 }
@@ -342,13 +381,13 @@ export const STEPS = [
   },
   {
     key: "tour2",
-    title: "Tour 2 : quatre runes en jeu",
+    title: "Votre tour 2 : trois runes en jeu",
     ref: "165",
-    terms: ["canaliser", "réserve runique"],
+    terms: ["phase d'éveil", "canaliser"],
     text: [
-      "Votre tour revient : l'**éveil** redresse Rearguard et vos runes, vous canalisez 2 runes de plus — **4 en zone de runes** — et piochez.",
-      "4 runes épuisées = jusqu'à **4 énergie** : **Flame Chompers** (coût 3) entre en jeu, épuisé.",
-      "Pendant ce temps, l'adversaire a déplacé Sunlit Guardian sur **son** champ de bataille pour le tenir : il en a pris le contrôle → **conquête, 1 point pour lui**. À vous de réagir."
+      "Votre **éveil** redresse Legion Rearguard et votre rune. Vous **canalisez 2 runes** : 3 en zone de runes. Vous piochez.",
+      "3 runes épuisées = 3 énergie : **Flame Chompers** (coût 3) entre en jeu dans votre base, **épuisé**.",
+      "Votre base tient maintenant deux unités et un équipement. Fin de votre tour 2."
     ],
     scene: {
       cards: board([
@@ -357,35 +396,76 @@ export const STEPS = [
         { key: "h1", card: CARDS.chompers, spot: SPOTS.youBaseC, tapped: true, might: true },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand2, hand: true },
-        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true },
-        ...RUNES(4, 3)
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeBaseA, might: true },
+        ...runes([
+          { k: "rune1", d: "C", t: true },
+          { k: "rune2", d: "F", t: true },
+          { k: "rune3", d: "C", t: true }
+        ])
       ]),
+      chips: { energy: 3 },
+      foeHand: 3,
+      score: { you: 0, foe: 0 }
+    }
+  },
+  {
+    key: "tour2-adverse",
+    title: "Son tour 2 : il prend son champ de bataille",
+    ref: "144",
+    terms: ["déplacement standard", "conquête"],
+    text: [
+      "**Son éveil prépare Sunlit Guardian** — voilà pourquoi il ne pouvait pas bouger avant : une unité arrive épuisée et attend l'éveil suivant de son propriétaire.",
+      "Il fait son **déplacement standard** : Guardian s'épuise et marche sur le **Monastery of Hirana**, son champ de bataille. Personne n'y était : il en prend le contrôle → **conquête, 1 point pour lui**.",
+      "Au début de **son** prochain tour, ce champ lui rapportera encore 1 point d'**occupation** — si vous le laissez faire."
+    ],
+    scene: {
+      cards: board([
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.youBaseA, might: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB },
+        { key: "h1", card: CARDS.chompers, spot: SPOTS.youBaseC, tapped: true, might: true },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
+        { key: "h5", card: CARDS.spell, spot: SPOTS.hand2, hand: true },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, tapped: true, might: true },
+        ...runes([
+          { k: "rune1", d: "C" },
+          { k: "rune2", d: "F" },
+          { k: "rune3", d: "C" }
+        ])
+      ]),
+      arrow: { from: { x: 45, y: 26 }, to: { x: 40, y: 32 } },
       control: { bfFoe: "foe" },
       foeHand: 3,
-      score: { you: 0, foe: 1 }
+      score: { you: 0, foe: 1 },
+      scorePulse: true
     }
   },
   {
     key: "deplacement",
-    title: "Le déplacement standard : à l'assaut",
+    title: "Votre tour 3 : à l'assaut",
     ref: "144",
     terms: ["déplacement standard", "contesté"],
     text: [
-      "Tour 3. Vos unités sont **préparées** : le **déplacement standard**, c'est **épuiser** une unité pour aller de la base vers un champ de bataille, ou en revenir. Jamais de champ à champ (sauf mot-clé **Gank**).",
-      "Plusieurs unités peuvent partir **ensemble** vers la même destination : Rearguard et Chompers marchent sur le **Monastery of Hirana**, tenu par Sunlit Guardian.",
-      "Le champ devient **contesté** : deux joueurs y ont des unités, un **combat** va se déclencher."
+      "Éveil (tout se redresse), canalisation (**5 runes**), pioche. Au passage, votre **légende** travaille pour vous : Jinx - Loose Cannon fait piocher 1 carte au début de votre phase de départ si votre main compte 1 carte ou moins — un filet de sécurité permanent.",
+      "Vos deux unités, **préparées**, s'épuisent pour un **déplacement standard** groupé vers le Monastery of Hirana. (De la base vers un champ, ou l'inverse — jamais de champ à champ, sauf mot-clé **Gank**.)",
+      "Le champ devient **contesté** : deux joueurs y ont des unités, un **combat** se prépare."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true },
         { key: "h2", card: CARDS.rearguard, spot: SPOTS.onBfFoeB, tapped: true, might: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand2, hand: true },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true },
-        ...RUNES(4)
+        ...runes([
+          { k: "rune1", d: "C" },
+          { k: "rune2", d: "F" },
+          { k: "rune3", d: "C" },
+          { k: "rune4", d: "F" },
+          { k: "rune5", d: "C" }
+        ])
       ]),
-      arrow: { from: { x: 32, y: 59 }, to: { x: 36, y: 52 } },
+      arrow: { from: { x: 40, y: 57 }, to: { x: 38, y: 52 } },
       contested: ["bfFoe"],
       foeHand: 3,
       score: { you: 0, foe: 1 }
@@ -395,48 +475,59 @@ export const STEPS = [
     key: "confrontation",
     title: "La confrontation : le duel de sorts",
     ref: "464",
-    terms: ["attaquant", "défenseur", "chaîne", "Action", "Réaction"],
+    terms: ["attaquant", "défenseur", "chaîne", "Action"],
     text: [
-      "Vous avez contesté : vous êtes l'**attaquant**, lui le **défenseur**.",
-      "Avant les dégâts, la **confrontation** : chacun à son tour joue un sort **Action** ou **Réaction**, ou **passe**. Les sorts s'empilent dans la **chaîne** et se résolvent du dernier joué au premier.",
-      "Vous **épuisez 2 runes** (2 énergie) et jouez **Get Excited!** depuis votre main — vos runes servent à tout moment, même en pleine confrontation.",
-      "L'adversaire passe, vous passez : la confrontation se termine, place aux dégâts."
+      "Vous avez contesté : vous êtes l'**attaquant**, lui le **défenseur**. Avant les dégâts, la **confrontation** : chacun à son tour joue un sort **Action** ou **Réaction**, ou **passe** — les sorts s'empilent dans la **chaîne** et se résolvent du dernier au premier.",
+      "**Get Excited!** (Action, 2 énergie + 1 Fureur) : vous épuisez 2 runes pour l'énergie et **épuisez Seal of Rage** pour l'essence Fureur — sa Réaction produit au moment exact où un coût se paie.",
+      "Son effet : **défaussez 1 carte, infligez son coût en énergie en dégâts** à une unité du champ. Vous défaussez Jinx - Demolitionist (coût 3) : **3 dégâts** sur Sunlit Guardian. En défense, son **Bouclier** porte sa puissance à 4 : il tient, marqué de 3 dégâts.",
+      "Les deux joueurs passent : place aux dégâts de combat."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true },
         { key: "h2", card: CARDS.rearguard, spot: SPOTS.onBfFoeB, tapped: true, might: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
-        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB, tapped: true },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
         { key: "h5", card: CARDS.spell, spot: SPOTS.chain, glow: true },
-        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true },
-        ...RUNES(4, 2)
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true, dmg: 3 },
+        ...runes([
+          { k: "rune1", d: "C", t: true },
+          { k: "rune2", d: "F", t: true },
+          { k: "rune3", d: "C" },
+          { k: "rune4", d: "F" },
+          { k: "rune5", d: "C" }
+        ])
       ]),
       contested: ["bfFoe"],
       clash: true,
-      chips: { energy: 2 },
       foeHand: 3,
       score: { you: 0, foe: 1 }
     }
   },
   {
     key: "degats",
-    title: "Les dégâts : puissance contre puissance",
+    title: "Les dégâts de combat",
     ref: "465",
-    terms: ["puissance", "dégâts mortels", "attribuer"],
+    terms: ["puissance", "dégâts mortels", "attribuer", "Tank"],
     text: [
-      "Le sort résolu file à la **défausse**. Chaque camp additionne la **puissance** de ses unités sur place : vous 3 + 2 = **5**, lui **3**.",
-      "Chacun **attribue** son total aux unités adverses, une par une : des **dégâts mortels** (au moins la puissance de l'unité) avant de passer à la suivante, et jamais plus que nécessaire.",
-      "Ses 3 dégâts : 2 éliminent Legion Rearguard, le 1 restant égratigne Flame Chompers. Vos 5 écrasent Sunlit Guardian (3). Tout est infligé **simultanément**."
+      "Chaque camp additionne la **puissance** de ses unités : vous 3 + 2 = **5**. Lui : 3 + 1 de **Bouclier** = **4**.",
+      "Vous attribuez vos 5 dégâts : **Tank** oblige à viser Guardian d'abord — il porte déjà 3 dégâts, 1 de plus suffit pour des **dégâts mortels** (4 ≥ 4). Le reste lui est attribué faute d'autre cible.",
+      "Il attribue ses 4 : 2 éliminent Legion Rearguard (**mortels**), les 2 restants marquent Flame Chompers (3 de puissance : il tient). Tout est infligé **simultanément**."
     ],
     scene: {
       cards: board([
-        { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true, dmg: 1 },
+        { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true, dmg: 2 },
         { key: "h2", card: CARDS.rearguard, spot: SPOTS.onBfFoeB, tapped: true, might: true, dmg: 2, dead: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
-        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB, tapped: true },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true, dmg: 5, dead: true },
-        ...RUNES(4, 2)
+        ...runes([
+          { k: "rune1", d: "C", t: true },
+          { k: "rune2", d: "F", t: true },
+          { k: "rune3", d: "C" },
+          { k: "rune4", d: "F" },
+          { k: "rune5", d: "C" }
+        ])
       ]),
       contested: ["bfFoe"],
       foeHand: 3,
@@ -449,48 +540,63 @@ export const STEPS = [
     ref: "466",
     terms: ["nettoyage", "conquête", "soigner"],
     text: [
-      "**Nettoyage de combat** : chaque carte éliminée part dans la **défausse de son propriétaire** — Legion Rearguard et le sort résolu rejoignent la vôtre, Sunlit Guardian la sienne. Les survivants sont **soignés** : Flame Chompers repart à pleine puissance.",
+      "**Nettoyage de combat** : chaque carte éliminée part dans la **défausse de son propriétaire** — Legion Rearguard rejoint Get Excited! et Jinx - Demolitionist dans la vôtre, Sunlit Guardian part dans la sienne. Les survivants sont **soignés** : Flame Chompers repart à pleine puissance.",
       "Seul camp restant sur le champ : vous en prenez le **contrôle** → **conquête, +1 point**, immédiatement.",
-      "Nuance utile : si les **deux** camps survivent, les attaquants sont **rappelés** à leur base et le défenseur garde le contrôle — attaquer sans assez de puissance ne sert à rien."
+      "Si les **deux** camps avaient survécu, les attaquants auraient été **rappelés** à leur base et le défenseur aurait gardé le contrôle."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, tapped: true, might: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
-        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
-        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB, tapped: true },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
         { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardC },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
-        ...RUNES(4)
+        ...runes([
+          { k: "rune1", d: "C", t: true },
+          { k: "rune2", d: "F", t: true },
+          { k: "rune3", d: "C" },
+          { k: "rune4", d: "F" },
+          { k: "rune5", d: "C" }
+        ])
       ]),
       control: { bfFoe: "you" },
-      arrow: { from: { x: 48, y: 47 }, to: { x: 87, y: 74 } },
+      arrow: { from: { x: 48, y: 47 }, to: { x: 87, y: 76 } },
       foeHand: 3,
       score: { you: 1, foe: 1 },
       scorePulse: true
     }
   },
   {
-    key: "occupation",
-    title: "Le tour suivant : l'occupation paie",
-    ref: "467",
-    terms: ["occupation", "fin de tour"],
+    key: "champion-elu",
+    title: "Votre tour 4 : le champion élu entre en scène",
+    ref: "108",
+    terms: ["occupation", "zone de champion", "recycler"],
     text: [
-      "Fin de votre tour : tout le monde est soigné, les effets « pendant ce tour » expirent, la réserve runique se vide — vos runes, elles, **restent en zone de runes**.",
-      "L'adversaire joue, puis votre tour revient : à l'**étape des scores**, le champ que vous tenez toujours rapporte **+1 point d'occupation**. Tenir ses positions rapporte autant qu'attaquer.",
-      "Attention : si votre dernière unité quitte un champ (retour à la base, élimination), vous en perdez le contrôle au prochain **nettoyage** — et l'adversaire peut venir le conquérir."
+      "Début de votre tour 4 : à l'**étape des scores**, le champ que vous tenez rapporte **+1 point d'occupation**. Éveil, canalisation (**7 runes** — 6 affichées ici), pioche.",
+      "Place au **champion élu** : **Jinx - Rebel** (5 énergie + 1 symbole Chaos) se joue **depuis sa zone de champion**, exactement comme depuis votre main. Vous épuisez 5 runes et **recyclez une Chaos Rune** pour le symbole.",
+      "Elle entre en jeu **épuisée**, dans votre base. Si elle est éliminée, elle ira à la défausse comme n'importe quelle carte — la zone de champion ne sert qu'au départ."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, might: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
-        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand1, hand: true },
-        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "chosen", card: CARDS.chosen, spot: SPOTS.youBaseA, tapped: true, might: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
         { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardC },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
-        ...RUNES(6)
+        ...runes([
+          { k: "rune1", d: "C", t: true },
+          { k: "rune2", d: "F", t: true },
+          { k: "rune3", d: "C", t: true },
+          { k: "rune4", d: "F", t: true },
+          { k: "rune5", d: "C", t: true },
+          { k: "rune6", d: "F" }
+        ])
       ]),
       control: { bfFoe: "you" },
+      chips: { energy: 5, essence: 1 },
       foeHand: 3,
       score: { you: 2, foe: 1 },
       scorePulse: true
@@ -502,19 +608,28 @@ export const STEPS = [
     ref: "193",
     terms: ["score de la victoire", "conquête", "occupation", "exténuation"],
     text: [
-      "Deux routes vers 8 points. La rapide : **conquérir les 2 champs dans le même tour** — le point de la victoire par conquête n'est accordé que si vous avez marqué sur chaque champ ce tour-là (sinon, vous piochez une carte à la place). La patiente : **tenir un champ** et laisser l'**occupation**, sans restriction, vous y porter.",
+      "La rapide : **conquérir les 2 champs de bataille dans le même tour** — le point de la victoire par conquête n'est accordé que si vous avez marqué sur chaque champ ce tour-là (sinon, vous piochez une carte à la place).",
+      "La patiente : **tenir un champ** et laisser l'**occupation**, sans restriction, vous porter à 8.",
       "Cas particulier : si vous devez piocher avec un deck principal vide, vous êtes **exténué** — votre défausse est remélangée en un nouveau deck et un adversaire de votre choix gagne 1 point.",
       "Vous savez jouer. Pour chaque mécanique en détail, direction l'**aide avancée** — et le texte officiel tranche toujours."
     ],
     scene: {
       cards: board([
         { key: "h1", card: CARDS.chompers, spot: SPOTS.onBfFoeA, might: true },
-        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.onBfYouA, might: true },
-        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseC },
-        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardA },
+        { key: "chosen", card: CARDS.chosen, spot: SPOTS.onBfYouA, might: true },
+        { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB },
+        { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
         { key: "h5", card: CARDS.spell, spot: SPOTS.discardB },
+        { key: "h2", card: CARDS.rearguard, spot: SPOTS.discardC },
         { key: "def", card: CARDS.foeUnit, spot: SPOTS.foeDiscardA },
-        ...RUNES(6)
+        ...runes([
+          { k: "rune1", d: "C" },
+          { k: "rune2", d: "F" },
+          { k: "rune3", d: "C" },
+          { k: "rune4", d: "F" },
+          { k: "rune5", d: "C" },
+          { k: "rune6", d: "F" }
+        ])
       ]),
       control: { bfFoe: "you", bfYou: "you" },
       foeHand: 3,
