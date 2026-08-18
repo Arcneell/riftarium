@@ -2035,6 +2035,31 @@ footer {
   position: sticky;
   top: 86px;
 }
+.guide-fullscreen {
+  margin-bottom: 10px;
+}
+.guide-layout.full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  margin: 0;
+  max-width: none;
+  padding: clamp(16px, 3vw, 48px);
+  overflow: auto;
+  background: radial-gradient(90% 60% at 50% 0%, rgba(11, 143, 132, 0.06), transparent 60%), var(--paper);
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr);
+  align-items: center;
+}
+.guide-layout.full .guide-board {
+  position: static;
+}
+.guide-layout.full .tb {
+  max-height: calc(100vh - 140px);
+  aspect-ratio: 16 / 10.5;
+  margin: 0 auto;
+  max-width: calc((100vh - 140px) * 16 / 10.5);
+  width: 100%;
+}
 .tb {
   position: relative;
   aspect-ratio: 16 / 10.5;

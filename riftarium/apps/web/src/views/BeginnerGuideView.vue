@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { CARDS, STEPS } from "../rules/guide.js"
 
@@ -31,7 +31,27 @@ function goTo(index) {
 function onKeydown(event) {
   if (event.key === "ArrowRight") goTo(stepIndex.value + 1)
   if (event.key === "ArrowLeft") goTo(stepIndex.value - 1)
+  if (event.key === "Escape" && fullscreen.value) toggleFullscreen()
 }
+
+/* Plein écran : API Fullscreen quand elle existe, sinon simple superposition. */
+const fullscreen = ref(false)
+const layoutEl = ref(null)
+
+function toggleFullscreen() {
+  fullscreen.value = !fullscreen.value
+  if (fullscreen.value) {
+    layoutEl.value?.requestFullscreen?.().catch(() => {})
+    layoutEl.value?.focus()
+  } else if (document.fullscreenElement) {
+    document.exitFullscreen?.()
+  }
+}
+const syncFullscreen = () => {
+  if (!document.fullscreenElement) fullscreen.value = false
+}
+onMounted(() => document.addEventListener("fullscreenchange", syncFullscreen))
+onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFullscreen))
 </script>
 
 <template>
@@ -47,8 +67,23 @@ function onKeydown(event) {
   </div>
 
   <section style="padding-top: 36px">
-    <div class="wrap guide-layout" @keydown="onKeydown" tabindex="0" aria-label="Guide interactif">
+    <div
+      ref="layoutEl"
+      class="wrap guide-layout"
+      :class="{ full: fullscreen }"
+      @keydown="onKeydown"
+      tabindex="0"
+      aria-label="Guide interactif"
+    >
       <div class="guide-board" v-reveal>
+        <button
+          class="btn btn-ghost btn-sm guide-fullscreen"
+          type="button"
+          :aria-pressed="fullscreen"
+          @click="toggleFullscreen"
+        >
+          {{ fullscreen ? "✕ Quitter le plein écran" : "⛶ Plein écran" }}
+        </button>
         <div class="tb" :class="{ bare: scene.hideBattlefields }">
           <!-- Bandeaux de base -->
           <template v-if="!scene.hideBattlefields">

@@ -18,7 +18,11 @@ export const router = createRouter({
     { path: "/communaute", component: () => import("./views/CommunityView.vue") },
     { path: "/connexion", component: () => import("./views/AuthView.vue") }
   ],
-  scrollBehavior: () => ({ top: 0 })
+  /* Ne remonte pas quand seule la query change (étapes du guide, filtres). */
+  scrollBehavior: (to, from, savedPosition) => {
+    if (to.path === from.path) return false
+    return savedPosition || { top: 0 }
+  }
 })
 
 router.beforeEach((to) => {

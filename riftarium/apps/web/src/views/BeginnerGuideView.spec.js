@@ -61,6 +61,16 @@ describe("BeginnerGuideView", () => {
     expect(wrapper.findAll(".tb-gem")).toHaveLength(16)
   })
 
+  it("bascule le mode plein écran", async () => {
+    const { wrapper } = await mountGuide()
+    const button = wrapper.find(".guide-fullscreen")
+    expect(button.text()).toContain("Plein écran")
+    await button.trigger("click")
+    expect(wrapper.find(".guide-layout").classes()).toContain("full")
+    await button.trigger("click")
+    expect(wrapper.find(".guide-layout").classes()).not.toContain("full")
+  })
+
   it("ouvre directement une étape via ?etape=", async () => {
     const router = createRouter({
       history: createMemoryHistory(),
