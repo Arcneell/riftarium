@@ -69,7 +69,7 @@ const MODULES = [
     icon: "code",
     chip: "var(--calm)",
     title: "Fait par un joueur",
-    text: "Gratuit, open source, sans pub ni boutique. Les retours et les idées sont bienvenus.",
+    text: "Gratuit, au code source accessible, sans pub ni boutique. Les retours et les idées sont bienvenus.",
     href: "https://github.com/Arcneell/riftarium",
     go: "Voir sur GitHub"
   }

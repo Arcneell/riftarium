@@ -6,33 +6,25 @@ et partage de decks avec likes et modération automatique.
 
 **Projet fan-made à but non lucratif, non affilié à Riot Games.**
 
-## Lancer
+## Licence
 
-```bash
-docker compose up --build -d
-```
+Le code source est **accessible publiquement**, mais ce projet **n'est pas open
+source** : il est publié à des fins de transparence et de consultation uniquement.
+Toute copie, reproduction, modification, redistribution ou réutilisation du code,
+en tout ou partie, est interdite sans autorisation écrite préalable de l'auteur.
+Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 
-- Site : <http://localhost:8888> (changer avec `PORT=3000 docker compose up`)
-- API : <http://localhost:8889/docs> (OpenAPI)
+## Fonctionnalités
 
-> Ports par défaut 8888/8889 : sur Windows, les plages 7236-8035 et 8054-8553 sont
-> souvent réservées par Hyper-V (`netsh interface ipv4 show excludedportrange protocol=tcp`).
-
-Au premier démarrage, l'API synchronise automatiquement les ~1 300 cartes des 6 sets
-depuis l'API communautaire [Riftcodex](https://api.riftcodex.com/docs) vers PostgreSQL
-(~30 s). Resynchroniser : `curl -X POST http://localhost:8888/api/admin/sync`.
-
-## Développer (rechargement à chaud, sans rebuild)
-
-```bash
-docker compose -f compose.yaml -f compose.dev.yaml up -d
-```
-
-- Front : Vite avec HMR sur <http://localhost:8888> — toute modification dans
-  `apps/web/src` s'affiche immédiatement.
-- API : `uvicorn --reload` — toute modification dans `apps/api/app` redémarre le serveur.
-- Le code est monté en volume ; on ne rebuild une image que si `package.json`,
-  `requirements.txt` ou un Dockerfile change (`docker compose -f compose.yaml -f compose.dev.yaml up -d --build`).
+| Fonction | État |
+| --- | --- |
+| Cartothèque (recherche, filtres set/domaine/type, fiche carte) | ✅ |
+| Comptes (inscription, connexion, JWT) | ✅ |
+| Collection (quantités, état, langue) | ✅ |
+| Deck builder + validation règles tournoi / mode libre | ✅ |
+| Decks publics, likes | ✅ |
+| Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
+| Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 |
 
 ## Architecture
 
@@ -58,27 +50,6 @@ redis      Cache des lectures publiques (cartes, sets) + garde-fous
   chargement paresseux. Elles ne sont volontairement pas rehébergées : la politique
   « Jargon juridique » interdit de redistribuer les visuels.
 
-| Fonction | État |
-| --- | --- |
-| Cartothèque (recherche, filtres set/domaine/type, fiche carte) | ✅ |
-| Comptes (inscription, connexion, JWT) | ✅ |
-| Collection (quantités, état, langue) | ✅ |
-| Deck builder + validation règles tournoi / mode libre | ✅ |
-| Decks publics, likes | ✅ |
-| Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
-| Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 voir [REFONTE.md](../REFONTE.md) |
-
-## Tests
-
-Chaque PR doit passer la CI (API, front, `docker compose config`). En local :
-
-```bash
-docker compose run --rm api pytest -q       # tests API (SQLite en mémoire)
-
-# depuis apps/web, après npm ci
-npm run check                               # lint, formatage, Vitest, build
-```
-
 ## Sources de données
 
 - Cartes : [API Riftcodex](https://api.riftcodex.com/docs) (communautaire, gratuite) —
@@ -91,5 +62,6 @@ npm run check                               # lint, formatage, Vitest, build
 Riftarium a été créé en vertu de la politique juridique de Riot Games intitulée
 « Jargon juridique » relative à l'utilisation d'actifs de Riot Games. Riot Games ne
 soutient ni ne sponsorise ce projet. Riftbound, League of Legends et tous les visuels
-et textes de cartes sont © Riot Games, Inc. Le code de Riftarium est sous licence MIT ;
-la licence ne couvre aucun actif Riot.
+et textes de cartes sont © Riot Games, Inc. Le code de Riftarium est propriétaire,
+publié en source accessible (voir [LICENSE](../LICENSE)) ; la licence ne couvre
+aucun actif Riot.
