@@ -1785,6 +1785,11 @@ footer {
 .footer-contact {
   margin-top: 14px;
 }
+/* Lien de soutien (Ko-fi) : discret mais repérable. */
+.footer-support {
+  color: var(--gold-deep);
+  font-weight: 600;
+}
 .footer-in > p {
   margin-bottom: 8px;
   max-width: 100ch;

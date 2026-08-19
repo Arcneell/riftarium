@@ -131,6 +131,11 @@ async function logout() {
             <li>
               <a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a>
             </li>
+            <li>
+              <a href="https://ko-fi.com/arcneell" target="_blank" rel="noopener" class="footer-support"
+                >☕ Soutenir le projet (Ko-fi)</a
+              >
+            </li>
           </ul>
         </div>
         <div>

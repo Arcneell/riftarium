@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue 3" />
   <img src="https://img.shields.io/badge/postgresql-16-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
   <img src="https://img.shields.io/badge/tests-CI-55b368?style=flat-square" alt="Tests CI" />
+  <a href="https://ko-fi.com/arcneell"><img src="https://img.shields.io/badge/soutenir-Ko--fi-ff5e5b?style=flat-square&logo=kofi&logoColor=white" alt="Soutenir sur Ko-fi" /></a>
 </p>
 
 <p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games.</em></p>
@@ -38,7 +39,9 @@ Voir [LICENSE](LICENSE).
 | **Deck builder** | Validation des règles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou mode libre |
 | **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
 | **Communauté** | Decks publics en boîtes, likes, vues uniques, filtres (légende, domaine, format, popularité) |
+| **Comptes** | Sessions par cookie HttpOnly, vérification d'adresse e-mail, réinitialisation de mot de passe, export RGPD |
 | **Modération** | Chaque contenu publié passe par un filtre automatique avant mise en ligne ; le reste part en file de revue |
+| **Mobile** | Interface entièrement utilisable sur téléphone (règles lisibles, deck builder tactile) |
 
 ## Architecture
 
@@ -76,11 +79,19 @@ assets/             Identité visuelle (logo SVG)
 ## Qualité
 
 Chaque pull request est bloquée tant que la CI GitHub n'est pas verte :
-lint et formatage (ruff, ESLint, Prettier), tests API (pytest), tests front
-(Vitest), build Vite et validation de la configuration Docker.
+lint et formatage (ruff, ESLint, Prettier), tests API (pytest, couverture > 95 %),
+tests front (Vitest), audit des dépendances (pip-audit, npm audit), build des
+images Docker et validation de la configuration Compose.
 
-Un merge dans `main` relance cette CI, puis déploie sur le VPS (SSH +
-`docker compose`). Détail : [riftarium/README.md](riftarium/README.md#cd-depuis-main).
+- **Déploiement** : un merge dans `main` relance la CI puis déploie sur le VPS,
+  avec sauvegarde de la base avant chaque mise en production et retour automatique
+  à la version précédente si le contrôle de santé échoue.
+  Détail : [riftarium/README.md](riftarium/README.md#cd-depuis-main).
+- **Schéma de base** : versionné par migrations Alembic, appliquées au démarrage.
+- **Dépendances** : Dependabot hebdomadaire ; les mises à jour mineures sont
+  fusionnées automatiquement quand la CI passe, les majeures restent revues à la main.
+- **Accessibilité & SEO** : Lighthouse 100/100 sur les pages types (contrastes,
+  hiérarchie de titres, liens crawlables, sitemap).
 
 ## Feuille de route
 
@@ -89,6 +100,18 @@ Un merge dans `main` relance cette CI, puis déploie sur le VPS (SSH +
 - [ ] Estimation des prix via l'API Cardmarket
 - [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours)
 - [ ] Fil communautaire complet : pulls, résultats de tournoi, profils, commentaires
+
+## Soutenir le projet
+
+Riftarium est gratuit, sans publicité et sans mesure d'audience — mais
+l'hébergement (VPS, domaine, e-mails), lui, n'est pas gratuit. Si le site vous
+est utile et que vous voulez contribuer aux frais :
+
+<p>
+  <a href="https://ko-fi.com/arcneell">
+    <img src="https://img.shields.io/badge/☕_M'offrir_un_café_sur_Ko--fi-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white" alt="Soutenir sur Ko-fi" />
+  </a>
+</p>
 
 ## Contribuer
 
