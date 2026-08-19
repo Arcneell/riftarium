@@ -17,7 +17,15 @@ describe("applySeo", () => {
     expect(document.head.querySelector('meta[name="description"]').content).toBe("Toutes les cartes.")
     expect(document.head.querySelector('link[rel="canonical"]').href).toMatch(/\/cartes$/)
     expect(document.head.querySelector('meta[property="og:title"]').content).toContain("Cartes Riftbound")
-    expect(document.head.querySelector('meta[name="robots"]').content).toBe("index, follow")
+  })
+
+  it("marque les pages publiques en noindex pendant la bêta fermée", () => {
+    applySeo({
+      title: "Cartes Riftbound",
+      description: "Toutes les cartes.",
+      path: "/cartes"
+    })
+    expect(document.head.querySelector('meta[name="robots"]').content).toBe("noindex, nofollow")
   })
 
   it("marque les pages privées en noindex", () => {
