@@ -1,4 +1,4 @@
-import { DOMAINS } from "./api.js"
+import { DOMAINS, RARITIES, TYPES } from "./api.js"
 
 /* Glyphes officiels Riot : les noms de fichiers reprennent exactement les shortcodes `:rb_…:`. */
 const GLYPH_BASE = "https://assetcdn.rgpub.io/public/live/riot-shared/player-experiences/riot-glyphs/rb/latest"
@@ -94,6 +94,26 @@ export function domainFilterOptions() {
       glyph: glyphUrl(`rune_${DOMAIN_RUNE[value]}`),
       glyphKind: "rune"
     }))
+}
+
+/* Coûts d'énergie proposés dans les filtres (« 7+ » regroupe tout le haut de courbe). */
+export const ENERGY_COSTS = ["0", "1", "2", "3", "4", "5", "6", "7+"]
+
+export function energyFilterOptions() {
+  return ENERGY_COSTS.map((cost) => ({
+    value: cost,
+    label: cost === "7+" ? "7 et plus" : String(cost),
+    glyph: glyphUrl(`energy_${cost === "7+" ? "7" : cost}`),
+    glyphKind: "energy"
+  }))
+}
+
+export function typeFilterOptions() {
+  return Object.entries(TYPES).map(([value, label]) => ({ value, label }))
+}
+
+export function rarityFilterOptions() {
+  return Object.entries(RARITIES).map(([value, label]) => ({ value, label }))
 }
 
 export function powerRuneGlyphs(card) {
