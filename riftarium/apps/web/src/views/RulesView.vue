@@ -20,6 +20,17 @@ let searchIndex = []
 let locate = new Map()
 let searchTimer = null
 
+/* --- sommaire repliable sur téléphone (aligné sur la media query CSS ≤760) --- */
+const mobileTocQuery =
+  typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 760px)") : null
+const isMobileToc = ref(Boolean(mobileTocQuery?.matches))
+const tocOpen = ref(!isMobileToc.value)
+function onMobileTocChange(event) {
+  isMobileToc.value = event.matches
+  /* Retour sur desktop : le sommaire redevient toujours visible. */
+  if (!event.matches) tocOpen.value = true
+}
+
 /* --- utilitaires du lecteur de règles --- */
 const normalize = (value) =>
   value.replace(/./gu, (char) => {
@@ -100,6 +111,12 @@ function go(docKey, section, rule = null) {
     requestAnimationFrame(() => {
       document.getElementById(`r-${rule}`)?.scrollIntoView({ block: "center", behavior: "smooth" })
     })
+  } else if (isMobileToc.value) {
+    /* Sommaire empilé (mobile) : on replie et on amène le lecteur sur le texte, pas en haut de page. */
+    tocOpen.value = false
+    requestAnimationFrame(() => {
+      document.querySelector(".rules-main")?.scrollIntoView?.({ block: "start", behavior: "smooth" })
+    })
   } else {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -161,9 +178,13 @@ function toggleChapter(chapterId) {
   openChapters.value = new Set(openChapters.value)
 }
 
-onBeforeUnmount(() => clearTimeout(searchTimer))
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  mobileTocQuery?.removeEventListener?.("change", onMobileTocChange)
+})
 
 onMounted(async () => {
+  mobileTocQuery?.addEventListener?.("change", onMobileTocChange)
   try {
     const response = await fetch("/data/rules-fr.json")
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -236,7 +257,17 @@ onMounted(async () => {
       </p>
 
       <div class="rules-layout">
-        <aside class="rules-toc">
+        <!-- Visible uniquement sur téléphone (CSS) : replie le sommaire empilé -->
+        <button
+          type="button"
+          class="btn btn-ghost rules-toc-toggle"
+          :aria-expanded="tocOpen"
+          aria-controls="rules-toc"
+          @click="tocOpen = !tocOpen"
+        >
+          {{ tocOpen ? "Masquer le sommaire ▴" : "Sommaire ▾" }}
+        </button>
+        <aside id="rules-toc" class="rules-toc" :class="{ folded: !tocOpen }">
           <p class="muted mono" style="font-size: 0.7rem; margin-bottom: 12px">
             {{ currentDoc.subtitle }}<br />Mis à jour le {{ currentDoc.updated }} ·
             {{ currentDoc.ruleCount }} règles<br />
@@ -281,7 +312,7 @@ onMounted(async () => {
             class="rule"
             :class="{ target: entry.id === ruleId }"
             :id="`r-${entry.id}`"
-            :style="{ marginLeft: Math.min(entry.depth, 4) * 22 + 'px' }"
+            :style="{ '--indent': Math.min(entry.depth, 4) }"
           >
             <span class="rule-num mono">{{ entry.number }}</span>
             <div class="rule-body">

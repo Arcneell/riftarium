@@ -2112,6 +2112,8 @@ footer {
   padding: 14px 16px;
   border-radius: var(--r-sm);
   margin-bottom: 4px;
+  /* Indentation par profondeur (--indent posé par la vue) : identique à l'ancien marginLeft inline. */
+  margin-left: calc(var(--indent, 0) * 22px);
 }
 .rule:hover {
   background: rgba(253, 250, 242, 0.8);
@@ -2912,7 +2914,11 @@ footer {
   animation: preview-in 0.25s ease;
 }
 .tb-zoom img {
-  height: 86%;
+  /* Contenue dans l'écran : mêmes dimensions qu'avant tant que l'image tient (max-height = ancien height). */
+  max-width: 92vw;
+  height: auto;
+  max-height: 86%;
+  object-fit: contain;
   border-radius: 4.5%;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
@@ -3203,6 +3209,8 @@ footer {
   font-size: 0.88rem;
   line-height: 1.6;
   margin-bottom: 8px;
+  /* Indentation par profondeur (--indent posé par la vue) : identique à l'ancien marginLeft inline. */
+  margin-left: calc(var(--indent, 0) * 16px);
 }
 .topic-rule-num {
   color: var(--gold-deep);
@@ -3259,9 +3267,11 @@ footer {
   }
   .topic-row {
     grid-template-columns: 1fr auto;
+    gap: 4px 18px;
   }
+  /* Le résumé reste lisible : il passe en seconde ligne au lieu de disparaître. */
   .topic-row .topic-summary {
-    display: none;
+    grid-column: 1 / -1;
   }
 }
 
@@ -4780,5 +4790,213 @@ button.deck-box-stat:hover,
   }
   .profile-hero {
     align-items: flex-start;
+  }
+}
+
+/* ============================================================
+   Ajustements mobile & tactile (audit responsive)
+   Le rendu desktop (pointeur précis, >760 px) reste inchangé :
+   tout passe par des media queries dédiées. Seule exception :
+   les éléments ci-dessous, nouveaux et masqués hors mobile.
+   ============================================================ */
+
+/* Nouveaux contrôles réservés au mobile/tactile : inertes sur desktop. */
+.rules-toc-toggle {
+  display: none;
+}
+.gcard-info {
+  display: none;
+}
+
+/* ---------- Tactile (hover: none) : équivalents des interactions au survol ---------- */
+@media (hover: none) {
+  /* Deck builder : les actions −/+ n'ont pas de survol, elles restent visibles et assez grandes. */
+  .row-actions {
+    display: flex;
+  }
+  .row-actions button {
+    width: 34px;
+    height: 34px;
+  }
+  .deck-row {
+    height: auto;
+    min-height: 44px;
+    padding: 4px 10px;
+  }
+  .deck-hero-remove {
+    opacity: 1;
+  }
+  /* Accès à la fiche carte sans survol : petit bouton « ℹ » en coin de tuile (cible 32 px). */
+  .gcard-info {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-full);
+    background: rgba(253, 250, 242, 0.92);
+    border: 1px solid var(--line-strong);
+    color: var(--ink-strong);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+/* ---------- Tactile ou petit écran : cibles élargies pour les pastilles de navigation ---------- */
+@media (hover: none), (max-width: 760px) {
+  .demo-dot,
+  .guide-dot {
+    position: relative;
+    width: 24px;
+    height: 24px;
+  }
+  /* Zone tactile ~40 px sans grossir davantage le visuel. */
+  .demo-dot::after,
+  .guide-dot::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+  }
+  .demo-dots {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+/* ---------- Tablette / téléphone (≤760) : compléments ---------- */
+@media (max-width: 760px) {
+  /* Règles : sommaire repliable au-dessus du texte. */
+  .rules-toc-toggle {
+    display: inline-flex;
+  }
+  .rules-toc.folded {
+    display: none;
+  }
+  /* Zoom de carte du guide : sort du plateau (trop petit) et occupe l'écran. */
+  .tb .tb-zoom {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+  }
+  /* Aide avancée : les cartes d'exemple avant le long texte officiel. */
+  .topic-side {
+    order: -1;
+  }
+  /* Collection : la barre d'actions se cale sous le header sticky (~67 px). */
+  .bulk-bar {
+    top: 76px;
+  }
+  /* Barres d'adresse mobiles : dvh au lieu de vh (le desktop garde vh). */
+  .deck-scroll {
+    max-height: 46dvh;
+  }
+  .guide-layout.full .tb {
+    max-height: calc(100dvh - 130px);
+    max-width: calc((100dvh - 130px) * 16 / 12);
+  }
+}
+
+/* ---------- Téléphone (≤560) : densité et lisibilité ---------- */
+@media (max-width: 560px) {
+  /* Densité globale : marges et sections plus compactes. */
+  .wrap {
+    padding: 0 16px;
+  }
+  section {
+    padding: 48px 0;
+  }
+  .page-banner {
+    min-height: 0;
+    padding: 48px 0 64px;
+  }
+
+  /* Lecteur de règles : rangées empilées, indentation resserrée signalée par un filet. */
+  .rule {
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 10px;
+    margin-left: calc(var(--indent, 0) * 6px);
+    border-left: 2px solid var(--line);
+  }
+  .rule-num {
+    min-width: 0;
+    padding-top: 0;
+  }
+  .rules-nav .btn {
+    height: auto;
+    min-height: 44px;
+    white-space: normal;
+    flex: 1 1 100%;
+  }
+  .rules-hits {
+    max-height: 50vh;
+  }
+
+  /* Modales : boutons qui passent à la ligne, tableau qui défile, hauteur en dvh. */
+  .modal {
+    max-height: min(84dvh, 900px);
+  }
+  .modal-body {
+    overflow-x: auto;
+  }
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+  .modal-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  /* Mini-scènes de l'aide avancée : scène plus haute, pièces plus petites. */
+  .demo-stage {
+    aspect-ratio: 4 / 3;
+  }
+  .demo-item.unit {
+    width: 34px;
+    height: 34px;
+  }
+  .demo-unit-n {
+    font-size: 0.95rem;
+  }
+  .demo-item.card {
+    width: 38px;
+    height: 53px;
+  }
+  .demo-item.label {
+    white-space: normal;
+    max-width: 46vw;
+    text-align: center;
+  }
+
+  /* Filtres : le panneau déroulant devient une feuille ancrée en bas de l'écran. */
+  .fsel-pop {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+    max-height: min(46dvh, 420px);
+    z-index: 60;
+  }
+
+  /* Deck builder : compteurs sur 2 colonnes. */
+  .deck-meters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Guide du débutant : le plateau garde ~560 px et défile horizontalement (contenu intact). */
+  .tb-scroller {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tb-scroller .tb {
+    min-width: 560px;
+  }
+  .guide-copy {
+    min-height: 0;
   }
 }

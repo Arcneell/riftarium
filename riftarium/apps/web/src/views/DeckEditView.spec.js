@@ -233,6 +233,21 @@ describe("DeckEditView", () => {
     wrapper.unmount()
   })
 
+  it("tactile : le bouton « ℹ » ouvre la fiche de la carte sans l'ajouter au deck", async () => {
+    const { wrapper, router } = await mountView()
+    await tile(wrapper, "Légende Fury").trigger("click")
+
+    const info = tile(wrapper, "Phénix").get(".gcard-info")
+    expect(info.attributes("aria-label")).toContain("Voir la fiche")
+
+    await info.trigger("click")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/cartes/u1")
+    // le clic ne remonte pas jusqu'à la tuile : la carte n'est pas ajoutée
+    expect(wrapper.findAll(".deck-row")).toHaveLength(0)
+    wrapper.unmount()
+  })
+
   it("validation, coût, description et cartes manquantes sont sur la page, pas dans la zone de dépôt", async () => {
     const { wrapper } = await mountView()
     const overview = wrapper.get(".dbuilder-overview")

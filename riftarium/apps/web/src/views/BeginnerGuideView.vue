@@ -96,141 +96,144 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
           </button>
         </div>
 
-        <div class="tb">
-          <template v-if="!scene.bare">
-            <!-- Bases (la vôtre en bas, la sienne en miroir) -->
-            <div class="tb-strip foe"><span>Base adverse</span></div>
-            <div class="tb-strip you"><span>Votre base</span></div>
-            <div class="tb-slot" :style="{ left: SPOTS.discard.x + '%', top: SPOTS.discard.y + '%' }">
-              <span>Défausse</span>
-            </div>
-            <div class="tb-slot" :style="{ left: SPOTS.foeDiscard.x + '%', top: SPOTS.foeDiscard.y + '%' }">
-              <span>Sa défausse</span>
-            </div>
-            <div class="tb-runezone"><span>Runes</span></div>
-            <div class="tb-handzone"><span>Votre main</span></div>
+        <!-- Sur téléphone (CSS ≤560), le plateau garde sa largeur et défile horizontalement -->
+        <div class="tb-scroller">
+          <div class="tb">
+            <template v-if="!scene.bare">
+              <!-- Bases (la vôtre en bas, la sienne en miroir) -->
+              <div class="tb-strip foe"><span>Base adverse</span></div>
+              <div class="tb-strip you"><span>Votre base</span></div>
+              <div class="tb-slot" :style="{ left: SPOTS.discard.x + '%', top: SPOTS.discard.y + '%' }">
+                <span>Défausse</span>
+              </div>
+              <div class="tb-slot" :style="{ left: SPOTS.foeDiscard.x + '%', top: SPOTS.foeDiscard.y + '%' }">
+                <span>Sa défausse</span>
+              </div>
+              <div class="tb-runezone"><span>Runes</span></div>
+              <div class="tb-handzone"><span>Votre main</span></div>
 
-            <!-- Champs de bataille : 2 en duel, un présenté par chaque joueur -->
-            <div
-              v-for="bf in ['bfFoe', 'bfYou']"
-              :key="bf"
-              class="tb-bf"
-              :class="{
-                contested: contested(bf),
-                controlled: controller(bf) === 'you',
-                'controlled-foe': controller(bf) === 'foe'
-              }"
-              :style="{ left: SPOTS[bf].x + '%', top: SPOTS[bf].y + '%' }"
-            >
-              <img :src="CARDS[bf].img" :alt="CARDS[bf].name" loading="lazy" />
-              <span class="tb-bf-name mono">{{ bf === "bfFoe" ? "Champ adverse" : "Votre champ" }}</span>
-              <span v-if="contested(bf)" class="tb-bf-flag">Contesté</span>
-              <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">À vous</span>
-              <span v-else-if="controller(bf) === 'foe'" class="tb-bf-flag">À lui</span>
-            </div>
-
-            <!-- Main adverse : dos de cartes en haut -->
-            <div v-if="scene.foeHand" class="tb-foehand" aria-label="Main adverse">
-              <span v-for="i in scene.foeHand" :key="i" class="tb-back small"></span>
-            </div>
-
-            <!-- Score : pistes verticales de 8 gemmes -->
-            <div class="tb-score you" aria-label="Vos points">
-              <i class="mono">Vous</i>
-              <span
-                v-for="i in 8"
-                :key="i"
-                class="tb-gem"
-                :class="{ filled: i <= scene.score.you, pulse: scene.scorePulse && i === scene.score.you }"
-              ></span>
-            </div>
-            <div class="tb-score foe" aria-label="Points adverses">
-              <i class="mono">Adversaire</i>
-              <span v-for="i in 8" :key="i" class="tb-gem foe" :class="{ filled: i <= scene.score.foe }"></span>
-            </div>
-          </template>
-
-          <!-- Flèche (pioche ou déplacement) -->
-          <svg v-if="arrowPath" class="tb-arrows" viewBox="0 0 160 95" aria-hidden="true">
-            <defs>
-              <marker
-                id="tb-head"
-                viewBox="0 0 8 8"
-                refX="6.4"
-                refY="4"
-                markerWidth="3.4"
-                markerHeight="3.4"
-                orient="auto"
+              <!-- Champs de bataille : 2 en duel, un présenté par chaque joueur -->
+              <div
+                v-for="bf in ['bfFoe', 'bfYou']"
+                :key="bf"
+                class="tb-bf"
+                :class="{
+                  contested: contested(bf),
+                  controlled: controller(bf) === 'you',
+                  'controlled-foe': controller(bf) === 'foe'
+                }"
+                :style="{ left: SPOTS[bf].x + '%', top: SPOTS[bf].y + '%' }"
               >
-                <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--hex)" />
-              </marker>
-            </defs>
-            <path class="tb-move halo" :d="arrowPath" />
-            <path class="tb-move" :d="arrowPath" marker-end="url(#tb-head)" />
-          </svg>
+                <img :src="CARDS[bf].img" :alt="CARDS[bf].name" loading="lazy" />
+                <span class="tb-bf-name mono">{{ bf === "bfFoe" ? "Champ adverse" : "Votre champ" }}</span>
+                <span v-if="contested(bf)" class="tb-bf-flag">Contesté</span>
+                <span v-else-if="controller(bf) === 'you'" class="tb-bf-flag ok">À vous</span>
+                <span v-else-if="controller(bf) === 'foe'" class="tb-bf-flag">À lui</span>
+              </div>
 
-          <!-- Combat en cours -->
-          <span
-            v-if="scene.clash"
-            class="tb-clash"
-            :style="{ left: SPOTS.bfFoe.x + '%', top: SPOTS.bfFoe.y - 24 + '%' }"
-            aria-hidden="true"
-            >⚔</span
-          >
+              <!-- Main adverse : dos de cartes en haut -->
+              <div v-if="scene.foeHand" class="tb-foehand" aria-label="Main adverse">
+                <span v-for="i in scene.foeHand" :key="i" class="tb-back small"></span>
+              </div>
 
-          <!-- Cartes -->
-          <TransitionGroup name="tb">
-            <div
-              v-for="placed in scene.cards"
-              :key="placed.key"
-              class="tb-card"
-              @click="!placed.facedown && (zoomCard = placed.card)"
-              :class="{
-                tapped: placed.tapped,
-                dead: placed.dead,
-                wide: placed.wide,
-                glow: placed.glow,
-                ghost: placed.ghost,
-                inhand: placed.hand,
-                clickable: !placed.facedown
-              }"
-              :style="{
-                left: placed.spot.x + '%',
-                top: placed.spot.y + '%',
-                '--r': (placed.spot.r ?? 0) + 'deg'
-              }"
-            >
-              <span v-if="placed.facedown" class="tb-back" :title="placed.label"></span>
-              <img v-else :src="placed.card.img" :alt="placed.card.name" loading="lazy" />
-              <span v-if="placed.might && placed.card.might" class="tb-might">{{ placed.card.might }}</span>
-              <span v-if="placed.dmg" class="tb-dmg">−{{ placed.dmg }}</span>
-              <span v-if="placed.label" class="tb-slot-label mono">{{ placed.label }}</span>
-            </div>
-          </TransitionGroup>
+              <!-- Score : pistes verticales de 8 gemmes -->
+              <div class="tb-score you" aria-label="Vos points">
+                <i class="mono">Vous</i>
+                <span
+                  v-for="i in 8"
+                  :key="i"
+                  class="tb-gem"
+                  :class="{ filled: i <= scene.score.you, pulse: scene.scorePulse && i === scene.score.you }"
+                ></span>
+              </div>
+              <div class="tb-score foe" aria-label="Points adverses">
+                <i class="mono">Adversaire</i>
+                <span v-for="i in 8" :key="i" class="tb-gem foe" :class="{ filled: i <= scene.score.foe }"></span>
+              </div>
+            </template>
 
-          <!-- Gros plan annoté : lire une carte -->
-          <div v-if="scene.focus" class="tb-focus" @click="zoomCard = scene.focus.card">
-            <img :src="zoomUrl(scene.focus.card)" :alt="scene.focus.card.name" />
+            <!-- Flèche (pioche ou déplacement) -->
+            <svg v-if="arrowPath" class="tb-arrows" viewBox="0 0 160 95" aria-hidden="true">
+              <defs>
+                <marker
+                  id="tb-head"
+                  viewBox="0 0 8 8"
+                  refX="6.4"
+                  refY="4"
+                  markerWidth="3.4"
+                  markerHeight="3.4"
+                  orient="auto"
+                >
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--hex)" />
+                </marker>
+              </defs>
+              <path class="tb-move halo" :d="arrowPath" />
+              <path class="tb-move" :d="arrowPath" marker-end="url(#tb-head)" />
+            </svg>
+
+            <!-- Combat en cours -->
             <span
-              v-for="note in scene.focus.notes"
-              :key="note.n"
-              class="tb-focus-note"
-              :style="{ left: note.x + '%', top: note.y + '%' }"
+              v-if="scene.clash"
+              class="tb-clash"
+              :style="{ left: SPOTS.bfFoe.x + '%', top: SPOTS.bfFoe.y - 24 + '%' }"
+              aria-hidden="true"
+              >⚔</span
             >
-              {{ note.n }}
-            </span>
-          </div>
 
-          <!-- Réserve runique -->
-          <div v-if="scene.chips" class="tb-pool" aria-label="Réserve runique">
-            <span v-for="i in scene.chips.energy" :key="'e' + i" class="tb-chip energy">1</span>
-            <span v-for="i in scene.chips.essence" :key="'c' + i" class="tb-chip essence">✦</span>
-            <i class="mono">Réserve runique</i>
-          </div>
-          <!-- Carte en grand au clic -->
-          <div v-if="zoomCard" class="tb-zoom" role="dialog" aria-label="Carte en grand" @click="zoomCard = null">
-            <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
-            <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
+            <!-- Cartes -->
+            <TransitionGroup name="tb">
+              <div
+                v-for="placed in scene.cards"
+                :key="placed.key"
+                class="tb-card"
+                @click="!placed.facedown && (zoomCard = placed.card)"
+                :class="{
+                  tapped: placed.tapped,
+                  dead: placed.dead,
+                  wide: placed.wide,
+                  glow: placed.glow,
+                  ghost: placed.ghost,
+                  inhand: placed.hand,
+                  clickable: !placed.facedown
+                }"
+                :style="{
+                  left: placed.spot.x + '%',
+                  top: placed.spot.y + '%',
+                  '--r': (placed.spot.r ?? 0) + 'deg'
+                }"
+              >
+                <span v-if="placed.facedown" class="tb-back" :title="placed.label"></span>
+                <img v-else :src="placed.card.img" :alt="placed.card.name" loading="lazy" />
+                <span v-if="placed.might && placed.card.might" class="tb-might">{{ placed.card.might }}</span>
+                <span v-if="placed.dmg" class="tb-dmg">−{{ placed.dmg }}</span>
+                <span v-if="placed.label" class="tb-slot-label mono">{{ placed.label }}</span>
+              </div>
+            </TransitionGroup>
+
+            <!-- Gros plan annoté : lire une carte -->
+            <div v-if="scene.focus" class="tb-focus" @click="zoomCard = scene.focus.card">
+              <img :src="zoomUrl(scene.focus.card)" :alt="scene.focus.card.name" />
+              <span
+                v-for="note in scene.focus.notes"
+                :key="note.n"
+                class="tb-focus-note"
+                :style="{ left: note.x + '%', top: note.y + '%' }"
+              >
+                {{ note.n }}
+              </span>
+            </div>
+
+            <!-- Réserve runique -->
+            <div v-if="scene.chips" class="tb-pool" aria-label="Réserve runique">
+              <span v-for="i in scene.chips.energy" :key="'e' + i" class="tb-chip energy">1</span>
+              <span v-for="i in scene.chips.essence" :key="'c' + i" class="tb-chip essence">✦</span>
+              <i class="mono">Réserve runique</i>
+            </div>
+            <!-- Carte en grand au clic -->
+            <div v-if="zoomCard" class="tb-zoom" role="dialog" aria-label="Carte en grand" @click="zoomCard = null">
+              <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
+              <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
+            </div>
           </div>
         </div>
         <p class="tb-credit mono">Cartes et visuels officiels Riftbound — © Riot Games, servis par le CDN officiel.</p>

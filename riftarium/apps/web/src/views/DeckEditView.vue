@@ -504,6 +504,11 @@ function onTileClick(card) {
   addCard(card)
 }
 
+/* Tactile : pas de survol pour lire une carte, un petit bouton ouvre sa fiche. */
+function openCardPage(card) {
+  router.push(`/cartes/${card.id}`)
+}
+
 /* ---------- Cartes manquantes ---------- */
 
 const showMissing = ref(false)
@@ -749,6 +754,15 @@ onBeforeUnmount(() => {
             </span>
             <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
             <span class="gcard-add" aria-hidden="true">+</span>
+            <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans ajouter la carte -->
+            <span
+              class="gcard-info"
+              role="link"
+              :aria-label="`Voir la fiche de ${card.name}`"
+              @click.stop="openCardPage(card)"
+              @pointerdown.stop
+              >ℹ</span
+            >
           </button>
         </div>
         <p v-if="!loading && !result.items.length" class="muted" style="margin-top: 14px">
