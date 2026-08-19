@@ -10,6 +10,9 @@
 apps/api
 scripts
 
+# Dumps PostgreSQL du VPS (pg_dump gzip). Jamais dans un contexte de build.
+backups
+
 # Artefacts et dépendances locales.
 node_modules
 **/node_modules

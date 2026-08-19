@@ -128,9 +128,10 @@ programmer une sauvegarde quotidienne :
 0 4 * * * cd /opt/riftarium/riftarium && bash scripts/backup_db.sh >> /var/log/riftarium-backup.log 2>&1
 ```
 
-**Recommandé** : copier régulièrement `backups/` hors du VPS (rsync/rclone
-vers un stockage distant) — une sauvegarde sur la même machine ne protège
-ni d'une panne disque ni d'une compromission.
+Le dossier `backups/` n'est ni versionné ni envoyé dans le contexte de build
+Docker (`.gitignore` + `.dockerignore`). **Recommandé** : copier régulièrement
+ces dumps hors du VPS (rsync/rclone vers un stockage distant) — une sauvegarde
+sur la même machine ne protège ni d'une panne disque ni d'une compromission.
 
 ### CD depuis main
 
