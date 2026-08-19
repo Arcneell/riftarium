@@ -20,8 +20,8 @@ const limitMessage = ref("")
 const showExport = ref(false)
 /* Session expirée pendant l'édition : on garde le brouillon affiché et modifiable localement. */
 const sessionExpired = ref(false)
-const canEdit = computed(
-  () => Boolean(deck.value && (sessionExpired.value || (session.handle && session.handle === deck.value.owner)))
+const canEdit = computed(() =>
+  Boolean(deck.value && (sessionExpired.value || (session.handle && session.handle === deck.value.owner)))
 )
 
 const finePointer = typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches

@@ -1,16 +1,18 @@
 import hashlib
 import hmac
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
-from .models import User
+from .models import AuthToken, User
 from .security import SESSION_COOKIE
 
 bearer = HTTPBearer(auto_error=False)
@@ -76,6 +78,56 @@ def dummy_verify() -> None:
     if _dummy_hash is None:
         _dummy_hash = hash_password("riftarium-dummy-password")
     verify_password("riftarium-dummy-mismatch", _dummy_hash)
+
+
+# Durée de vie des jetons envoyés par e-mail, par usage.
+AUTH_TOKEN_TTL = {
+    "reset": timedelta(minutes=60),
+    "verify": timedelta(days=7),
+}
+
+
+def _hash_auth_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def issue_auth_token(db: Session, user: User, purpose: str) -> str:
+    """Crée un jeton e-mail à usage unique et retourne sa valeur en clair.
+
+    Une nouvelle demande invalide les jetons précédents du même usage pour
+    cet utilisateur ; les jetons expirés (tous comptes) sont purgés au passage.
+    L'appelant est responsable du commit.
+    """
+    now = datetime.now(UTC)
+    db.execute(delete(AuthToken).where(AuthToken.expires_at < now))
+    db.execute(delete(AuthToken).where(AuthToken.user_id == user.id, AuthToken.purpose == purpose))
+    raw = secrets.token_urlsafe(32)
+    db.add(
+        AuthToken(
+            user_id=user.id,
+            purpose=purpose,
+            token_hash=_hash_auth_token(raw),
+            expires_at=now + AUTH_TOKEN_TTL[purpose],
+        )
+    )
+    return raw
+
+
+def consume_auth_token(db: Session, raw: str, purpose: str) -> User | None:
+    """Valide un jeton e-mail et le consomme (single-use). None si invalide/expiré.
+
+    L'appelant est responsable du commit (la consommation part avec lui).
+    """
+    row = db.scalar(
+        select(AuthToken).where(AuthToken.token_hash == _hash_auth_token(raw), AuthToken.purpose == purpose)
+    )
+    if row is None:
+        return None
+    db.delete(row)  # consommé quoi qu'il arrive : un jeton expiré ne resservira pas
+    expires = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
+        return None
+    return db.get(User, row.user_id)
 
 
 def make_token(user: User) -> str:

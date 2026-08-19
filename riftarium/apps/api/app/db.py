@@ -26,6 +26,12 @@ def ensure_schema(bind=None) -> None:
             extras.append("ALTER TABLE users ADD COLUMN avatar_card_id VARCHAR(32)")
         if "token_version" not in cols:
             extras.append("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 1 NOT NULL")
+        if "email_verified_at" not in cols:
+            ts_type = "TIMESTAMPTZ" if target.dialect.name == "postgresql" else "DATETIME"
+            extras.append(f"ALTER TABLE users ADD COLUMN email_verified_at {ts_type}")
+            # Reprise : les comptes créés avant la vérification d'e-mail sont considérés
+            # comme vérifiés. Idempotent : l'UPDATE ne part qu'avec l'ALTER (premier passage).
+            extras.append("UPDATE users SET email_verified_at = COALESCE(created_at, CURRENT_TIMESTAMP)")
         if extras:
             with target.begin() as conn:
                 for statement in extras:

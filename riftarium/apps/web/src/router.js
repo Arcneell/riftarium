@@ -109,6 +109,33 @@ export const router = createRouter({
       meta: { noindex: true, title: "Connexion", description: "Connexion ou inscription à Riftarium." }
     },
     {
+      path: "/mot-de-passe-oublie",
+      component: () => import("./views/ForgotPasswordView.vue"),
+      meta: {
+        noindex: true,
+        title: "Mot de passe oublié",
+        description: "Recevoir un e-mail de réinitialisation du mot de passe Riftarium."
+      }
+    },
+    {
+      path: "/reinitialisation",
+      component: () => import("./views/ResetPasswordView.vue"),
+      meta: {
+        noindex: true,
+        title: "Réinitialiser le mot de passe",
+        description: "Choisir un nouveau mot de passe pour votre compte Riftarium."
+      }
+    },
+    {
+      path: "/verification-email",
+      component: () => import("./views/VerifyEmailView.vue"),
+      meta: {
+        noindex: true,
+        title: "Vérification de l'adresse e-mail",
+        description: "Confirmation de l'adresse e-mail d'un compte Riftarium."
+      }
+    },
+    {
       path: "/profil",
       component: () => import("./views/ProfileView.vue"),
       meta: { auth: true, noindex: true, title: "Mon profil", description: "Compte Riftarium." }

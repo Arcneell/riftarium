@@ -7,6 +7,7 @@ os.environ["JWT_SECRET"] = "test-secret-not-for-production-use!"
 os.environ["ADMIN_TOKEN"] = "test-admin-token-ok"
 os.environ["AUTH_RATE_LIMIT"] = "10000"
 os.environ["AUTH_ACCOUNT_RATE_LIMIT"] = "10000"
+os.environ["EMAIL_RATE_LIMIT"] = "10000"
 os.environ["REDIS_URL"] = ""  # les tests tournent sans cache, même si un Redis est joignable
 os.environ["COOKIE_SECURE"] = "0"
 os.environ["SCRYPT_N"] = "4096"  # paramètres scrypt faibles pour garder la suite rapide

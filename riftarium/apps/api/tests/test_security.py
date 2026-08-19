@@ -195,9 +195,10 @@ def test_login_rehashes_weaker_scrypt_params(client, monkeypatch):
         assert verify_password("motdepasse123", user.password_hash)
 
     # une nouvelle connexion ne re-hashe plus (paramètres déjà à la cible)
-    assert client.post(
-        "/api/auth/login", json={"email": "ancien@example.org", "password": "motdepasse123"}
-    ).status_code == 200
+    assert (
+        client.post("/api/auth/login", json={"email": "ancien@example.org", "password": "motdepasse123"}).status_code
+        == 200
+    )
 
 
 def test_legacy_hash_format_still_verifies():

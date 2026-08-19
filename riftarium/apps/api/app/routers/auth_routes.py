@@ -1,23 +1,36 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .. import mailer
 from ..auth import (
     clear_session_cookie,
+    consume_auth_token,
     current_user,
     dummy_verify,
     hash_password,
+    issue_auth_token,
     make_token,
     needs_rehash,
     set_session_cookie,
     verify_password,
 )
 from ..db import get_db
-from ..models import User
+from ..models import User, utcnow
 from ..profiles import apply_profile, avatar_urls, delete_user_account, export_account, list_legend_avatars, user_out
-from ..schemas import AccountDelete, LoginIn, PasswordChange, ProfilePatch, RegisterIn, SessionOut
-from ..security import enforce_same_origin, limit_auth, limit_auth_account
+from ..schemas import (
+    AccountDelete,
+    ForgotPasswordIn,
+    LoginIn,
+    PasswordChange,
+    ProfilePatch,
+    RegisterIn,
+    ResetPasswordIn,
+    SessionOut,
+    VerifyEmailIn,
+)
+from ..security import enforce_same_origin, limit_auth, limit_auth_account, limit_email_send
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -40,6 +53,7 @@ def _account_conflict(db: Session, handle: str, email: str) -> bool:
 def register(
     payload: RegisterIn,
     response: Response,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     _: None = Depends(limit_auth),
     __: None = Depends(enforce_same_origin),
@@ -59,6 +73,10 @@ def register(
         db.rollback()
         raise HTTPException(status_code=409, detail="Impossible de créer ce compte") from None
     db.refresh(user)
+    # Vérification d'adresse non bloquante : le compte est utilisable immédiatement.
+    token = issue_auth_token(db, user, "verify")
+    db.commit()
+    background.add_task(mailer.send_verification_email, user.email, token)
     return _session(db, user, response)
 
 
@@ -101,13 +119,19 @@ def avatars(db: Session = Depends(get_db), _user: User = Depends(current_user)):
 
 
 @router.patch("/me")
-def update_me(payload: ProfilePatch, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def update_me(
+    payload: ProfilePatch,
+    background: BackgroundTasks,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     data = payload.model_dump(exclude_unset=True)
     data.pop("current_password", None)
     if not data:
         raise HTTPException(status_code=400, detail="Aucune modification")
     if "handle" in data or "email" in data:
         _require_password(user, payload.current_password)
+    email_changed = "email" in data and data["email"] != user.email
     apply_profile(db, user, data)
     try:
         db.commit()
@@ -115,6 +139,10 @@ def update_me(payload: ProfilePatch, user: User = Depends(current_user), db: Ses
         db.rollback()
         raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée") from None
     db.refresh(user)
+    if email_changed:  # la nouvelle adresse repart non vérifiée : on renvoie un lien
+        token = issue_auth_token(db, user, "verify")
+        db.commit()
+        background.add_task(mailer.send_verification_email, user.email, token)
     return user_out(db, user, include_email=True, include_stats=True)
 
 
@@ -134,6 +162,72 @@ def change_password(
     db.commit()
     db.refresh(user)
     return _session(db, user, response)
+
+
+@router.post("/forgot-password", status_code=204)
+def forgot_password(
+    payload: ForgotPasswordIn,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
+):
+    """Demande de réinitialisation : répond 204 même si l'adresse est inconnue (anti-énumération)."""
+    limit_email_send(payload.email)
+    user = db.scalar(select(User).where(User.email == payload.email))
+    if user is not None:
+        token = issue_auth_token(db, user, "reset")
+        db.commit()
+        background.add_task(mailer.send_reset_email, user.email, token)
+
+
+@router.post("/reset-password", status_code=204)
+def reset_password(
+    payload: ResetPasswordIn,
+    db: Session = Depends(get_db),
+    _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
+):
+    """Choisit un nouveau mot de passe via le jeton reçu par e-mail (usage unique)."""
+    user = consume_auth_token(db, payload.token, "reset")
+    if user is None:
+        raise HTTPException(status_code=400, detail="Lien invalide ou expiré — refaites une demande")
+    user.password_hash = hash_password(payload.new_password)
+    user.token_version += 1  # révoque toutes les sessions existantes
+    db.commit()
+
+
+@router.post("/verify-email", status_code=204)
+def verify_email(
+    payload: VerifyEmailIn,
+    db: Session = Depends(get_db),
+    _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
+):
+    """Confirme l'adresse e-mail via le jeton reçu à l'inscription (usage unique)."""
+    user = consume_auth_token(db, payload.token, "verify")
+    if user is None:
+        raise HTTPException(status_code=400, detail="Lien de vérification invalide ou expiré")
+    if user.email_verified_at is None:
+        user.email_verified_at = utcnow()
+    db.commit()
+
+
+@router.post("/resend-verification", status_code=204)
+def resend_verification(
+    background: BackgroundTasks,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+    _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
+):
+    """Renvoie l'e-mail de vérification à l'utilisateur connecté."""
+    if user.email_verified_at is not None:
+        raise HTTPException(status_code=400, detail="Adresse déjà vérifiée")
+    limit_email_send(user.email)
+    token = issue_auth_token(db, user, "verify")
+    db.commit()
+    background.add_task(mailer.send_verification_email, user.email, token)
 
 
 @router.get("/export")

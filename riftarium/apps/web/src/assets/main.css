@@ -1797,6 +1797,41 @@ footer {
   flex-shrink: 0;
 }
 
+/* Bandeau discret : adresse e-mail du compte non vérifiée. */
+.verify-notice {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  background: rgba(171, 124, 26, 0.1);
+  border-bottom: 1px solid var(--line);
+}
+.verify-notice p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.verify-notice .error {
+  margin: 0 0 0 6px;
+}
+.verify-notice .btn {
+  flex-shrink: 0;
+}
+/* Rappel de vérification dans la section Email du profil. */
+.verify-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.verify-line p {
+  margin: 0;
+}
+
 .legal-page {
   padding-top: 36px;
   padding-bottom: 72px;

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, setSession } from "../api.js"
+import { api, session, setSession } from "../api.js"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
 
@@ -16,6 +16,11 @@ const acceptTerms = ref(false)
 const confirmAge = ref(false)
 const error = ref("")
 const submitting = ref(false)
+const registered = ref(false)
+
+function proceed() {
+  router.push(route.query.suite || "/")
+}
 
 async function submit() {
   if (submitting.value) return // ignore les doubles soumissions pendant la requête
@@ -46,7 +51,13 @@ async function submit() {
             }
           })
     setSession("1", result.handle, result.avatar_url)
-    router.push(route.query.suite || "/")
+    if (mode.value === "register") {
+      /* Compte tout juste créé : l'adresse n'est pas encore vérifiée, on le signale avant de continuer. */
+      session.emailVerified = result.email_verified ?? false
+      registered.value = true
+    } else {
+      proceed()
+    }
   } catch (e) {
     error.value = e.message
   } finally {
@@ -70,61 +81,75 @@ async function submit() {
 
   <section style="padding-top: 36px">
     <div class="wrap" style="max-width: 480px">
-      <div class="filters" style="margin: 0 0 26px">
-        <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
-        <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>
+      <div v-if="registered" class="panel">
+        <p class="success" style="margin-top: 0">Compte créé, bienvenue {{ handle }} !</p>
+        <p class="muted" style="margin-bottom: 20px">
+          Un e-mail de vérification a été envoyé à <strong>{{ email }}</strong
+          >. Cliquez sur le lien qu'il contient pour confirmer votre adresse.
+        </p>
+        <button class="btn btn-gold" type="button" @click="proceed">Continuer</button>
       </div>
 
-      <form class="panel" @submit.prevent="submit">
-        <div class="field" v-if="mode === 'register'">
-          <label for="handle">Pseudo</label>
-          <input
-            id="handle"
-            type="text"
-            v-model="handle"
-            autocomplete="username"
-            required
-            minlength="3"
-            maxlength="32"
-            placeholder="3 à 32 caractères"
-          />
+      <template v-else>
+        <div class="filters" style="margin: 0 0 26px">
+          <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
+          <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>
         </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" type="email" v-model="email" autocomplete="email" required />
-        </div>
-        <div class="field">
-          <label for="password">Mot de passe</label>
-          <input
-            id="password"
-            type="password"
-            v-model="password"
-            required
-            minlength="8"
-            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-            placeholder="8 caractères minimum"
-          />
-        </div>
-        <template v-if="mode === 'register'">
-          <label class="legal-check">
-            <input type="checkbox" v-model="confirmAge" />
-            <span>J'ai au moins 15 ans.</span>
-          </label>
-          <label class="legal-check">
-            <input type="checkbox" v-model="acceptTerms" />
-            <span>
-              J'accepte les
-              <RouterLink to="/cgu">conditions d'utilisation</RouterLink>
-              et la
-              <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
-            </span>
-          </label>
-        </template>
-        <button class="btn btn-gold" type="submit" style="width: 100%" :disabled="submitting">
-          {{ submitting ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte" }}
-        </button>
-        <p v-if="error" class="error">{{ error }}</p>
-      </form>
+
+        <form class="panel" @submit.prevent="submit">
+          <div class="field" v-if="mode === 'register'">
+            <label for="handle">Pseudo</label>
+            <input
+              id="handle"
+              type="text"
+              v-model="handle"
+              autocomplete="username"
+              required
+              minlength="3"
+              maxlength="32"
+              placeholder="3 à 32 caractères"
+            />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" v-model="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="password">Mot de passe</label>
+            <input
+              id="password"
+              type="password"
+              v-model="password"
+              required
+              minlength="8"
+              :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+              placeholder="8 caractères minimum"
+            />
+          </div>
+          <template v-if="mode === 'register'">
+            <label class="legal-check">
+              <input type="checkbox" v-model="confirmAge" />
+              <span>J'ai au moins 15 ans.</span>
+            </label>
+            <label class="legal-check">
+              <input type="checkbox" v-model="acceptTerms" />
+              <span>
+                J'accepte les
+                <RouterLink to="/cgu">conditions d'utilisation</RouterLink>
+                et la
+                <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
+              </span>
+            </label>
+          </template>
+          <button class="btn btn-gold" type="submit" style="width: 100%" :disabled="submitting">
+            {{ submitting ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte" }}
+          </button>
+          <p v-if="error" class="error">{{ error }}</p>
+          <p v-if="mode === 'login'" class="muted" style="margin-top: 16px">
+            <RouterLink to="/mot-de-passe-oublie">Mot de passe oublié ?</RouterLink>
+          </p>
+        </form>
+      </template>
     </div>
   </section>
 </template>

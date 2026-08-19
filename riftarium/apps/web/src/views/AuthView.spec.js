@@ -16,7 +16,8 @@ async function mountView() {
       { path: "/connexion", component: AuthView },
       { path: "/", component: { template: "<div />" } },
       { path: "/cgu", component: { template: "<div />" } },
-      { path: "/confidentialite", component: { template: "<div />" } }
+      { path: "/confidentialite", component: { template: "<div />" } },
+      { path: "/mot-de-passe-oublie", component: { template: "<div />" } }
     ]
   })
   router.push("/connexion")
@@ -67,7 +68,20 @@ describe("AuthView", () => {
         confirm_age: true
       }
     })
+    /* L'inscription ne redirige plus tout de suite : elle signale l'e-mail de vérification envoyé. */
+    expect(wrapper.text()).toContain("Un e-mail de vérification a été envoyé à nyra@example.org")
+    await wrapper.get("button.btn-gold").trigger("click")
+    await flushPromises()
     expect(router.currentRoute.value.path).toBe("/")
+  })
+
+  it("propose le lien « Mot de passe oublié ? » en mode connexion uniquement", async () => {
+    const { wrapper } = await mountView()
+    const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
+    expect(link).toBeTruthy()
+    expect(link.text()).toBe("Mot de passe oublié ?")
+    await wrapper.get(".filters .filter:last-child").trigger("click")
+    expect(wrapper.findAll("a").some((a) => a.attributes("href") === "/mot-de-passe-oublie")).toBe(false)
   })
 
   it("désactive le bouton et ignore les doubles soumissions pendant la requête", async () => {

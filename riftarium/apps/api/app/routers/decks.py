@@ -415,9 +415,7 @@ def community_decks(
         query = query.where(
             Deck.id.in_(
                 _legend_decks().where(
-                    or_(
-                        *[cast(Card.domains, String).like(f'%"{escape_like(item)}"%', escape="\\") for item in domains]
-                    )
+                    or_(*[cast(Card.domains, String).like(f'%"{escape_like(item)}"%', escape="\\") for item in domains])
                 )
             )
         )

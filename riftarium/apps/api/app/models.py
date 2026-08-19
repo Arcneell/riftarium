@@ -30,6 +30,24 @@ class User(Base):
     bio: Mapped[str] = mapped_column(String(280), default="")
     avatar_card_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, default=1)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AuthToken(Base):
+    """Jeton à usage unique envoyé par e-mail (vérification d'adresse ou reset).
+
+    Seul le hash SHA-256 est stocké : une fuite de la base ne permet pas de
+    rejouer les liens. Le jeton est supprimé à l'usage (single-use).
+    """
+
+    __tablename__ = "auth_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(8))  # verify | reset
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

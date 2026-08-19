@@ -100,6 +100,13 @@ def limit_auth_account(email: str) -> None:
         raise HTTPException(status_code=429, detail="Trop de tentatives sur ce compte — réessayez plus tard")
 
 
+def limit_email_send(email: str) -> None:
+    """Rate limit par adresse : évite le mail bombing (reset et renvoi de vérification)."""
+    key = f"auth:mail:{(email or '').strip().lower()}"
+    if not allow_rate(key, settings.email_rate_limit, window=3600):
+        raise HTTPException(status_code=429, detail="Trop de demandes pour cette adresse — réessayez plus tard")
+
+
 def enforce_same_origin(request: Request) -> None:
     """Anti-CSRF : refuse les requêtes cross-site sur les endpoints d'authentification.
 

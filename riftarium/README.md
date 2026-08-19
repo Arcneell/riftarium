@@ -61,6 +61,25 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### E-mails (SMTP OVH)
+
+Les e-mails transactionnels (vérification d'adresse, réinitialisation de mot de
+passe) partent de la boîte OVH `contact@riftarium.re`. Variables dans `.env` :
+
+| Variable | Valeur OVH |
+| --- | --- |
+| `SMTP_HOST` | `ssl0.ovh.net` (vide = mode console : e-mails loggés, pas envoyés) |
+| `SMTP_PORT` | `465` (SSL implicite) ou `587` (STARTTLS) |
+| `SMTP_USER` | l'adresse complète : `contact@riftarium.re` |
+| `SMTP_PASSWORD` | mot de passe de la boîte |
+| `MAIL_FROM` | `Riftarium <contact@riftarium.re>` (défaut) |
+| `PUBLIC_BASE_URL` | base des liens ; vide = `https://riftarium.re` en prod, `http://localhost:8888` sinon |
+
+En développement, ne rien configurer : `SMTP_HOST` vide active le **mode
+console** — le destinataire et le lien complet sont loggés par l'API
+(logger `riftarium.mailer`), pratique pour tester les flux sans boîte mail.
+Un échec SMTP est loggé mais ne fait jamais échouer la requête.
+
 ### Développement local
 
 Surcouche `compose.dev.yaml` : code monté en volume, HMR Vite, uvicorn

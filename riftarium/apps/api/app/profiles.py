@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from .models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
+from .models import AuthToken, Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from .moderation import review
 from .security import sanitize_image_url
 
@@ -65,6 +65,7 @@ def user_out(db: Session, user: User, *, include_email: bool = False, include_st
     }
     if include_email:
         payload["email"] = user.email
+        payload["email_verified"] = user.email_verified_at is not None
     if include_stats:
         payload["stats"] = user_stats(db, user)
     return payload
@@ -126,6 +127,7 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
         if taken:
             raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
         user.email = data["email"]
+        user.email_verified_at = None  # la nouvelle adresse devra être vérifiée à son tour
 
 
 def export_account(db: Session, user: User) -> dict:
@@ -164,6 +166,7 @@ def delete_user_account(db: Session, user: User) -> None:
             .execution_options(synchronize_session=False)
         )
     db.execute(delete(DeckLike).where(DeckLike.user_id == user.id))
+    db.execute(delete(AuthToken).where(AuthToken.user_id == user.id))
     db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
     db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))
     owned_ids = list(db.scalars(select(Deck.id).where(Deck.owner_id == user.id)).all())

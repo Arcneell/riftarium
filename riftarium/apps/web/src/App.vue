@@ -5,6 +5,7 @@ import { api, session, setSession } from "./api.js"
 import Logo from "./components/Logo.vue"
 import UserAvatar from "./components/UserAvatar.vue"
 import TraceursNotice from "./components/TraceursNotice.vue"
+import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
 import { LEGAL_NAV, RIOT_DISCLAIMER_EN, RIOT_DISCLAIMER_FR, CONTACT_EMAIL, CONTACT_MAILTO } from "./legal.js"
 
 const router = useRouter()
@@ -30,6 +31,7 @@ onMounted(async () => {
   try {
     const me = await api("/api/auth/me")
     setSession("1", me.handle, me.avatar_url)
+    session.emailVerified = me.email_verified ?? null
   } catch {
     /* 401 déjà géré par api() */
   }
@@ -79,6 +81,7 @@ async function logout() {
     </div>
   </header>
   <div class="prism"></div>
+  <EmailVerifyNotice />
 
   <main>
     <RouterView v-slot="{ Component, route: viewRoute }">

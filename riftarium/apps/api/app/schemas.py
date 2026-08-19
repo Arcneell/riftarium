@@ -154,6 +154,26 @@ class PasswordChange(BaseModel):
         return _check_common_password(value)
 
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    """Le nouveau mot de passe suit les mêmes règles qu'à l'inscription."""
+
+    token: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def reject_common_password(cls, value: str) -> str:
+        return _check_common_password(value)
+
+
+class VerifyEmailIn(BaseModel):
+    token: str = Field(min_length=1, max_length=128)
+
+
 class AccountDelete(BaseModel):
     password: str
     handle: str = Field(min_length=3, max_length=32)

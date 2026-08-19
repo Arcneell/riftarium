@@ -103,6 +103,29 @@ def test_ensure_schema_adds_missing_columns(old_engine):
         assert deck.views_count == 0
 
 
+def test_ensure_schema_grandfathers_email_verification(old_engine):
+    ensure_schema(bind=old_engine)
+    assert "email_verified_at" in _columns(old_engine, "users")
+    with old_engine.connect() as conn:
+        # Compte créé avant la fonctionnalité : marqué vérifié (reprise).
+        verified = conn.execute(text("SELECT email_verified_at FROM users WHERE id = 1")).scalar_one()
+        assert verified is not None
+
+    # Idempotence : un compte créé APRÈS la migration (non vérifié) ne doit pas
+    # être marqué vérifié par un passage ultérieur d'ensure_schema.
+    with old_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO users (id, handle, email, password_hash) "
+                "VALUES (2, 'recent', 'recent@example.org', 'hash')"
+            )
+        )
+    ensure_schema(bind=old_engine)
+    with old_engine.connect() as conn:
+        assert conn.execute(text("SELECT email_verified_at FROM users WHERE id = 2")).scalar_one() is None
+        assert conn.execute(text("SELECT email_verified_at FROM users WHERE id = 1")).scalar_one() is not None
+
+
 def test_ensure_schema_creates_missing_indexes(old_engine):
     ensure_schema(bind=old_engine)
     assert "ix_decks_public_moderation" in _indexes(old_engine, "decks")
