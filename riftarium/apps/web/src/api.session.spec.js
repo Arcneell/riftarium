@@ -54,6 +54,22 @@ describe("session", () => {
     })
   })
 
+  it("traduit un 405 HTML (BunkerWeb) au lieu de « Erreur inattendue »", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 405,
+      ok: false,
+      json: async () => {
+        throw new Error("HTML")
+      }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const { api } = await import("./api.js")
+    await expect(api("/api/auth/me", { method: "PATCH", body: {} })).rejects.toMatchObject({
+      status: 405,
+      message: "Action bloquée par le pare-feu du site"
+    })
+  })
+
   it("retombe sur « Requête invalide » quand le detail 422 est inexploitable", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 422,
