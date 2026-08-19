@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     smtp_port: int = 465  # 465 = SSL implicite, sinon STARTTLS (587 chez OVH)
     smtp_user: str = ""
     smtp_password: str = ""
-    mail_from: str = "Riftarium <contact@riftarium.re>"
+    mail_from: str = "Riftarium <no-reply@riftarium.re>"
     public_base_url: str = ""  # vide = déduit de l'environnement (voir base_url)
     email_rate_limit: int = 3  # e-mails / heure / adresse (reset + renvoi de vérification)
 

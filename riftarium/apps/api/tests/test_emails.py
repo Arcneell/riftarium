@@ -269,7 +269,12 @@ def test_mailer_sends_over_ssl_on_port_465(smtp_settings):
     assert message["Subject"] == mailer.SUBJECT_RESET
     assert message["Message-ID"].endswith("@riftarium.re>")
     assert message["Date"]
-    assert "https://riftarium.re/reinitialisation?token=jeton" in message.get_content()
+    plain = message.get_body(preferencelist=("plain",)).get_content()
+    html = message.get_body(preferencelist=("html",)).get_content()
+    assert "https://riftarium.re/reinitialisation?token=jeton" in plain
+    assert "Choisir un nouveau mot de passe" in html
+    assert "https://riftarium.re/favicon.svg" in html
+    assert 'href="https://riftarium.re/reinitialisation?token=jeton"' in html
 
 
 def test_mailer_uses_starttls_on_other_ports(smtp_settings):
@@ -280,6 +285,10 @@ def test_mailer_uses_starttls_on_other_ports(smtp_settings):
     assert (smtp.host, smtp.port) == ("ssl0.ovh.net", 587)
     assert smtp.tls_started is True
     assert mailer.SUBJECT_VERIFY == smtp.sent[0]["Subject"]
+    html = smtp.sent[0].get_body(preferencelist=("html",)).get_content()
+    assert "Bienvenue sur Riftarium" in html
+    assert "Confirmer mon adresse" in html
+    assert "https://riftarium.re/verification-email?token=jeton" in html
 
 
 def test_mailer_failure_is_logged_never_raised(smtp_settings, caplog):
