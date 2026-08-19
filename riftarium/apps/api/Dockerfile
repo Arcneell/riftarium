@@ -6,9 +6,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 1000 --shell /usr/sbin/nologin app
 
+# Image de prod minimale : ni tests/ ni pytest.ini (les tests tournent en CI
+# et en local, hors Docker — voir riftarium/README.md).
 COPY --chown=app:app app/ app/
-COPY --chown=app:app tests/ tests/
-COPY --chown=app:app pytest.ini .
 
 USER app
 EXPOSE 8000

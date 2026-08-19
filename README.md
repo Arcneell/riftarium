@@ -43,13 +43,20 @@ Voir [LICENSE](LICENSE).
 ## Architecture
 
 ```
+          ┌─────────────────────┐
+Internet ─│  BunkerWeb (WAF/TLS) │  réseau Docker `bunkerweb`
+ HTTPS    └──────────┬──────────┘
+                     ▼
 ┌────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
 │  web  (Vue 3/Vite) │────▶│  api  (FastAPI)      │────▶│  db (PostgreSQL) │
 │  nginx + SPA        │ /api│  auth JWT · decks    │     │  cartes · users  │
 │  proxy /api         │     │  validation · modo   │     │  decks · likes   │
-└────────────────────┘     └──────────┬──────────┘     └──────────────────┘
-                                      │ resync manuelle possible
-                           ┌──────────▼──────────┐
+└────────────────────┘     └────┬─────┬──────────┘     └──────────────────┘
+                                │     │                ┌──────────────────┐
+                                │     └───────────────▶│  redis           │
+                                │ resync manuelle      │  cache + limites │
+                                ▼                      └──────────────────┘
+                           ┌─────────────────────┐
                            │ api.riftcodex.com    │  (données de cartes)
                            │ cmsassets.rgpub.io   │  (visuels — CDN Riot)
                            └─────────────────────┘
@@ -62,7 +69,7 @@ riftarium/          Application (produit)
 ├── apps/web/       Front Vue 3 + Vite, servi par nginx
 ├── apps/api/       API FastAPI (Python 3.12) + tests pytest
 ├── data/           Règles officielles en français (JSON)
-└── compose.yaml    Orchestration Docker (web + api + db)
+└── compose.yaml    Orchestration Docker (web + api + db + redis)
 assets/             Identité visuelle (logo SVG)
 ```
 

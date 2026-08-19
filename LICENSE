@@ -12,11 +12,17 @@ CE QUI EST AUTORISÉ
 - Soumettre des contributions (pull requests) ; en soumettant une
   contribution, vous acceptez qu'elle soit intégrée au projet sous les
   termes de la présente licence.
+- Exception de contribution : réaliser un fork du dépôt et modifier le
+  code aux seules fins de préparer et de proposer une contribution
+  (pull request) au dépôt d'origine. Toute autre utilisation, toute
+  publication ou tout déploiement du fork restent interdits, et le fork
+  doit conserver la présente licence.
 
 CE QUI EST INTERDIT SANS AUTORISATION ÉCRITE PRÉALABLE DE L'AUTEUR
 - Copier, reproduire ou redistribuer tout ou partie du code source,
   sous quelque forme que ce soit.
-- Modifier le code ou créer des œuvres dérivées.
+- Modifier le code ou créer des œuvres dérivées, en dehors de
+  l'exception de contribution ci-dessus.
 - Déployer, héberger ou exploiter le logiciel, en privé ou en public.
 - Utiliser le code, en tout ou partie, à des fins commerciales ou non
   commerciales, dans un autre projet ou service.
@@ -38,5 +44,7 @@ LOGICIEL OU DE SON CODE SOURCE.
 
 English summary (non-binding): this is a source-available, proprietary
 project. You may read the code and contribute via issues or pull
-requests. You may not copy, modify, redistribute, deploy, or reuse any
-part of it without prior written permission from the author.
+requests, including forking and modifying the code for the sole purpose
+of preparing a pull request to the original repository. You may not
+otherwise copy, modify, redistribute, deploy, or reuse any part of it
+without prior written permission from the author.

@@ -47,16 +47,61 @@ La resync cartes se fait avec l'en-tête `X-Admin-Token`. L'API n'est pas
 publiée ; le front n'écoute que `127.0.0.1` (BunkerWeb le joint via le réseau
 Docker : `http://riftarium-web:8080`). Réglages WAF : `bunkerweb.env.example`.
 
+Le service `web` est le seul rattaché au réseau externe `bunkerweb` ;
+`api`, `db` et `redis` restent sur le réseau interne du projet. Créer ce
+réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb :
+
+```bash
+docker network create bunkerweb
+docker network connect bunkerweb <conteneur-bunkerweb>
+```
+
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
+### Développement local
+
+Surcouche `compose.dev.yaml` : code monté en volume, HMR Vite, uvicorn
+`--reload`, pas de réseau `bunkerweb` à créer.
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+```
+
+- Front : http://localhost:8888 (Vite) — API : http://localhost:8889
+  (`API_PORT` dans `.env` pour changer).
+- Tests : ils tournent hors Docker (l'image de prod n'embarque ni `tests/`
+  ni pytest) :
+
+```bash
+cd apps/api && pip install -r requirements.txt -r requirements-dev.txt && pytest -q
+cd apps/web && npm ci && npm test
+```
+
+### Sauvegardes PostgreSQL
+
+`scripts/backup_db.sh` fait un `pg_dump` compressé dans `backups/`
+(rétention : 14 fichiers, réglable via `BACKUP_RETENTION`). Il est appelé
+automatiquement par `deploy.sh` avant chaque mise à jour. En complément,
+programmer une sauvegarde quotidienne :
+
+```cron
+0 4 * * * cd /opt/riftarium/riftarium && bash scripts/backup_db.sh >> /var/log/riftarium-backup.log 2>&1
+```
+
+**Recommandé** : copier régulièrement `backups/` hors du VPS (rsync/rclone
+vers un stockage distant) — une sauvegarde sur la même machine ne protège
+ni d'une panne disque ni d'une compromission.
+
 ### CD depuis main
 
 Après une CI verte, GitHub Actions se connecte en SSH, aligne le clone du VPS
-sur `origin/main`, reconstruit les images et relance Compose. BunkerWeb n'est
-pas touché. Le `.env` du VPS n'est pas dans git : `git reset --hard` ne
+sur `origin/main` (`git checkout -B main FETCH_HEAD`), reconstruit les images
+et relance Compose. Si le healthcheck échoue, `deploy.sh` revient
+automatiquement au commit précédent (re-checkout + rebuild). BunkerWeb n'est
+pas touché. Le `.env` du VPS n'est pas dans git : l'alignement du clone ne
 l'écrase pas.
 
 **Une fois sur le VPS**

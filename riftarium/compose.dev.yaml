@@ -35,6 +35,14 @@ services:
       - "127.0.0.1:${PORT:-8888}:5173"
     healthcheck:
       disable: true
+    # L'image de dev tourne en root (npm install au démarrage) et a besoin des
+    # capabilities par défaut : le durcissement cap_drop ne vaut qu'en prod.
+    cap_drop: !override []
+
+networks:
+  # En dev, pas de BunkerWeb : le réseau externe de prod est remplacé par un
+  # réseau local créé automatiquement (aucun `docker network create` requis).
+  bunkerweb: !override {}
 
 volumes:
   webmodules:
