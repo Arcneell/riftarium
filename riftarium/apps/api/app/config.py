@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     admin_token: str = ""
     cookie_secure: bool = False
     auth_rate_limit: int = 20  # tentatives / minute / IP (login + inscription)
+    auth_account_rate_limit: int = 10  # tentatives / heure / compte (login)
+    # Paramètres scrypt (mots de passe). Abaissés dans les tests pour rester rapides.
+    scrypt_n: int = 2**17
+    scrypt_r: int = 8
+    scrypt_p: int = 1
     auto_sync: bool = True
     riftcodex_base_url: str = "https://api.riftcodex.com"
     sync_sets: str = "OGN,OGS,SFD,UNL,VEN,PR"

@@ -17,9 +17,8 @@ ignore = ["S101", "B008"]
 [tool.coverage.run]
 source = ["app"]
 branch = true
-omit = ["app/sync.py"]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 85
 show_missing = true
 skip_covered = true

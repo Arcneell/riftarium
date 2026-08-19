@@ -15,22 +15,67 @@ from .security import SESSION_COOKIE
 
 bearer = HTTPBearer(auto_error=False)
 
-_SCRYPT = {"n": 2**14, "r": 8, "p": 1}
+# Ancien format « salt$digest » : paramètres implicites de l'époque.
+_LEGACY_SCRYPT = (2**14, 8, 1)
+
+_dummy_hash: str | None = None
+
+
+def _scrypt_target() -> tuple[int, int, int]:
+    return (settings.scrypt_n, settings.scrypt_r, settings.scrypt_p)
+
+
+def _scrypt(password: str, salt: bytes, params: tuple[int, int, int]) -> bytes:
+    n, r, p = params
+    # hashlib.scrypt exige maxmem > ~128*n*r octets : on prend une marge confortable.
+    return hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, maxmem=128 * r * n * 2)
+
+
+def _parse_hash(stored: str) -> tuple[tuple[int, int, int], bytes, str] | None:
+    """Décode « n$r$p$salt$digest » ou l'ancien format « salt$digest »."""
+    parts = stored.split("$")
+    try:
+        if len(parts) == 2:
+            return _LEGACY_SCRYPT, bytes.fromhex(parts[0]), parts[1]
+        if len(parts) == 5:
+            return (int(parts[0]), int(parts[1]), int(parts[2])), bytes.fromhex(parts[3]), parts[4]
+    except ValueError:
+        return None
+    return None
 
 
 def hash_password(password: str) -> str:
+    params = _scrypt_target()
     salt = os.urandom(16)
-    digest = hashlib.scrypt(password.encode(), salt=salt, **_SCRYPT)
-    return salt.hex() + "$" + digest.hex()
+    digest = _scrypt(password, salt, params)
+    n, r, p = params
+    return f"{n}${r}${p}${salt.hex()}${digest.hex()}"
 
 
 def verify_password(password: str, stored: str) -> bool:
-    try:
-        salt_hex, digest_hex = stored.split("$", 1)
-    except ValueError:
+    parsed = _parse_hash(stored)
+    if parsed is None:
         return False
-    digest = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt_hex), **_SCRYPT)
+    params, salt, digest_hex = parsed
+    digest = _scrypt(password, salt, params)
     return hmac.compare_digest(digest.hex(), digest_hex)
+
+
+def needs_rehash(stored: str) -> bool:
+    """Vrai si le hash stocké utilise des paramètres plus faibles que la cible actuelle."""
+    parsed = _parse_hash(stored)
+    if parsed is None:
+        return False
+    (n, _r, _p), _salt, _digest = parsed
+    return n < settings.scrypt_n
+
+
+def dummy_verify() -> None:
+    """Vérification factice pour égaliser le temps de réponse quand l'e-mail est inconnu."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password("riftarium-dummy-password")
+    verify_password("riftarium-dummy-mismatch", _dummy_hash)
 
 
 def make_token(user: User) -> str:

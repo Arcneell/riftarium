@@ -73,6 +73,14 @@ def test_variant_family_ignores_unrelated_ids():
     assert canonical_name("Seal of Discord (Overnumbered)") == "seal of discord"
     assert canonical_name("Immortal Phoenix (Alternate Art)") == "immortal phoenix"
 
+    from types import SimpleNamespace
+
+    from app.variants import copy_family
+
+    # sans nom exploitable, la famille retombe sur l'identifiant
+    anonymous = SimpleNamespace(name="", type="Unit", riftbound_id="ogn-037a-298", id="ogn-037a-298")
+    assert copy_family(anonymous) == "ogn-037-298"
+
 
 def test_card_variants_and_foil(client):
     detail = client.get("/api/cards/ogn-037-298").json()
@@ -219,32 +227,28 @@ def test_card_detail_and_404(client):
 
 
 def test_sets(client):
-    sets = client.get("/api/sets").json()
-    assert sets[0]["set_id"] == "OGN"
+    response = client.get("/api/sets")
+    assert response.status_code == 200
+    sets = response.json()
+    assert len(sets) == 1  # seul OGN est seedé
+    assert sets[0] == {"set_id": "OGN", "name": "Origins", "card_count": 352, "published_on": None}
 
 
 # ---------- auth ----------
 
 
-def test_register_login_me(client):
-    creds = {
-        "handle": "maelle",
-        "email": "maelle@example.org",
-        "password": "supersecret1",
-        "accept_terms": True,
-        "confirm_age": True,
-    }
-    assert client.post("/api/auth/register", json=creds).status_code == 201
-    assert client.post("/api/auth/register", json=creds).status_code == 409
+def test_register_login_me(client, register_user):
+    creds = {"email": "maelle@example.org", "password": "supersecret1"}
+    assert register_user(client, "maelle", **creds).status_code == 201
+    assert register_user(client, "maelle", **creds).status_code == 409
 
-    refused = {**creds, "handle": "sansaccord", "email": "sansaccord@example.org", "accept_terms": False}
-    assert client.post("/api/auth/register", json=refused).status_code == 422
-    too_young = {**creds, "handle": "mineur", "email": "mineur@example.org", "confirm_age": False}
-    assert client.post("/api/auth/register", json=too_young).status_code == 422
+    assert register_user(client, "sansaccord", password="supersecret1", accept_terms=False).status_code == 422
+    assert register_user(client, "mineur", password="supersecret1", confirm_age=False).status_code == 422
 
     login = client.post("/api/auth/login", json={"email": creds["email"], "password": creds["password"]})
     assert login.status_code == 200
-    token = login.json()["token"]
+    assert "token" not in login.json()  # le jeton ne sort que via le cookie HttpOnly
+    token = login.cookies.get("riftarium_session")
 
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     body = me.json()
@@ -299,7 +303,7 @@ def test_profile_avatar_password_export_and_delete(client, auth):
     )
     assert pwd.status_code == 200
     assert client.get("/api/auth/me", headers=auth).status_code == 401
-    auth = {"Authorization": f"Bearer {pwd.json()['token']}"}
+    auth = {"Authorization": f"Bearer {pwd.cookies.get('riftarium_session')}"}
     assert (
         client.post("/api/auth/login", json={"email": "testeur@example.org", "password": "nouveausecret"}).status_code
         == 200
@@ -327,17 +331,8 @@ def test_profile_avatar_password_export_and_delete(client, auth):
     )
 
 
-def test_profile_email_conflict_and_empty_patch(client, auth):
-    client.post(
-        "/api/auth/register",
-        json={
-            "handle": "autre",
-            "email": "autre@example.org",
-            "password": "motdepasse123",
-            "accept_terms": True,
-            "confirm_age": True,
-        },
-    )
+def test_profile_email_conflict_and_empty_patch(client, auth, register_user):
+    register_user(client, "autre")
     assert client.patch("/api/auth/me", json={}, headers=auth).status_code == 400
     assert (
         client.patch(
@@ -360,19 +355,10 @@ def test_profile_email_conflict_and_empty_patch(client, auth):
     )
 
 
-def test_delete_account_removes_likes(client, auth):
+def test_delete_account_removes_likes(client, auth, register_user):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
-    other = client.post(
-        "/api/auth/register",
-        json={
-            "handle": "fanclub",
-            "email": "fan@example.org",
-            "password": "motdepasse123",
-            "accept_terms": True,
-            "confirm_age": True,
-        },
-    ).json()
-    other_auth = {"Authorization": f"Bearer {other['token']}"}
+    other = register_user(client, "fanclub", email="fan@example.org")
+    other_auth = {"Authorization": f"Bearer {other.cookies.get('riftarium_session')}"}
     assert client.post(f"/api/decks/{deck_id}/like", headers=other_auth).json()["likes"] == 1
     gone = client.request(
         "DELETE", "/api/auth/me", json={"password": "motdepasse123", "handle": "fanclub"}, headers=other_auth
@@ -516,6 +502,39 @@ def test_collection_bulk(client, auth):
     assert client.post("/api/collection/bulk", json=deck_payload()).status_code == 401
 
 
+def test_collection_bulk_operations_are_exclusive(client, auth):
+    base = {"card_ids": ["ogn-037-298"]}
+    assert client.post("/api/collection/bulk", json={**base, "qty": 1, "qty_delta": 1}, headers=auth).status_code == 422
+    assert client.post("/api/collection/bulk", json={**base, "qty": 1, "remove": True}, headers=auth).status_code == 422
+    assert (
+        client.post("/api/collection/bulk", json={**base, "qty_delta": -1, "remove": True}, headers=auth).status_code
+        == 422
+    )
+    # une seule opération à la fois : accepté
+    assert client.post("/api/collection/bulk", json={**base, "qty": 1}, headers=auth).status_code == 200
+
+
+def test_collection_condition_and_lang_are_validated(client, auth):
+    normalized = client.put(
+        "/api/collection/ogn-037-298",
+        json={"qty": 1, "condition": " nm ", "lang": "fr"},
+        headers=auth,
+    )
+    assert normalized.status_code == 200
+    assert normalized.json()["condition"] == "NM" and normalized.json()["lang"] == "FR"
+
+    assert (
+        client.put("/api/collection/ogn-037-298", json={"qty": 1, "condition": "ZZ"}, headers=auth).status_code == 422
+    )
+    assert client.put("/api/collection/ogn-037-298", json={"qty": 1, "lang": "XX"}, headers=auth).status_code == 422
+    assert (
+        client.post(
+            "/api/collection/ogn-037-298/entries", json={"qty": 1, "condition": "MINT"}, headers=auth
+        ).status_code
+        == 422
+    )
+
+
 # ---------- decks & validation ----------
 
 
@@ -537,27 +556,64 @@ def test_deck_domain_violation(client, auth):
     assert "Lee Sin" in check(deck["checks"], "domains")["message"]
 
 
-def test_deck_update_delete_and_ownership(client, auth):
+def test_deck_update_delete_and_ownership(client, auth, register_user):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
 
     updated = client.put(f"/api/decks/{deck_id}", json=deck_payload(name="V2"), headers=auth)
     assert updated.json()["name"] == "V2"
 
-    other = client.post(
-        "/api/auth/register",
-        json={
-            "handle": "intrus",
-            "email": "intrus@example.org",
-            "password": "motdepasse123",
-            "accept_terms": True,
-            "confirm_age": True,
-        },
-    ).json()["token"]
+    other = register_user(client, "intrus").cookies.get("riftarium_session")
     other_auth = {"Authorization": f"Bearer {other}"}
     assert client.put(f"/api/decks/{deck_id}", json=deck_payload(), headers=other_auth).status_code == 404
     assert client.delete(f"/api/decks/{deck_id}", headers=other_auth).status_code == 404
 
     assert client.delete(f"/api/decks/{deck_id}", headers=auth).status_code == 204
+
+
+def test_deck_rejects_more_than_150_entries(client, auth):
+    payload = deck_payload(cards=[{"card_id": f"fake-{index:03d}", "qty": 1} for index in range(151)])
+    assert client.post("/api/decks", json=payload, headers=auth).status_code == 422
+
+
+def test_deck_duplicate_entries_are_merged(client, auth):
+    payload = deck_payload(
+        cards=[
+            {"card_id": "ogn-037-298", "qty": 2},
+            {"card_id": "ogn-037-298", "qty": 1},
+        ]
+    )
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    assert len(deck["cards"]) == 1
+    assert deck["cards"][0]["qty"] == 3
+
+
+def test_deck_unknown_card_rejected(client, auth):
+    payload = deck_payload(cards=[{"card_id": "xxx-000-000", "qty": 1}])
+    response = client.post("/api/decks", json=payload, headers=auth)
+    assert response.status_code == 422
+    assert "xxx-000-000" in response.json()["detail"]
+
+
+def test_admin_deck_moderation(client, auth):
+    deck = client.post("/api/decks", json=deck_payload(name="deck de connard"), headers=auth).json()
+    assert deck["moderation_status"] == "pending"
+    admin = {"X-Admin-Token": "test-admin-token-ok"}
+    url = f"/api/admin/decks/{deck['id']}/moderation"
+
+    assert client.post(url, json={"status": "approved"}).status_code == 403
+    assert client.post(url, json={"status": "approved"}, headers={"X-Admin-Token": "nope"}).status_code == 403
+    assert client.post(url, json={"status": "nimporte"}, headers=admin).status_code == 422
+    missing = client.post("/api/admin/decks/999999/moderation", json={"status": "approved"}, headers=admin)
+    assert missing.status_code == 404
+
+    approved = client.post(url, json={"status": "approved"}, headers=admin)
+    assert approved.status_code == 200
+    assert approved.json() == {"deck_id": deck["id"], "moderation_status": "published"}
+    assert client.get("/api/community/decks").json()["total"] == 1
+
+    rejected = client.post(url, json={"status": "rejected"}, headers=admin)
+    assert rejected.json()["moderation_status"] == "rejected"
+    assert client.get("/api/community/decks").json()["total"] == 0
 
 
 def test_cards_owned_filter(client, auth):
@@ -741,7 +797,7 @@ def test_community_and_likes(client, auth):
     assert unlike.json()["likes"] == 0
 
 
-def test_community_views_are_unique_and_skip_owner(client, auth):
+def test_community_views_are_unique_and_skip_owner(client, auth, register_user):
     deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
 
     owner_view = client.post(f"/api/decks/{deck_id}/view", headers=auth)
@@ -752,17 +808,8 @@ def test_community_views_are_unique_and_skip_owner(client, auth):
     again = client.post(f"/api/decks/{deck_id}/view")
     assert again.json() == {"deck_id": deck_id, "views": 1, "counted": False}
 
-    other = client.post(
-        "/api/auth/register",
-        json={
-            "handle": "visiteur",
-            "email": "visiteur@example.org",
-            "password": "motdepasse123",
-            "accept_terms": True,
-            "confirm_age": True,
-        },
-    )
-    token = {"Authorization": f"Bearer {other.json()['token']}"}
+    other = register_user(client, "visiteur")
+    token = {"Authorization": f"Bearer {other.cookies.get('riftarium_session')}"}
     counted = client.post(f"/api/decks/{deck_id}/view", headers=token)
     assert counted.json() == {"deck_id": deck_id, "views": 2, "counted": True}
     assert client.get("/api/community/decks").json()["items"][0]["views"] == 2
@@ -836,8 +883,108 @@ def test_moderation_blocks_toxic_deck(client, auth):
     assert client.get(f"/api/decks/{deck['id']}").status_code == 404
 
 
+def test_owner_sees_own_pending_deck(client, auth, register_user):
+    deck = client.post("/api/decks", json=deck_payload(name="deck de connard"), headers=auth).json()
+    assert deck["moderation_status"] == "pending"
+
+    # le propriétaire voit son deck en attente (URL directe et « mes decks »)
+    mine = client.get(f"/api/decks/{deck['id']}", headers=auth)
+    assert mine.status_code == 200
+    assert mine.json()["moderation_status"] == "pending"
+    assert deck["id"] in {d["id"] for d in client.get("/api/decks/mine", headers=auth).json()}
+
+    # les autres non : ni connecté, ni anonyme
+    other = register_user(client, "curieux").cookies.get("riftarium_session")
+    assert client.get(f"/api/decks/{deck['id']}", headers={"Authorization": f"Bearer {other}"}).status_code == 404
+    assert client.get(f"/api/decks/{deck['id']}").status_code == 404
+
+
+def test_put_remoderates_deck(client, auth):
+    deck = client.post("/api/decks", json=deck_payload(name="deck de connard"), headers=auth).json()
+    assert deck["moderation_status"] == "pending"
+
+    # renommage propre : la re-modération publie
+    cleaned = client.put(f"/api/decks/{deck['id']}", json=deck_payload(name="Deck aggro"), headers=auth)
+    assert cleaned.status_code == 200
+    assert cleaned.json()["moderation_status"] == "published"
+    assert client.get("/api/community/decks").json()["total"] == 1
+
+    # nouvelle description toxique : le PUT repasse le deck en attente
+    dirty = client.put(
+        f"/api/decks/{deck['id']}",
+        json=deck_payload(name="Deck aggro", description="écrit par un connard"),
+        headers=auth,
+    )
+    assert dirty.json()["moderation_status"] == "pending"
+    assert client.get("/api/community/decks").json()["total"] == 0
+
+
+def test_my_decks_lists_only_mine(client, auth, register_user):
+    deck_id = client.post("/api/decks", json=deck_payload(), headers=auth).json()["id"]
+    private_id = client.post("/api/decks", json=deck_payload(name="Privé", is_public=False), headers=auth).json()["id"]
+    other = register_user(client, "voisin").cookies.get("riftarium_session")
+    client.cookies.clear()  # ne pas laisser le cookie de session du voisin sur le client
+    client.post("/api/decks", json=deck_payload(name="Deck du voisin"), headers={"Authorization": f"Bearer {other}"})
+
+    mine = client.get("/api/decks/mine", headers=auth).json()
+    assert {d["id"] for d in mine} == {deck_id, private_id}
+    assert client.get("/api/decks/mine").status_code == 401
+
+
+def test_deck_resolves_riftbound_id_fallback(client, auth):
+    # ogn-037a-298 existe en id direct ; un identifiant en casse différente passe par le fallback riftbound_id
+    payload = deck_payload(cards=[{"card_id": "OGN-037-298", "qty": 2}])
+    deck = client.post("/api/decks", json=payload, headers=auth).json()
+    assert deck["cards"][0]["card"]["id"] == "ogn-037-298"
+    assert deck["cards"][0]["qty"] == 2
+
+
+def test_like_and_view_missing_deck_return_404(client, auth):
+    assert client.post("/api/decks/999999/like", headers=auth).status_code == 404
+    assert client.post("/api/decks/999999/view").status_code == 404
+    assert client.get("/api/decks/999999").status_code == 404
+    assert client.get("/api/decks/999999/missing", headers=auth).status_code == 404
+
+
+def test_community_format_filter(client, auth):
+    tournament = client.post("/api/decks", json=deck_payload(name="Tournoi"), headers=auth).json()
+    free = client.post("/api/decks", json=deck_payload(name="Libre", format="free"), headers=auth).json()
+
+    listed = client.get("/api/community/decks", params={"format": "free"}).json()
+    assert [d["id"] for d in listed["items"]] == [free["id"]]
+    both = client.get("/api/community/decks", params={"format": "free,tournament"}).json()
+    assert {d["id"] for d in both["items"]} == {tournament["id"], free["id"]}
+
+
+def test_example_deck_requires_cards_in_database(client, auth):
+    import app.db as db_module
+    from app.models import Card, CollectionItem, DeckCard
+
+    with db_module.SessionLocal() as session:
+        session.query(DeckCard).delete()
+        session.query(CollectionItem).delete()
+        session.query(Card).delete()
+        session.commit()
+    response = client.post("/api/decks/example", json={"mode": "owned"}, headers=auth)
+    assert response.status_code == 422
+    assert "synchronisation" in response.json()["detail"]
+
+
+def test_example_deck_requires_a_legend(client, auth):
+    import app.db as db_module
+    from app.models import Card
+
+    with db_module.SessionLocal() as session:
+        session.query(Card).filter(Card.type == "Legend").delete()
+        session.commit()
+    response = client.post("/api/decks/example", json={"mode": "discover"}, headers=auth)
+    assert response.status_code == 422
+    assert "légende" in response.json()["detail"]
+
+
 def test_demo_community_seed(client, auth):
-    first = client.post("/api/admin/demo-community", params={"limit": 2})
+    admin = {"X-Admin-Token": "test-admin-token-ok"}
+    first = client.post("/api/admin/demo-community", params={"limit": 2}, headers=admin)
     assert first.status_code == 200, first.text
     payload = first.json()
     assert payload["decks"] >= 1
@@ -846,15 +993,34 @@ def test_demo_community_seed(client, auth):
     assert listed["total"] >= 1
     legends = client.get("/api/community/legends").json()
     assert len(legends) >= 1
-    again = client.post("/api/admin/demo-community", params={"limit": 2})
+    again = client.post("/api/admin/demo-community", params={"limit": 2}, headers=admin)
     assert again.json()["removed_demo_users"] >= 1
+
+
+def test_demo_community_requires_admin_token(client):
+    assert client.post("/api/admin/demo-community").status_code == 403
+    assert client.post("/api/admin/demo-community", headers={"X-Admin-Token": "nope"}).status_code == 403
+
+
+def test_demo_community_value_error_returns_422(client, monkeypatch):
+    import app.main as main
+
+    def _fail(db, reset, limit):
+        raise ValueError("seed impossible")
+
+    monkeypatch.setattr(main, "seed_community", _fail)
+    response = client.post("/api/admin/demo-community", headers={"X-Admin-Token": "test-admin-token-ok"})
+    assert response.status_code == 422
+    assert response.json()["detail"] == "seed impossible"
 
 
 def test_demo_community_blocked_outside_local(client, monkeypatch):
     import app.main as main
 
     monkeypatch.setattr(main.settings, "jwt_secret", "production-secret")
-    assert client.post("/api/admin/demo-community").status_code == 403
+    blocked = client.post("/api/admin/demo-community", headers={"X-Admin-Token": "test-admin-token-ok"})
+    assert blocked.status_code == 403
+    assert "démo" in blocked.json()["detail"]
 
 
 # ---------- cache & protection de la source ----------
@@ -863,7 +1029,7 @@ def test_demo_community_blocked_outside_local(client, monkeypatch):
 def test_anonymous_cards_get_cache_headers(client):
     response = client.get("/api/cards")
     assert response.headers["cache-control"] == "public, max-age=300"
-    assert response.headers["vary"] == "Authorization"
+    assert response.headers["vary"] == "Authorization, Cookie"
 
 
 def test_authenticated_cards_not_marked_cacheable(client, auth):

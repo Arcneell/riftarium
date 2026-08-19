@@ -1,28 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import (
     clear_session_cookie,
     current_user,
+    dummy_verify,
     hash_password,
     make_token,
+    needs_rehash,
     set_session_cookie,
     verify_password,
 )
 from ..db import get_db
 from ..models import User
 from ..profiles import apply_profile, avatar_urls, delete_user_account, export_account, list_legend_avatars, user_out
-from ..schemas import AccountDelete, LoginIn, PasswordChange, ProfilePatch, RegisterIn, TokenOut
-from ..security import limit_auth
+from ..schemas import AccountDelete, LoginIn, PasswordChange, ProfilePatch, RegisterIn, SessionOut
+from ..security import enforce_same_origin, limit_auth, limit_auth_account
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def _token(db: Session, user: User, response: Response) -> TokenOut:
-    payload = TokenOut(token=make_token(user), handle=user.handle, avatar_url=avatar_urls(db, [user]).get(user.id))
-    set_session_cookie(response, payload.token)
-    return payload
+def _session(db: Session, user: User, response: Response) -> SessionOut:
+    set_session_cookie(response, make_token(user))
+    return SessionOut(handle=user.handle, avatar_url=avatar_urls(db, [user]).get(user.id))
 
 
 def _require_password(user: User, password: str | None) -> None:
@@ -30,15 +32,19 @@ def _require_password(user: User, password: str | None) -> None:
         raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect")
 
 
-@router.post("/register", response_model=TokenOut, status_code=201)
+def _account_conflict(db: Session, handle: str, email: str) -> bool:
+    return db.scalar(select(User).where((User.handle == handle) | (User.email == email))) is not None
+
+
+@router.post("/register", response_model=SessionOut, status_code=201)
 def register(
     payload: RegisterIn,
     response: Response,
     db: Session = Depends(get_db),
     _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
 ):
-    exists = db.scalar(select(User).where((User.handle == payload.handle) | (User.email == payload.email)))
-    if exists:
+    if _account_conflict(db, payload.handle, payload.email):
         raise HTTPException(status_code=409, detail="Impossible de créer ce compte")
     user = User(
         handle=payload.handle,
@@ -47,28 +53,40 @@ def register(
         token_version=1,
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:  # course entre la vérification et l'insertion
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Impossible de créer ce compte") from None
     db.refresh(user)
-    return _token(db, user, response)
+    return _session(db, user, response)
 
 
-@router.post("/login", response_model=TokenOut)
+@router.post("/login", response_model=SessionOut)
 def login(
     payload: LoginIn,
     response: Response,
     db: Session = Depends(get_db),
     _: None = Depends(limit_auth),
+    __: None = Depends(enforce_same_origin),
 ):
+    limit_auth_account(payload.email)
     user = db.scalar(select(User).where(User.email == payload.email))
-    if user is None or not verify_password(payload.password, user.password_hash):
+    if user is None:
+        dummy_verify()  # même coût qu'une vraie vérification : pas d'oracle temporel sur l'e-mail
         raise HTTPException(status_code=401, detail="Identifiants invalides")
-    return _token(db, user, response)
+    if not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Identifiants invalides")
+    if needs_rehash(user.password_hash):  # renforcement transparent des anciens hashes
+        user.password_hash = hash_password(payload.password)
+        db.commit()
+    return _session(db, user, response)
 
 
 @router.post("/logout", status_code=204)
-def logout(response: Response, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    user.token_version += 1
-    db.commit()
+def logout(response: Response, _user: User = Depends(current_user)):
+    # Ne déconnecte que cet appareil : les autres sessions restent valides
+    # (la révocation globale passe par le changement de mot de passe).
     clear_session_cookie(response)
 
 
@@ -91,7 +109,11 @@ def update_me(payload: ProfilePatch, user: User = Depends(current_user), db: Ses
     if "handle" in data or "email" in data:
         _require_password(user, payload.current_password)
     apply_profile(db, user, data)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:  # course entre la vérification d'unicité et l'écriture
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée") from None
     db.refresh(user)
     return user_out(db, user, include_email=True, include_stats=True)
 
@@ -102,6 +124,7 @@ def change_password(
     response: Response,
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
+    _: None = Depends(enforce_same_origin),
 ):
     _require_password(user, payload.current_password)
     if payload.new_password == payload.current_password:
@@ -110,7 +133,7 @@ def change_password(
     user.token_version += 1
     db.commit()
     db.refresh(user)
-    return _token(db, user, response)
+    return _session(db, user, response)
 
 
 @router.get("/export")

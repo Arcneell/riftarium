@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from .models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
@@ -155,10 +155,14 @@ def export_account(db: Session, user: User) -> dict:
 
 def delete_user_account(db: Session, user: User) -> None:
     liked_ids = list(db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == user.id)).all())
-    for deck_id in liked_ids:
-        deck = db.get(Deck, deck_id)
-        if deck is not None and deck.owner_id != user.id:
-            deck.likes_count = max(0, deck.likes_count - 1)
+    if liked_ids:
+        # Décrément côté serveur : pas de lecture-modification-écriture concurrente.
+        db.execute(
+            update(Deck)
+            .where(Deck.id.in_(liked_ids), Deck.owner_id != user.id, Deck.likes_count > 0)
+            .values(likes_count=Deck.likes_count - 1)
+            .execution_options(synchronize_session=False)
+        )
     db.execute(delete(DeckLike).where(DeckLike.user_id == user.id))
     db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
     db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))

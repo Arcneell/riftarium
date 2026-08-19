@@ -50,7 +50,8 @@ def ensure_schema(bind=None) -> None:
                 conn.execute(text("ALTER TABLE decks ADD COLUMN views_count INTEGER DEFAULT 0 NOT NULL"))
 
     # Collection : plusieurs lots par carte (état/langue) — l'ancienne unicité user+carte saute.
-    if "collection_items" in tables:
+    # SQLite ne supporte pas ALTER TABLE ... DROP CONSTRAINT : uniquement pour les bases Postgres existantes.
+    if "collection_items" in tables and target.dialect.name == "postgresql":
         constraints = {uc["name"] for uc in inspector.get_unique_constraints("collection_items")}
         if "uq_collection_user_card" in constraints:
             with target.begin() as conn:
@@ -61,6 +62,20 @@ def ensure_schema(bind=None) -> None:
                         "ADD CONSTRAINT uq_collection_entry UNIQUE (user_id, card_id, condition, lang)"
                     )
                 )
+
+    # Index déclarés dans models.py pour les nouvelles bases ; create_all ne les ajoute pas
+    # aux tables déjà créées, d'où ces CREATE INDEX idempotents (SQLite et Postgres).
+    index_statements = []
+    if "decks" in tables:
+        index_statements.append(
+            "CREATE INDEX IF NOT EXISTS ix_decks_public_moderation ON decks (is_public, moderation_status)"
+        )
+    if "deck_cards" in tables:
+        index_statements.append("CREATE INDEX IF NOT EXISTS ix_deck_cards_card_id ON deck_cards (card_id)")
+    if index_statements:
+        with target.begin() as conn:
+            for statement in index_statements:
+                conn.execute(text(statement))
 
 
 def get_db():

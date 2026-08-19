@@ -5,9 +5,13 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .cache import cache_get, cache_set
+from .config import settings
 from .models import Card
 from .validation import MAIN_TYPES
 from .variants import copy_family
+
+_POOL_CACHE_KEY = "cards:pool"  # préfixe « cards: » : vidé par admin_sync et au démarrage
 
 
 def is_base(card: Card) -> bool:
@@ -19,7 +23,19 @@ def domains_of(card: Card) -> set[str]:
 
 
 def load_pool(db: Session) -> list[Card]:
-    """Une carte par famille de jeu, version de base de préférence."""
+    """Une carte par famille de jeu, version de base de préférence.
+
+    La sélection (ids) est mise en cache : au prochain appel, une seule requête ciblée
+    au lieu de parcourir toutes les cartes. Invalidée à la synchronisation (préfixe cards:).
+    """
+    cached_ids = cache_get(_POOL_CACHE_KEY)
+    if cached_ids:
+        rows = db.scalars(select(Card).where(Card.id.in_(cached_ids))).all()
+        by_id = {card.id: card for card in rows}
+        pool = [by_id[card_id] for card_id in cached_ids if card_id in by_id]
+        if len(pool) == len(cached_ids):
+            return pool
+
     all_cards = db.scalars(select(Card).order_by(Card.set_id, Card.collector_number, Card.id)).all()
     families: dict[str, Card] = {}
     for card in all_cards:
@@ -27,7 +43,9 @@ def load_pool(db: Session) -> list[Card]:
         current = families.get(key)
         if current is None or (is_base(card) and not is_base(current)):
             families[key] = card
-    return list(families.values())
+    pool = list(families.values())
+    cache_set(_POOL_CACHE_KEY, [card.id for card in pool], settings.cache_ttl_seconds)
+    return pool
 
 
 def legends_in(pool: Sequence[Card]) -> list[Card]:
@@ -127,6 +145,7 @@ def assemble_list(
         if main_total >= 40:
             break
         qty = min(copy_cap(card), owned_qty(card)) if prefer_owned else copy_cap(card)
+        qty = min(qty, 40 - main_total)  # ne pas dépasser les 40 cartes visées (cf. boucle de complément)
         if qty > 0:
             main_entries.append((card, qty))
             main_total += qty

@@ -21,6 +21,8 @@ DEV_IMAGE_HOSTS = frozenset({"cdn.example"})
 
 _hits: dict[str, deque[float]] = defaultdict(deque)
 _lock = threading.Lock()
+_PURGE_HORIZON = 3600  # plus grande fenêtre utilisée (rate limit par compte)
+_last_purge = 0.0
 
 
 def client_ip(request: Request) -> str:
@@ -57,12 +59,14 @@ def allow_rate(key: str, limit: int, window: int = 60) -> bool:
         with suppress(Exception):
             redis_key = f"riftarium:rl:{key}"
             count = int(client.incr(redis_key))
-            if count == 1:
+            # TTL absent (première requête, ou process mort entre INCR et EXPIRE) : on le (re)pose.
+            if count == 1 or int(client.ttl(redis_key)) < 0:
                 client.expire(redis_key, window)
             return count <= limit
 
     now = time.monotonic()
     with _lock:
+        _purge_stale(now)
         bucket = _hits[key]
         cutoff = now - window
         while bucket and bucket[0] <= cutoff:
@@ -73,9 +77,43 @@ def allow_rate(key: str, limit: int, window: int = 60) -> bool:
         return True
 
 
+def _purge_stale(now: float) -> None:
+    """Évite l'accumulation de deques mortes dans le fallback mémoire (appelé sous _lock)."""
+    global _last_purge
+    if now - _last_purge < 60:
+        return
+    _last_purge = now
+    stale = [key for key, bucket in _hits.items() if not bucket or bucket[-1] <= now - _PURGE_HORIZON]
+    for key in stale:
+        del _hits[key]
+
+
 def limit_auth(request: Request) -> None:
     if not allow_rate(f"auth:{client_ip(request)}", settings.auth_rate_limit):
         raise HTTPException(status_code=429, detail="Trop de tentatives — réessayez dans une minute")
+
+
+def limit_auth_account(email: str) -> None:
+    """Rate limit par compte (indépendant de l'IP) : freine le credential stuffing distribué."""
+    key = f"auth:acct:{(email or '').strip().lower()}"
+    if not allow_rate(key, settings.auth_account_rate_limit, window=3600):
+        raise HTTPException(status_code=429, detail="Trop de tentatives sur ce compte — réessayez plus tard")
+
+
+def enforce_same_origin(request: Request) -> None:
+    """Anti-CSRF : refuse les requêtes cross-site sur les endpoints d'authentification.
+
+    Sans header Origin ni Sec-Fetch-Site (clients non navigateurs, tests), on laisse passer.
+    """
+    if (request.headers.get("sec-fetch-site") or "").strip().lower() == "cross-site":
+        raise HTTPException(status_code=403, detail="Origine non autorisée")
+    origin = (request.headers.get("origin") or "").strip()
+    if not origin:
+        return
+    origin_host = (urlparse(origin).hostname or "").lower()
+    request_host = (request.url.hostname or "").lower()
+    if not origin_host or origin_host != request_host:
+        raise HTTPException(status_code=403, detail="Origine non autorisée")
 
 
 def allowed_image_hosts() -> set[str]:

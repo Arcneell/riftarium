@@ -16,7 +16,13 @@ router = APIRouter(prefix="/api", tags=["cards"])
 def _cacheable_headers(response: Response) -> None:
     """Les réponses anonymes sont stables (les cartes changent à la sync) : le navigateur peut les garder."""
     response.headers["Cache-Control"] = "public, max-age=300"
-    response.headers["Vary"] = "Authorization"
+    # L'authentification passe par header Bearer OU cookie de session : les deux font varier la réponse.
+    response.headers["Vary"] = "Authorization, Cookie"
+
+
+def escape_like(value: str) -> str:
+    """Neutralise les jokers SQL (%, _) d'une saisie utilisateur pour un LIKE avec escape='\\\\'."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 RARITY_RANK = case(
@@ -113,18 +119,18 @@ def variant_cards(db: Session, card: Card) -> list[Card]:
     return result
 
 
-def apply_filters(query, *, q, set_id, type, domain, rarity, energy):
+def apply_filters(query, *, q, set_id, type_, domain, rarity, energy):
     if q:
-        like = f"%{q.lower()}%"
+        like = f"%{escape_like(q.lower())}%"
         query = query.where(
-            func.lower(Card.name).like(like)
-            | func.lower(func.coalesce(Card.text_plain, "")).like(like)
-            | func.lower(Card.riftbound_id).like(like)
+            func.lower(Card.name).like(like, escape="\\")
+            | func.lower(func.coalesce(Card.text_plain, "")).like(like, escape="\\")
+            | func.lower(Card.riftbound_id).like(like, escape="\\")
         )
     sets = [value.upper() for value in csv_parts(set_id)]
     if sets:
         query = query.where(Card.set_id.in_(sets))
-    types = csv_parts(type)
+    types = csv_parts(type_)
     if types:
         query = query.where(Card.type.in_(types))
     rarities = csv_parts(rarity)
@@ -132,7 +138,9 @@ def apply_filters(query, *, q, set_id, type, domain, rarity, energy):
         query = query.where(Card.rarity.in_(rarities))
     domains = csv_parts(domain)
     if domains:
-        query = query.where(or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains]))
+        query = query.where(
+            or_(*[cast(Card.domains, String).like(f'%"{escape_like(item)}"%', escape="\\") for item in domains])
+        )
     energies = csv_parts(energy)
     if energies:
         clauses = []
@@ -154,7 +162,7 @@ def list_cards(
     response: Response,
     q: str | None = None,
     set_id: str | None = None,
-    type: str | None = None,
+    type_: str | None = Query(None, alias="type"),  # « type » masquerait le builtin Python
     domain: str | None = None,
     rarity: str | None = None,
     energy: str | None = None,
@@ -169,7 +177,7 @@ def list_cards(
     cache_key = None
     if viewer is None and sort != "random":
         _cacheable_headers(response)
-        cache_key = f"cards:list:{q}|{set_id}|{type}|{domain}|{rarity}|{energy}|{sort}|{page}|{size}"
+        cache_key = f"cards:list:{q}|{set_id}|{type_}|{domain}|{rarity}|{energy}|{sort}|{page}|{size}"
         cached = cache_get(cache_key)
         if cached is not None:
             return cached
@@ -178,7 +186,7 @@ def list_cards(
         select(Card),
         q=q,
         set_id=set_id,
-        type=type,
+        type_=type_,
         domain=domain,
         rarity=rarity,
         energy=energy,
@@ -233,7 +241,9 @@ def get_card(
     cache_key = None
     if viewer is None:
         _cacheable_headers(response)
-        cache_key = f"cards:detail:{card_id.lower()}"
+        # Pas de lower() : find_card résout l'id primaire avec sa casse exacte,
+        # deux casse différentes peuvent désigner des cartes différentes.
+        cache_key = f"cards:detail:{card_id}"
         cached = cache_get(cache_key)
         if cached is not None:
             return cached

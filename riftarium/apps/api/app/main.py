@@ -10,8 +10,9 @@ from .cache import cache_clear, cache_get, cache_set
 from .config import settings, validate_production_settings
 from .db import Base, SessionLocal, engine, ensure_schema, get_db
 from .demo import seed_community
-from .models import Card
+from .models import Card, Deck
 from .routers import auth_routes, cards, collection, decks
+from .schemas import ModerationIn
 from .security import require_admin_token
 from .sync import run_sync
 
@@ -89,11 +90,15 @@ def admin_sync(
             detail=f"Sync déjà effectuée récemment — réessayez dans {wait}s",
         )
 
-    counts = run_sync(db)
+    # Le garde-fou est posé AVANT la sync : deux requêtes simultanées ne lancent pas deux syncs.
     _last_sync_fallback = now
     cache_set("sync:last", now, interval)
-    cache_clear("cards:")
-    cache_clear("sets:")
+    try:
+        counts = run_sync(db)
+    finally:
+        # Même en cas d'échec partiel, on ne laisse pas un cache incohérent avec la base.
+        cache_clear("cards:")
+        cache_clear("sets:")
     return counts
 
 
@@ -105,11 +110,30 @@ def admin_demo_community(
     reset: bool = True,
     limit: int | None = Query(default=None, ge=1, le=200),
     db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
 ):
-    """Remplit la communauté de decks de démo (local uniquement)."""
+    """Remplit la communauté de decks de démo (local uniquement, jeton admin requis)."""
+    require_admin_token(x_admin_token)
     if settings.jwt_secret not in _DEMO_SECRETS:
         raise HTTPException(status_code=403, detail="Jeux de démo désactivés hors environnement local")
     try:
         return seed_community(db, reset=reset, limit=limit)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/decks/{deck_id}/moderation")
+def admin_moderate_deck(
+    deck_id: int,
+    payload: ModerationIn,
+    db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+):
+    """Décision de modération sur un deck (débloque les decks « pending »)."""
+    require_admin_token(x_admin_token)
+    deck = db.get(Deck, deck_id)
+    if deck is None:
+        raise HTTPException(status_code=404, detail="Deck introuvable")
+    deck.moderation_status = "published" if payload.status == "approved" else "rejected"
+    db.commit()
+    return {"deck_id": deck.id, "moderation_status": deck.moderation_status}
