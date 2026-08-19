@@ -1,43 +1,53 @@
+# Mises à jour automatiques des dépendances.
+# Patch et minor : regroupés par écosystème et auto-mergés si la CI passe
+# (voir workflows/dependabot-automerge.yml). Les majeurs restent des PR
+# individuelles à valider à la main.
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /riftarium/apps/web
+  - package-ecosystem: "pip"
+    directory: "/riftarium/apps/api"
     schedule:
-      interval: weekly
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
     groups:
-      npm:
-        patterns: ["*"]
+      python-mineures:
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "deps(api)"
 
-  - package-ecosystem: pip
-    directory: /riftarium/apps/api
+  - package-ecosystem: "npm"
+    directory: "/riftarium/apps/web"
     schedule:
-      interval: weekly
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
     groups:
-      pip:
-        patterns: ["*"]
+      npm-mineures:
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "deps(web)"
 
-  # Majors Docker gérés à la main (Node : LTS pairs uniquement, jamais les
-  # versions impaires non-LTS que Dependabot propose sinon).
-  - package-ecosystem: docker
-    directory: /riftarium/apps/web
+  - package-ecosystem: "docker"
+    directories:
+      - "/riftarium/apps/api"
+      - "/riftarium/apps/web"
     schedule:
-      interval: weekly
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
+    commit-message:
+      prefix: "deps(docker)"
 
-  - package-ecosystem: docker
-    directory: /riftarium/apps/api
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: weekly
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      github-actions:
-        patterns: ["*"]
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
+    commit-message:
+      prefix: "deps(ci)"

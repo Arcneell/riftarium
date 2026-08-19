@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Filet pour les merges Dependabot : un merge effectué via GITHUB_TOKEN ne
+  # déclenche pas les workflows push (anti-récursion GitHub). Ce déploiement
+  # hebdomadaire embarque les bumps auto-mergés du lundi matin.
+  schedule:
+    - cron: "0 5 * * 1" # lundi 09:00 Réunion (UTC+4)
 
 permissions:
   contents: read
