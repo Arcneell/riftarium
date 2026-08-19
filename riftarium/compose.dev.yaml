@@ -10,6 +10,9 @@ services:
     volumes:
       - ./apps/api/app:/srv/app
       - ./apps/api/tests:/srv/tests
+      # Migrations : itérer sur alembic/ sans rebuilder l'image.
+      - ./apps/api/alembic:/srv/alembic
+      - ./apps/api/alembic.ini:/srv/alembic.ini
     environment:
       RIFTARIUM_ENV: dev
       COOKIE_SECURE: "0"

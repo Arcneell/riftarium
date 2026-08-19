@@ -99,6 +99,24 @@ cd apps/api && pip install -r requirements.txt -r requirements-dev.txt && pytest
 cd apps/web && npm ci && npm test
 ```
 
+### Migrations de schéma
+
+Le schéma est versionné avec [Alembic](https://alembic.sqlalchemy.org/)
+(`apps/api/alembic/`). Les migrations s'appliquent **automatiquement au
+démarrage de l'API** (`run_migrations()` dans `app/db.py`) : rien à lancer
+en déploiement. Après un changement dans `app/models.py`, générer la
+migration puis la relire avant de la committer :
+
+```bash
+cd apps/api && alembic revision --autogenerate -m "description du changement"
+```
+
+Reprise des instances existantes : une base créée avant Alembic (via
+l'ancien `create_all` + `ensure_schema`) est détectée au démarrage (tables
+présentes, pas de table `alembic_version`) et marquée (`stamp`) sur la
+migration baseline sans la rejouer ; seules les migrations suivantes
+s'appliquent.
+
 ### Sauvegardes PostgreSQL
 
 `scripts/backup_db.sh` fait un `pg_dump` compressé dans `backups/`

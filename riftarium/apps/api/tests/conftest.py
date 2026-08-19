@@ -189,6 +189,10 @@ def _reset_module_state():
 
 @pytest.fixture()
 def client():
+    # create_all (et non run_migrations) pour préparer chaque test : bien plus rapide,
+    # et sûr car test_migrations.py vérifie que la chaîne Alembic produit un schéma
+    # identique à Base.metadata. Le lifespan (TestClient) exécute quand même
+    # run_migrations : premier test → stamp, suivants → upgrade no-op.
     Base.metadata.drop_all(db_module.engine)
     Base.metadata.create_all(db_module.engine)
     with db_module.SessionLocal() as session:

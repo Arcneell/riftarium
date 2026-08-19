@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .cache import cache_clear, cache_get, cache_set
 from .config import settings, validate_production_settings
-from .db import Base, SessionLocal, engine, ensure_schema, get_db
+from .db import SessionLocal, get_db, run_migrations
 from .demo import seed_community
 from .models import Card, Deck
 from .routers import auth_routes, cards, collection, decks
@@ -25,8 +25,7 @@ log = logging.getLogger("riftarium")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_production_settings()
-    Base.metadata.create_all(engine)
-    ensure_schema()
+    run_migrations()
     # Une instance précédente a pu mettre en cache un état partiel (sync en cours)
     # ou obsolète (schéma/données modifiés) : on repart d'un cache propre.
     cache_clear("cards:")

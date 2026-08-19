@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt \
 # Image de prod minimale : ni tests/ ni pytest.ini (les tests tournent en CI
 # et en local, hors Docker — voir riftarium/README.md).
 COPY --chown=app:app app/ app/
+# Migrations Alembic : appliquées automatiquement au démarrage (app/db.py, run_migrations).
+COPY --chown=app:app alembic.ini .
+COPY --chown=app:app alembic/ alembic/
 
 USER app
 EXPOSE 8000
