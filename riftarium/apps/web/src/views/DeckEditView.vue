@@ -724,7 +724,9 @@ onBeforeUnmount(() => {
 
         <p class="muted mono dbuilder-count">
           {{ result.total }} carte(s) <span v-if="loading">— chargement…</span>
-          <span class="dbuilder-hint">— cliquez ou glissez une carte vers le deck</span>
+          <span class="dbuilder-hint">{{
+            finePointer ? "— cliquez ou glissez une carte vers le deck" : "— touchez une carte pour l'ajouter au deck"
+          }}</span>
         </p>
 
         <div ref="grid" class="dbuilder-grid" :style="{ '--tile-min': `${tileMin}px` }">
@@ -903,7 +905,14 @@ onBeforeUnmount(() => {
               </div>
             </TransitionGroup>
             <p v-if="!grouped[zone.key].length" class="zone-empty">
-              {{ canEdit ? "Glissez des cartes ici." : "Aucune carte dans cette zone." }}
+              <!-- Au tactile le glisser-déposer est désactivé : c'est le tap qui ajoute. -->
+              {{
+                !canEdit
+                  ? "Aucune carte dans cette zone."
+                  : finePointer
+                    ? "Glissez des cartes ici."
+                    : "Touchez une carte de la galerie pour l'ajouter."
+              }}
             </p>
           </template>
         </div>
