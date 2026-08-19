@@ -114,8 +114,9 @@ cd apps/api && alembic revision --autogenerate -m "description du changement"
 Reprise des instances existantes : une base créée avant Alembic (via
 l'ancien `create_all` + `ensure_schema`) est détectée au démarrage (tables
 présentes, pas de table `alembic_version`) et marquée (`stamp`) sur la
-migration baseline sans la rejouer ; seules les migrations suivantes
-s'appliquent.
+baseline 0001 sans la rejouer. 0001 décrit le schéma visé (e-mails inclus),
+pas forcément celui réellement en place : la migration 0002 backfill alors
+`users.email_verified_at` et `auth_tokens` si elles manquent.
 
 ### Sauvegardes PostgreSQL
 

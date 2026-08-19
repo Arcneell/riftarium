@@ -8,8 +8,9 @@ from .config import settings
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
-# Révision « baseline » : schéma complet au moment de l'adoption d'Alembic.
-# Les bases créées avant (create_all + ensure_schema) sont stampées dessus.
+# Révision « baseline » : on tamponne les bases pré-Alembic ici pour ne pas
+# rejouer les CREATE TABLE. 0001 décrit le schéma *visé* (y compris e-mails),
+# pas celui réellement en place : 0002 backfill la différence.
 BASELINE_REVISION = "0001"
 
 
@@ -32,10 +33,12 @@ def run_migrations(bind=None) -> None:
     """Amène la base au dernier schéma via Alembic (appelé au démarrage de l'API).
 
     Reprise des instances créées avant Alembic (create_all + ensure_schema) :
-    si des tables applicatives existent sans table alembic_version, leur schéma
-    correspond déjà à la baseline — on la marque appliquée (stamp) sans la
-    rejouer, puis upgrade applique les migrations suivantes. Sur une base
-    neuve, upgrade joue la baseline qui crée tout. Idempotent.
+    si `users` existe sans `alembic_version`, on tamponne la baseline 0001
+    (évite de rejouer les CREATE TABLE) puis `upgrade head` joue les
+    migrations suivantes. 0002 est idempotente : elle ajoute
+    `email_verified_at` / `auth_tokens` si 0001 a été tamponnée sur un
+    schéma plus ancien. Sur une base neuve, 0001 crée tout et 0002 est un
+    no-op. Idempotent.
     """
     from alembic import command
 
