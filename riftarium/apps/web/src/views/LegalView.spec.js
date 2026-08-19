@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { describe, expect, it } from "vitest"
 import LegalView from "./LegalView.vue"
-import { LEGAL_NAV, RIOT_DISCLAIMER_EN } from "../legal.js"
+import { LEGAL_NAV, RIOT_DISCLAIMER_EN, RIOT_GENERAL_DISCLAIMER_EN } from "../legal.js"
 
 const legalRoutes = [
   ...LEGAL_NAV.map((item) => ({
@@ -26,7 +26,8 @@ describe("LegalView", () => {
   it("affiche le disclaimer Riot exigé sur les mentions légales", async () => {
     const wrapper = await mountPage("/mentions-legales")
     expect(wrapper.text()).toContain(RIOT_DISCLAIMER_EN)
-    expect(wrapper.text()).toContain("Legal Jibber Jabber")
+    expect(wrapper.text()).toContain(RIOT_GENERAL_DISCLAIMER_EN)
+    expect(wrapper.text()).toContain("bêta fermée")
     expect(wrapper.text()).toContain("Riftcodex")
     expect(wrapper.text()).toContain("OVH SAS")
     expect(wrapper.text()).toContain("contact@riftarium.re")
@@ -45,6 +46,7 @@ describe("LegalView", () => {
     const wrapper = await mountPage("/cgu")
     expect(wrapper.text()).toContain("format non officiel")
     expect(wrapper.text()).toContain(RIOT_DISCLAIMER_EN)
+    expect(wrapper.text()).toContain(RIOT_GENERAL_DISCLAIMER_EN)
   })
 
   it("indique que les polices ne passent plus par Google Fonts", async () => {

@@ -4,7 +4,7 @@ Compagnon communautaire tout-en-un pour **Riftbound**, le TCG de Riot Games :
 cartothèque, collection personnelle, deck builder avec validation des règles officielles,
 et partage de decks avec likes et modération automatique.
 
-**Projet fan-made à but non lucratif, non affilié à Riot Games.**
+**Projet fan-made à but non lucratif, non affilié à Riot Games. Bêta fermée, non indexée.**
 
 ## Licence
 
@@ -24,7 +24,7 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Deck builder + validation règles tournoi / mode libre | ✅ |
 | Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
-| Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 |
+| Scan mobile, estimation Cardmarket, textes FR (sans stats de méta) | 🔜 |
 
 ## Architecture
 
@@ -208,6 +208,10 @@ fichiers suivis.
 - Règles officielles : texte français intégral embarqué dans le dépôt (`data/rules-fr.json`).
 
 ## Mentions légales
+
+Riftarium isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+
+Riftarium n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ni de quiconque officiellement impliqué dans la production ou la gestion des propriétés de Riot Games.
 
 Riftarium was created under Riot Games' "Legal Jibber Jabber" policy using assets
 owned by Riot Games. Riot Games does not endorse or sponsor this project.
