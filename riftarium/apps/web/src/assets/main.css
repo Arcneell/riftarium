@@ -1930,7 +1930,7 @@ footer {
   .hero-grid,
   .cols-2,
   .card-sheet {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .hero-fan {
     height: 320px;
@@ -1951,7 +1951,7 @@ footer {
     grid-template-columns: 1fr 1fr;
   }
   .legal-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .legal-nav {
     position: static;
@@ -2020,10 +2020,10 @@ footer {
     display: none;
   }
   .modules {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .footer-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 26px;
   }
   .traceurs-notice {
@@ -2337,7 +2337,7 @@ footer {
 
 @media (max-width: 980px) {
   .rules-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .rules-toc {
     position: static;
@@ -3085,7 +3085,7 @@ footer {
 
 @media (max-width: 980px) {
   .guide-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .guide-board {
     position: static;
@@ -3095,7 +3095,7 @@ footer {
     display: none;
   }
   .tier-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3260,7 +3260,7 @@ footer {
 }
 @media (max-width: 980px) {
   .topic-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .topic-side {
     position: static;
@@ -4184,7 +4184,7 @@ body.drag-active * {
 
 @media (max-width: 1100px) {
   .dbuilder {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .dbuilder-deck {
     position: relative;
@@ -4650,7 +4650,7 @@ button.deck-box-stat:hover,
 
 @media (max-width: 900px) {
   .deck-view-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .deck-view-side {
     order: -1;
@@ -4786,7 +4786,7 @@ button.deck-box-stat:hover,
 
 @media (max-width: 900px) {
   .profile-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .profile-hero {
     align-items: flex-start;
@@ -4953,6 +4953,12 @@ button.deck-box-stat:hover,
   .demo-stage {
     aspect-ratio: 4 / 3;
   }
+  /* La barre de contrôles ne doit jamais imposer sa largeur à la page. */
+  .demo-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
   .demo-item.unit {
     width: 34px;
     height: 34px;
@@ -4980,7 +4986,8 @@ button.deck-box-stat:hover,
     min-width: 0;
     max-width: calc(100vw - 32px);
     max-height: min(46dvh, 420px);
-    z-index: 60;
+    /* Au-dessus du bandeau traceurs (80), sous les modales (1000). */
+    z-index: 95;
   }
 
   /* Deck builder : compteurs sur 2 colonnes. */
