@@ -49,7 +49,11 @@ Docker : `http://riftarium-web:8080`). Réglages WAF : `bunkerweb.env.example`.
 
 Le service `web` est le seul rattaché au réseau externe `bunkerweb` ;
 `api`, `db` et `redis` restent sur le réseau interne du projet. Créer ce
-réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb :
+réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb.
+BunkerWeb n'autorise par défaut que GET/POST/HEAD : sans
+`ALLOWED_METHODS=GET|POST|HEAD|OPTIONS|PUT|PATCH|DELETE` (voir
+`bunkerweb.env.example`), les changements d'avatar, de collection et de
+decks répondent 405.
 
 ```bash
 docker network create bunkerweb

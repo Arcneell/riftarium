@@ -51,10 +51,13 @@ export function setSession(token, handle, avatarUrl = null) {
 }
 
 /* FastAPI renvoie parfois `detail` sous forme de liste (erreurs 422) : on en tire un message lisible. */
-function readableDetail(detail) {
+function readableDetail(detail, status) {
   if (typeof detail === "string" && detail) return detail
   if (Array.isArray(detail)) return detail[0]?.msg || "Requête invalide"
   if (detail) return "Requête invalide"
+  if (status === 405) return "Action bloquée par le pare-feu du site"
+  if (status === 429) return "Trop de requêtes, réessayez dans une minute"
+  if (status >= 500) return "Le serveur a rencontré une erreur"
   return "Erreur inattendue"
 }
 
@@ -81,7 +84,7 @@ export async function api(path, { method = "GET", body } = {}) {
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    throw new ApiError(response.status, readableDetail(data.detail))
+    throw new ApiError(response.status, readableDetail(data.detail, response.status))
   }
   return data
 }
