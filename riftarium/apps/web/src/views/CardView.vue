@@ -39,6 +39,8 @@ const mightSrc = glyphUrl("might")
 watch(
   () => route.params.id,
   async (id) => {
+    /* Transition sortante : l'id devient undefined, pas de requête parasite GET /api/cards/undefined. */
+    if (!id) return
     card.value = null
     error.value = ""
     saved.value = ""

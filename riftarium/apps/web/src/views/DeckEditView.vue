@@ -18,7 +18,11 @@ const error = ref("")
 const saveState = ref("") // "" | "saving" | "saved" | "error"
 const limitMessage = ref("")
 const showExport = ref(false)
-const canEdit = computed(() => Boolean(session.handle && deck.value && session.handle === deck.value.owner))
+/* Session expirée pendant l'édition : on garde le brouillon affiché et modifiable localement. */
+const sessionExpired = ref(false)
+const canEdit = computed(
+  () => Boolean(deck.value && (sessionExpired.value || (session.handle && session.handle === deck.value.owner)))
+)
 
 const finePointer = typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches
 const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -104,10 +108,15 @@ const missingInDeck = computed(() =>
 const flashes = reactive(new Set())
 const shakes = reactive(new Set())
 let limitTimer = null
+const pulseTimers = new Set()
 
 function pulse(set, key, duration = 600) {
   set.add(key)
-  setTimeout(() => set.delete(key), duration)
+  const timer = setTimeout(() => {
+    set.delete(key)
+    pulseTimers.delete(timer)
+  }, duration)
+  pulseTimers.add(timer)
 }
 
 function notify(message) {
@@ -198,6 +207,7 @@ let saveTimer = null
 async function load() {
   try {
     deck.value = await api(`/api/decks/${route.params.id}`)
+    sessionExpired.value = false
     savedSnapshot = snapshot()
     if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
     if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
@@ -223,7 +233,7 @@ async function load() {
 }
 
 async function save() {
-  if (!canEdit.value || !deck.value || snapshot() === savedSnapshot) return
+  if (!canEdit.value || !deck.value || sessionExpired.value || snapshot() === savedSnapshot) return
   saveState.value = "saving"
   const sent = snapshot()
   try {
@@ -245,7 +255,13 @@ async function save() {
     saveState.value = "saved"
   } catch (e) {
     saveState.value = "error"
-    error.value = e.message
+    /* 401 : on ne bascule pas en lecture seule, le brouillon reste affiché et éditable localement. */
+    if (e.status === 401) {
+      sessionExpired.value = true
+      error.value = "Session expirée, reconnectez-vous pour enregistrer vos modifications."
+    } else {
+      error.value = e.message
+    }
   }
 }
 
@@ -258,7 +274,7 @@ watch(
   () => (deck.value ? snapshot() : ""),
   (next, previous) => {
     if (!canEdit.value || !deck.value || !previous || next === savedSnapshot) return
-    error.value = ""
+    if (!sessionExpired.value) error.value = "" // le message « session expirée » reste affiché
     scheduleSave()
   }
 )
@@ -316,14 +332,21 @@ function scheduleMeasure() {
   resizeTimer = setTimeout(measure, 160)
 }
 
+/* Compteur de séquence : une réponse arrivée après une requête plus récente est ignorée. */
+let gallerySeq = 0
+
 async function loadGallery() {
+  const seq = ++gallerySeq
   loading.value = true
   try {
-    result.value = await api(`/api/cards?${cardsQuery(gallery, size.value)}`)
+    const data = await api(`/api/cards?${cardsQuery(gallery, size.value)}`)
+    if (seq !== gallerySeq) return
+    result.value = data
   } catch (e) {
+    if (seq !== gallerySeq) return
     error.value = e.message
   } finally {
-    loading.value = false
+    if (seq === gallerySeq) loading.value = false
   }
 }
 
@@ -524,14 +547,24 @@ async function copyMissing() {
 watch(
   () => route.params.id,
   async () => {
+    /* Transition sortante : l'id devient undefined, on ne vide pas le deck avant le save de secours. */
+    if (!route.params.id) return
     deck.value = null
     await load()
   },
   { immediate: true }
 )
 
+/* Modifications non sauvegardées : le navigateur demande confirmation avant de quitter la page. */
+function onBeforeUnload(event) {
+  if (!canEdit.value || !deck.value || snapshot() === savedSnapshot) return
+  event.preventDefault()
+  event.returnValue = "" // requis par les navigateurs historiques
+}
+
 onMounted(async () => {
   measure()
+  window.addEventListener("beforeunload", onBeforeUnload)
   window.addEventListener("resize", scheduleMeasure)
   window.addEventListener("scroll", hidePreview, { passive: true })
   if (typeof ResizeObserver !== "undefined" && grid.value) {
@@ -557,15 +590,19 @@ watch(canEdit, async (edit) => {
 })
 
 onBeforeUnmount(() => {
+  /* Save de rattrapage d'abord, tant que le deck est encore en mémoire. */
   clearTimeout(saveTimer)
+  save()
   clearTimeout(galleryTimer)
   clearTimeout(resizeTimer)
   clearTimeout(limitTimer)
+  for (const timer of pulseTimers) clearTimeout(timer)
+  pulseTimers.clear()
+  window.removeEventListener("beforeunload", onBeforeUnload)
   window.removeEventListener("resize", scheduleMeasure)
   window.removeEventListener("scroll", hidePreview)
   window.removeEventListener("pointermove", onDragMove)
   observer?.disconnect()
-  save()
 })
 </script>
 

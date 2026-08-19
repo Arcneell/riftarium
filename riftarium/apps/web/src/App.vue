@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from "vue"
+import { onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session, setSession } from "./api.js"
 import Logo from "./components/Logo.vue"
@@ -18,7 +18,14 @@ watch(
   }
 )
 
+/* Session expirée (401 renvoyé par l'API) : direction la connexion, en gardant la page en cours. */
+function onSessionExpired() {
+  if (route.path === "/connexion") return
+  router.push({ path: "/connexion", query: { suite: route.fullPath } })
+}
+
 onMounted(async () => {
+  window.addEventListener("riftarium:session-expired", onSessionExpired)
   if (!session.token) return
   try {
     const me = await api("/api/auth/me")
@@ -26,6 +33,10 @@ onMounted(async () => {
   } catch {
     /* 401 déjà géré par api() */
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("riftarium:session-expired", onSessionExpired)
 })
 
 async function logout() {

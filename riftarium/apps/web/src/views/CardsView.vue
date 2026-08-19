@@ -94,20 +94,26 @@ function scheduleMeasure() {
 }
 
 let firstLoad = true
+/* Compteur de séquence : une réponse arrivée après une requête plus récente est ignorée. */
+let lastSeq = 0
 
 async function load() {
+  const seq = ++lastSeq
   loading.value = true
   error.value = ""
   try {
-    result.value = await api(`/api/cards?${cardsQuery(state, size.value)}`)
+    const data = await api(`/api/cards?${cardsQuery(state, size.value)}`)
+    if (seq !== lastSeq) return
+    result.value = data
     if (firstLoad) {
       firstLoad = false
       restoreScroll()
     }
   } catch (e) {
+    if (seq !== lastSeq) return
     error.value = e.message
   } finally {
-    loading.value = false
+    if (seq === lastSeq) loading.value = false
   }
 }
 

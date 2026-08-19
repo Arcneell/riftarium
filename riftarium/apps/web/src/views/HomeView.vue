@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
+import { RULE_COUNTS } from "../stats.js"
 import CardRiver from "../components/CardRiver.vue"
 
 const cardCount = ref(null)
@@ -125,8 +126,14 @@ onMounted(async () => {
         <b>{{ setCount ?? "—" }}</b
         ><span>sets</span>
       </div>
-      <div class="figure"><b>2 137</b><span>règles du jeu</span></div>
-      <div class="figure"><b>812</b><span>règles de tournoi</span></div>
+      <div class="figure">
+        <b>{{ RULE_COUNTS.core.toLocaleString("fr-FR") }}</b
+        ><span>règles du jeu</span>
+      </div>
+      <div class="figure">
+        <b>{{ RULE_COUNTS.tournament.toLocaleString("fr-FR") }}</b
+        ><span>règles de tournoi</span>
+      </div>
     </div>
   </div>
 

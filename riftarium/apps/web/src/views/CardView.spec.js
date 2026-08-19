@@ -47,7 +47,7 @@ async function mountView(id, card) {
     global: { plugins: [router], directives: { tilt: {} } }
   })
   await flushPromises()
-  return wrapper
+  return { wrapper, router }
 }
 
 describe("CardView", () => {
@@ -56,7 +56,7 @@ describe("CardView", () => {
   })
 
   it("affiche une unité en deux colonnes, avec l'image entière", async () => {
-    const wrapper = await mountView("ogn-037-298", sample())
+    const { wrapper } = await mountView("ogn-037-298", sample())
     expect(wrapper.get(".card-sheet").classes()).not.toContain("landscape")
     expect(wrapper.get("img.full").attributes("src")).toContain("w=720")
     expect(wrapper.get("h1").text()).toBe("Immortal Phoenix")
@@ -69,7 +69,7 @@ describe("CardView", () => {
   })
 
   it("passe en mise en page terrain pour une carte paysage", async () => {
-    const wrapper = await mountView(
+    const { wrapper } = await mountView(
       "ogn-275-298",
       sample({
         id: "ogn-275-298",
@@ -89,6 +89,17 @@ describe("CardView", () => {
     expect(wrapper.text()).toContain("Terrain")
     expect(wrapper.text()).toContain("Champ de bataille")
     expect(wrapper.find(".stat-row .stat").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("navigation sortante : pas de requête parasite GET /api/cards/undefined", async () => {
+    const { wrapper, router } = await mountView("ogn-037-298", sample())
+    api.mockClear()
+    router.push("/cartes")
+    await flushPromises()
+    expect(api.mock.calls.every(([path]) => !String(path).includes("undefined"))).toBe(true)
+    // la fiche en cours n'est pas effacée pendant la transition de sortie
+    expect(wrapper.find("h1").exists()).toBe(true)
     wrapper.unmount()
   })
 })

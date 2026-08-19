@@ -69,4 +69,23 @@ describe("AuthView", () => {
     })
     expect(router.currentRoute.value.path).toBe("/")
   })
+
+  it("désactive le bouton et ignore les doubles soumissions pendant la requête", async () => {
+    let resolveLogin
+    api.mockImplementation(() => new Promise((resolve) => (resolveLogin = resolve)))
+    const { wrapper, router } = await mountView()
+    await wrapper.get("#email").setValue("nyra@example.org")
+    await wrapper.get("#password").setValue("motdepasse123")
+
+    await wrapper.get("form").trigger("submit")
+    expect(wrapper.get("button[type=submit]").attributes("disabled")).toBeDefined()
+
+    await wrapper.get("form").trigger("submit")
+    await wrapper.get("form").trigger("submit")
+    expect(api).toHaveBeenCalledTimes(1)
+
+    resolveLogin({ handle: "nyra", avatar_url: null })
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/")
+  })
 })

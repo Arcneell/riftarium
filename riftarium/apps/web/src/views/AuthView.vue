@@ -15,8 +15,10 @@ const password = ref("")
 const acceptTerms = ref(false)
 const confirmAge = ref(false)
 const error = ref("")
+const submitting = ref(false)
 
 async function submit() {
+  if (submitting.value) return // ignore les doubles soumissions pendant la requête
   error.value = ""
   if (mode.value === "register") {
     if (!confirmAge.value) {
@@ -28,6 +30,7 @@ async function submit() {
       return
     }
   }
+  submitting.value = true
   try {
     const result =
       mode.value === "login"
@@ -46,6 +49,8 @@ async function submit() {
     router.push(route.query.suite || "/")
   } catch (e) {
     error.value = e.message
+  } finally {
+    submitting.value = false
   }
 }
 </script>
@@ -115,8 +120,8 @@ async function submit() {
             </span>
           </label>
         </template>
-        <button class="btn btn-gold" type="submit" style="width: 100%">
-          {{ mode === "login" ? "Se connecter" : "Créer mon compte" }}
+        <button class="btn btn-gold" type="submit" style="width: 100%" :disabled="submitting">
+          {{ submitting ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte" }}
         </button>
         <p v-if="error" class="error">{{ error }}</p>
       </form>

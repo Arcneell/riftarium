@@ -153,6 +153,16 @@ export const router = createRouter({
         title: "Signaler un contenu",
         description: "Signaler un contenu illicite ou abusif sur Riftarium."
       }
+    },
+    {
+      /* Attrape-tout : toute adresse inconnue affiche la page 404 (non indexée). */
+      path: "/:pathMatch(.*)*",
+      component: () => import("./views/NotFoundView.vue"),
+      meta: {
+        noindex: true,
+        title: "Page introuvable",
+        description: "Cette page n'existe pas sur Riftarium."
+      }
     }
   ],
   /* Ne remonte pas quand seule la query change (étapes du guide, filtres). */

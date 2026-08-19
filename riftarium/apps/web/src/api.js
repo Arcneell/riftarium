@@ -47,14 +47,17 @@ export function setSession(token, handle, avatarUrl = null) {
   }
 }
 
-function isJwt(value) {
-  return typeof value === "string" && value.split(".").length === 3
+/* FastAPI renvoie parfois `detail` sous forme de liste (erreurs 422) : on en tire un message lisible. */
+function readableDetail(detail) {
+  if (typeof detail === "string" && detail) return detail
+  if (Array.isArray(detail)) return detail[0]?.msg || "Requête invalide"
+  if (detail) return "Requête invalide"
+  return "Erreur inattendue"
 }
 
 export async function api(path, { method = "GET", body } = {}) {
   const headers = {}
   if (body !== undefined) headers["Content-Type"] = "application/json"
-  if (isJwt(session.token)) headers["Authorization"] = `Bearer ${session.token}`
 
   const response = await fetch(path, {
     method,
@@ -65,13 +68,17 @@ export async function api(path, { method = "GET", body } = {}) {
 
   if (response.status === 401) {
     setSession(null, null)
+    /* Prévient l'application (App.vue redirige vers la connexion) sans coupler api.js au routeur. */
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("riftarium:session-expired"))
+    }
     throw new ApiError(401, "Connexion requise")
   }
   if (response.status === 204) return null
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    throw new ApiError(response.status, data.detail || "Erreur inattendue")
+    throw new ApiError(response.status, readableDetail(data.detail))
   }
   return data
 }

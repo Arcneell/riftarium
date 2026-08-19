@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
+import { escapeHtml } from "../htmlText.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
@@ -20,8 +21,6 @@ let locate = new Map()
 let searchTimer = null
 
 /* --- utilitaires du lecteur de règles --- */
-const escapeHtml = (value) =>
-  value.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
 const normalize = (value) =>
   value.replace(/./gu, (char) => {
     const folded = char
@@ -162,9 +161,12 @@ function toggleChapter(chapterId) {
   openChapters.value = new Set(openChapters.value)
 }
 
+onBeforeUnmount(() => clearTimeout(searchTimer))
+
 onMounted(async () => {
   try {
     const response = await fetch("/data/rules-fr.json")
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
     documents.value = await response.json()
     buildIndex()
     const q = route.query
@@ -199,12 +201,11 @@ onMounted(async () => {
   <section style="padding-top: 36px" v-if="documents">
     <div class="wrap">
       <div class="toolbar">
-        <div class="filters" role="tablist" aria-label="Document">
+        <div class="filters" role="group" aria-label="Document">
           <button
             v-for="(d, key) in documents"
             :key="key"
             class="filter"
-            role="tab"
             :aria-pressed="doc === key"
             @click="switchDoc(key)"
           >
@@ -290,8 +291,13 @@ onMounted(async () => {
                 <p v-html="formatText(example.text)"></p>
               </div>
               <div v-if="entry.refs.length" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px">
-                <button v-for="ref in entry.refs" :key="ref.number" class="rref" :data-ref="bare(ref.number)">
-                  → {{ ref.number }} {{ ref.label }}
+                <button
+                  v-for="reference in entry.refs"
+                  :key="reference.number"
+                  class="rref"
+                  :data-ref="bare(reference.number)"
+                >
+                  → {{ reference.number }} {{ reference.label }}
                 </button>
               </div>
             </div>

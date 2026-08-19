@@ -5,7 +5,11 @@ import { TRACEURS_ACK_KEY } from "../legal.js"
 const visible = ref(typeof localStorage !== "undefined" && !localStorage.getItem(TRACEURS_ACK_KEY))
 
 function dismiss() {
-  localStorage.setItem(TRACEURS_ACK_KEY, "1")
+  try {
+    localStorage.setItem(TRACEURS_ACK_KEY, "1")
+  } catch {
+    /* stockage indisponible (tests / mode privé) */
+  }
   visible.value = false
 }
 </script>
