@@ -1,6 +1,6 @@
 # Développement uniquement : le code est monté en volume, Vite recharge à chaud.
 # Même version majeure que l'image de prod (node:24-alpine).
-FROM node:24-alpine
+FROM node:26-alpine
 WORKDIR /app
 EXPOSE 5173
 CMD ["sh", "-c", "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"]
