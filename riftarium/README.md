@@ -76,7 +76,7 @@ passe) partent de la boîte OVH `contact@riftarium.re`. Variables dans `.env` :
 | `SMTP_PORT` | `465` (SSL implicite) ou `587` (STARTTLS) |
 | `SMTP_USER` | l'adresse complète : `contact@riftarium.re` |
 | `SMTP_PASSWORD` | mot de passe de la boîte |
-| `MAIL_FROM` | `Riftarium <contact@riftarium.re>` (défaut) |
+| `MAIL_FROM` | `Riftarium <no-reply@riftarium.re>` (défaut ; SMTP_USER reste `contact@`) |
 | `PUBLIC_BASE_URL` | base des liens ; vide = `https://riftarium.re` en prod, `http://localhost:8888` sinon |
 
 En développement, ne rien configurer : `SMTP_HOST` vide active le **mode
