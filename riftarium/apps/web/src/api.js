@@ -100,14 +100,16 @@ export class ApiError extends Error {
   }
 }
 
+/* `color` sert aux pastilles et chips graphiques ; `text` est la variante assombrie,
+   réservée au texte sur fond parchemin (contraste ≥ 4.5:1). */
 export const DOMAINS = {
-  Fury: { label: "Fureur", color: "var(--fury)" },
-  Calm: { label: "Calme", color: "var(--calm)" },
-  Mind: { label: "Esprit", color: "var(--mind)" },
-  Body: { label: "Corps", color: "var(--body)" },
-  Chaos: { label: "Chaos", color: "var(--chaos)" },
-  Order: { label: "Ordre", color: "var(--order)" },
-  Colorless: { label: "Neutre", color: "var(--muted)" }
+  Fury: { label: "Fureur", color: "var(--fury)", text: "var(--fury-text)" },
+  Calm: { label: "Calme", color: "var(--calm)", text: "var(--calm-text)" },
+  Mind: { label: "Esprit", color: "var(--mind)", text: "var(--mind-text)" },
+  Body: { label: "Corps", color: "var(--body)", text: "var(--body-text)" },
+  Chaos: { label: "Chaos", color: "var(--chaos)", text: "var(--chaos-text)" },
+  Order: { label: "Ordre", color: "var(--order)", text: "var(--order-text)" },
+  Colorless: { label: "Neutre", color: "var(--muted)", text: "var(--muted)" }
 }
 
 export const TYPES = {

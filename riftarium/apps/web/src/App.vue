@@ -108,7 +108,7 @@ async function logout() {
           </p>
         </div>
         <div>
-          <h4>Explorer</h4>
+          <p class="foot-head">Explorer</p>
           <ul>
             <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
             <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
@@ -119,7 +119,7 @@ async function logout() {
           </ul>
         </div>
         <div>
-          <h4>Le projet</h4>
+          <p class="foot-head">Le projet</p>
           <ul>
             <li>
               <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">Code source (GitHub)</a>
@@ -134,7 +134,7 @@ async function logout() {
           </ul>
         </div>
         <div>
-          <h4>Légal</h4>
+          <p class="foot-head">Légal</p>
           <ul>
             <li v-for="item in LEGAL_NAV" :key="item.key">
               <RouterLink :to="item.path">{{ item.label }}</RouterLink>

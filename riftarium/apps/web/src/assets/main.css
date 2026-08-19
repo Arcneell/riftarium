@@ -136,10 +136,12 @@
 
   --ink: #16283a;
   --ink-strong: #0a1428;
-  --muted: #77705e;
+  /* Assombri (#77705e → #6b6450) : contraste ≥ 4.5:1 même sur le parchemin foncé du pied de page. */
+  --muted: #6b6450;
 
   --gold: #b08a3e;
-  --gold-deep: #8a6a2f;
+  /* Assombri (#8a6a2f → #7a5d28) : liens et intertitres dorés lisibles (≥ 4.5:1) sur les deux parchemins. */
+  --gold-deep: #7a5d28;
   --gold-soft: #d9bd82;
   --gold-grad: linear-gradient(135deg, #c9a75c 0%, #a98338 55%, #8a6a2f 100%);
 
@@ -152,6 +154,17 @@
   --body: #3f8f50;
   --chaos: #c2439b;
   --order: #ab7c1a;
+
+  /* Variantes « texte » des couleurs de domaine : assombries juste ce qu'il faut pour un
+     contraste ≥ 4.5:1 sur fond parchemin. Réservées au texte — les pastilles et chips
+     graphiques gardent les teintes d'origine ci-dessus. */
+  --fury-text: #c03a2e;
+  --calm-text: #10756a;
+  --mind-text: #7355cf;
+  --body-text: #2f7340;
+  --chaos-text: #b0348a;
+  --order-text: #8a641a;
+  --hex-text: #0a7568;
 
   --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
 
@@ -309,7 +322,7 @@ h3 {
   font-size: 0.72rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--hex);
+  color: var(--hex-text);
   margin-bottom: 18px;
 }
 .eyebrow::before {
@@ -511,8 +524,8 @@ section {
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
+  /* Texte opaque (l'ancienne opacité 0.4 rendait la mention illisible), cadre laissé discret. */
   color: var(--gold-deep);
-  opacity: 0.4;
   pointer-events: none;
   user-select: none;
   padding: 3px 8px 2px;
@@ -679,12 +692,12 @@ textarea {
   min-height: 90px;
 }
 .error {
-  color: var(--fury);
+  color: var(--fury-text);
   font-size: 0.88rem;
   margin-top: 8px;
 }
 .success {
-  color: var(--hex);
+  color: var(--hex-text);
   font-size: 0.88rem;
   margin-top: 8px;
 }
@@ -1712,6 +1725,12 @@ td.num {
   color: var(--ink);
 }
 
+/* Le temps que le composant de route (chargé à la demande) arrive, <main> réserve
+   l'écran : le pied de page démarre sous la ligne de flottaison et ne saute plus (CLS). */
+main {
+  min-height: calc(100vh - 70px);
+}
+
 /* ---------- Pied de page ---------- */
 footer {
   margin-top: 64px;
@@ -1731,9 +1750,11 @@ footer {
   gap: 40px;
   margin-bottom: 32px;
 }
-.footer-grid h4 {
+/* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
+.footer-grid .foot-head {
   font-family: var(--font-mono);
   font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-deep);
@@ -1792,6 +1813,11 @@ footer {
   font-size: 0.86rem;
   color: var(--ink);
   line-height: 1.45;
+}
+/* Lien noyé dans le texte : le soulignement le distingue sans dépendre de la couleur. */
+.traceurs-notice p a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .traceurs-notice .btn {
   flex-shrink: 0;
@@ -3240,6 +3266,8 @@ footer {
 }
 .topic-example img {
   width: 100%;
+  /* Réserve la hauteur avant chargement (cartes 744×1039) : le pied de page ne bouge plus. */
+  aspect-ratio: 744 / 1039;
   border-radius: 8px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.32, 1);
@@ -3585,7 +3613,7 @@ h2.dbuilder-name {
   color: var(--hex);
 }
 .dbuilder-save.error {
-  color: var(--fury);
+  color: var(--fury-text);
 }
 .dbuilder-moderation {
   margin-bottom: 14px;

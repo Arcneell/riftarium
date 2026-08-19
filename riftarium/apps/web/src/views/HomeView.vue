@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref } from "vue"
+import { RouterLink } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
 import { RULE_COUNTS } from "../stats.js"
@@ -25,6 +26,17 @@ const FAN = [
 ]
 const cardImg = (hash) =>
   `https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/${hash}?auto=format&fit=max&w=460&accountingTag=RB`
+
+/* Précharge la cinématique du héros dès l'évaluation du bundle : un fond CSS n'est
+   découvert qu'au premier rendu, trop tard pour le LCP de la page d'accueil. */
+if (typeof document !== "undefined" && window.location.pathname === "/") {
+  const link = document.createElement("link")
+  link.rel = "preload"
+  link.as = "image"
+  link.href = BANNERS.home
+  link.fetchPriority = "high"
+  document.head.appendChild(link)
+}
 
 const splashStyle = { "--splash": `url("${BANNERS.home}")` }
 const tableStyle = { "--art": `url("${BANNERS.table}")` }
@@ -108,7 +120,8 @@ onMounted(async () => {
       </div>
       <div class="hero-fan" aria-hidden="true">
         <div v-for="card in FAN" :key="card.hash" v-tilt class="fan-card" :style="card.style">
-          <img :src="cardImg(card.hash)" alt="" loading="eager" />
+          <!-- Décoratives : priorité basse pour laisser la bande passante à la cinématique (LCP). -->
+          <img :src="cardImg(card.hash)" alt="" loading="eager" fetchpriority="low" />
           <span class="fan-foil"></span>
         </div>
       </div>
@@ -153,15 +166,16 @@ onMounted(async () => {
       <p class="eyebrow" v-reveal>Tout-en-un</p>
       <h2 v-reveal style="margin-bottom: 36px">Tout ce qu'il faut pour jouer</h2>
       <div class="modules">
+        <!-- Objet composant (et non la chaîne "RouterLink"), et jamais de href indéfini :
+             un attribut href retombant écraserait celui que RouterLink calcule, produisant
+             des <a> sans href, invisibles pour les robots d'indexation. -->
         <component
-          :is="module.to ? 'RouterLink' : 'a'"
+          :is="module.to ? RouterLink : 'a'"
           v-for="(module, i) in MODULES"
           :key="module.title"
           class="module"
           v-reveal="i % 3"
-          :to="module.to"
-          :href="module.href"
-          :target="module.href ? '_blank' : undefined"
+          v-bind="module.to ? { to: module.to } : { href: module.href, target: '_blank', rel: 'noopener' }"
           :style="{ '--chip': module.chip }"
         >
           <span class="m-icon"><Icon :name="module.icon" :size="24" /></span>

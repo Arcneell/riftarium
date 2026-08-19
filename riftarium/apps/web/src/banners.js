@@ -1,8 +1,12 @@
 /* Illustrations officielles Riftbound (CDN Riot). Jamais hébergées en local. */
 const NEWS = "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live"
 
+/* Sur petit écran, une largeur réduite suffit (écrans ≤ 768 px, DPR ≤ 3) :
+   l'image d'arrière-plan arrive plus vite et le LCP mobile s'améliore. */
+const SMALL_SCREEN = typeof window !== "undefined" && window.innerWidth <= 768
+
 export function bannerUrl(hash, width = 1600) {
-  return `${NEWS}/${hash}?auto=format&w=${width}`
+  return `${NEWS}/${hash}?auto=format&w=${SMALL_SCREEN ? Math.min(width, 1080) : width}`
 }
 
 export const BANNERS = {

@@ -48,7 +48,7 @@ defineEmits(["like", "remove"])
         <template v-if="deck.checks">
           · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·
           {{ deck.is_public ? "public" : "privé" }}
-          <span v-if="deck.moderation_status === 'pending'" style="color: var(--order)"> · en modération</span>
+          <span v-if="deck.moderation_status === 'pending'" style="color: var(--order-text)"> · en modération</span>
         </template>
       </p>
       <div class="deck-box-actions">
