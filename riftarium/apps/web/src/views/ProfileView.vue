@@ -17,6 +17,7 @@ const exporting = ref(false)
 
 const identity = reactive({ handle: "", bio: "", password: "", saving: false, error: "", ok: "" })
 const account = reactive({ email: "", password: "", saving: false, error: "", ok: "" })
+const verification = reactive({ sending: false, ok: "", error: "" })
 const secret = reactive({ current: "", next: "", confirm: "", saving: false, error: "", ok: "" })
 const danger = reactive({ open: false, password: "", handle: "", deleting: false, error: "" })
 const avatarBusy = ref(false)
@@ -32,6 +33,8 @@ function applyProfile(profile) {
   identity.bio = profile.bio || ""
   account.email = profile.email
   setSession(session.token, profile.handle, profile.avatar_url)
+  /* Tient le bandeau global (App.vue) au courant du statut de vérification. */
+  if ("email_verified" in profile) session.emailVerified = profile.email_verified
 }
 
 async function load() {
@@ -95,11 +98,31 @@ async function saveEmail() {
       })
     )
     account.password = ""
-    account.ok = "Email mis à jour"
+    account.ok = "Email mis à jour — un e-mail de vérification a été envoyé à la nouvelle adresse."
   } catch (e) {
     account.error = e.message
   } finally {
     account.saving = false
+  }
+}
+
+async function resendVerification() {
+  if (verification.sending) return
+  verification.sending = true
+  verification.ok = ""
+  verification.error = ""
+  try {
+    await api("/api/auth/resend-verification", { method: "POST" })
+    verification.ok = "E-mail de vérification renvoyé. Pensez à vérifier vos indésirables."
+  } catch (e) {
+    if (e.status === 429) verification.error = "Trop de demandes. Réessayez dans quelques minutes."
+    else if (e.status === 400) {
+      /* Adresse déjà vérifiée : on met le profil à jour. */
+      if (me.value) me.value.email_verified = true
+      session.emailVerified = true
+    } else verification.error = e.message
+  } finally {
+    verification.sending = false
   }
 }
 
@@ -303,6 +326,19 @@ onMounted(load)
 
           <form class="panel" @submit.prevent="saveEmail">
             <h3>Email</h3>
+            <div v-if="me.email_verified === false" class="verify-line">
+              <p class="muted">Adresse e-mail non vérifiée.</p>
+              <button
+                class="btn btn-ghost btn-sm"
+                type="button"
+                :disabled="verification.sending"
+                @click="resendVerification"
+              >
+                {{ verification.sending ? "Envoi…" : "Renvoyer l'e-mail" }}
+              </button>
+              <p v-if="verification.ok" class="success">{{ verification.ok }}</p>
+              <p v-if="verification.error" class="error">{{ verification.error }}</p>
+            </div>
             <div class="field">
               <label for="profile-email">Adresse</label>
               <input id="profile-email" type="email" v-model="account.email" autocomplete="email" required />

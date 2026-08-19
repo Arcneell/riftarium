@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Filet pour les merges Dependabot : un merge effectué via GITHUB_TOKEN ne
+  # déclenche pas les workflows push (anti-récursion GitHub). Ce déploiement
+  # hebdomadaire embarque les bumps auto-mergés du lundi matin.
+  schedule:
+    - cron: "0 5 * * 1" # lundi 09:00 Réunion (UTC+4)
 
 permissions:
   contents: read
@@ -23,6 +28,7 @@ jobs:
     needs: ci
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: production
       url: https://riftarium.re
@@ -54,6 +60,8 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           REMOTE_PATH=$(printf '%q' "$DEPLOY_PATH")
+          # PREVIOUS_SHA : mémorisé AVANT le checkout, deploy.sh y revient
+          # (re-checkout + rebuild) si le healthcheck échoue.
           ssh -i "$HOME/.ssh/deploy_key" -p "$PORT" \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
@@ -62,7 +70,41 @@ jobs:
             "set -euo pipefail
              export GIT_TERMINAL_PROMPT=0
              cd ${REMOTE_PATH}
+             PREVIOUS_SHA=\$(git rev-parse HEAD)
              git fetch origin main
              git checkout -B main FETCH_HEAD
              git --no-pager log -1 --oneline
-             bash riftarium/scripts/deploy.sh"
+             PREVIOUS_SHA=\"\$PREVIOUS_SHA\" bash riftarium/scripts/deploy.sh"
+
+      - name: Healthcheck externe (via BunkerWeb)
+        run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors https://riftarium.re/api/health
+
+      - name: Diagnostic en cas d'échec
+        if: failure()
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$HOME/.ssh/deploy_key" ]]; then
+            echo "clé SSH absente : échec avant la connexion, rien à diagnostiquer." >&2
+            exit 0
+          fi
+          case "$DEPLOY_PATH" in
+            *[!a-zA-Z0-9/_.-]*)
+              echo "DEPLOY_PATH contient des caractères non autorisés" >&2
+              exit 1
+              ;;
+          esac
+          PORT="${DEPLOY_PORT:-22}"
+          REMOTE_PATH=$(printf '%q' "$DEPLOY_PATH")
+          ssh -i "$HOME/.ssh/deploy_key" -p "$PORT" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd ${REMOTE_PATH}/riftarium
+             docker compose ps
+             docker compose logs --tail=120 api web db redis" || true

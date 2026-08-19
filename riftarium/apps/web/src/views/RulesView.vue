@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
+import { escapeHtml } from "../htmlText.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
@@ -19,9 +20,18 @@ let searchIndex = []
 let locate = new Map()
 let searchTimer = null
 
+/* --- sommaire repliable sur téléphone (aligné sur la media query CSS ≤760) --- */
+const mobileTocQuery =
+  typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 760px)") : null
+const isMobileToc = ref(Boolean(mobileTocQuery?.matches))
+const tocOpen = ref(!isMobileToc.value)
+function onMobileTocChange(event) {
+  isMobileToc.value = event.matches
+  /* Retour sur desktop : le sommaire redevient toujours visible. */
+  if (!event.matches) tocOpen.value = true
+}
+
 /* --- utilitaires du lecteur de règles --- */
-const escapeHtml = (value) =>
-  value.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
 const normalize = (value) =>
   value.replace(/./gu, (char) => {
     const folded = char
@@ -101,6 +111,12 @@ function go(docKey, section, rule = null) {
     requestAnimationFrame(() => {
       document.getElementById(`r-${rule}`)?.scrollIntoView({ block: "center", behavior: "smooth" })
     })
+  } else if (isMobileToc.value) {
+    /* Sommaire empilé (mobile) : on replie et on amène le lecteur sur le texte, pas en haut de page. */
+    tocOpen.value = false
+    requestAnimationFrame(() => {
+      document.querySelector(".rules-main")?.scrollIntoView?.({ block: "start", behavior: "smooth" })
+    })
   } else {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -162,9 +178,16 @@ function toggleChapter(chapterId) {
   openChapters.value = new Set(openChapters.value)
 }
 
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  mobileTocQuery?.removeEventListener?.("change", onMobileTocChange)
+})
+
 onMounted(async () => {
+  mobileTocQuery?.addEventListener?.("change", onMobileTocChange)
   try {
     const response = await fetch("/data/rules-fr.json")
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
     documents.value = await response.json()
     buildIndex()
     const q = route.query
@@ -199,12 +222,11 @@ onMounted(async () => {
   <section style="padding-top: 36px" v-if="documents">
     <div class="wrap">
       <div class="toolbar">
-        <div class="filters" role="tablist" aria-label="Document">
+        <div class="filters" role="group" aria-label="Document">
           <button
             v-for="(d, key) in documents"
             :key="key"
             class="filter"
-            role="tab"
             :aria-pressed="doc === key"
             @click="switchDoc(key)"
           >
@@ -235,7 +257,17 @@ onMounted(async () => {
       </p>
 
       <div class="rules-layout">
-        <aside class="rules-toc">
+        <!-- Visible uniquement sur téléphone (CSS) : replie le sommaire empilé -->
+        <button
+          type="button"
+          class="btn btn-ghost rules-toc-toggle"
+          :aria-expanded="tocOpen"
+          aria-controls="rules-toc"
+          @click="tocOpen = !tocOpen"
+        >
+          {{ tocOpen ? "Masquer le sommaire ▴" : "Sommaire ▾" }}
+        </button>
+        <aside id="rules-toc" class="rules-toc" :class="{ folded: !tocOpen }">
           <p class="muted mono" style="font-size: 0.7rem; margin-bottom: 12px">
             {{ currentDoc.subtitle }}<br />Mis à jour le {{ currentDoc.updated }} ·
             {{ currentDoc.ruleCount }} règles<br />
@@ -280,7 +312,7 @@ onMounted(async () => {
             class="rule"
             :class="{ target: entry.id === ruleId }"
             :id="`r-${entry.id}`"
-            :style="{ marginLeft: Math.min(entry.depth, 4) * 22 + 'px' }"
+            :style="{ '--indent': Math.min(entry.depth, 4) }"
           >
             <span class="rule-num mono">{{ entry.number }}</span>
             <div class="rule-body">
@@ -290,8 +322,13 @@ onMounted(async () => {
                 <p v-html="formatText(example.text)"></p>
               </div>
               <div v-if="entry.refs.length" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px">
-                <button v-for="ref in entry.refs" :key="ref.number" class="rref" :data-ref="bare(ref.number)">
-                  → {{ ref.number }} {{ ref.label }}
+                <button
+                  v-for="reference in entry.refs"
+                  :key="reference.number"
+                  class="rref"
+                  :data-ref="bare(reference.number)"
+                >
+                  → {{ reference.number }} {{ reference.label }}
                 </button>
               </div>
             </div>

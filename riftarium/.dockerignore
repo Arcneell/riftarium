@@ -1,0 +1,26 @@
+# Contexte de build du front (compose.yaml : context = riftarium/).
+# Le Dockerfile web ne copie que apps/web/** et data/rules-fr.json :
+# on exclut tout le reste pour un contexte minimal et sans secrets.
+.git
+.env
+*.env
+!*.env.example
+
+# API inutile au build du front.
+apps/api
+scripts
+
+# Dumps PostgreSQL du VPS (pg_dump gzip). Jamais dans un contexte de build.
+backups
+
+# Artefacts et dépendances locales.
+node_modules
+**/node_modules
+dist
+**/dist
+__pycache__
+**/__pycache__
+.mypy_cache
+**/.mypy_cache
+.pytest_cache
+**/.pytest_cache

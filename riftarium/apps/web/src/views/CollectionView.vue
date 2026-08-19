@@ -1,8 +1,15 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { api, CONDITIONS, LANGS, TYPES, RARITIES } from "../api.js"
-import { cardsQuery, csvSplit, domainFilterOptions, glyphUrl } from "../cardText.js"
+import { computed, onMounted, reactive, ref, watch } from "vue"
+import { api, CONDITIONS, LANGS } from "../api.js"
+import {
+  cardsQuery,
+  domainFilterOptions,
+  energyFilterOptions,
+  rarityFilterOptions,
+  typeFilterOptions
+} from "../cardText.js"
+import { useGridMeasure } from "../composables/useGridMeasure.js"
+import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { useScrollMemory } from "../useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
@@ -10,34 +17,39 @@ import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
 import PageBanner from "../components/PageBanner.vue"
 
-const route = useRoute()
-const router = useRouter()
 const { restoreScroll } = useScrollMemory()
-const ENERGIES = ["0", "1", "2", "3", "4", "5", "6", "7+"]
 
-function fromQuery(query) {
-  return {
-    q: query.q || "",
-    set_id: csvSplit(query.set),
-    type: csvSplit(query.type),
-    domain: csvSplit(query.domain),
-    rarity: csvSplit(query.rarity),
-    energy: csvSplit(query.energy),
-    page: Math.max(1, Number(query.page) || 1)
-  }
-}
-
-const state = reactive(fromQuery(route.query))
-const result = ref({ total: 0, total_cards: 0, unique_cards: 0, items: [] })
-const sets = ref([])
-const loading = ref(false)
-const error = ref("")
 const grid = ref(null)
-const tileMin = ref(190)
-const size = ref(30)
-let timer = null
-let resizeTimer = null
-let observer = null
+const { tileMin, size } = useGridMeasure(grid)
+
+let firstLoad = true
+
+const { state, result, loading, error, activeCount, pageCount, setFilter, reset, load, scheduleLoad } =
+  useQuerySyncedFilters(
+    {
+      q: { kind: "text" },
+      set_id: { kind: "list", param: "set" },
+      type: { kind: "list" },
+      domain: { kind: "list" },
+      rarity: { kind: "list" },
+      energy: { kind: "list" },
+      page: { kind: "page" }
+    },
+    {
+      fetcher: (filters) => api(`/api/collection?${cardsQuery(filters, size.value)}`),
+      initialResult: { total: 0, total_cards: 0, unique_cards: 0, items: [] },
+      pageSize: size,
+      onLoaded: (data) => {
+        if (state.page > 1 && !data.items.length) state.page = 1
+        if (firstLoad) {
+          firstLoad = false
+          restoreScroll()
+        }
+      }
+    }
+  )
+
+const sets = ref([])
 
 /* Mode sélection : le clic coche la carte au lieu d'ouvrir sa fiche. */
 const selectMode = ref(false)
@@ -47,98 +59,10 @@ const pendingRemove = ref(false)
 const removeError = ref("")
 
 const domainOptions = computed(() => domainFilterOptions())
-const typeOptions = computed(() => Object.entries(TYPES).map(([value, label]) => ({ value, label })))
-const rarityOptions = computed(() => Object.entries(RARITIES).map(([value, label]) => ({ value, label })))
-const energyOptions = computed(() =>
-  ENERGIES.map((cost) => ({
-    value: cost,
-    label: cost === "7+" ? "7 et plus" : String(cost),
-    glyph: glyphUrl(`energy_${cost === "7+" ? "7" : cost}`),
-    glyphKind: "energy"
-  }))
-)
+const typeOptions = computed(() => typeFilterOptions())
+const rarityOptions = computed(() => rarityFilterOptions())
+const energyOptions = computed(() => energyFilterOptions())
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
-
-const activeCount = computed(
-  () =>
-    (state.q ? 1 : 0) +
-    state.set_id.length +
-    state.type.length +
-    state.domain.length +
-    state.rarity.length +
-    state.energy.length
-)
-
-const pageCount = computed(() => Math.max(1, Math.ceil(result.value.total / size.value)))
-
-function toQuery() {
-  const query = {}
-  if (state.q) query.q = state.q
-  if (state.set_id.length) query.set = state.set_id.join(",")
-  if (state.type.length) query.type = state.type.join(",")
-  if (state.domain.length) query.domain = state.domain.join(",")
-  if (state.rarity.length) query.rarity = state.rarity.join(",")
-  if (state.energy.length) query.energy = state.energy.join(",")
-  if (state.page > 1) query.page = String(state.page)
-  return query
-}
-
-/* Colonnes qui tiennent vraiment dans le conteneur : sinon minmax déborde et les cartes sont coupées. */
-function measure() {
-  const viewport = window.innerWidth || 1280
-  const height = window.innerHeight || 800
-  const width = grid.value?.clientWidth || Math.max(280, viewport - 56)
-  const gap = viewport < 560 ? 12 : viewport < 900 ? 16 : 24
-  const minCol = viewport < 560 ? 148 : viewport < 900 ? 160 : viewport < 1400 ? 176 : 188
-  const columns = Math.max(2, Math.floor((width + gap) / (minCol + gap)))
-  tileMin.value = Math.max(132, Math.floor((width - gap * (columns - 1)) / columns) - 1)
-  const rows = height >= 1100 ? 6 : height >= 820 ? 5 : 4
-  size.value = Math.min(100, columns * rows)
-}
-
-function scheduleMeasure() {
-  clearTimeout(resizeTimer)
-  resizeTimer = setTimeout(measure, 180)
-}
-
-let firstLoad = true
-
-async function load() {
-  loading.value = true
-  error.value = ""
-  try {
-    result.value = await api(`/api/collection?${cardsQuery(state, size.value)}`)
-    if (state.page > 1 && !result.value.items.length) state.page = 1
-    if (firstLoad) {
-      firstLoad = false
-      restoreScroll()
-    }
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function scheduleLoad() {
-  clearTimeout(timer)
-  timer = setTimeout(load, 180)
-}
-
-function setFilter(key, values) {
-  state[key] = values
-  state.page = 1
-}
-
-function reset() {
-  state.q = ""
-  state.set_id = []
-  state.type = []
-  state.domain = []
-  state.rarity = []
-  state.energy = []
-  state.page = 1
-}
 
 function lotsTitle(item) {
   return item.entries.map((entry) => `${entry.qty}× ${entry.condition} ${entry.lang}`).join(", ")
@@ -204,67 +128,19 @@ async function applyBulk(payload) {
   }
 }
 
-watch(
-  () => [
-    state.q,
-    state.set_id.join(),
-    state.type.join(),
-    state.domain.join(),
-    state.rarity.join(),
-    state.energy.join(),
-    state.page
-  ],
-  () => {
-    const query = toQuery()
-    if (JSON.stringify(route.query) !== JSON.stringify(query)) router.replace({ query })
-    scheduleLoad()
-  }
-)
-
+/* La taille de page suit la grille : on recharge, sauf si la page courante n'existe plus. */
 watch(size, () => {
   if (state.page > pageCount.value) state.page = 1
   else scheduleLoad()
 })
 
-watch(
-  () => route.query,
-  (query) => {
-    const next = fromQuery(query)
-    if (
-      next.q === state.q &&
-      next.page === state.page &&
-      next.set_id.join() === state.set_id.join() &&
-      next.type.join() === state.type.join() &&
-      next.domain.join() === state.domain.join() &&
-      next.rarity.join() === state.rarity.join() &&
-      next.energy.join() === state.energy.join()
-    ) {
-      return
-    }
-    Object.assign(state, next)
-  }
-)
-
 onMounted(async () => {
-  measure()
   load()
-  window.addEventListener("resize", scheduleMeasure)
-  if (typeof ResizeObserver !== "undefined" && grid.value) {
-    observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(grid.value)
-  }
   try {
     sets.value = await api("/api/sets")
   } catch {
     /* filtre sets indisponible */
   }
-})
-
-onBeforeUnmount(() => {
-  clearTimeout(timer)
-  clearTimeout(resizeTimer)
-  window.removeEventListener("resize", scheduleMeasure)
-  observer?.disconnect()
 })
 </script>
 

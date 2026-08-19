@@ -22,11 +22,13 @@ HEADERS = {"User-Agent": "Riftarium/0.1 (+https://github.com/Arcneell/riftarium)
 
 
 def _upsert_set(db: Session, payload: dict) -> None:
-    row = db.get(CardSet, payload["set_id"]) or CardSet(set_id=payload["set_id"])
+    row = db.get(CardSet, payload["set_id"])
+    if row is None:  # les objets issus de db.get sont déjà suivis : add uniquement pour les nouveaux
+        row = CardSet(set_id=payload["set_id"])
+        db.add(row)
     row.name = payload["name"]
     row.card_count = payload.get("card_count") or 0
     row.published_on = payload.get("published_on")
-    db.merge(row)
 
 
 def _upsert_card(db: Session, payload: dict) -> None:
@@ -37,7 +39,10 @@ def _upsert_card(db: Session, payload: dict) -> None:
     card_set = payload.get("set") or {}
     metadata = payload.get("metadata") or {}
 
-    row = db.get(Card, payload["id"]) or Card(id=payload["id"])
+    row = db.get(Card, payload["id"])
+    if row is None:  # même logique : mutation directe des objets suivis, add pour les nouveaux
+        row = Card(id=payload["id"])
+        db.add(row)
     row.riftbound_id = payload["riftbound_id"]
     row.name = payload["name"]
     row.collector_number = payload.get("collector_number")
@@ -59,7 +64,6 @@ def _upsert_card(db: Session, payload: dict) -> None:
     row.signature = bool(metadata.get("signature"))
     row.overnumbered = bool(metadata.get("overnumbered"))
     row.updated_on = metadata.get("updated_on")
-    db.merge(row)
 
 
 def run_sync(db: Session) -> dict:

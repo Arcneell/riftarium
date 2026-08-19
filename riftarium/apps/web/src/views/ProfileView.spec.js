@@ -13,6 +13,7 @@ const profile = {
   id: 1,
   handle: "testeur",
   email: "testeur@example.org",
+  email_verified: true,
   bio: "",
   avatar_card_id: null,
   avatar_url: null,
@@ -53,6 +54,7 @@ describe("ProfileView", () => {
     session.token = "jeton-test"
     session.handle = "testeur"
     session.avatarUrl = null
+    session.emailVerified = null
     api.mockReset()
     api.mockImplementation((path, options = {}) => {
       if (path === "/api/auth/me" && !options.method) return Promise.resolve({ ...profile })
@@ -113,6 +115,49 @@ describe("ProfileView", () => {
       ([path, options]) => path === "/api/auth/me" && options?.method === "PATCH" && options.body?.avatar_card_id
     )
     expect(call[1].body).toEqual({ avatar_card_id: "ogn-247-298" })
+    wrapper.unmount()
+  })
+
+  it("signale un changement d'e-mail avec l'envoi d'un e-mail de vérification", async () => {
+    const { wrapper } = await mountView()
+    const emailForm = wrapper.findAll("form.panel")[1]
+    await emailForm.get("#profile-email").setValue("nouvelle@example.org")
+    await emailForm.get("#profile-email-pwd").setValue("motdepasse123")
+    await emailForm.trigger("submit")
+    await flushPromises()
+
+    const call = api.mock.calls.find(([path, options]) => path === "/api/auth/me" && options?.method === "PATCH")
+    expect(call[1].body).toEqual({ email: "nouvelle@example.org", current_password: "motdepasse123" })
+    expect(wrapper.get(".success").text()).toBe(
+      "Email mis à jour — un e-mail de vérification a été envoyé à la nouvelle adresse."
+    )
+    wrapper.unmount()
+  })
+
+  it("masque le rappel de vérification quand l'adresse est vérifiée", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".verify-line").exists()).toBe(false)
+    expect(session.emailVerified).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("adresse non vérifiée : affiche le rappel et renvoie l'e-mail de vérification", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/auth/me" && !options.method) return Promise.resolve({ ...profile, email_verified: false })
+      if (path === "/api/auth/avatars") return Promise.resolve(faces)
+      if (path === "/api/auth/resend-verification") return Promise.resolve(null)
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+
+    const line = wrapper.get(".verify-line")
+    expect(line.text()).toContain("Adresse e-mail non vérifiée")
+    expect(session.emailVerified).toBe(false)
+
+    await line.get("button").trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/auth/resend-verification", { method: "POST" })
+    expect(line.get(".success").text()).toContain("E-mail de vérification renvoyé")
     wrapper.unmount()
   })
 

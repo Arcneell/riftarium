@@ -15,6 +15,9 @@ let timer = null
 
 const DELAY = 2600
 
+/* Reduced motion : pas de défilement automatique, la navigation reste possible par les points. */
+const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
 function next() {
   frameIndex.value = (frameIndex.value + 1) % props.demo.frames.length
 }
@@ -24,6 +27,7 @@ function goTo(i) {
 }
 function restart() {
   clearInterval(timer)
+  if (reducedMotion) return
   timer = setInterval(next, DELAY)
 }
 onMounted(restart)

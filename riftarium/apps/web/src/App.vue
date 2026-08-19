@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, ref, watch } from "vue"
+import { onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session, setSession } from "./api.js"
 import Logo from "./components/Logo.vue"
 import UserAvatar from "./components/UserAvatar.vue"
 import TraceursNotice from "./components/TraceursNotice.vue"
+import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
 import { LEGAL_NAV, RIOT_DISCLAIMER_EN, RIOT_DISCLAIMER_FR, CONTACT_EMAIL, CONTACT_MAILTO } from "./legal.js"
 
 const router = useRouter()
@@ -18,14 +19,26 @@ watch(
   }
 )
 
+/* Session expirée (401 renvoyé par l'API) : direction la connexion, en gardant la page en cours. */
+function onSessionExpired() {
+  if (route.path === "/connexion") return
+  router.push({ path: "/connexion", query: { suite: route.fullPath } })
+}
+
 onMounted(async () => {
+  window.addEventListener("riftarium:session-expired", onSessionExpired)
   if (!session.token) return
   try {
     const me = await api("/api/auth/me")
     setSession("1", me.handle, me.avatar_url)
+    session.emailVerified = me.email_verified ?? null
   } catch {
     /* 401 déjà géré par api() */
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("riftarium:session-expired", onSessionExpired)
 })
 
 async function logout() {
@@ -68,6 +81,7 @@ async function logout() {
     </div>
   </header>
   <div class="prism"></div>
+  <EmailVerifyNotice />
 
   <main>
     <RouterView v-slot="{ Component, route: viewRoute }">
@@ -94,7 +108,7 @@ async function logout() {
           </p>
         </div>
         <div>
-          <h4>Explorer</h4>
+          <p class="foot-head">Explorer</p>
           <ul>
             <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
             <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
@@ -105,7 +119,7 @@ async function logout() {
           </ul>
         </div>
         <div>
-          <h4>Le projet</h4>
+          <p class="foot-head">Le projet</p>
           <ul>
             <li>
               <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">Code source (GitHub)</a>
@@ -117,10 +131,15 @@ async function logout() {
             <li>
               <a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a>
             </li>
+            <li>
+              <a href="https://ko-fi.com/arcneell" target="_blank" rel="noopener" class="footer-support"
+                >☕ Soutenir le projet (Ko-fi)</a
+              >
+            </li>
           </ul>
         </div>
         <div>
-          <h4>Légal</h4>
+          <p class="foot-head">Légal</p>
           <ul>
             <li v-for="item in LEGAL_NAV" :key="item.key">
               <RouterLink :to="item.path">{{ item.label }}</RouterLink>

@@ -16,7 +16,7 @@ describe("session", () => {
     expect(session.handle).toBe("nyra")
   })
 
-  it("envoie les cookies et n'ajoute un Bearer que pour un JWT", async () => {
+  it("envoie les cookies sans jamais ajouter de header Authorization", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 200,
       ok: true,
@@ -28,9 +28,40 @@ describe("session", () => {
     await api("/api/auth/me")
     expect(fetchMock.mock.calls[0][1].credentials).toBe("include")
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBeUndefined()
+  })
 
-    session.token = "aaa.bbb.ccc"
-    await api("/api/auth/me")
-    expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer aaa.bbb.ccc")
+  it("sur 401 : ferme la session locale et émet riftarium:session-expired", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: 401, ok: false, json: async () => ({}) })
+    vi.stubGlobal("fetch", fetchMock)
+    const expired = vi.fn()
+    window.addEventListener("riftarium:session-expired", expired)
+    const { api, session } = await import("./api.js")
+    session.token = "1"
+    await expect(api("/api/auth/me")).rejects.toMatchObject({ status: 401, message: "Connexion requise" })
+    expect(session.token).toBeNull()
+    expect(expired).toHaveBeenCalledTimes(1)
+    window.removeEventListener("riftarium:session-expired", expired)
+  })
+
+  it("rend lisible le detail des erreurs 422 de FastAPI", async () => {
+    const detail = [{ loc: ["body", "email"], msg: "Adresse email invalide", type: "value_error" }]
+    const fetchMock = vi.fn().mockResolvedValue({ status: 422, ok: false, json: async () => ({ detail }) })
+    vi.stubGlobal("fetch", fetchMock)
+    const { api } = await import("./api.js")
+    await expect(api("/api/auth/register", { method: "POST", body: {} })).rejects.toMatchObject({
+      status: 422,
+      message: "Adresse email invalide"
+    })
+  })
+
+  it("retombe sur « Requête invalide » quand le detail 422 est inexploitable", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 422,
+      ok: false,
+      json: async () => ({ detail: [{ type: "value_error" }] })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const { api } = await import("./api.js")
+    await expect(api("/api/x")).rejects.toMatchObject({ message: "Requête invalide" })
   })
 })

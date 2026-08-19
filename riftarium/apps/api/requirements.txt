@@ -1,10 +1,10 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.3
 sqlalchemy==2.0.52
+alembic==1.19.1
 psycopg[binary]==3.3.4
 httpx==0.28.1
 PyJWT==2.13.0
 pydantic-settings==2.15.0
 email-validator==2.3.0
-pytest==9.1.1
 redis==5.2.1

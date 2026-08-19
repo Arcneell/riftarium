@@ -103,13 +103,14 @@ function onResize() {
 onMounted(async () => {
   await Promise.all(rows.map((_, i) => refill(i)))
   rows.forEach((_, i) => fill(i))
+  /* Posé aussi en mode reduced motion : la rivière statique se re-remplit après un agrandissement. */
+  window.addEventListener("resize", onResize)
 
   if (reducedMotion) return
   await nextTick()
   if (!root.el) return
   observer = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()), { threshold: 0.08 })
   observer.observe(root.el)
-  window.addEventListener("resize", onResize)
 })
 
 onUnmounted(() => {

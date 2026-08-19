@@ -2,186 +2,41 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, DOMAINS, TYPES, RARITIES, session } from "../api.js"
-import { DOMAIN_RUNE, RUNE_LABELS, cardsQuery, copyFamily, domainFilterOptions, glyphUrl } from "../cardText.js"
+import {
+  DOMAIN_RUNE,
+  RUNE_LABELS,
+  cardsQuery,
+  domainFilterOptions,
+  energyFilterOptions,
+  glyphUrl,
+  rarityFilterOptions,
+  typeFilterOptions
+} from "../cardText.js"
 import CardText from "../components/CardText.vue"
 import DeckExportBar from "../components/DeckExportBar.vue"
+import DeckMissingModal from "../components/DeckMissingModal.vue"
 import DeckView from "../components/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import ModalDialog from "../components/ModalDialog.vue"
-import { DECK_ZONES, formatLabel, groupDeck, zoneOf } from "../deckDisplay.js"
+import { useDeckAutosave } from "../composables/useDeckAutosave.js"
+import { useDeckRules } from "../composables/useDeckRules.js"
+import { useDeckStats } from "../composables/useDeckStats.js"
+import { useGridMeasure } from "../composables/useGridMeasure.js"
+import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
+import { formatLabel } from "../deckDisplay.js"
 import { applySeo } from "../seo.js"
 
 const route = useRoute()
 const router = useRouter()
 const deck = ref(null)
 const error = ref("")
-const saveState = ref("") // "" | "saving" | "saved" | "error"
 const limitMessage = ref("")
 const showExport = ref(false)
-const canEdit = computed(() => Boolean(session.handle && deck.value && session.handle === deck.value.owner))
 
 const finePointer = typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches
 const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-/* ---------- Zones du deck ---------- */
-
-const ZONES = DECK_ZONES
-
-/* La légende est affichée en vitrine : les listes ne montrent que les autres zones. */
-const LIST_ZONES = ZONES.filter((zone) => zone.key !== "Legend")
-
-/* Plafond d'exemplaires par carte, appliqué en mode tournoi (12 = limite du schéma en mode libre). */
-const TOURNAMENT_CAPS = { Legend: 1, Battlefield: 1, Rune: 12, main: 3 }
-
-const grouped = computed(() => groupDeck(deck.value))
-
-const zoneCounts = computed(() => {
-  const counts = {}
-  for (const zone of ZONES) counts[zone.key] = grouped.value[zone.key].reduce((total, entry) => total + entry.qty, 0)
-  return counts
-})
-
-/* Quantités par nom de jeu : reprints et variantes comptent comme la même carte. */
-const familyQty = computed(() => {
-  const map = new Map()
-  for (const entry of deck.value?.cards || []) {
-    const family = copyFamily(entry.card)
-    map.set(family, (map.get(family) || 0) + entry.qty)
-  }
-  return map
-})
-
-const inDeckQty = (card) => familyQty.value.get(copyFamily(card)) || 0
-
-/* ---------- Légende d'abord : elle fixe l'identité de domaines du deck ---------- */
-
-const legendEntry = computed(() => grouped.value.Legend[0] || null)
-const legendDomains = computed(
-  () => new Set((legendEntry.value?.card.domains || []).filter((domain) => domain !== "Colorless"))
-)
-const legendRunes = computed(() =>
-  [...legendDomains.value].map((domain) => ({
-    domain,
-    label: RUNE_LABELS[DOMAIN_RUNE[domain]] || domain,
-    src: glyphUrl(`rune_${DOMAIN_RUNE[domain]}`)
-  }))
-)
-
-/* Hors identité : ne concerne que le deck principal et les runes (champs de bataille libres). */
-function offDomain(card) {
-  if (!legendEntry.value || card.type === "Legend" || card.type === "Battlefield") return false
-  return (card.domains || []).some((domain) => domain !== "Colorless" && !legendDomains.value.has(domain))
-}
-
-const curve = computed(() => {
-  const buckets = Array(8).fill(0)
-  for (const entry of grouped.value.main) buckets[Math.min(entry.card.energy ?? 0, 7)] += entry.qty
-  const max = Math.max(...buckets, 1)
-  return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }))
-})
-
-const energyTotal = computed(() =>
-  grouped.value.main.reduce((sum, entry) => sum + (entry.card.energy ?? 0) * entry.qty, 0)
-)
-
-const domainSpread = computed(() => {
-  const counts = {}
-  for (const entry of deck.value?.cards || []) {
-    for (const domain of entry.card.domains || []) {
-      if (domain === "Colorless") continue
-      counts[domain] = (counts[domain] || 0) + entry.qty
-    }
-  }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1])
-})
-
-const missingInDeck = computed(() =>
-  (deck.value?.cards || []).reduce((total, entry) => total + Math.max(0, entry.qty - (entry.card.owned_qty ?? 0)), 0)
-)
-
-/* ---------- Mutations + retour visuel ---------- */
-
-const flashes = reactive(new Set())
-const shakes = reactive(new Set())
-let limitTimer = null
-
-function pulse(set, key, duration = 600) {
-  set.add(key)
-  setTimeout(() => set.delete(key), duration)
-}
-
-function notify(message) {
-  limitMessage.value = message
-  clearTimeout(limitTimer)
-  limitTimer = setTimeout(() => (limitMessage.value = ""), 2600)
-}
-
-function notifyLimit(message, cardId) {
-  pulse(shakes, cardId, 500)
-  notify(message)
-}
-
-function addCard(card) {
-  if (!canEdit.value || !deck.value) return false
-  const zone = zoneOf(card)
-  if (deck.value.format === "tournament") {
-    const cap = TOURNAMENT_CAPS[zone]
-    if (zone === "Legend") {
-      const current = legendEntry.value
-      if (current && current.card.id === card.id) {
-        notifyLimit("Cette légende est déjà dans le deck.", card.id)
-        return false
-      }
-      if (current) {
-        deck.value.cards.splice(deck.value.cards.indexOf(current), 1)
-        notify(`Légende remplacée par ${card.name}.`)
-      }
-    } else if (!legendEntry.value) {
-      notifyLimit("Choisissez d'abord votre légende : elle fixe les domaines du deck.", card.id)
-      return false
-    }
-    if (offDomain(card)) {
-      notifyLimit(`${card.name} est hors des domaines de votre légende.`, card.id)
-      return false
-    }
-    if (zone === "Battlefield" && zoneCounts.value.Battlefield >= 3 && inDeckQty(card) === 0) {
-      notifyLimit("3 champs de bataille maximum.", card.id)
-      return false
-    }
-    if (zone !== "Legend" && inDeckQty(card) >= cap) {
-      notifyLimit(
-        zone === "main" ? `Maximum 3 exemplaires de ${card.name}.` : `Maximum ${cap} exemplaire(s) de ${card.name}.`,
-        card.id
-      )
-      return false
-    }
-  } else if (inDeckQty(card) >= 12) {
-    notifyLimit("12 exemplaires maximum.", card.id)
-    return false
-  }
-  const existing = deck.value.cards.find((entry) => entry.card.id === card.id)
-  if (existing) existing.qty += 1
-  else deck.value.cards.push({ card, qty: 1 })
-  pulse(flashes, card.id)
-  return true
-}
-
-function setQty(entry, delta) {
-  if (!canEdit.value) return
-  if (delta > 0) {
-    addCard(entry.card)
-    return
-  }
-  entry.qty += delta
-  if (entry.qty <= 0) deck.value.cards.splice(deck.value.cards.indexOf(entry), 1)
-}
-
-function removeOne(cardId) {
-  const entry = deck.value?.cards.find((item) => item.card.id === cardId)
-  if (entry) setQty(entry, -1)
-}
-
-/* ---------- Chargement + sauvegarde automatique ---------- */
+/* ---------- Sauvegarde automatique ---------- */
 
 const snapshot = () =>
   JSON.stringify({
@@ -192,169 +47,140 @@ const snapshot = () =>
     cards: deck.value.cards.map((entry) => [entry.card.id, entry.qty])
   })
 
-let savedSnapshot = ""
-let saveTimer = null
-
-async function load() {
-  try {
-    deck.value = await api(`/api/decks/${route.params.id}`)
-    savedSnapshot = snapshot()
-    if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
-    if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
-      try {
-        const seen = await api(`/api/decks/${deck.value.id}/view`, { method: "POST" })
-        deck.value.views = seen.views
-      } catch {
-        /* compteur de vues non bloquant */
-      }
+async function persistDeck() {
+  const fresh = await api(`/api/decks/${deck.value.id}`, {
+    method: "PUT",
+    body: {
+      name: deck.value.name,
+      description: deck.value.description,
+      format: deck.value.format,
+      is_public: deck.value.is_public,
+      cards: deck.value.cards.map((entry) => ({ card_id: entry.card.id, qty: entry.qty }))
     }
-    const publicDeck = deck.value.is_public && deck.value.moderation_status === "published"
-    applySeo({
-      title: `${deck.value.name} — Deck Riftbound`,
-      description:
-        (deck.value.description || "").trim().slice(0, 160) ||
-        `Deck Riftbound « ${deck.value.name} » (${formatLabel(deck.value.format)}) sur Riftarium.`,
-      path: route.path,
-      noindex: !publicDeck
-    })
-  } catch (e) {
-    error.value = e.message
-  }
+  })
+  /* On ne remplace pas l'état local (l'utilisateur tape peut-être) : on rapatrie le calculé. */
+  deck.value.checks = fresh.checks
+  deck.value.moderation_status = fresh.moderation_status
+  deck.value.updated_at = fresh.updated_at
 }
 
-async function save() {
-  if (!canEdit.value || !deck.value || snapshot() === savedSnapshot) return
-  saveState.value = "saving"
-  const sent = snapshot()
-  try {
-    const fresh = await api(`/api/decks/${deck.value.id}`, {
-      method: "PUT",
-      body: {
-        name: deck.value.name,
-        description: deck.value.description,
-        format: deck.value.format,
-        is_public: deck.value.is_public,
-        cards: deck.value.cards.map((entry) => ({ card_id: entry.card.id, qty: entry.qty }))
-      }
-    })
-    savedSnapshot = sent
-    /* On ne remplace pas l'état local (l'utilisateur tape peut-être) : on rapatrie le calculé. */
-    deck.value.checks = fresh.checks
-    deck.value.moderation_status = fresh.moderation_status
-    deck.value.updated_at = fresh.updated_at
-    saveState.value = "saved"
-  } catch (e) {
-    saveState.value = "error"
-    error.value = e.message
-  }
+const { saveState, sessionExpired, save, markSaved } = useDeckAutosave(deck, persistDeck, {
+  snapshot,
+  canEdit: () => canEdit.value,
+  error
+})
+
+/* Session expirée pendant l'édition : on garde le brouillon affiché et modifiable localement. */
+const canEdit = computed(() =>
+  Boolean(deck.value && (sessionExpired.value || (session.handle && session.handle === deck.value.owner)))
+)
+
+/* ---------- Retour visuel des mutations ---------- */
+
+const flashes = reactive(new Set())
+const shakes = reactive(new Set())
+let limitTimer = null
+const pulseTimers = new Set()
+
+function pulse(set, key, duration = 600) {
+  set.add(key)
+  const timer = setTimeout(() => {
+    set.delete(key)
+    pulseTimers.delete(timer)
+  }, duration)
+  pulseTimers.add(timer)
 }
 
-function scheduleSave() {
-  clearTimeout(saveTimer)
-  saveTimer = setTimeout(save, 900)
+function notify(message) {
+  limitMessage.value = message
+  clearTimeout(limitTimer)
+  limitTimer = setTimeout(() => (limitMessage.value = ""), 2600)
 }
 
-watch(
-  () => (deck.value ? snapshot() : ""),
-  (next, previous) => {
-    if (!canEdit.value || !deck.value || !previous || next === savedSnapshot) return
-    error.value = ""
-    scheduleSave()
-  }
+/* ---------- Règles de construction (zones, plafonds, identité de domaines) ---------- */
+
+const {
+  ZONES,
+  LIST_ZONES,
+  grouped,
+  zoneCounts,
+  inDeckQty,
+  legendEntry,
+  legendRunes,
+  offDomain,
+  addCard,
+  setQty,
+  removeOne
+} = useDeckRules(deck, {
+  canEdit,
+  onLimit: (message, cardId) => {
+    pulse(shakes, cardId, 500)
+    notify(message)
+  },
+  onNotice: notify,
+  onAdded: (card) => pulse(flashes, card.id)
+})
+
+const { curve, energyTotal, domainSpread } = useDeckStats(() => deck.value?.cards || [])
+
+const missingInDeck = computed(() =>
+  (deck.value?.cards || []).reduce((total, entry) => total + Math.max(0, entry.qty - (entry.card.owned_qty ?? 0)), 0)
 )
 
 /* ---------- Galerie filtrable ---------- */
 
-const ENERGIES = ["0", "1", "2", "3", "4", "5", "6", "7+"]
-const gallery = reactive({ q: "", set_id: [], type: [], domain: [], rarity: [], energy: [], owned: "", page: 1 })
-const result = ref({ total: 0, items: [] })
-const sets = ref([])
-const loading = ref(false)
 const grid = ref(null)
-const tileMin = ref(150)
-const size = ref(24)
-let galleryTimer = null
-let resizeTimer = null
-let observer = null
+const { tileMin, size, measure, observe } = useGridMeasure(grid, {
+  tileMin: 150,
+  size: 24,
+  maxSize: 60,
+  tileFloor: 112,
+  debounce: 160,
+  gap: () => 14,
+  minCol: () => 132,
+  rows: (height) => (height >= 1000 ? 5 : 4),
+  fallbackWidth: () => 720
+})
 
-const domainOptions = computed(() => domainFilterOptions())
-const typeOptions = computed(() => Object.entries(TYPES).map(([value, label]) => ({ value, label })))
-const rarityOptions = computed(() => Object.entries(RARITIES).map(([value, label]) => ({ value, label })))
-const energyOptions = computed(() =>
-  ENERGIES.map((cost) => ({
-    value: cost,
-    label: cost === "7+" ? "7 et plus" : String(cost),
-    glyph: glyphUrl(`energy_${cost === "7+" ? "7" : cost}`),
-    glyphKind: "energy"
-  }))
+const {
+  state: gallery,
+  result,
+  loading,
+  activeCount,
+  pageCount,
+  setFilter,
+  reset: resetFilters,
+  load: loadGallery,
+  scheduleLoad: scheduleGallery
+} = useQuerySyncedFilters(
+  {
+    q: { kind: "text" },
+    set_id: { kind: "list" },
+    type: { kind: "list" },
+    domain: { kind: "list" },
+    rarity: { kind: "list" },
+    energy: { kind: "list" },
+    owned: { kind: "text" },
+    page: { kind: "page" }
+  },
+  {
+    /* Pas de synchronisation d'URL : la barre d'adresse reste celle du deck. */
+    syncUrl: false,
+    fetcher: (filters) => api(`/api/cards?${cardsQuery(filters, size.value)}`),
+    pageSize: size,
+    enabled: () => canEdit.value,
+    error,
+    clearErrorOnLoad: false
+  }
 )
+
+const sets = ref([])
+const domainOptions = computed(() => domainFilterOptions())
+const typeOptions = computed(() => typeFilterOptions())
+const rarityOptions = computed(() => rarityFilterOptions())
+const energyOptions = computed(() => energyFilterOptions())
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
 
-const activeCount = computed(
-  () =>
-    (gallery.q ? 1 : 0) +
-    gallery.set_id.length +
-    gallery.type.length +
-    gallery.domain.length +
-    gallery.rarity.length +
-    gallery.energy.length +
-    (gallery.owned ? 1 : 0)
-)
-const pageCount = computed(() => Math.max(1, Math.ceil(result.value.total / size.value)))
-
-function measure() {
-  const width = grid.value?.clientWidth || 720
-  const gap = 14
-  const columns = Math.max(2, Math.floor((width + gap) / (132 + gap)))
-  tileMin.value = Math.max(112, Math.floor((width - gap * (columns - 1)) / columns) - 1)
-  const rows = (window.innerHeight || 800) >= 1000 ? 5 : 4
-  size.value = Math.min(60, columns * rows)
-}
-
-function scheduleMeasure() {
-  clearTimeout(resizeTimer)
-  resizeTimer = setTimeout(measure, 160)
-}
-
-async function loadGallery() {
-  loading.value = true
-  try {
-    result.value = await api(`/api/cards?${cardsQuery(gallery, size.value)}`)
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function scheduleGallery() {
-  if (!canEdit.value) return
-  clearTimeout(galleryTimer)
-  galleryTimer = setTimeout(loadGallery, 180)
-}
-
-function setFilter(key, values) {
-  gallery[key] = values
-  gallery.page = 1
-}
-
-function resetFilters() {
-  Object.assign(gallery, { q: "", set_id: [], type: [], domain: [], rarity: [], energy: [], owned: "", page: 1 })
-}
-
-watch(
-  () => [
-    gallery.q,
-    gallery.set_id.join(),
-    gallery.type.join(),
-    gallery.domain.join(),
-    gallery.rarity.join(),
-    gallery.energy.join(),
-    gallery.owned,
-    gallery.page
-  ],
-  scheduleGallery
-)
 watch(size, scheduleGallery)
 
 /* La légende vient d'être choisie : on rouvre la galerie sur toutes les cartes. */
@@ -481,18 +307,21 @@ function onTileClick(card) {
   addCard(card)
 }
 
+/* Tactile : pas de survol pour lire une carte, un petit bouton ouvre sa fiche. */
+function openCardPage(card) {
+  router.push(`/cartes/${card.id}`)
+}
+
 /* ---------- Cartes manquantes ---------- */
 
 const showMissing = ref(false)
 const missing = ref(null)
 const missingError = ref("")
-const copyLabel = ref("Copier la liste")
 
 async function openMissing() {
   showMissing.value = true
   missing.value = null
   missingError.value = ""
-  copyLabel.value = "Copier la liste"
   await save()
   try {
     missing.value = await api(`/api/decks/${deck.value.id}/missing`)
@@ -506,24 +335,41 @@ function closeMissing() {
   showMissing.value = false
 }
 
-async function copyMissing() {
-  if (!missing.value?.items.length) return
-  const lines = missing.value.items.map(
-    (item) => `${item.missing}× ${item.card.name} (${item.card.riftbound_id.toUpperCase()})`
-  )
+/* ---------- Cycle de vie ---------- */
+
+async function load() {
   try {
-    await navigator.clipboard.writeText(lines.join("\n"))
-    copyLabel.value = "Copié ✓"
-  } catch {
-    copyLabel.value = "Copie impossible"
+    deck.value = await api(`/api/decks/${route.params.id}`)
+    sessionExpired.value = false
+    markSaved()
+    if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
+    if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
+      try {
+        const seen = await api(`/api/decks/${deck.value.id}/view`, { method: "POST" })
+        deck.value.views = seen.views
+      } catch {
+        /* compteur de vues non bloquant */
+      }
+    }
+    const publicDeck = deck.value.is_public && deck.value.moderation_status === "published"
+    applySeo({
+      title: `${deck.value.name} — Deck Riftbound`,
+      description:
+        (deck.value.description || "").trim().slice(0, 160) ||
+        `Deck Riftbound « ${deck.value.name} » (${formatLabel(deck.value.format)}) sur Riftarium.`,
+      path: route.path,
+      noindex: !publicDeck
+    })
+  } catch (e) {
+    error.value = e.message
   }
 }
-
-/* ---------- Cycle de vie ---------- */
 
 watch(
   () => route.params.id,
   async () => {
+    /* Transition sortante : l'id devient undefined, on ne vide pas le deck avant le save de secours. */
+    if (!route.params.id) return
     deck.value = null
     await load()
   },
@@ -531,13 +377,7 @@ watch(
 )
 
 onMounted(async () => {
-  measure()
-  window.addEventListener("resize", scheduleMeasure)
   window.addEventListener("scroll", hidePreview, { passive: true })
-  if (typeof ResizeObserver !== "undefined" && grid.value) {
-    observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(grid.value)
-  }
   try {
     sets.value = await api("/api/sets")
   } catch {
@@ -550,22 +390,16 @@ watch(canEdit, async (edit) => {
   loadGallery()
   await nextTick()
   measure()
-  if (typeof ResizeObserver !== "undefined" && grid.value && !observer) {
-    observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(grid.value)
-  }
+  observe()
 })
 
 onBeforeUnmount(() => {
-  clearTimeout(saveTimer)
-  clearTimeout(galleryTimer)
-  clearTimeout(resizeTimer)
+  /* Le save de rattrapage part avant : useDeckAutosave a été monté en premier. */
   clearTimeout(limitTimer)
-  window.removeEventListener("resize", scheduleMeasure)
+  for (const timer of pulseTimers) clearTimeout(timer)
+  pulseTimers.clear()
   window.removeEventListener("scroll", hidePreview)
   window.removeEventListener("pointermove", onDragMove)
-  observer?.disconnect()
-  save()
 })
 </script>
 
@@ -682,7 +516,9 @@ onBeforeUnmount(() => {
 
         <p class="muted mono dbuilder-count">
           {{ result.total }} carte(s) <span v-if="loading">— chargement…</span>
-          <span class="dbuilder-hint">— cliquez ou glissez une carte vers le deck</span>
+          <span class="dbuilder-hint">{{
+            finePointer ? "— cliquez ou glissez une carte vers le deck" : "— touchez une carte pour l'ajouter au deck"
+          }}</span>
         </p>
 
         <div ref="grid" class="dbuilder-grid" :style="{ '--tile-min': `${tileMin}px` }">
@@ -712,6 +548,15 @@ onBeforeUnmount(() => {
             </span>
             <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
             <span class="gcard-add" aria-hidden="true">+</span>
+            <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans ajouter la carte -->
+            <span
+              class="gcard-info"
+              role="link"
+              :aria-label="`Voir la fiche de ${card.name}`"
+              @click.stop="openCardPage(card)"
+              @pointerdown.stop
+              >ℹ</span
+            >
           </button>
         </div>
         <p v-if="!loading && !result.items.length" class="muted" style="margin-top: 14px">
@@ -852,7 +697,14 @@ onBeforeUnmount(() => {
               </div>
             </TransitionGroup>
             <p v-if="!grouped[zone.key].length" class="zone-empty">
-              {{ canEdit ? "Glissez des cartes ici." : "Aucune carte dans cette zone." }}
+              <!-- Au tactile le glisser-déposer est désactivé : c'est le tap qui ajoute. -->
+              {{
+                !canEdit
+                  ? "Aucune carte dans cette zone."
+                  : finePointer
+                    ? "Glissez des cartes ici."
+                    : "Touchez une carte de la galerie pour l'ajouter."
+              }}
             </p>
           </template>
         </div>
@@ -943,56 +795,14 @@ onBeforeUnmount(() => {
     </Teleport>
 
     <!-- Cartes manquantes -->
-    <ModalDialog v-if="showMissing" title="Cartes manquantes" wide @close="closeMissing">
-      <p v-if="missingError" class="error">{{ missingError }}</p>
-      <p v-else-if="!missing" class="muted">Analyse de votre collection…</p>
-      <template v-else-if="missing.items.length">
-        <p class="muted" style="margin-bottom: 14px">
-          Il vous manque <b>{{ missing.missing_total }}</b> carte(s) sur les {{ missing.deck_total }} du deck. Les
-          variantes (art alternatif, signature) comptent comme la carte de base.
-        </p>
-        <table class="missing-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Carte</th>
-              <th>Requis</th>
-              <th>Possédé</th>
-              <th>À trouver</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in missing.items" :key="item.card.id">
-              <td>
-                <img
-                  class="row-thumb missing-zoom"
-                  :src="cardThumb(item.card.image_url, 84)"
-                  :alt="item.card.name"
-                  loading="lazy"
-                  @mouseenter="showPreview(item.card, $event, 400)"
-                  @mouseleave="hidePreview"
-                />
-              </td>
-              <td class="missing-zoom" @mouseenter="showPreview(item.card, $event, 400)" @mouseleave="hidePreview">
-                <RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
-                <span class="muted mono" style="font-size: 0.68rem; display: block">{{
-                  item.card.riftbound_id.toUpperCase()
-                }}</span>
-              </td>
-              <td class="num">{{ item.needed }}</td>
-              <td class="num">{{ item.owned }}</td>
-              <td class="num">
-                <b>{{ item.missing }}</b>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="modal-actions">
-          <button class="btn btn-ghost" @click="copyMissing">{{ copyLabel }}</button>
-        </div>
-      </template>
-      <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck. Bon match !</p>
-    </ModalDialog>
+    <DeckMissingModal
+      v-if="showMissing"
+      :missing="missing"
+      :error="missingError"
+      @close="closeMissing"
+      @preview="showPreview"
+      @hide-preview="hidePreview"
+    />
 
     <ModalDialog v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
       <DeckExportBar :deck="deck" />

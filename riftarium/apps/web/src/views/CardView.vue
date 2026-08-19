@@ -29,7 +29,7 @@ const foil = computed(() => isFoil(card.value))
 const variants = computed(() => card.value?.variants || [])
 const landscape = computed(() => card.value?.orientation === "landscape")
 const domainLabel = computed(() => card.value?.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "—")
-const domainColor = computed(() => DOMAINS[card.value?.domains?.[0]]?.color)
+const domainColor = computed(() => DOMAINS[card.value?.domains?.[0]]?.text)
 const energySrc = computed(() =>
   card.value?.energy === null || card.value?.energy === undefined ? "" : glyphUrl(`energy_${card.value.energy}`)
 )
@@ -39,6 +39,8 @@ const mightSrc = glyphUrl("might")
 watch(
   () => route.params.id,
   async (id) => {
+    /* Transition sortante : l'id devient undefined, pas de requête parasite GET /api/cards/undefined. */
+    if (!id) return
     card.value = null
     error.value = ""
     saved.value = ""

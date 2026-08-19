@@ -1,9 +1,9 @@
 import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import String, cast, func, or_, select
+from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..auth import current_user, optional_user
 from ..db import get_db
@@ -15,19 +15,33 @@ from ..schemas import DeckIn, ExampleDeckIn
 from ..security import client_ip, sanitize_image_url
 from ..validation import validate_deck
 from ..variants import copy_family
-from .cards import card_out, csv_parts, find_card, owned_quantities
+from .cards import card_out, csv_parts, escape_like, owned_quantities
 
 router = APIRouter(prefix="/api", tags=["decks"])
 
+_UNSET = object()
 
-def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) -> dict:
-    liked = False
-    owned: dict[str, int] = {}
-    if viewer and db:
-        liked = (
-            db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id)) is not None
+
+def deck_out(
+    deck: Deck,
+    viewer: User | None = None,
+    db: Session | None = None,
+    *,
+    liked: bool | None = None,
+    owned: dict[str, int] | None = None,
+    owner_avatar=_UNSET,
+) -> dict:
+    """Sérialise un deck. liked/owned/owner_avatar peuvent être pré-calculés en lot (cf. _decks_out)."""
+    if liked is None:
+        liked = bool(
+            viewer
+            and db
+            and db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == viewer.id))
         )
-        owned = owned_quantities(db, viewer, [dc.card_id for dc in deck.cards])
+    if owned is None:
+        owned = owned_quantities(db, viewer, [dc.card_id for dc in deck.cards]) if viewer and db else {}
+    if owner_avatar is _UNSET:
+        owner_avatar = avatar_urls(db, [deck.owner]).get(deck.owner.id) if db and deck.owner else None
     has_viewer = viewer is not None and db is not None
     return {
         "id": deck.id,
@@ -40,7 +54,7 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
         "liked_by_me": liked,
         "views": deck.views_count,
         "owner": deck.owner.handle,
-        "owner_avatar": avatar_urls(db, [deck.owner]).get(deck.owner.id) if db and deck.owner else None,
+        "owner_avatar": owner_avatar,
         "card_count": sum(dc.qty for dc in deck.cards),
         "cards": [
             {"card": card_out(dc.card, owned.get(dc.card_id, 0) if has_viewer else None), "qty": dc.qty}
@@ -49,6 +63,41 @@ def deck_out(deck: Deck, viewer: User | None = None, db: Session | None = None) 
         "checks": validate_deck([(dc.card, dc.qty) for dc in deck.cards]),
         "updated_at": deck.updated_at.isoformat() if deck.updated_at else None,
     }
+
+
+def _decks_out(db: Session, decks: list[Deck], viewer: User | None) -> list[dict]:
+    """Sérialisation en lot : likes, quantités possédées et avatars en une requête chacun."""
+    ids = [deck.id for deck in decks]
+    liked_ids: set[int] = set()
+    owned: dict[str, int] = {}
+    if viewer is not None and ids:
+        liked_ids = set(
+            db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id, DeckLike.deck_id.in_(ids))).all()
+        )
+        card_ids = {dc.card_id for deck in decks for dc in deck.cards}
+        owned = owned_quantities(db, viewer, list(card_ids))
+    avatars = avatar_urls(db, [deck.owner for deck in decks if deck.owner])
+    return [
+        deck_out(
+            deck,
+            viewer,
+            db,
+            liked=deck.id in liked_ids,
+            owned=owned,
+            owner_avatar=avatars.get(deck.owner.id) if deck.owner else None,
+        )
+        for deck in decks
+    ]
+
+
+def _reload_deck(db: Session, deck_id: int) -> Deck:
+    """Recharge un deck fraîchement écrit avec cartes pré-chargées (évite les lazy-loads unitaires)."""
+    return db.scalar(
+        select(Deck)
+        .options(selectinload(Deck.cards).joinedload(DeckCard.card))
+        .where(Deck.id == deck_id)
+        .execution_options(populate_existing=True)
+    )
 
 
 def _apply(deck: Deck, payload: DeckIn, db: Session) -> None:
@@ -61,17 +110,45 @@ def _apply(deck: Deck, payload: DeckIn, db: Session) -> None:
     deck.cards.clear()
     if deck.id is not None:
         db.flush()  # supprime les anciennes lignes avant réinsertion (contrainte unique deck/carte)
+
+    # Dédoublonnage par identifiant : les quantités des doublons s'additionnent.
+    wanted: dict[str, int] = {}
     for entry in payload.cards:
-        card = find_card(db, entry.card_id)
-        if card is None:
-            raise HTTPException(status_code=422, detail=f"Carte inconnue : {entry.card_id}")
-        deck.cards.append(DeckCard(card_id=card.id, qty=entry.qty))
+        wanted[entry.card_id] = wanted.get(entry.card_id, 0) + entry.qty
+
+    # Résolution en lot : d'abord par id Riftcodex, puis par riftbound_id pour le reste.
+    resolved: dict[str, Card] = {}
+    if wanted:
+        rows = db.scalars(select(Card).where(Card.id.in_(list(wanted)))).all()
+        resolved = {card.id: card for card in rows}
+    missing = {ident.lower(): ident for ident in wanted if ident not in resolved}
+    if missing:
+        fallback = db.scalars(
+            select(Card)
+            .where(func.lower(Card.riftbound_id).in_(missing))
+            .order_by(Card.alternate_art, Card.id)  # version de base d'abord, comme find_card
+        ).all()
+        for card in fallback:
+            ident = missing.get((card.riftbound_id or "").lower())
+            if ident is not None and ident not in resolved:
+                resolved[ident] = card
+    unknown = [ident for ident in wanted if ident not in resolved]
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"Carte inconnue : {unknown[0]}")
+
+    # Deux identifiants peuvent résoudre la même carte : on fusionne aussi par carte résolue.
+    quantities: dict[str, int] = {}
+    for ident, qty in wanted.items():
+        card_id = resolved[ident].id
+        quantities[card_id] = quantities.get(card_id, 0) + qty
+    for card_id, qty in quantities.items():
+        deck.cards.append(DeckCard(card_id=card_id, qty=qty))
 
 
 @router.get("/decks/mine")
 def my_decks(user: User = Depends(current_user), db: Session = Depends(get_db)):
     decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
-    return [deck_out(d, user, db) for d in decks]
+    return _decks_out(db, list(decks), user)
 
 
 @router.post("/decks", status_code=201)
@@ -80,7 +157,7 @@ def create_deck(payload: DeckIn, user: User = Depends(current_user), db: Session
     _apply(deck, payload, db)
     db.add(deck)
     db.commit()
-    return deck_out(deck, user, db)
+    return deck_out(_reload_deck(db, deck.id), user, db)
 
 
 @router.get("/decks/{deck_id}")
@@ -100,15 +177,16 @@ def get_deck(
 
 def _owned_families(db: Session, user: User) -> dict[str, int]:
     """Quantités possédées agrégées par nom de jeu (reprints et variantes confondus)."""
+    # Seules les colonnes utiles à copy_family sont lues (pas d'hydratation ORM complète).
     rows = db.execute(
-        select(Card, CollectionItem.qty)
+        select(Card.name, Card.type, Card.riftbound_id, Card.id, CollectionItem.qty)
         .join(Card, Card.id == CollectionItem.card_id)
         .where(CollectionItem.user_id == user.id)
     ).all()
     owned_by_family: dict[str, int] = {}
-    for card, qty in rows:
-        family = copy_family(card)
-        owned_by_family[family] = owned_by_family.get(family, 0) + int(qty or 0)
+    for row in rows:
+        family = copy_family(row)
+        owned_by_family[family] = owned_by_family.get(family, 0) + int(row.qty or 0)
     return owned_by_family
 
 
@@ -157,7 +235,7 @@ def create_example_deck(payload: ExampleDeckIn, user: User = Depends(current_use
         deck.cards.append(DeckCard(card_id=card.id, qty=qty))
     db.add(deck)
     db.commit()
-    return deck_out(deck, user, db)
+    return deck_out(_reload_deck(db, deck.id), user, db)
 
 
 @router.get("/decks/{deck_id}/missing")
@@ -202,7 +280,7 @@ def update_deck(
         raise HTTPException(status_code=404, detail="Deck introuvable")
     _apply(deck, payload, db)
     db.commit()
-    return deck_out(deck, user, db)
+    return deck_out(_reload_deck(db, deck.id), user, db)
 
 
 @router.delete("/decks/{deck_id}", status_code=204)
@@ -222,13 +300,18 @@ def toggle_like(deck_id: int, user: User = Depends(current_user), db: Session = 
     like = db.scalar(select(DeckLike).where(DeckLike.deck_id == deck.id, DeckLike.user_id == user.id))
     if like:
         db.delete(like)
-        deck.likes_count = max(0, deck.likes_count - 1)
+        # Décrément côté serveur (jamais négatif) : sûr face aux requêtes concurrentes.
+        deck.likes_count = case((Deck.likes_count > 0, Deck.likes_count - 1), else_=0)
         liked = False
+        db.commit()
     else:
         db.add(DeckLike(deck_id=deck.id, user_id=user.id))
-        deck.likes_count += 1
+        deck.likes_count = Deck.likes_count + 1
         liked = True
-    db.commit()
+        try:
+            db.commit()
+        except IntegrityError:  # double-clic concurrent : le like existe déjà (uq_deck_like)
+            db.rollback()
     return {"deck_id": deck.id, "likes": deck.likes_count, "liked_by_me": liked}
 
 
@@ -283,7 +366,7 @@ def record_view(
         return {"deck_id": deck.id, "views": deck.views_count, "counted": False}
 
     db.add(DeckView(deck_id=deck.id, visitor_key=key))
-    deck.views_count += 1
+    deck.views_count = Deck.views_count + 1  # incrément côté serveur : pas de perte en cas de concurrence
     try:
         db.commit()
     except IntegrityError:
@@ -331,7 +414,9 @@ def community_decks(
     if domains:
         query = query.where(
             Deck.id.in_(
-                _legend_decks().where(or_(*[cast(Card.domains, String).like(f'%"{item}"%') for item in domains]))
+                _legend_decks().where(
+                    or_(*[cast(Card.domains, String).like(f'%"{escape_like(item)}"%', escape="\\") for item in domains])
+                )
             )
         )
     formats = csv_parts(format)
@@ -340,13 +425,13 @@ def community_decks(
     if liked in {"1", "true"} and viewer is not None:
         query = query.where(Deck.id.in_(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id)))
     if q:
-        needle = f"%{q.lower()}%"
+        needle = f"%{escape_like(q.lower())}%"
         query = query.where(
             or_(
-                func.lower(Deck.name).like(needle),
-                func.lower(func.coalesce(Deck.description, "")).like(needle),
-                Deck.owner_id.in_(select(User.id).where(func.lower(User.handle).like(needle))),
-                Deck.id.in_(_legend_decks().where(func.lower(Card.name).like(needle))),
+                func.lower(Deck.name).like(needle, escape="\\"),
+                func.lower(func.coalesce(Deck.description, "")).like(needle, escape="\\"),
+                Deck.owner_id.in_(select(User.id).where(func.lower(User.handle).like(needle, escape="\\"))),
+                Deck.id.in_(_legend_decks().where(func.lower(Card.name).like(needle, escape="\\"))),
             )
         )
 
@@ -360,7 +445,7 @@ def community_decks(
     decks = db.scalars(query.offset((page - 1) * size).limit(size)).all()
     ids = [deck.id for deck in decks]
 
-    counts = (
+    counts: dict[int, int] = (
         dict(
             db.execute(
                 select(DeckCard.deck_id, func.coalesce(func.sum(DeckCard.qty), 0))
@@ -371,7 +456,7 @@ def community_decks(
         if ids
         else {}
     )
-    legends = {}
+    legends: dict[int, Card] = {}
     if ids:
         for deck_id, card in db.execute(
             select(DeckCard.deck_id, Card)

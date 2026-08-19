@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import DeckEditView from "./DeckEditView.vue"
-import { api, session } from "../api.js"
+import { api, ApiError, session } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -233,6 +233,21 @@ describe("DeckEditView", () => {
     wrapper.unmount()
   })
 
+  it("tactile : le bouton « ℹ » ouvre la fiche de la carte sans l'ajouter au deck", async () => {
+    const { wrapper, router } = await mountView()
+    await tile(wrapper, "Légende Fury").trigger("click")
+
+    const info = tile(wrapper, "Phénix").get(".gcard-info")
+    expect(info.attributes("aria-label")).toContain("Voir la fiche")
+
+    await info.trigger("click")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/cartes/u1")
+    // le clic ne remonte pas jusqu'à la tuile : la carte n'est pas ajoutée
+    expect(wrapper.findAll(".deck-row")).toHaveLength(0)
+    wrapper.unmount()
+  })
+
   it("validation, coût, description et cartes manquantes sont sur la page, pas dans la zone de dépôt", async () => {
     const { wrapper } = await mountView()
     const overview = wrapper.get(".dbuilder-overview")
@@ -307,6 +322,66 @@ describe("DeckEditView", () => {
     nameCell.dispatchEvent(new MouseEvent("mouseleave"))
     await flushPromises()
     expect(document.body.querySelector(".builder-preview")).toBeNull()
+    wrapper.unmount()
+  })
+
+  it("navigation sortante : le deck n'est pas vidé et le save de secours part au démontage", async () => {
+    const { wrapper, router } = await mountView()
+    await tile(wrapper, "Légende Fury").trigger("click")
+
+    // transition out-in : l'id de route devient undefined, le brouillon doit rester affiché
+    router.push("/decks")
+    await flushPromises()
+    expect(wrapper.find(".dbuilder-name").exists()).toBe(true)
+    expect(api.mock.calls.every(([path]) => !String(path).includes("undefined"))).toBe(true)
+    expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1" && options?.method === "PUT")).toBe(false)
+
+    // le démontage déclenche la sauvegarde de rattrapage avant toute remise à zéro
+    wrapper.unmount()
+    expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1" && options?.method === "PUT")).toBe(true)
+  })
+
+  it("beforeunload : demande confirmation seulement s'il reste des modifications non sauvegardées", async () => {
+    const { wrapper } = await mountView()
+
+    const clean = new Event("beforeunload", { cancelable: true })
+    window.dispatchEvent(clean)
+    expect(clean.defaultPrevented).toBe(false)
+
+    await tile(wrapper, "Légende Fury").trigger("click")
+    const dirty = new Event("beforeunload", { cancelable: true })
+    window.dispatchEvent(dirty)
+    expect(dirty.defaultPrevented).toBe(true)
+
+    wrapper.unmount()
+    const after = new Event("beforeunload", { cancelable: true })
+    window.dispatchEvent(after)
+    expect(after.defaultPrevented).toBe(false)
+  })
+
+  it("session expirée pendant l'édition : le brouillon reste affiché avec un message clair", async () => {
+    const { wrapper } = await mountView()
+    await tile(wrapper, "Légende Fury").trigger("click")
+
+    api.mockImplementation((path, options = {}) => {
+      if (options.method === "PUT" || options.method === "POST") {
+        // comme api() le fait sur un vrai 401 : session locale fermée + rejet
+        session.token = null
+        session.handle = null
+        return Promise.reject(new ApiError(401, "Connexion requise"))
+      }
+      if (path === "/api/decks/1/missing") return Promise.reject(new ApiError(401, "Connexion requise"))
+      if (path.startsWith("/api/cards")) return Promise.resolve({ total: 0, page: 1, size: 24, items: [] })
+      return Promise.resolve(null)
+    })
+
+    // openMissing déclenche la sauvegarde immédiatement (pas d'attente du débounce)
+    await wrapper.get(".missing-btn").trigger("click")
+    await flushPromises()
+
+    expect(wrapper.find(".dbuilder-gallery").exists()).toBe(true) // pas de bascule en lecture seule
+    expect(wrapper.get(".deck-hero h3").text()).toBe("Légende Fury") // brouillon conservé
+    expect(wrapper.text()).toContain("Session expirée, reconnectez-vous")
     wrapper.unmount()
   })
 

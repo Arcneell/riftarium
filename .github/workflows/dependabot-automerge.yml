@@ -1,0 +1,35 @@
+# Auto-merge des PR Dependabot patch/minor (pip et npm).
+# Le merge est mis en file d'attente ("--auto") : il ne s'exécute que si les
+# checks requis de la branche main (api-test, web-check, compose-security)
+# passent. Les mises à jour majeures et les images Docker/actions restent
+# à valider manuellement.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Métadonnées de la PR
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Activer l'auto-merge (patch/minor pip et npm uniquement)
+        if: >-
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
+          (steps.meta.outputs.package-ecosystem == 'pip' ||
+           steps.meta.outputs.package-ecosystem == 'npm_and_yarn')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

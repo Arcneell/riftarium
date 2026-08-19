@@ -1,3 +1,10 @@
+# Journalisation bornée sur tous les services : évite de remplir le disque du VPS.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
@@ -13,6 +20,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    logging: *logging
+    mem_limit: 512m
     restart: unless-stopped
 
   redis:
@@ -30,6 +39,9 @@ services:
       retries: 10
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    logging: *logging
+    # maxmemory 128mb côté Redis + marge pour le processus lui-même.
+    mem_limit: 192m
     restart: unless-stopped
 
   api:
@@ -40,14 +52,27 @@ services:
       DATABASE_URL: postgresql+psycopg://riftarium:${DB_PASSWORD}@db:5432/riftarium
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN must be set}
-      COOKIE_SECURE: "1"
+      COOKIE_SECURE: "${COOKIE_SECURE:-1}"
       AUTO_SYNC: "1"
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # E-mails (SMTP OVH). Optionnels : SMTP_HOST vide = mode console (messages loggés).
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      MAIL_FROM: "${MAIL_FROM:-Riftarium <contact@riftarium.re>}"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-}"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Moindre privilège : aucun capability, pas d'escalade possible.
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+    mem_limit: 512m
     restart: unless-stopped
 
   web:
@@ -56,12 +81,31 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: riftarium-web
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "127.0.0.1:${PORT:-8888}:8080"
-    expose:
-      - "8080"
+    # Seul le front est visible depuis BunkerWeb ; api/db/redis restent sur
+    # le réseau interne du projet.
+    networks:
+      - default
+      - bunkerweb
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+    mem_limit: 128m
     restart: unless-stopped
+
+networks:
+  # Réseau interne du projet (api, db, redis n'existent que là).
+  default:
+  # Réseau partagé avec BunkerWeb, créé à la main sur le VPS :
+  #   docker network create bunkerweb
+  # puis rattacher le conteneur BunkerWeb à ce réseau (voir README).
+  # En dev, compose.dev.yaml le redéfinit en réseau local (pas de pré-création).
+  bunkerweb:
+    external: true
 
 volumes:
   dbdata:

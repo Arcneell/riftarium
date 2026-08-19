@@ -1,8 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { computed, onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 import { api, session } from "../api.js"
-import { csvJoin, csvSplit, domainFilterOptions } from "../cardText.js"
+import { csvJoin, domainFilterOptions } from "../cardText.js"
+import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { FORMAT_OPTIONS } from "../deckDisplay.js"
 import { BANNERS } from "../banners.js"
 import DeckBox from "../components/DeckBox.vue"
@@ -15,49 +16,32 @@ const SORTS = [
   { value: "recent", label: "Récents" }
 ]
 
-const route = useRoute()
 const router = useRouter()
-
-function fromQuery(query) {
-  return {
-    q: query.q || "",
-    legend: csvSplit(query.legend),
-    domain: csvSplit(query.domain),
-    format: csvSplit(query.format),
-    sort: SORTS.some((item) => item.value === query.sort) ? query.sort : "likes",
-    liked: query.liked === "1",
-    page: Math.max(1, Number(query.page) || 1)
-  }
-}
-
-const state = reactive(fromQuery(route.query))
-const result = ref({ total: 0, items: [] })
-const legends = ref([])
-const loading = ref(false)
-const error = ref("")
 const size = 20
-let timer = null
+
+const { state, result, loading, error, activeCount, pageCount, setFilter, reset, load } = useQuerySyncedFilters(
+  {
+    q: { kind: "text" },
+    legend: { kind: "list" },
+    domain: { kind: "list" },
+    format: { kind: "list" },
+    /* Le tri n'est pas un filtre : hors compteur et épargné par la remise à zéro. */
+    sort: { kind: "enum", values: SORTS.map((item) => item.value), default: "likes", reset: false },
+    liked: { kind: "flag" },
+    page: { kind: "page" }
+  },
+  {
+    fetcher: () => api(`/api/community/decks?${communityQuery()}`),
+    pageSize: size
+  }
+)
+
+const legends = ref([])
 
 const domainOptions = computed(() => domainFilterOptions())
 const legendOptions = computed(() =>
   legends.value.map((item) => ({ value: item.id, label: `${item.name} (${item.deck_count})` }))
 )
-const pageCount = computed(() => Math.max(1, Math.ceil(result.value.total / size)))
-const activeCount = computed(
-  () => (state.q ? 1 : 0) + state.legend.length + state.domain.length + state.format.length + (state.liked ? 1 : 0)
-)
-
-function toQuery() {
-  const query = {}
-  if (state.q) query.q = state.q
-  if (state.legend.length) query.legend = csvJoin(state.legend)
-  if (state.domain.length) query.domain = csvJoin(state.domain)
-  if (state.format.length) query.format = csvJoin(state.format)
-  if (state.sort !== "likes") query.sort = state.sort
-  if (state.liked) query.liked = "1"
-  if (state.page > 1) query.page = String(state.page)
-  return query
-}
 
 function communityQuery() {
   const params = new URLSearchParams({ page: String(state.page), size: String(size), sort: state.sort })
@@ -69,31 +53,8 @@ function communityQuery() {
   return params
 }
 
-async function load() {
-  loading.value = true
-  error.value = ""
-  try {
-    result.value = await api(`/api/community/decks?${communityQuery()}`)
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function scheduleLoad() {
-  clearTimeout(timer)
-  timer = setTimeout(load, 180)
-}
-
-function setFilter(key, values) {
-  state[key] = values
-  state.page = 1
-}
-
 function setSort(value) {
-  state.sort = value
-  state.page = 1
+  setFilter("sort", value)
 }
 
 function toggleLiked() {
@@ -101,17 +62,7 @@ function toggleLiked() {
     router.push({ path: "/connexion", query: { suite: "/communaute?liked=1" } })
     return
   }
-  state.liked = !state.liked
-  state.page = 1
-}
-
-function reset() {
-  state.q = ""
-  state.legend = []
-  state.domain = []
-  state.format = []
-  state.liked = false
-  state.page = 1
+  setFilter("liked", !state.liked)
 }
 
 async function toggleLike(deck) {
@@ -132,34 +83,6 @@ async function toggleLike(deck) {
   }
 }
 
-watch(
-  () => [state.q, state.legend.join(), state.domain.join(), state.format.join(), state.sort, state.liked, state.page],
-  () => {
-    const query = toQuery()
-    if (JSON.stringify(route.query) !== JSON.stringify(query)) router.replace({ query })
-    scheduleLoad()
-  }
-)
-
-watch(
-  () => route.query,
-  (query) => {
-    const next = fromQuery(query)
-    if (
-      next.q === state.q &&
-      next.page === state.page &&
-      next.sort === state.sort &&
-      next.liked === state.liked &&
-      next.legend.join() === state.legend.join() &&
-      next.domain.join() === state.domain.join() &&
-      next.format.join() === state.format.join()
-    ) {
-      return
-    }
-    Object.assign(state, next)
-  }
-)
-
 onMounted(async () => {
   load()
   try {
@@ -168,8 +91,6 @@ onMounted(async () => {
     /* filtre légendes indisponible */
   }
 })
-
-onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>

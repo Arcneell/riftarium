@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -29,6 +30,24 @@ class User(Base):
     bio: Mapped[str] = mapped_column(String(280), default="")
     avatar_card_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, default=1)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AuthToken(Base):
+    """Jeton à usage unique envoyé par e-mail (vérification d'adresse ou reset).
+
+    Seul le hash SHA-256 est stocké : une fuite de la base ne permet pas de
+    rejouer les liens. Le jeton est supprimé à l'usage (single-use).
+    """
+
+    __tablename__ = "auth_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(8))  # verify | reset
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -86,6 +105,8 @@ class CollectionItem(Base):
 
 class Deck(Base):
     __tablename__ = "decks"
+    # Index composite pour les listes publiques (communauté) filtrées par statut de modération.
+    __table_args__ = (Index("ix_decks_public_moderation", "is_public", "moderation_status"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
@@ -111,7 +132,7 @@ class DeckCard(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id"), index=True)
-    card_id: Mapped[str] = mapped_column(ForeignKey("cards.id"))
+    card_id: Mapped[str] = mapped_column(ForeignKey("cards.id"), index=True)
     qty: Mapped[int] = mapped_column(Integer, default=1)
 
     card: Mapped[Card] = relationship(lazy="joined")

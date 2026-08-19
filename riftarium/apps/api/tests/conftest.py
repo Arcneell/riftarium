@@ -6,8 +6,11 @@ os.environ["RIFTARIUM_ENV"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-not-for-production-use!"
 os.environ["ADMIN_TOKEN"] = "test-admin-token-ok"
 os.environ["AUTH_RATE_LIMIT"] = "10000"
+os.environ["AUTH_ACCOUNT_RATE_LIMIT"] = "10000"
+os.environ["EMAIL_RATE_LIMIT"] = "10000"
 os.environ["REDIS_URL"] = ""  # les tests tournent sans cache, même si un Redis est joignable
 os.environ["COOKIE_SECURE"] = "0"
+os.environ["SCRYPT_N"] = "4096"  # paramètres scrypt faibles pour garder la suite rapide
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,6 +27,9 @@ db_module.SessionLocal = sessionmaker(bind=db_module.engine, expire_on_commit=Fa
 from app.db import Base
 from app.models import Card, CardSet
 from app.main import app
+import app.cache as cache_module
+import app.main as main_module
+import app.security as security_module
 
 
 def seed(session):
@@ -165,8 +171,28 @@ def seed(session):
     session.commit()
 
 
+@pytest.fixture(autouse=True)
+def _reset_module_state():
+    """Remet à zéro l'état module partagé entre les tests (rate limit, throttle sync, cache)."""
+
+    def _reset():
+        security_module._hits.clear()
+        security_module._last_purge = 0.0
+        main_module._last_sync_fallback = 0.0
+        cache_module._client = None
+        cache_module._disabled = not cache_module.settings.redis_url
+
+    _reset()
+    yield
+    _reset()
+
+
 @pytest.fixture()
 def client():
+    # create_all (et non run_migrations) pour préparer chaque test : bien plus rapide,
+    # et sûr car test_migrations.py vérifie que la chaîne Alembic produit un schéma
+    # identique à Base.metadata. Le lifespan (TestClient) exécute quand même
+    # run_migrations : premier test → stamp, suivants → upgrade no-op.
     Base.metadata.drop_all(db_module.engine)
     Base.metadata.create_all(db_module.engine)
     with db_module.SessionLocal() as session:
@@ -175,19 +201,34 @@ def client():
         yield test_client
 
 
-@pytest.fixture()
-def auth(client):
-    response = client.post(
-        "/api/auth/register",
-        json={
-            "handle": "testeur",
-            "email": "testeur@example.org",
-            "password": "motdepasse123",
-            "accept_terms": True,
-            "confirm_age": True,
-        },
-    )
-    assert response.status_code == 201, response.text
-    token = response.json()["token"]
+def bearer_headers(client):
+    """Récupère le jeton depuis le cookie de session (le corps JSON ne l'expose plus)."""
+    token = client.cookies.get("riftarium_session")
     client.cookies.clear()  # les tests Bearer ne doivent pas aussi envoyer le cookie HTTP-only
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
+def register_user():
+    """Factory d'inscription : construit le payload complet à partir du handle."""
+
+    def _register(client, handle, *, email=None, password="motdepasse123", headers=None, **overrides):
+        payload = {
+            "handle": handle,
+            "email": email or f"{handle}@example.org",
+            "password": password,
+            "accept_terms": True,
+            "confirm_age": True,
+        }
+        payload.update(overrides)
+        return client.post("/api/auth/register", json=payload, headers=headers)
+
+    return _register
+
+
+@pytest.fixture()
+def auth(client, register_user):
+    response = register_user(client, "testeur")
+    assert response.status_code == 201, response.text
+    assert "token" not in response.json()  # le jeton ne circule que via le cookie HttpOnly
+    return bearer_headers(client)

@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     admin_token: str = ""
     cookie_secure: bool = False
     auth_rate_limit: int = 20  # tentatives / minute / IP (login + inscription)
+    auth_account_rate_limit: int = 10  # tentatives / heure / compte (login)
+    # Paramètres scrypt (mots de passe). Abaissés dans les tests pour rester rapides.
+    scrypt_n: int = 2**17
+    scrypt_r: int = 8
+    scrypt_p: int = 1
     auto_sync: bool = True
     riftcodex_base_url: str = "https://api.riftcodex.com"
     sync_sets: str = "OGN,OGS,SFD,UNL,VEN,PR"
@@ -29,10 +34,26 @@ class Settings(BaseSettings):
     sync_min_interval_minutes: int = 10  # protège l'API Riftcodex des resync en rafale
     riftcodex_page_delay: float = 0.3  # pause entre deux pages lors d'une sync
     image_hosts: str = ""  # hôtes HTTPS supplémentaires, séparés par des virgules
+    # E-mails transactionnels (vérification d'adresse, réinitialisation de mot de passe).
+    # SMTP_HOST vide = mode console : les messages sont loggés au lieu d'être envoyés (dev).
+    smtp_host: str = ""
+    smtp_port: int = 465  # 465 = SSL implicite, sinon STARTTLS (587 chez OVH)
+    smtp_user: str = ""
+    smtp_password: str = ""
+    mail_from: str = "Riftarium <contact@riftarium.re>"
+    public_base_url: str = ""  # vide = déduit de l'environnement (voir base_url)
+    email_rate_limit: int = 3  # e-mails / heure / adresse (reset + renvoi de vérification)
 
     @property
     def is_prod(self) -> bool:
         return self.riftarium_env == "prod"
+
+    @property
+    def base_url(self) -> str:
+        """Base des liens envoyés par e-mail (sans « / » final)."""
+        if self.public_base_url:
+            return self.public_base_url.rstrip("/")
+        return "https://riftarium.re" if self.is_prod else "http://localhost:8888"
 
     @property
     def expose_docs(self) -> bool:

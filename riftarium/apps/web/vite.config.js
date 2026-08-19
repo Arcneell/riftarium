@@ -27,7 +27,9 @@ export default defineConfig({
     proxy: {
       // agent: false — pas de keep-alive : si le conteneur api est recréé (nouvelle IP),
       // chaque requête re-résout le DNS au lieu de servir des 502 sur des sockets mortes.
-      "/api": { target: process.env.API_PROXY || "http://localhost:8000", changeOrigin: true, agent: false }
+      // changeOrigin: false — l'API compare l'Origin du navigateur au Host reçu
+      // (anti-CSRF) : il faut lui transmettre le Host d'origine (localhost), pas api:8000.
+      "/api": { target: process.env.API_PROXY || "http://localhost:8000", changeOrigin: false, agent: false }
     }
   },
   test: {

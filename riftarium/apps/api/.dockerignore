@@ -1,0 +1,11 @@
+# Contexte de build de l'API : l'image n'embarque que requirements.txt, app/,
+# alembic.ini et alembic/ (migrations appliquées au démarrage).
+# Les tests restent hors image (exécutés en CI et en local, cf. README).
+__pycache__
+**/__pycache__
+.pytest_cache
+.mypy_cache
+tests
+pytest.ini
+.env
+*.env

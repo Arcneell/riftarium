@@ -49,7 +49,7 @@ def find_entry(db: Session, user: User, card_id: str, condition: str, lang: str)
 def my_collection(
     q: str | None = None,
     set_id: str | None = None,
-    type: str | None = None,
+    type_: str | None = Query(None, alias="type"),  # « type » masquerait le builtin Python
     domain: str | None = None,
     rarity: str | None = None,
     energy: str | None = None,
@@ -66,7 +66,7 @@ def my_collection(
         .distinct(),
         q=q,
         set_id=set_id,
-        type=type,
+        type_=type_,
         domain=domain,
         rarity=rarity,
         energy=energy,

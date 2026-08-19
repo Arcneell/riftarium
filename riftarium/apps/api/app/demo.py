@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .auth import hash_password
 from .deckbuild import assemble_list, has_champion, legends_in, load_pool, main_candidates
-from .models import CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
+from .models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from .moderation import review
 
 DEMO_PASSWORD = "demodemo1"
@@ -108,7 +108,7 @@ def seed_community(db: Session, *, reset: bool = True, limit: int | None = None)
         fans.append(user)
     db.flush()
 
-    jobs: list[tuple[object, bool]] = [(legend, False) for legend in legends]
+    jobs: list[tuple[Card, bool]] = [(legend, False) for legend in legends]
     extras = min(24, max(0, len(legends) // 3))
     jobs.extend((legend, True) for legend in legends[:extras])
 

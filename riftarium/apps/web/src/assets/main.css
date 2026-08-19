@@ -136,10 +136,12 @@
 
   --ink: #16283a;
   --ink-strong: #0a1428;
-  --muted: #77705e;
+  /* Assombri (#77705e → #6b6450) : contraste ≥ 4.5:1 même sur le parchemin foncé du pied de page. */
+  --muted: #6b6450;
 
   --gold: #b08a3e;
-  --gold-deep: #8a6a2f;
+  /* Assombri (#8a6a2f → #7a5d28) : liens et intertitres dorés lisibles (≥ 4.5:1) sur les deux parchemins. */
+  --gold-deep: #7a5d28;
   --gold-soft: #d9bd82;
   --gold-grad: linear-gradient(135deg, #c9a75c 0%, #a98338 55%, #8a6a2f 100%);
 
@@ -152,6 +154,17 @@
   --body: #3f8f50;
   --chaos: #c2439b;
   --order: #ab7c1a;
+
+  /* Variantes « texte » des couleurs de domaine : assombries juste ce qu'il faut pour un
+     contraste ≥ 4.5:1 sur fond parchemin. Réservées au texte — les pastilles et chips
+     graphiques gardent les teintes d'origine ci-dessus. */
+  --fury-text: #c03a2e;
+  --calm-text: #10756a;
+  --mind-text: #7355cf;
+  --body-text: #2f7340;
+  --chaos-text: #b0348a;
+  --order-text: #8a641a;
+  --hex-text: #0a7568;
 
   --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
 
@@ -309,7 +322,7 @@ h3 {
   font-size: 0.72rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--hex);
+  color: var(--hex-text);
   margin-bottom: 18px;
 }
 .eyebrow::before {
@@ -511,8 +524,8 @@ section {
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
+  /* Texte opaque (l'ancienne opacité 0.4 rendait la mention illisible), cadre laissé discret. */
   color: var(--gold-deep);
-  opacity: 0.4;
   pointer-events: none;
   user-select: none;
   padding: 3px 8px 2px;
@@ -679,12 +692,12 @@ textarea {
   min-height: 90px;
 }
 .error {
-  color: var(--fury);
+  color: var(--fury-text);
   font-size: 0.88rem;
   margin-top: 8px;
 }
 .success {
-  color: var(--hex);
+  color: var(--hex-text);
   font-size: 0.88rem;
   margin-top: 8px;
 }
@@ -1712,6 +1725,12 @@ td.num {
   color: var(--ink);
 }
 
+/* Le temps que le composant de route (chargé à la demande) arrive, <main> réserve
+   l'écran : le pied de page démarre sous la ligne de flottaison et ne saute plus (CLS). */
+main {
+  min-height: calc(100vh - 70px);
+}
+
 /* ---------- Pied de page ---------- */
 footer {
   margin-top: 64px;
@@ -1731,9 +1750,11 @@ footer {
   gap: 40px;
   margin-bottom: 32px;
 }
-.footer-grid h4 {
+/* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
+.footer-grid .foot-head {
   font-family: var(--font-mono);
   font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-deep);
@@ -1764,6 +1785,11 @@ footer {
 .footer-contact {
   margin-top: 14px;
 }
+/* Lien de soutien (Ko-fi) : discret mais repérable. */
+.footer-support {
+  color: var(--gold-deep);
+  font-weight: 600;
+}
 .footer-in > p {
   margin-bottom: 8px;
   max-width: 100ch;
@@ -1793,8 +1819,48 @@ footer {
   color: var(--ink);
   line-height: 1.45;
 }
+/* Lien noyé dans le texte : le soulignement le distingue sans dépendre de la couleur. */
+.traceurs-notice p a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .traceurs-notice .btn {
   flex-shrink: 0;
+}
+
+/* Bandeau discret : adresse e-mail du compte non vérifiée. */
+.verify-notice {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  background: rgba(171, 124, 26, 0.1);
+  border-bottom: 1px solid var(--line);
+}
+.verify-notice p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.verify-notice .error {
+  margin: 0 0 0 6px;
+}
+.verify-notice .btn {
+  flex-shrink: 0;
+}
+/* Rappel de vérification dans la section Email du profil. */
+.verify-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.verify-line p {
+  margin: 0;
 }
 
 .legal-page {
@@ -1895,7 +1961,7 @@ footer {
   .hero-grid,
   .cols-2,
   .card-sheet {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .hero-fan {
     height: 320px;
@@ -1916,7 +1982,7 @@ footer {
     grid-template-columns: 1fr 1fr;
   }
   .legal-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .legal-nav {
     position: static;
@@ -1985,10 +2051,10 @@ footer {
     display: none;
   }
   .modules {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .footer-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 26px;
   }
   .traceurs-notice {
@@ -2077,6 +2143,8 @@ footer {
   padding: 14px 16px;
   border-radius: var(--r-sm);
   margin-bottom: 4px;
+  /* Indentation par profondeur (--indent posé par la vue) : identique à l'ancien marginLeft inline. */
+  margin-left: calc(var(--indent, 0) * 22px);
 }
 .rule:hover {
   background: rgba(253, 250, 242, 0.8);
@@ -2300,7 +2368,7 @@ footer {
 
 @media (max-width: 980px) {
   .rules-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .rules-toc {
     position: static;
@@ -2877,7 +2945,11 @@ footer {
   animation: preview-in 0.25s ease;
 }
 .tb-zoom img {
-  height: 86%;
+  /* Contenue dans l'écran : mêmes dimensions qu'avant tant que l'image tient (max-height = ancien height). */
+  max-width: 92vw;
+  height: auto;
+  max-height: 86%;
+  object-fit: contain;
   border-radius: 4.5%;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
@@ -3044,7 +3116,7 @@ footer {
 
 @media (max-width: 980px) {
   .guide-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .guide-board {
     position: static;
@@ -3054,7 +3126,7 @@ footer {
     display: none;
   }
   .tier-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3168,6 +3240,8 @@ footer {
   font-size: 0.88rem;
   line-height: 1.6;
   margin-bottom: 8px;
+  /* Indentation par profondeur (--indent posé par la vue) : identique à l'ancien marginLeft inline. */
+  margin-left: calc(var(--indent, 0) * 16px);
 }
 .topic-rule-num {
   color: var(--gold-deep);
@@ -3197,6 +3271,8 @@ footer {
 }
 .topic-example img {
   width: 100%;
+  /* Réserve la hauteur avant chargement (cartes 744×1039) : le pied de page ne bouge plus. */
+  aspect-ratio: 744 / 1039;
   border-radius: 8px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.32, 1);
@@ -3217,16 +3293,18 @@ footer {
 }
 @media (max-width: 980px) {
   .topic-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .topic-side {
     position: static;
   }
   .topic-row {
     grid-template-columns: 1fr auto;
+    gap: 4px 18px;
   }
+  /* Le résumé reste lisible : il passe en seconde ligne au lieu de disparaître. */
   .topic-row .topic-summary {
-    display: none;
+    grid-column: 1 / -1;
   }
 }
 
@@ -3540,7 +3618,7 @@ h2.dbuilder-name {
   color: var(--hex);
 }
 .dbuilder-save.error {
-  color: var(--fury);
+  color: var(--fury-text);
 }
 .dbuilder-moderation {
   margin-bottom: 14px;
@@ -4139,7 +4217,7 @@ body.drag-active * {
 
 @media (max-width: 1100px) {
   .dbuilder {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .dbuilder-deck {
     position: relative;
@@ -4605,7 +4683,7 @@ button.deck-box-stat:hover,
 
 @media (max-width: 900px) {
   .deck-view-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .deck-view-side {
     order: -1;
@@ -4741,9 +4819,224 @@ button.deck-box-stat:hover,
 
 @media (max-width: 900px) {
   .profile-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .profile-hero {
     align-items: flex-start;
+  }
+}
+
+/* ============================================================
+   Ajustements mobile & tactile (audit responsive)
+   Le rendu desktop (pointeur précis, >760 px) reste inchangé :
+   tout passe par des media queries dédiées. Seule exception :
+   les éléments ci-dessous, nouveaux et masqués hors mobile.
+   ============================================================ */
+
+/* Nouveaux contrôles réservés au mobile/tactile : inertes sur desktop. */
+.rules-toc-toggle {
+  display: none;
+}
+.gcard-info {
+  display: none;
+}
+
+/* ---------- Tactile (hover: none) : équivalents des interactions au survol ---------- */
+@media (hover: none) {
+  /* Deck builder : les actions −/+ n'ont pas de survol, elles restent visibles et assez grandes. */
+  .row-actions {
+    display: flex;
+  }
+  .row-actions button {
+    width: 34px;
+    height: 34px;
+  }
+  .deck-row {
+    height: auto;
+    min-height: 44px;
+    padding: 4px 10px;
+  }
+  .deck-hero-remove {
+    opacity: 1;
+  }
+  /* Accès à la fiche carte sans survol : petit bouton « ℹ » en coin de tuile (cible 32 px). */
+  .gcard-info {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-full);
+    background: rgba(253, 250, 242, 0.92);
+    border: 1px solid var(--line-strong);
+    color: var(--ink-strong);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+/* ---------- Tactile ou petit écran : cibles élargies pour les pastilles de navigation ---------- */
+@media (hover: none), (max-width: 760px) {
+  .demo-dot,
+  .guide-dot {
+    position: relative;
+    width: 24px;
+    height: 24px;
+  }
+  /* Zone tactile ~40 px sans grossir davantage le visuel. */
+  .demo-dot::after,
+  .guide-dot::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+  }
+  .demo-dots {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+/* ---------- Tablette / téléphone (≤760) : compléments ---------- */
+@media (max-width: 760px) {
+  /* Règles : sommaire repliable au-dessus du texte. */
+  .rules-toc-toggle {
+    display: inline-flex;
+  }
+  .rules-toc.folded {
+    display: none;
+  }
+  /* Zoom de carte du guide : sort du plateau (trop petit) et occupe l'écran. */
+  .tb .tb-zoom {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+  }
+  /* Aide avancée : les cartes d'exemple avant le long texte officiel. */
+  .topic-side {
+    order: -1;
+  }
+  /* Collection : la barre d'actions se cale sous le header sticky (~67 px). */
+  .bulk-bar {
+    top: 76px;
+  }
+  /* Barres d'adresse mobiles : dvh au lieu de vh (le desktop garde vh). */
+  .deck-scroll {
+    max-height: 46dvh;
+  }
+  .guide-layout.full .tb {
+    max-height: calc(100dvh - 130px);
+    max-width: calc((100dvh - 130px) * 16 / 12);
+  }
+}
+
+/* ---------- Téléphone (≤560) : densité et lisibilité ---------- */
+@media (max-width: 560px) {
+  /* Densité globale : marges et sections plus compactes. */
+  .wrap {
+    padding: 0 16px;
+  }
+  section {
+    padding: 48px 0;
+  }
+  .page-banner {
+    min-height: 0;
+    padding: 48px 0 64px;
+  }
+
+  /* Lecteur de règles : rangées empilées, indentation resserrée signalée par un filet. */
+  .rule {
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 10px;
+    margin-left: calc(var(--indent, 0) * 6px);
+    border-left: 2px solid var(--line);
+  }
+  .rule-num {
+    min-width: 0;
+    padding-top: 0;
+  }
+  .rules-nav .btn {
+    height: auto;
+    min-height: 44px;
+    white-space: normal;
+    flex: 1 1 100%;
+  }
+  .rules-hits {
+    max-height: 50vh;
+  }
+
+  /* Modales : boutons qui passent à la ligne, tableau qui défile, hauteur en dvh. */
+  .modal {
+    max-height: min(84dvh, 900px);
+  }
+  .modal-body {
+    overflow-x: auto;
+  }
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+  .modal-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  /* Mini-scènes de l'aide avancée : scène plus haute, pièces plus petites. */
+  .demo-stage {
+    aspect-ratio: 4 / 3;
+  }
+  /* La barre de contrôles ne doit jamais imposer sa largeur à la page. */
+  .demo-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+  .demo-item.unit {
+    width: 34px;
+    height: 34px;
+  }
+  .demo-unit-n {
+    font-size: 0.95rem;
+  }
+  .demo-item.card {
+    width: 38px;
+    height: 53px;
+  }
+  .demo-item.label {
+    white-space: normal;
+    max-width: 46vw;
+    text-align: center;
+  }
+
+  /* Filtres : le panneau déroulant devient une feuille ancrée en bas de l'écran. */
+  .fsel-pop {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+    max-height: min(46dvh, 420px);
+    /* Au-dessus du bandeau traceurs (80), sous les modales (1000). */
+    z-index: 95;
+  }
+
+  /* Deck builder : compteurs sur 2 colonnes. */
+  .deck-meters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Guide du débutant : le plateau garde ~560 px et défile horizontalement (contenu intact). */
+  .tb-scroller {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tb-scroller .tb {
+    min-width: 560px;
+  }
+  .guide-copy {
+    min-height: 0;
   }
 }

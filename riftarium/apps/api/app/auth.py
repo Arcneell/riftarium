@@ -1,36 +1,133 @@
 import hashlib
 import hmac
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
-from .models import User
+from .models import AuthToken, User
 from .security import SESSION_COOKIE
 
 bearer = HTTPBearer(auto_error=False)
 
-_SCRYPT = {"n": 2**14, "r": 8, "p": 1}
+# Ancien format « salt$digest » : paramètres implicites de l'époque.
+_LEGACY_SCRYPT = (2**14, 8, 1)
+
+_dummy_hash: str | None = None
+
+
+def _scrypt_target() -> tuple[int, int, int]:
+    return (settings.scrypt_n, settings.scrypt_r, settings.scrypt_p)
+
+
+def _scrypt(password: str, salt: bytes, params: tuple[int, int, int]) -> bytes:
+    n, r, p = params
+    # hashlib.scrypt exige maxmem > ~128*n*r octets : on prend une marge confortable.
+    return hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, maxmem=128 * r * n * 2)
+
+
+def _parse_hash(stored: str) -> tuple[tuple[int, int, int], bytes, str] | None:
+    """Décode « n$r$p$salt$digest » ou l'ancien format « salt$digest »."""
+    parts = stored.split("$")
+    try:
+        if len(parts) == 2:
+            return _LEGACY_SCRYPT, bytes.fromhex(parts[0]), parts[1]
+        if len(parts) == 5:
+            return (int(parts[0]), int(parts[1]), int(parts[2])), bytes.fromhex(parts[3]), parts[4]
+    except ValueError:
+        return None
+    return None
 
 
 def hash_password(password: str) -> str:
+    params = _scrypt_target()
     salt = os.urandom(16)
-    digest = hashlib.scrypt(password.encode(), salt=salt, **_SCRYPT)
-    return salt.hex() + "$" + digest.hex()
+    digest = _scrypt(password, salt, params)
+    n, r, p = params
+    return f"{n}${r}${p}${salt.hex()}${digest.hex()}"
 
 
 def verify_password(password: str, stored: str) -> bool:
-    try:
-        salt_hex, digest_hex = stored.split("$", 1)
-    except ValueError:
+    parsed = _parse_hash(stored)
+    if parsed is None:
         return False
-    digest = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt_hex), **_SCRYPT)
+    params, salt, digest_hex = parsed
+    digest = _scrypt(password, salt, params)
     return hmac.compare_digest(digest.hex(), digest_hex)
+
+
+def needs_rehash(stored: str) -> bool:
+    """Vrai si le hash stocké utilise des paramètres plus faibles que la cible actuelle."""
+    parsed = _parse_hash(stored)
+    if parsed is None:
+        return False
+    (n, _r, _p), _salt, _digest = parsed
+    return n < settings.scrypt_n
+
+
+def dummy_verify() -> None:
+    """Vérification factice pour égaliser le temps de réponse quand l'e-mail est inconnu."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password("riftarium-dummy-password")
+    verify_password("riftarium-dummy-mismatch", _dummy_hash)
+
+
+# Durée de vie des jetons envoyés par e-mail, par usage.
+AUTH_TOKEN_TTL = {
+    "reset": timedelta(minutes=60),
+    "verify": timedelta(days=7),
+}
+
+
+def _hash_auth_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def issue_auth_token(db: Session, user: User, purpose: str) -> str:
+    """Crée un jeton e-mail à usage unique et retourne sa valeur en clair.
+
+    Une nouvelle demande invalide les jetons précédents du même usage pour
+    cet utilisateur ; les jetons expirés (tous comptes) sont purgés au passage.
+    L'appelant est responsable du commit.
+    """
+    now = datetime.now(UTC)
+    db.execute(delete(AuthToken).where(AuthToken.expires_at < now))
+    db.execute(delete(AuthToken).where(AuthToken.user_id == user.id, AuthToken.purpose == purpose))
+    raw = secrets.token_urlsafe(32)
+    db.add(
+        AuthToken(
+            user_id=user.id,
+            purpose=purpose,
+            token_hash=_hash_auth_token(raw),
+            expires_at=now + AUTH_TOKEN_TTL[purpose],
+        )
+    )
+    return raw
+
+
+def consume_auth_token(db: Session, raw: str, purpose: str) -> User | None:
+    """Valide un jeton e-mail et le consomme (single-use). None si invalide/expiré.
+
+    L'appelant est responsable du commit (la consommation part avec lui).
+    """
+    row = db.scalar(
+        select(AuthToken).where(AuthToken.token_hash == _hash_auth_token(raw), AuthToken.purpose == purpose)
+    )
+    if row is None:
+        return None
+    db.delete(row)  # consommé quoi qu'il arrive : un jeton expiré ne resservira pas
+    expires = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
+        return None
+    return db.get(User, row.user_id)
 
 
 def make_token(user: User) -> str:

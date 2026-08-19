@@ -127,7 +127,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
                 v-for="entry in section.entries"
                 :key="entry.id"
                 class="topic-rule"
-                :style="{ marginLeft: Math.min(entry.depth, 4) * 16 + 'px' }"
+                :style="{ '--indent': Math.min(entry.depth, 4) }"
               >
                 <span class="mono topic-rule-num">{{ entry.number }}</span> <RuleText :text="entry.text" />
               </p>
@@ -146,7 +146,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
                 @click="zoomCard = card"
                 :aria-label="`Agrandir ${card.name}`"
               >
-                <img :src="card.img" :alt="card.name" loading="lazy" />
+                <img :src="card.img" :alt="card.name" width="744" height="1039" loading="lazy" />
                 <span class="mono">{{ card.name }}</span>
               </button>
             </div>

@@ -10,6 +10,9 @@ services:
     volumes:
       - ./apps/api/app:/srv/app
       - ./apps/api/tests:/srv/tests
+      # Migrations : itérer sur alembic/ sans rebuilder l'image.
+      - ./apps/api/alembic:/srv/alembic
+      - ./apps/api/alembic.ini:/srv/alembic.ini
     environment:
       RIFTARIUM_ENV: dev
       COOKIE_SECURE: "0"
@@ -35,6 +38,17 @@ services:
       - "127.0.0.1:${PORT:-8888}:5173"
     healthcheck:
       disable: true
+    # L'image de dev tourne en root (npm install au démarrage) et a besoin des
+    # capabilities par défaut : le durcissement cap_drop ne vaut qu'en prod.
+    cap_drop: !override []
+    # La limite de 128 Mo est taillée pour nginx en prod ; Vite (dev server +
+    # npm install) a besoin de bien plus, sinon OOM-kill au démarrage.
+    mem_limit: 1g
+
+networks:
+  # En dev, pas de BunkerWeb : le réseau externe de prod est remplacé par un
+  # réseau local créé automatiquement (aucun `docker network create` requis).
+  bunkerweb: !override {}
 
 volumes:
   webmodules:

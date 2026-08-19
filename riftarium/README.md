@@ -47,16 +47,99 @@ La resync cartes se fait avec l'en-tête `X-Admin-Token`. L'API n'est pas
 publiée ; le front n'écoute que `127.0.0.1` (BunkerWeb le joint via le réseau
 Docker : `http://riftarium-web:8080`). Réglages WAF : `bunkerweb.env.example`.
 
+Le service `web` est le seul rattaché au réseau externe `bunkerweb` ;
+`api`, `db` et `redis` restent sur le réseau interne du projet. Créer ce
+réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb :
+
+```bash
+docker network create bunkerweb
+docker network connect bunkerweb <conteneur-bunkerweb>
+```
+
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
+### E-mails (SMTP OVH)
+
+Les e-mails transactionnels (vérification d'adresse, réinitialisation de mot de
+passe) partent de la boîte OVH `contact@riftarium.re`. Variables dans `.env` :
+
+| Variable | Valeur OVH |
+| --- | --- |
+| `SMTP_HOST` | `ssl0.ovh.net` (vide = mode console : e-mails loggés, pas envoyés) |
+| `SMTP_PORT` | `465` (SSL implicite) ou `587` (STARTTLS) |
+| `SMTP_USER` | l'adresse complète : `contact@riftarium.re` |
+| `SMTP_PASSWORD` | mot de passe de la boîte |
+| `MAIL_FROM` | `Riftarium <contact@riftarium.re>` (défaut) |
+| `PUBLIC_BASE_URL` | base des liens ; vide = `https://riftarium.re` en prod, `http://localhost:8888` sinon |
+
+En développement, ne rien configurer : `SMTP_HOST` vide active le **mode
+console** — le destinataire et le lien complet sont loggés par l'API
+(logger `riftarium.mailer`), pratique pour tester les flux sans boîte mail.
+Un échec SMTP est loggé mais ne fait jamais échouer la requête.
+
+### Développement local
+
+Surcouche `compose.dev.yaml` : code monté en volume, HMR Vite, uvicorn
+`--reload`, pas de réseau `bunkerweb` à créer.
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+```
+
+- Front : http://localhost:8888 (Vite) — API : http://localhost:8889
+  (`API_PORT` dans `.env` pour changer).
+- Tests : ils tournent hors Docker (l'image de prod n'embarque ni `tests/`
+  ni pytest) :
+
+```bash
+cd apps/api && pip install -r requirements.txt -r requirements-dev.txt && pytest -q
+cd apps/web && npm ci && npm test
+```
+
+### Migrations de schéma
+
+Le schéma est versionné avec [Alembic](https://alembic.sqlalchemy.org/)
+(`apps/api/alembic/`). Les migrations s'appliquent **automatiquement au
+démarrage de l'API** (`run_migrations()` dans `app/db.py`) : rien à lancer
+en déploiement. Après un changement dans `app/models.py`, générer la
+migration puis la relire avant de la committer :
+
+```bash
+cd apps/api && alembic revision --autogenerate -m "description du changement"
+```
+
+Reprise des instances existantes : une base créée avant Alembic (via
+l'ancien `create_all` + `ensure_schema`) est détectée au démarrage (tables
+présentes, pas de table `alembic_version`) et marquée (`stamp`) sur la
+migration baseline sans la rejouer ; seules les migrations suivantes
+s'appliquent.
+
+### Sauvegardes PostgreSQL
+
+`scripts/backup_db.sh` fait un `pg_dump` compressé dans `backups/`
+(rétention : 14 fichiers, réglable via `BACKUP_RETENTION`). Il est appelé
+automatiquement par `deploy.sh` avant chaque mise à jour. En complément,
+programmer une sauvegarde quotidienne :
+
+```cron
+0 4 * * * cd /opt/riftarium/riftarium && bash scripts/backup_db.sh >> /var/log/riftarium-backup.log 2>&1
+```
+
+Le dossier `backups/` n'est ni versionné ni envoyé dans le contexte de build
+Docker (`.gitignore` + `.dockerignore`). **Recommandé** : copier régulièrement
+ces dumps hors du VPS (rsync/rclone vers un stockage distant) — une sauvegarde
+sur la même machine ne protège ni d'une panne disque ni d'une compromission.
+
 ### CD depuis main
 
 Après une CI verte, GitHub Actions se connecte en SSH, aligne le clone du VPS
-sur `origin/main`, reconstruit les images et relance Compose. BunkerWeb n'est
-pas touché. Le `.env` du VPS n'est pas dans git : `git reset --hard` ne
+sur `origin/main` (`git checkout -B main FETCH_HEAD`), reconstruit les images
+et relance Compose. Si le healthcheck échoue, `deploy.sh` revient
+automatiquement au commit précédent (re-checkout + rebuild). BunkerWeb n'est
+pas touché. Le `.env` du VPS n'est pas dans git : l'alignement du clone ne
 l'écrase pas.
 
 **Une fois sur le VPS**

@@ -2,6 +2,7 @@
 import { computed } from "vue"
 import { DOMAINS } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
+import { useDeckStats } from "../composables/useDeckStats.js"
 import { DECK_ZONES, formatLabel, groupDeck, runesOf } from "../deckDisplay.js"
 import DeckExportBar from "./DeckExportBar.vue"
 import DeckVisual from "./DeckVisual.vue"
@@ -22,27 +23,7 @@ const zoneCounts = computed(() => {
   return counts
 })
 
-const curve = computed(() => {
-  const buckets = Array(8).fill(0)
-  for (const entry of grouped.value.main) buckets[Math.min(entry.card.energy ?? 0, 7)] += entry.qty
-  const max = Math.max(...buckets, 1)
-  return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }))
-})
-
-const energyTotal = computed(() =>
-  grouped.value.main.reduce((sum, entry) => sum + (entry.card.energy ?? 0) * entry.qty, 0)
-)
-
-const domainSpread = computed(() => {
-  const counts = {}
-  for (const entry of props.deck.cards || []) {
-    for (const domain of entry.card.domains || []) {
-      if (domain === "Colorless") continue
-      counts[domain] = (counts[domain] || 0) + entry.qty
-    }
-  }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1])
-})
+const { curve, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards || [])
 </script>
 
 <template>

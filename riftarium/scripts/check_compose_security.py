@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "compose.yaml"
 
+# À garder synchronisé avec le bloc `env:` de .github/workflows/ci.yml.
 PLACEHOLDERS = {
     "JWT_SECRET": "ci-jwt-secret-must-be-24-chars",
     "DB_PASSWORD": "ci-db-password-long-enough",
@@ -30,10 +31,18 @@ def main() -> int:
     cfg = json.loads(raw)
     services = cfg["services"]
 
-    api_ports = services["api"].get("ports") or []
-    if api_ports:
-        print("l'API ne doit pas publier de port hôte", file=sys.stderr)
-        return 1
+    # Aucun service ne publie de port hôte, sauf web (et uniquement 127.0.0.1 → 8080).
+    for name, service in services.items():
+        ports = service.get("ports") or []
+        if name != "web" and ports:
+            print(f"le service {name} ne doit publier aucun port hôte", file=sys.stderr)
+            return 1
+
+        # Journalisation bornée obligatoire partout (sinon les logs remplissent le disque).
+        logging = service.get("logging") or {}
+        if logging.get("driver") != "json-file" or not (logging.get("options") or {}).get("max-size"):
+            print(f"le service {name} doit définir logging json-file avec max-size", file=sys.stderr)
+            return 1
 
     api_env = services["api"].get("environment") or {}
     if api_env.get("RIFTARIUM_ENV") != "prod":
@@ -61,11 +70,13 @@ def main() -> int:
             return 1
         target = str(item.get("target") or "")
         host_ip = item.get("host_ip") or "0.0.0.0"
-        if target == "8080":
-            saw_8080 = True
-            if host_ip in ("", "0.0.0.0", "::"):
-                print("le front ne doit pas être publié sur 0.0.0.0 (contourne BunkerWeb)", file=sys.stderr)
-                return 1
+        if target != "8080":
+            print(f"le front ne doit publier que 8080 (trouvé : {target})", file=sys.stderr)
+            return 1
+        saw_8080 = True
+        if host_ip in ("", "0.0.0.0", "::"):
+            print("le front ne doit pas être publié sur 0.0.0.0 (contourne BunkerWeb)", file=sys.stderr)
+            return 1
     if not saw_8080:
         print("le front doit écouter 8080 (nginx non-root)", file=sys.stderr)
         return 1
