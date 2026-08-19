@@ -7,6 +7,7 @@ strictement identique à Base.metadata.
 """
 
 import pytest
+from alembic import command
 from alembic.script import ScriptDirectory
 from app.db import Base, _alembic_config, run_migrations
 from sqlalchemy import create_engine, inspect, text
@@ -67,9 +68,12 @@ def test_run_migrations_on_empty_database_matches_models(empty_engine):
 
 
 def test_run_migrations_stamps_legacy_database_without_data_loss(empty_engine):
-    """Base pré-Alembic (create_all, pas d'alembic_version) : stamp + upgrade, données intactes."""
-    Base.metadata.create_all(empty_engine)
+    """Base pré-Alembic (schéma baseline, pas d'alembic_version) : stamp + upgrade, données intactes."""
+    # Schéma exactement tel que le créait l'ancien create_all + ensure_schema :
+    # celui de la baseline (0001), sans la table alembic_version.
+    command.upgrade(_alembic_config(empty_engine), "0001")
     with empty_engine.begin() as conn:
+        conn.execute(text("DROP TABLE alembic_version"))
         conn.execute(
             text(
                 "INSERT INTO users (id, handle, email, password_hash, bio, token_version, created_at) "
@@ -79,7 +83,10 @@ def test_run_migrations_stamps_legacy_database_without_data_loss(empty_engine):
 
     run_migrations(bind=empty_engine)
 
-    assert _alembic_revision(empty_engine) == _head_revision()  # stampée puis amenée à head, pas rejouée
+    # Stampée sur la baseline puis amenée à head : les migrations suivantes
+    # (ex. 0002, cards.image_hash) s'appliquent sans rejouer la baseline.
+    assert _alembic_revision(empty_engine) == _head_revision()
+    assert "image_hash" in _schema_snapshot(empty_engine)["cards"]["columns"]
     with empty_engine.connect() as conn:
         user = conn.execute(text("SELECT handle, email FROM users WHERE id = 1")).one()
         assert (user.handle, user.email) == ("ancien", "ancien@example.org")

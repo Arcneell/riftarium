@@ -146,7 +146,7 @@ onMounted(async () => {
 
 <template>
   <PageBanner :art="BANNERS.collection" eyebrow="Collection" title="Mon inventaire">
-    Vos cartes, leurs états, leurs langues. L'estimation Cardmarket et le scan arrivent.
+    Vos cartes, leurs états, leurs langues. L'estimation Cardmarket arrive.
   </PageBanner>
 
   <section style="padding-top: 40px">
@@ -208,6 +208,7 @@ onMounted(async () => {
         <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
           {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
         </button>
+        <RouterLink class="btn btn-ghost btn-sm scan-entry" to="/scan">Scanner une carte</RouterLink>
       </div>
 
       <div v-if="selectMode" class="bulk-bar" role="toolbar" aria-label="Opérations sur la sélection">

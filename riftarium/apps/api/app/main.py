@@ -1,7 +1,9 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -10,10 +12,12 @@ from .cache import cache_clear, cache_get, cache_set
 from .config import settings, validate_production_settings
 from .db import SessionLocal, get_db, run_migrations
 from .demo import seed_community
+from .imagehash import dhash_hex
 from .models import Card, Deck
 from .routers import auth_routes, cards, collection, decks
 from .schemas import ModerationIn
-from .security import require_admin_token
+from .security import require_admin_token, sanitize_image_url
+from .sync import HEADERS as SYNC_HEADERS
 from .sync import run_sync
 
 _last_sync_fallback = 0.0  # utilisé quand Redis est absent
@@ -99,6 +103,70 @@ def admin_sync(
         cache_clear("cards:")
         cache_clear("sets:")
     return counts
+
+
+# Bornes du recalcul d'empreintes : rester sous les timeouts HTTP (rappeler
+# l'endpoint jusqu'à remaining=0) et ménager le CDN (4 téléchargements en parallèle max).
+HASH_BATCH_SIZE = 300
+HASH_DOWNLOAD_WORKERS = 4
+HASH_DOWNLOAD_TIMEOUT = 10
+
+
+def _fetch_image_hash(http: httpx.Client, url: str) -> str | None:
+    """Télécharge un visuel et calcule son dHash ; toute erreur est loggée et tolérée."""
+    try:
+        response = http.get(url)
+        response.raise_for_status()
+        return dhash_hex(response.content)
+    except Exception as exc:  # erreur par carte (réseau, HTTP, image invalide) : on passe à la suivante
+        log.warning("empreinte impossible pour %s : %s", url, exc)
+        return None
+
+
+def _missing_hash_clause():
+    """Cartes candidates au calcul : pas d'empreinte, mais un visuel connu."""
+    return (Card.image_hash.is_(None), Card.image_url.is_not(None))
+
+
+@app.post("/api/admin/cards/hashes")
+def admin_compute_card_hashes(
+    db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+):
+    """Calcule les empreintes perceptuelles manquantes (scan mobile).
+
+    Télécharge les visuels depuis le CDN Riot (jamais pendant la sync), borné à
+    HASH_BATCH_SIZE cartes par appel : rappeler l'endpoint tant que remaining > 0.
+    """
+    require_admin_token(x_admin_token)
+    batch = db.scalars(select(Card).where(*_missing_hash_clause()).order_by(Card.id).limit(HASH_BATCH_SIZE)).all()
+
+    computed = failed = 0
+    with (
+        httpx.Client(timeout=HASH_DOWNLOAD_TIMEOUT, headers=SYNC_HEADERS) as http,
+        ThreadPoolExecutor(max_workers=HASH_DOWNLOAD_WORKERS) as pool,
+    ):
+        futures = {}
+        for card in batch:
+            url = sanitize_image_url(card.image_url)
+            if url is None:  # hôte hors allow-list : on ne télécharge jamais
+                log.warning("empreinte ignorée pour %s : URL d'image non autorisée", card.id)
+                failed += 1
+                continue
+            futures[card.id] = (card, pool.submit(_fetch_image_hash, http, url))
+        for card, future in futures.values():
+            digest = future.result()
+            if digest is None:
+                failed += 1
+            else:
+                card.image_hash = digest
+                computed += 1
+    db.commit()
+    if computed:
+        cache_clear("cards:hashes")  # l'index public doit refléter les nouvelles empreintes
+
+    remaining = db.scalar(select(func.count()).select_from(select(Card.id).where(*_missing_hash_clause()).subquery()))
+    return {"computed": computed, "failed": failed, "remaining": remaining or 0}
 
 
 _DEMO_SECRETS = {"dev-secret-change-me", "test-secret", "test-secret-not-for-production-use!"}

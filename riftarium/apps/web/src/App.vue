@@ -114,6 +114,7 @@ async function logout() {
             <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
             <li><RouterLink to="/regles">Règles</RouterLink></li>
             <li><RouterLink to="/decks">Deck builder</RouterLink></li>
+            <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
             <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
           </ul>

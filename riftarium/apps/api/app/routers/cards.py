@@ -6,6 +6,7 @@ from ..auth import optional_user
 from ..cache import cache_get, cache_set
 from ..config import settings
 from ..db import get_db
+from ..imagehash import ALGO as HASH_ALGO
 from ..models import Card, CardSet, CollectionItem, User
 from ..security import sanitize_image_url
 from ..variants import variant_family, variant_id_clause
@@ -214,6 +215,30 @@ def list_cards(
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
+    return payload
+
+
+# Déclaré avant /cards/{card_id} : sinon « hashes » serait capturé comme un id de carte.
+@router.get("/cards/hashes")
+def list_card_hashes(response: Response, db: Session = Depends(get_db)):
+    """Index des empreintes perceptuelles (scan mobile) : le matching se fait côté client.
+
+    Endpoint public et stable entre deux syncs : cache long côté navigateur
+    (l'index complet pèse ~130 octets par carte) et cache serveur invalidé
+    par la sync et par le recalcul admin (préfixe « cards: »).
+    """
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["Vary"] = "Authorization, Cookie"
+    cached = cache_get("cards:hashes")
+    if cached is not None:
+        return cached
+    rows = db.execute(select(Card.id, Card.image_hash).where(Card.image_hash.is_not(None)).order_by(Card.id)).all()
+    payload = {
+        "algo": HASH_ALGO,
+        "count": len(rows),
+        "items": [{"id": card_id, "h": image_hash} for card_id, image_hash in rows],
+    }
+    cache_set("cards:hashes", payload, settings.cache_ttl_seconds)
     return payload
 
 

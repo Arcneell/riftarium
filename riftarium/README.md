@@ -194,6 +194,12 @@ fichiers suivis.
   chargement paresseux. Elles ne sont volontairement pas rehébergées : la politique
   « Jargon juridique » interdit de redistribuer les visuels.
 
+## Scan mobile
+
+La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) calculées
+côté serveur : après une sync, lancer `POST /api/admin/cards/hashes` (en-tête
+`X-Admin-Token`) et répéter l'appel jusqu'à `remaining=0` pour peupler les empreintes.
+
 ## Sources de données
 
 - Cartes : [API Riftcodex](https://api.riftcodex.com/docs) (communautaire, gratuite) —
