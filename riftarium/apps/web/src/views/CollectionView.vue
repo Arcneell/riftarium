@@ -97,6 +97,11 @@ const typeOptions = computed(() => typeFilterOptions())
 const rarityOptions = computed(() => rarityFilterOptions())
 const energyOptions = computed(() => energyFilterOptions())
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
+/* Tri à choix unique, même habillage que les autres filtres. */
+const SORT_OPTIONS = [
+  { value: "price_desc", label: "Prix décroissant" },
+  { value: "price_asc", label: "Prix croissant" }
+]
 
 function lotsTitle(item) {
   return item.entries.map((entry) => `${entry.qty}× ${entry.condition} ${entry.lang}`).join(", ")
@@ -198,46 +203,6 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="progress || progressLoading" class="progress-panel" v-reveal>
-        <h2 class="progress-title">Progression par set</h2>
-        <p v-if="progressLoading && !progress" class="muted mono progress-loading">Calcul de votre progression…</p>
-        <template v-if="progress">
-          <div class="progress-row progress-overall">
-            <span class="progress-name">Tous sets confondus</span>
-            <div
-              class="progress-bar"
-              role="img"
-              :aria-label="`${progress.overall.owned} cartes possédées sur ${progress.overall.total}`"
-            >
-              <i :style="{ width: `${percentOf(progress.overall)}%` }"></i>
-            </div>
-            <span class="progress-count">
-              {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
-            </span>
-            <span class="progress-missing" :class="{ done: !progress.overall.missing }" :title="PRICE_NOTE">
-              {{ missingText(progress.overall) }}
-            </span>
-          </div>
-          <button
-            v-for="row in progress.sets"
-            :key="row.set_id"
-            type="button"
-            class="progress-row"
-            :title="`Filtrer la collection sur ${row.name}`"
-            @click="filterBySet(row.set_id)"
-          >
-            <span class="progress-name">{{ row.name }}</span>
-            <div class="progress-bar" role="img" :aria-label="`${row.owned} cartes possédées sur ${row.total}`">
-              <i :style="{ width: `${percentOf(row)}%` }"></i>
-            </div>
-            <span class="progress-count">{{ row.owned }}/{{ row.total }} · {{ percentOf(row) }} %</span>
-            <span class="progress-missing" :class="{ done: !row.missing }" :title="PRICE_NOTE">
-              {{ missingText(row) }}
-            </span>
-          </button>
-        </template>
-      </div>
-
       <div class="filter-board">
         <label class="search filter-search">
           <Icon name="search" :size="18" />
@@ -279,16 +244,13 @@ onMounted(async () => {
           :model-value="state.set_id"
           @update:model-value="setFilter('set_id', $event)"
         />
-        <select
-          class="filter-sort"
-          aria-label="Trier la collection"
-          :value="state.sort"
-          @change="setFilter('sort', $event.target.value)"
-        >
-          <option value="">Trier : par défaut</option>
-          <option value="price_desc">Prix décroissant</option>
-          <option value="price_asc">Prix croissant</option>
-        </select>
+        <FilterSelect
+          label="Trier"
+          single
+          :options="SORT_OPTIONS"
+          :model-value="state.sort ? [state.sort] : []"
+          @update:model-value="setFilter('sort', $event[0] || '')"
+        />
         <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
           Réinitialiser ({{ activeCount }})
         </button>
@@ -389,6 +351,54 @@ onMounted(async () => {
           Suivant →
         </button>
       </div>
+
+      <!-- Repliée par défaut : consultable à la demande, sans encombrer la page. -->
+      <details v-if="progress || progressLoading" class="progress-fold" v-reveal>
+        <summary class="progress-summary">
+          Progression par set
+          <span v-if="progress" class="muted mono">
+            {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
+          </span>
+        </summary>
+        <div class="progress-panel">
+          <p v-if="progressLoading && !progress" class="muted mono progress-loading">Calcul de votre progression…</p>
+          <template v-if="progress">
+            <div class="progress-row progress-overall">
+              <span class="progress-name">Tous sets confondus</span>
+              <div
+                class="progress-bar"
+                role="img"
+                :aria-label="`${progress.overall.owned} cartes possédées sur ${progress.overall.total}`"
+              >
+                <i :style="{ width: `${percentOf(progress.overall)}%` }"></i>
+              </div>
+              <span class="progress-count">
+                {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
+              </span>
+              <span class="progress-missing" :class="{ done: !progress.overall.missing }" :title="PRICE_NOTE">
+                {{ missingText(progress.overall) }}
+              </span>
+            </div>
+            <button
+              v-for="row in progress.sets"
+              :key="row.set_id"
+              type="button"
+              class="progress-row"
+              :title="`Filtrer la collection sur ${row.name}`"
+              @click="filterBySet(row.set_id)"
+            >
+              <span class="progress-name">{{ row.name }}</span>
+              <div class="progress-bar" role="img" :aria-label="`${row.owned} cartes possédées sur ${row.total}`">
+                <i :style="{ width: `${percentOf(row)}%` }"></i>
+              </div>
+              <span class="progress-count">{{ row.owned }}/{{ row.total }} · {{ percentOf(row) }} %</span>
+              <span class="progress-missing" :class="{ done: !row.missing }" :title="PRICE_NOTE">
+                {{ missingText(row) }}
+              </span>
+            </button>
+          </template>
+        </div>
+      </details>
     </div>
   </section>
 

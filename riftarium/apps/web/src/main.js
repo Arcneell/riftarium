@@ -7,6 +7,16 @@ import "./assets/main.css"
 const app = createApp(App)
 app.component("Icon", Icon)
 
+/* PWA : service worker (public/sw.js) pour consulter les règles hors ligne.
+   Prod uniquement — en dev, Vite sert les modules à la volée et un SW ne
+   ferait que mettre en cache des artefacts éphémères. Échec silencieux :
+   sans SW le site fonctionne normalement, simplement sans mode hors ligne. */
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {})
+  })
+}
+
 const finePointer = window.matchMedia("(pointer: fine)").matches
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 

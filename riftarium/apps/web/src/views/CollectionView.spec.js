@@ -107,7 +107,7 @@ describe("CollectionView", () => {
   it("reprend les filtres de la cartothèque et affiche les stats", async () => {
     const { wrapper } = await mountView()
     const labels = wrapper.findAll(".fsel-btn").map((button) => button.text().trim())
-    expect(labels).toEqual(["Domaines", "Types", "Raretés", "Coût", "Sets"])
+    expect(labels).toEqual(["Domaines", "Types", "Raretés", "Coût", "Sets", "Trier"])
     expect(wrapper.find(".stat-row").text()).toContain("6")
     wrapper.unmount()
   })
@@ -139,14 +139,20 @@ describe("CollectionView", () => {
   it("tri par prix : le sélecteur déclenche le paramètre sort et le synchronise à l'URL", async () => {
     const { wrapper, router } = await mountView()
     api.mockClear()
-    await wrapper.get("select.filter-sort").setValue("price_desc")
+    /* FilterSelect en mode single : on ouvre le popup « Trier » puis on choisit une option. */
+    const sortBtn = wrapper.findAll(".fsel-btn").find((b) => b.text().includes("Trier"))
+    await sortBtn.trigger("click")
+    let option = wrapper.findAll(".fsel-opt").find((b) => b.text().includes("Prix décroissant"))
+    await option.trigger("click")
     await vi.waitFor(() => {
       expect(api.mock.calls.some(([path]) => String(path).includes("sort=price_desc"))).toBe(true)
     })
     expect(router.currentRoute.value.query.sort).toBe("price_desc")
 
     api.mockClear()
-    await wrapper.get("select.filter-sort").setValue("price_asc")
+    await sortBtn.trigger("click")
+    option = wrapper.findAll(".fsel-opt").find((b) => b.text().includes("Prix croissant"))
+    await option.trigger("click")
     await vi.waitFor(() => {
       expect(api.mock.calls.some(([path]) => String(path).includes("sort=price_asc"))).toBe(true)
     })
@@ -172,7 +178,7 @@ describe("CollectionView", () => {
   it("affiche la progression par set : ligne globale en tête, barres et cartes manquantes", async () => {
     const { wrapper } = await mountView()
     const panel = wrapper.get(".progress-panel")
-    expect(panel.get(".progress-title").text()).toBe("Progression par set")
+    expect(wrapper.get(".progress-summary").text()).toContain("Progression par set")
 
     // la ligne « tous sets confondus » (overall) ouvre la section
     const overall = panel.get(".progress-overall")

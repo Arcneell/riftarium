@@ -144,6 +144,8 @@ class ProfilePatch(BaseModel):
     email: EmailStr | None = None
     bio: str | None = Field(default=None, max_length=280)
     avatar_card_id: str | None = None
+    # Préférence e-mail (décisions de modération) : modifiable sans mot de passe.
+    notify_moderation: bool | None = None
     current_password: str | None = None
 
 

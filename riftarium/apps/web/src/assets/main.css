@@ -1870,6 +1870,17 @@ footer {
 .verify-notice .btn {
   flex-shrink: 0;
 }
+/* Bandeau discret des pages de règles quand le réseau est coupé (PWA). */
+.offline-note {
+  text-align: center;
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  color: var(--ink);
+  background: rgba(171, 124, 26, 0.1);
+  border-bottom: 1px solid var(--line);
+}
+
 /* Rappel de vérification dans la section Email du profil. */
 .verify-line {
   display: flex;
@@ -5778,9 +5789,11 @@ button.deck-box-stat:hover,
   pointer-events: none;
 }
 
-/* Sélecteur de tri de la collection : aligné sur les champs du filter-board. */
-.filter-sort {
-  height: 40px;
+/* Tri en mode choix unique : le bouton FilterSelect affiche le libellé retenu. */
+.fsel-single {
+  font-size: 0.78rem;
+  color: var(--gold-deep);
+  font-weight: 600;
 }
 
 @media (max-width: 560px) {
@@ -5793,9 +5806,6 @@ button.deck-box-stat:hover,
   .price-missing {
     text-align: left;
   }
-  .filter-sort {
-    flex: 1 1 100%;
-  }
 }
 
 /* ============================================================
@@ -5804,17 +5814,30 @@ button.deck-box-stat:hover,
    parchemin, encre, et un seul accent doré (la barre).
    ============================================================ */
 
-/* ---------- Collection : progression par set ---------- */
-.progress-panel {
-  margin: 26px 0 30px;
-  padding: 18px 20px;
+/* ---------- Collection : progression par set (repliée en bas de page) ---------- */
+.progress-fold {
+  margin: 30px 0 6px;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--surface);
 }
-.progress-title {
-  font-size: 1.05rem;
-  margin-bottom: 10px;
+.progress-summary {
+  cursor: pointer;
+  padding: 14px 20px;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  color: var(--ink-strong);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  list-style-position: inside;
+}
+.progress-summary:hover {
+  color: var(--gold-deep);
+}
+.progress-panel {
+  padding: 4px 20px 18px;
 }
 .progress-loading {
   font-size: 0.78rem;

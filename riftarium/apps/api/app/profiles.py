@@ -66,6 +66,7 @@ def user_out(db: Session, user: User, *, include_email: bool = False, include_st
     if include_email:
         payload["email"] = user.email
         payload["email_verified"] = user.email_verified_at is not None
+        payload["notify_moderation"] = user.notify_moderation
         payload["is_admin"] = user.is_admin
     if include_stats:
         payload["stats"] = user_stats(db, user)
@@ -118,6 +119,8 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
             raise HTTPException(status_code=422, detail="Avatar invalide : choisissez une légende de la liste")
         else:
             user.avatar_card_id = card_id
+    if "notify_moderation" in data:
+        user.notify_moderation = bool(data["notify_moderation"])
     if "handle" in data and data["handle"] != user.handle:
         if review(data["handle"]) != "published":
             raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")

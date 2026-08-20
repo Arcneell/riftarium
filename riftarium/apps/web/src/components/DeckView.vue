@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from "vue"
-import { DOMAINS } from "../api.js"
+import { computed, ref } from "vue"
+import { useRouter } from "vue-router"
+import { api, session, DOMAINS } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
 import { DECK_ZONES, formatLabel, groupDeck, runesOf } from "../deckDisplay.js"
@@ -28,6 +29,27 @@ const { curve, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards
 
 /* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
 const deckValue = computed(() => formatEur(props.deck.prices?.total_eur))
+
+/* Copier le deck d'un autre joueur dans « Mes decks » : copie privée, modifiable,
+   avec la modale des cartes manquantes pour savoir quoi acheter. */
+const router = useRouter()
+const copying = ref(false)
+const copyError = ref("")
+const canCopy = computed(() => Boolean(session.token) && session.handle !== props.deck.owner)
+
+async function copyDeck() {
+  if (copying.value) return
+  copying.value = true
+  copyError.value = ""
+  try {
+    const copy = await api(`/api/decks/${props.deck.id}/copy`, { method: "POST" })
+    router.push(`/decks/${copy.id}`)
+  } catch (e) {
+    copyError.value = e.message
+  } finally {
+    copying.value = false
+  }
+}
 </script>
 
 <template>
@@ -72,7 +94,18 @@ const deckValue = computed(() => formatEur(props.deck.prices?.total_eur))
             <Icon name="eye" :size="14" />
             {{ deck.views ?? 0 }}
           </span>
+          <button
+            v-if="canCopy"
+            type="button"
+            class="btn btn-ghost btn-sm"
+            :disabled="copying"
+            title="Crée votre copie privée, modifiable, avec la liste des cartes manquantes"
+            @click="copyDeck"
+          >
+            {{ copying ? "Copie…" : "Copier dans mes decks" }}
+          </button>
         </div>
+        <p v-if="copyError" class="error">{{ copyError }}</p>
       </div>
 
       <div class="deck-meters">

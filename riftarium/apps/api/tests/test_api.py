@@ -1051,3 +1051,54 @@ def test_admin_sync_is_throttled(client, monkeypatch):
     assert throttled.status_code == 429
     assert "réessayez" in throttled.json()["detail"]
     main._last_sync_fallback = 0.0
+
+
+def test_copy_public_deck_creates_private_credited_copy(client, register_user):
+    register_user(client, "auteur")
+    from conftest import bearer_headers
+
+    auteur = bearer_headers(client)
+    cards = client.get("/api/cards?page_size=2").json()["items"]
+    created = client.post(
+        "/api/decks",
+        headers=auteur,
+        json={
+            "name": "Aggro Fureur",
+            "description": "Plan de jeu agressif.",
+            "is_public": True,
+            "cards": [{"card_id": cards[0]["id"], "qty": 3}, {"card_id": cards[1]["id"], "qty": 2}],
+        },
+    ).json()
+
+    register_user(client, "copieur")
+    copieur = bearer_headers(client)
+    copy = client.post(f"/api/decks/{created['id']}/copy", headers=copieur)
+    assert copy.status_code == 201
+    data = copy.json()
+    assert data["name"] == "Aggro Fureur (copie)"
+    assert data["is_public"] is False
+    assert data["owner"] == "copieur"
+    assert data["description"].startswith("D'après « Aggro Fureur » de auteur.")
+    assert "Plan de jeu agressif." in data["description"]
+    assert sorted((c["card"]["id"], c["qty"]) for c in data["cards"]) == sorted(
+        (c["card_id"], c["qty"]) for c in [{"card_id": cards[0]["id"], "qty": 3}, {"card_id": cards[1]["id"], "qty": 2}]
+    )
+    # La copie appartient bien au copieur (visible dans ses decks)
+    mine = client.get("/api/decks/mine", headers=copieur).json()
+    assert any(deck["id"] == data["id"] for deck in mine)
+
+
+def test_copy_denied_on_private_or_pending_deck(client, register_user):
+    register_user(client, "proprio")
+    from conftest import bearer_headers
+
+    proprio = bearer_headers(client)
+    prive = client.post("/api/decks", headers=proprio, json={"name": "Secret", "is_public": False}).json()
+
+    register_user(client, "intrus")
+    intrus = bearer_headers(client)
+    assert client.post(f"/api/decks/{prive['id']}/copy", headers=intrus).status_code == 404
+    # Le propriétaire, lui, peut dupliquer son propre deck privé (sans crédit)
+    own_copy = client.post(f"/api/decks/{prive['id']}/copy", headers=proprio)
+    assert own_copy.status_code == 201
+    assert own_copy.json()["description"] == ""

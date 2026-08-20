@@ -2,11 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
+import { useOnline } from "../composables/useOnline.js"
 import { escapeHtml } from "../htmlText.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
+const online = useOnline()
 
 const documents = ref(null)
 const error = ref("")
@@ -218,6 +220,8 @@ onMounted(async () => {
       >aide avancée</RouterLink
     >.
   </PageBanner>
+
+  <div class="offline-note" v-if="!online" role="status">Hors ligne — règles servies depuis le cache</div>
 
   <section style="padding-top: 36px" v-if="documents">
     <div class="wrap">
