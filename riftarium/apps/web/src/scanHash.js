@@ -108,3 +108,22 @@ export function bestMatches(hex, index, n = 3) {
   scored.sort((a, b) => a.distance - b.distance)
   return scored.slice(0, n)
 }
+
+/** Comme bestMatches, mais avec plusieurs empreintes candidates (la carte a pu être
+    cadrée pivotée — champs de bataille en paysage) : chaque entrée de l'index est
+    scorée sur sa MEILLEURE distance parmi les empreintes fournies. */
+export function bestMatchesMulti(hexes, index, n = 3) {
+  const scored = []
+  for (const item of index || []) {
+    if (!item?.h) continue
+    let best = Infinity
+    for (const hex of hexes) {
+      if (item.h.length !== hex.length) continue
+      const distance = hamming(hex, item.h)
+      if (distance < best) best = distance
+    }
+    if (best !== Infinity) scored.push({ ...item, distance: best })
+  }
+  scored.sort((a, b) => a.distance - b.distance)
+  return scored.slice(0, n)
+}

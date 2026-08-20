@@ -5201,6 +5201,11 @@ button.deck-box-stat:hover,
 .scan-prefs select {
   min-height: 38px;
 }
+.scan-qty {
+  width: 68px;
+  min-height: 38px;
+  text-align: center;
+}
 .scan-candidates {
   list-style: none;
   padding: 0;

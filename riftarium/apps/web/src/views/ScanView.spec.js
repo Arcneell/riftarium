@@ -3,7 +3,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import ScanView from "./ScanView.vue"
 import { api, session } from "../api.js"
-import { hashFromFile } from "../scanCapture.js"
+import { hashesFromFile } from "../scanCapture.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -12,8 +12,8 @@ vi.mock("../api.js", async (importOriginal) => {
 
 /* jsdom n'a pas de canvas 2D : la partie capture est mockée, le matching (scanHash) reste réel. */
 vi.mock("../scanCapture.js", () => ({
-  hashFromFile: vi.fn(),
-  hashFromVideoFrame: vi.fn(),
+  hashesFromFile: vi.fn(),
+  hashesFromVideoFrame: vi.fn(),
   imageDataFromRegion: vi.fn()
 }))
 
@@ -85,7 +85,7 @@ function setMediaDevices(value) {
 describe("ScanView", () => {
   beforeEach(() => {
     api.mockReset()
-    hashFromFile.mockReset()
+    hashesFromFile.mockReset()
     mockApi()
     session.token = null
   })
@@ -137,7 +137,7 @@ describe("ScanView", () => {
   })
 
   it("photo importée → les 3 candidats les plus proches, triés par distance", async () => {
-    hashFromFile.mockResolvedValue(ZERO)
+    hashesFromFile.mockResolvedValue([ZERO])
     const { wrapper } = await mountView()
     await importPhoto(wrapper)
 
@@ -153,7 +153,7 @@ describe("ScanView", () => {
 
   it("connecté : confirmer un candidat ajoute +1 à la collection et permet d'enchaîner", async () => {
     session.token = "1"
-    hashFromFile.mockResolvedValue(ZERO)
+    hashesFromFile.mockResolvedValue([ZERO])
     const { wrapper } = await mountView()
     await importPhoto(wrapper)
 
@@ -175,7 +175,7 @@ describe("ScanView", () => {
   })
 
   it("non connecté : le candidat mène à la fiche carte et invite à se connecter", async () => {
-    hashFromFile.mockResolvedValue(ZERO)
+    hashesFromFile.mockResolvedValue([ZERO])
     const { wrapper } = await mountView()
     await importPhoto(wrapper)
 
@@ -188,7 +188,7 @@ describe("ScanView", () => {
   })
 
   it("meilleure distance trop mauvaise (> 200/512) : aucun résultat plausible, on propose de reprendre", async () => {
-    hashFromFile.mockResolvedValue("f".repeat(128))
+    hashesFromFile.mockResolvedValue(["f".repeat(128)])
     mockApi({ items: [{ id: "card-1", h: ZERO }] })
     const { wrapper } = await mountView()
     await importPhoto(wrapper)

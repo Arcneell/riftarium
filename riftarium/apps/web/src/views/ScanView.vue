@@ -2,8 +2,8 @@
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { onBeforeRouteLeave } from "vue-router"
 import { api, cardThumb, session, CONDITIONS, LANGS, RARITIES, TYPES } from "../api.js"
-import { bestMatches } from "../scanHash.js"
-import { hashFromFile, hashFromVideoFrame } from "../scanCapture.js"
+import { bestMatchesMulti } from "../scanHash.js"
+import { hashesFromFile, hashesFromVideoFrame } from "../scanCapture.js"
 
 /* Au-delà de cette distance (sur 512 bits), la photo ne ressemble à rien de connu :
    on propose de reprendre plutôt que d'afficher des candidats absurdes. */
@@ -45,6 +45,8 @@ function loadScanPrefs() {
 }
 const scanLang = ref(loadScanPrefs().lang)
 const scanCondition = ref(loadScanPrefs().condition)
+/* Quantité ajoutée par confirmation (non persistée : repart à 1 à chaque session). */
+const scanQty = ref(1)
 function rememberScanPrefs() {
   try {
     localStorage.setItem(SCAN_PREFS_KEY, JSON.stringify({ lang: scanLang.value, condition: scanCondition.value }))
@@ -119,8 +121,9 @@ async function runScan(makeHash) {
   noMatch.value = false
   candidates.value = []
   try {
-    const hex = await makeHash()
-    const matches = bestMatches(hex, index.items, 3)
+    /* Trois orientations (0°, ±90°) : les champs de bataille sont en paysage. */
+    const hexes = await makeHash()
+    const matches = bestMatchesMulti(hexes, index.items, 3)
     if (!matches.length || matches[0].distance > NO_MATCH_DISTANCE) {
       noMatch.value = true
       return
@@ -157,13 +160,13 @@ async function capture() {
     sw: frameRect.width * scale,
     sh: frameRect.height * scale
   }
-  await runScan(() => hashFromVideoFrame(element, crop))
+  await runScan(() => hashesFromVideoFrame(element, crop))
 }
 
 async function onFileChange(event) {
   const file = event.target.files?.[0]
   if (!file) return
-  await runScan(() => hashFromFile(file))
+  await runScan(() => hashesFromFile(file))
   event.target.value = "" // permet de réimporter le même fichier
 }
 
@@ -172,12 +175,13 @@ async function addToCollection(candidate) {
   addingId.value = candidate.id
   scanError.value = ""
   try {
+    const qty = Math.min(99, Math.max(1, Math.round(Number(scanQty.value) || 1)))
     await api(`/api/collection/${candidate.id}/entries`, {
       method: "POST",
-      body: { qty: 1, condition: scanCondition.value, lang: scanLang.value }
+      body: { qty, condition: scanCondition.value, lang: scanLang.value }
     })
     rememberScanPrefs()
-    added[candidate.id] = (added[candidate.id] || 0) + 1
+    added[candidate.id] = (added[candidate.id] || 0) + qty
   } catch (error) {
     scanError.value = error.message
   } finally {
@@ -269,6 +273,10 @@ function newScan() {
               <select v-model="scanCondition" @change="rememberScanPrefs">
                 <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ label }}</option>
               </select>
+            </label>
+            <label>
+              Quantité
+              <input v-model.number="scanQty" type="number" min="1" max="99" inputmode="numeric" class="scan-qty" />
             </label>
           </div>
           <ul class="scan-candidates">

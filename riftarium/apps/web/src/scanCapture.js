@@ -49,10 +49,45 @@ export function artCrop({ sx, sy, sw, sh }) {
   return { sx: sx + left, sy: sy + top, sw: right - left, sh: bottom - top }
 }
 
-/** Empreinte de la carte cadrée dans la vidéo : zone du cadre, puis fenêtre d'illustration. */
-export function hashFromVideoFrame(video, cardRect) {
-  const { sx, sy, sw, sh } = artCrop(cardRect)
-  return dhashFromImageData(imageDataFromRegion(video, sx, sy, sw, sh))
+/* Taille de travail de la région carte avant rotation/crop : assez fine pour le hash,
+   bornée pour que les getImageData restent négligeables. */
+const REGION_MAX = 560
+
+/** Copie la région de carte dans un canvas de travail (dimensions bornées). */
+function regionToCanvas(source, { sx, sy, sw, sh }) {
+  const scale = Math.min(1, REGION_MAX / Math.max(sw, sh))
+  const { canvas, ctx } = makeCanvas(sw * scale, sh * scale)
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+  return canvas
+}
+
+/** Rotation d'un canvas par quarts de tour (1 = 90° horaire, 3 = 270°). */
+function rotateCanvas(source, quarterTurns) {
+  if (quarterTurns % 4 === 0) return source
+  const swap = quarterTurns % 2 === 1
+  const { canvas, ctx } = makeCanvas(swap ? source.height : source.width, swap ? source.width : source.height)
+  ctx.translate(canvas.width / 2, canvas.height / 2)
+  ctx.rotate((quarterTurns * Math.PI) / 2)
+  ctx.drawImage(source, -source.width / 2, -source.height / 2)
+  return canvas
+}
+
+/** Empreinte d'un canvas contenant la carte entière : fenêtre d'illustration puis dHash. */
+function hashCardCanvas(canvas) {
+  const { sx, sy, sw, sh } = artCrop({ sx: 0, sy: 0, sw: canvas.width, sh: canvas.height })
+  return dhashFromImageData(imageDataFromRegion(canvas, sx, sy, sw, sh))
+}
+
+/* Les champs de bataille sont imprimés en paysage (visuels de référence 1038×744) :
+   cadrés dans le guide vertical, ils arrivent pivotés de ±90°. On calcule donc
+   l'empreinte sous trois orientations et le matching garde la meilleure — toute
+   carte devient reconnaissable quel que soit son sens dans le cadre. */
+const ROTATIONS = [0, 1, 3]
+
+/** Empreintes (3 orientations) de la carte cadrée dans la vidéo. */
+export function hashesFromVideoFrame(video, cardRect) {
+  const region = regionToCanvas(video, cardRect)
+  return ROTATIONS.map((turns) => hashCardCanvas(rotateCanvas(region, turns)))
 }
 
 async function decodeFile(file) {
@@ -72,15 +107,15 @@ async function decodeFile(file) {
   }
 }
 
-/** Empreinte d'une photo importée : l'image entière est supposée être la carte entière,
-    on n'en hashe que la fenêtre d'illustration. */
-export async function hashFromFile(file) {
+/** Empreintes (3 orientations) d'une photo importée : l'image entière est supposée
+    être la carte entière, on n'en hashe que la fenêtre d'illustration. */
+export async function hashesFromFile(file) {
   const image = await decodeFile(file)
   const width = image.naturalWidth || image.width
   const height = image.naturalHeight || image.height
-  const { sx, sy, sw, sh } = artCrop({ sx: 0, sy: 0, sw: width, sh: height })
   try {
-    return dhashFromImageData(imageDataFromRegion(image, sx, sy, sw, sh))
+    const region = regionToCanvas(image, { sx: 0, sy: 0, sw: width, sh: height })
+    return ROTATIONS.map((turns) => hashCardCanvas(rotateCanvas(region, turns)))
   } finally {
     image.close?.()
   }

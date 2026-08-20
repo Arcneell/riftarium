@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { bestMatches, bitsToHex, dhashFromImageData, grayscale, hamming, hashBits, resizeGray } from "./scanHash.js"
+import {
+  bestMatches,
+  bestMatchesMulti,
+  bitsToHex,
+  dhashFromImageData,
+  grayscale,
+  hamming,
+  hashBits,
+  resizeGray
+} from "./scanHash.js"
 
 /* Node n'a pas de canvas : on fabrique les ImageData à la main ({ data, width, height }). */
 function makeImageData(width, height, valueAt) {
@@ -156,5 +165,26 @@ describe("bestMatches", () => {
   it("ignore les entrées malformées (empreinte absente ou d'une autre longueur)", () => {
     const matches = bestMatches(zeros, [{ id: "cassé" }, { id: "court", h: "00" }, ...index])
     expect(matches.map((m) => m.id)).toEqual(["exact", "proche", "moyen"])
+  })
+})
+
+describe("bestMatchesMulti", () => {
+  const zeros = "0".repeat(128)
+  const ones = "f".repeat(128)
+  const index = [
+    { id: "portrait", h: zeros }, // exact pour l'empreinte 0°
+    { id: "paysage", h: ones }, // exact pour l'empreinte pivotée
+    { id: "loin", h: "0f" + ones.slice(2) }
+  ]
+
+  it("score chaque carte sur sa meilleure distance parmi les orientations", () => {
+    const matches = bestMatchesMulti([zeros, ones], index)
+    expect(matches[0].distance).toBe(0)
+    expect(matches[1].distance).toBe(0)
+    expect(new Set(matches.slice(0, 2).map((m) => m.id))).toEqual(new Set(["portrait", "paysage"]))
+  })
+
+  it("équivaut à bestMatches avec une seule empreinte", () => {
+    expect(bestMatchesMulti([zeros], index)).toEqual(bestMatches(zeros, index))
   })
 })
