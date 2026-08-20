@@ -289,6 +289,11 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             Les vues de decks publics dédupliquent les visiteurs anonymes via un hash d'adresse IP côté serveur. Voir la
             <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
           </p>
+          <p>
+            Riftarium compte également ses visites de façon agrégée, par jour et par rubrique (accueil, cartes,
+            règles…), sans aucune donnée personnelle ni cookie : une empreinte technique salée, non conservée au-delà de
+            48 heures, sert uniquement à dédupliquer les visiteurs du jour.
+          </p>
 
           <h3>Tiers au chargement des pages</h3>
           <ul>

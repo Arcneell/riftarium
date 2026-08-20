@@ -55,4 +55,11 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("pas par Google Fonts")
     expect(wrapper.text()).toContain("riftarium_session")
   })
+
+  it("décrit le comptage de visites anonyme, agrégé et sans cookie", async () => {
+    const wrapper = await mountPage("/cookies")
+    expect(wrapper.text()).toContain("par jour et par rubrique")
+    expect(wrapper.text()).toContain("sans aucune donnée personnelle ni cookie")
+    expect(wrapper.text()).toContain("48 heures")
+  })
 })

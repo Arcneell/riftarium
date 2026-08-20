@@ -151,6 +151,18 @@ export const router = createRouter({
       meta: { auth: true, noindex: true, title: "Mon profil", description: "Compte Riftarium." }
     },
     {
+      /* Console d'administration masquée : pour tout visiteur non admin (connecté ou non),
+         la porte rend la page 404 du site — mêmes titre et description, zéro indice.
+         Jamais dans le sitemap. Le code de la console n'est chargé que pour un admin. */
+      path: "/admin",
+      component: () => import("./views/AdminGateView.vue"),
+      meta: {
+        noindex: true,
+        title: "Page introuvable",
+        description: "Cette page n'existe pas sur Riftarium."
+      }
+    },
+    {
       path: "/mentions-legales",
       component: () => import("./views/LegalView.vue"),
       meta: {
@@ -215,6 +227,42 @@ router.beforeEach((to) => {
   }
 })
 
+/* Fréquentation anonyme : seule la rubrique est comptée, jamais l'URL complète ni la query.
+   null = pas de ping (la console d'administration n'est comptée nulle part). */
+function sectionOf(path) {
+  if (path === "/") return "home"
+  if (path.startsWith("/admin")) return null
+  if (path.startsWith("/cartes/")) return "carte"
+  if (path.startsWith("/cartes")) return "cartes"
+  if (path.startsWith("/regles")) return "regles"
+  if (path.startsWith("/decks/")) return "deck"
+  if (path.startsWith("/decks")) return "decks"
+  if (path.startsWith("/communaute")) return "communaute"
+  if (path.startsWith("/collection")) return "collection"
+  if (path.startsWith("/scan")) return "scan"
+  if (path.startsWith("/profil")) return "profil"
+  return "autre"
+}
+
+/* Ping best-effort : jamais bloquant, erreurs avalées, jamais en environnement de test. */
+function recordVisit(path) {
+  if (import.meta.env.MODE === "test") return
+  const section = sectionOf(path)
+  if (!section) return
+  try {
+    fetch("/api/metrics/hit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "omit",
+      keepalive: true,
+      body: JSON.stringify({ section })
+    }).catch(() => {})
+  } catch {
+    /* fetch indisponible : tant pis, la mesure est facultative */
+  }
+}
+
 router.afterEach((to) => {
   applyRouteSeo(to)
+  recordVisit(to.path)
 })

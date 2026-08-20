@@ -52,6 +52,8 @@ async function submit() {
             }
           })
     setSession("1", result.handle, result.avatar_url)
+    /* null = inconnu si la réponse de connexion n'inclut pas le drapeau : /me tranchera. */
+    session.isAdmin = result.is_admin ?? null
     if (mode.value === "register") {
       /* Compte tout juste créé : l'adresse n'est pas encore vérifiée, on le signale avant de continuer. */
       session.emailVerified = result.email_verified ?? false

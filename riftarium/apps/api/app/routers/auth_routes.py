@@ -9,6 +9,7 @@ from ..auth import (
     consume_auth_token,
     current_user,
     dummy_verify,
+    ensure_not_suspended,
     hash_password,
     issue_auth_token,
     make_token,
@@ -37,7 +38,11 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def _session(db: Session, user: User, response: Response) -> SessionOut:
     set_session_cookie(response, make_token(user))
-    return SessionOut(handle=user.handle, avatar_url=avatar_urls(db, [user]).get(user.id))
+    return SessionOut(
+        handle=user.handle,
+        avatar_url=avatar_urls(db, [user]).get(user.id),
+        is_admin=bool(user.is_admin),
+    )
 
 
 def _require_password(user: User, password: str | None) -> None:
@@ -95,6 +100,7 @@ def login(
         raise HTTPException(status_code=401, detail="Identifiants invalides")
     if not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Identifiants invalides")
+    ensure_not_suspended(user)  # après vérification du mot de passe : pas d'oracle sur l'e-mail
     if needs_rehash(user.password_hash):  # renforcement transparent des anciens hashes
         user.password_hash = hash_password(payload.password)
         db.commit()

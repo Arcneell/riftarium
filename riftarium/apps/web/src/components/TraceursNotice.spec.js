@@ -26,6 +26,7 @@ describe("TraceursNotice", () => {
     const wrapper = await mountNotice()
     expect(wrapper.find(".traceurs-notice").exists()).toBe(true)
     expect(wrapper.text()).toContain("strictement nécessaires")
+    expect(wrapper.text()).toContain("statistiques de fréquentation anonymes et agrégées, sans cookie")
     expect(wrapper.get("a").attributes("href")).toBe("/cookies")
   })
 

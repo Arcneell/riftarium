@@ -35,6 +35,7 @@ function applyProfile(profile) {
   setSession(session.token, profile.handle, profile.avatar_url)
   /* Tient le bandeau global (App.vue) au courant du statut de vérification. */
   if ("email_verified" in profile) session.emailVerified = profile.email_verified
+  if ("is_admin" in profile) session.isAdmin = profile.is_admin
 }
 
 async function load() {
