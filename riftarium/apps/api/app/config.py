@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     hash_autostart: bool = True
     riftcodex_base_url: str = "https://api.riftcodex.com"
     sync_sets: str = "OGN,OGS,SFD,UNL,VEN,PR"
+    # Prix des cartes : rafraîchissement automatique interne (aucun cron) depuis
+    # TCGCSV (marché TCGplayer, gratuit) + taux USD→EUR de la BCE (frankfurter).
+    prices_autorefresh: bool = True
+    tcgcsv_base_url: str = "https://tcgcsv.com"
+    frankfurter_base_url: str = "https://api.frankfurter.dev"
     redis_url: str = ""  # vide = cache désactivé (tests, dev sans Redis)
     cache_ttl_seconds: int = 6 * 3600
     sync_min_interval_minutes: int = 10  # protège l'API Riftcodex des resync en rafale

@@ -10,6 +10,7 @@ from ..db import get_db
 from ..deckbuild import assemble_list, has_champion, legends_in, load_pool, main_candidates
 from ..models import Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
 from ..moderation import review
+from ..prices import current_rate, to_eur
 from ..profiles import avatar_urls
 from ..schemas import DeckIn, ExampleDeckIn
 from ..security import client_ip, sanitize_image_url
@@ -30,8 +31,11 @@ def deck_out(
     liked: bool | None = None,
     owned: dict[str, int] | None = None,
     owner_avatar=_UNSET,
+    rate: float | None = _UNSET,
 ) -> dict:
-    """Sérialise un deck. liked/owned/owner_avatar peuvent être pré-calculés en lot (cf. _decks_out)."""
+    """Sérialise un deck. liked/owned/owner_avatar/rate peuvent être pré-calculés en lot (cf. _decks_out)."""
+    if rate is _UNSET:
+        rate = current_rate(db) if db is not None else None
     if liked is None:
         liked = bool(
             viewer
@@ -43,6 +47,17 @@ def deck_out(
     if owner_avatar is _UNSET:
         owner_avatar = avatar_urls(db, [deck.owner]).get(deck.owner.id) if db and deck.owner else None
     has_viewer = viewer is not None and db is not None
+
+    # Estimation du deck en euros : total = somme qty × prix ; missing = coût des
+    # exemplaires manquants (qty − owned_qty, borné à 0), calculable seulement
+    # pour un visiteur connecté (owned_qty inconnu sinon). Null si rien n'est pricé.
+    priced = [(dc, to_eur(dc.card.price_usd, rate)) for dc in deck.cards]
+    known = [(dc, price) for dc, price in priced if price is not None]
+    total_eur = round(sum(dc.qty * price for dc, price in known), 2) if known else None
+    missing_eur = None
+    if has_viewer and known:
+        missing_eur = round(sum(max(0, dc.qty - owned.get(dc.card_id, 0)) * price for dc, price in known), 2)
+
     return {
         "id": deck.id,
         "name": deck.name,
@@ -56,8 +71,9 @@ def deck_out(
         "owner": deck.owner.handle,
         "owner_avatar": owner_avatar,
         "card_count": sum(dc.qty for dc in deck.cards),
+        "prices": {"total_eur": total_eur, "missing_eur": missing_eur},
         "cards": [
-            {"card": card_out(dc.card, owned.get(dc.card_id, 0) if has_viewer else None), "qty": dc.qty}
+            {"card": card_out(dc.card, owned.get(dc.card_id, 0) if has_viewer else None, rate), "qty": dc.qty}
             for dc in deck.cards
         ],
         "checks": validate_deck([(dc.card, dc.qty) for dc in deck.cards]),
@@ -77,6 +93,7 @@ def _decks_out(db: Session, decks: list[Deck], viewer: User | None) -> list[dict
         card_ids = {dc.card_id for deck in decks for dc in deck.cards}
         owned = owned_quantities(db, viewer, list(card_ids))
     avatars = avatar_urls(db, [deck.owner for deck in decks if deck.owner])
+    rate = current_rate(db)
     return [
         deck_out(
             deck,
@@ -85,6 +102,7 @@ def _decks_out(db: Session, decks: list[Deck], viewer: User | None) -> list[dict
             liked=deck.id in liked_ids,
             owned=owned,
             owner_avatar=avatars.get(deck.owner.id) if deck.owner else None,
+            rate=rate,
         )
         for deck in decks
     ]
@@ -254,12 +272,15 @@ def deck_missing(deck_id: int, user: User = Depends(current_user), db: Session =
         slot = needs.setdefault(family, {"card": dc.card, "needed": 0})
         slot["needed"] += dc.qty
 
+    rate = current_rate(db)
     items = []
     for family, slot in needs.items():
         have = owned_by_family.get(family, 0)
         missing = max(0, slot["needed"] - have)
         if missing:
-            items.append({"card": card_out(slot["card"]), "needed": slot["needed"], "owned": have, "missing": missing})
+            items.append(
+                {"card": card_out(slot["card"], rate=rate), "needed": slot["needed"], "owned": have, "missing": missing}
+            )
     items.sort(key=lambda item: (item["card"]["set_id"] or "", item["card"]["collector_number"] or 0))
     return {
         "items": items,

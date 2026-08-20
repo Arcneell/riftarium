@@ -109,6 +109,11 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             <a :href="RIFTCODEX" target="_blank" rel="noopener">Riftcodex</a>
             en attendant l'accès à l'API officielle Riot. Les visuels restent ceux du CDN officiel Riot.
           </p>
+          <p>
+            Les prix de cartes affichés proviennent du marché américain (TCGplayer), convertis en euros au taux de la
+            Banque centrale européenne : ce sont des estimations indicatives, qui ne constituent ni une cote officielle
+            ni une offre d'achat.
+          </p>
 
           <h3>Code source</h3>
           <p>

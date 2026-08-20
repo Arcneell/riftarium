@@ -24,6 +24,7 @@ import { useDeckStats } from "../composables/useDeckStats.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { formatLabel } from "../deckDisplay.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import { applySeo } from "../seo.js"
 
 const route = useRoute()
@@ -126,6 +127,9 @@ const { curve, energyTotal, domainSpread } = useDeckStats(() => deck.value?.card
 const missingInDeck = computed(() =>
   (deck.value?.cards || []).reduce((total, entry) => total + Math.max(0, entry.qty - (entry.card.owned_qty ?? 0)), 0)
 )
+
+/* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
+const deckValue = computed(() => formatEur(deck.value?.prices?.total_eur))
 
 /* ---------- Galerie filtrable ---------- */
 
@@ -547,6 +551,7 @@ onBeforeUnmount(() => {
               {{ card.owned_qty > 0 ? `×${card.owned_qty}` : "non possédée" }}
             </span>
             <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
+            <span v-if="formatEur(card.price_eur)" class="gcard-price">{{ formatEur(card.price_eur) }}</span>
             <span class="gcard-add" aria-hidden="true">+</span>
             <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans ajouter la carte -->
             <span
@@ -726,6 +731,9 @@ onBeforeUnmount(() => {
         <p class="overview-energy">
           <b>{{ energyTotal }}</b> énergie
         </p>
+        <p v-if="deckValue" class="price-deck" :title="PRICE_NOTE">
+          Valeur du deck : <b class="price-amount">{{ deckValue }}</b>
+        </p>
         <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
           <div class="bar" v-for="bucket in curve" :key="bucket.cost">
             <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
@@ -786,6 +794,7 @@ onBeforeUnmount(() => {
           <p class="muted mono" style="font-size: 0.7rem">
             {{ TYPES[preview.card.type] || preview.card.type }} ·
             {{ RARITIES[preview.card.rarity] || preview.card.rarity }}
+            <template v-if="formatEur(preview.card.price_eur)"> · {{ formatEur(preview.card.price_eur) }}</template>
             <template v-if="session.token"> · possédée ×{{ preview.card.owned_qty ?? 0 }}</template>
             <template v-if="inDeckQty(preview.card)"> · dans le deck ×{{ inDeckQty(preview.card) }}</template>
           </p>
@@ -799,6 +808,7 @@ onBeforeUnmount(() => {
       v-if="showMissing"
       :missing="missing"
       :error="missingError"
+      :missing-eur="deck.prices?.missing_eur ?? null"
       @close="closeMissing"
       @preview="showPreview"
       @hide-preview="hidePreview"

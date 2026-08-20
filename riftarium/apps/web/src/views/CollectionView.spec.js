@@ -18,9 +18,12 @@ function fakeItem(index, qty = 2) {
       image_url: `https://cdn.example/${index}.png`,
       domains: ["Fury"],
       type: "Unit",
-      rarity: "Epic"
+      rarity: "Epic",
+      price_eur: 2.5
     },
     total_qty: qty,
+    price_eur: 2.5,
+    value_eur: qty * 2.5,
     entries: [{ id: index * 10, qty, condition: "NM", lang: "FR" }]
   }
 }
@@ -59,6 +62,7 @@ describe("CollectionView", () => {
         total: 2,
         total_cards: 6,
         unique_cards: 2,
+        value_eur: 15,
         page: 1,
         size: 30,
         items: [fakeItem(1, 3), multi]
@@ -83,6 +87,35 @@ describe("CollectionView", () => {
     await tile.trigger("mouseenter")
     await vi.waitFor(() => expect(document.body.querySelector(".card-preview")).toBeNull())
     expect(tile.attributes("href")).toBe("/cartes/card-1")
+    wrapper.unmount()
+  })
+
+  it("affiche la valeur estimée totale, celle des lots et le badge prix des tuiles", async () => {
+    const { wrapper } = await mountView()
+    const stats = wrapper.get(".stat-row")
+    expect(stats.text()).toContain("Valeur estimée")
+    expect(stats.text()).toContain("15,00")
+    expect(stats.findAll(".stat")[2].attributes("title")).toContain("marché US")
+    // valeur du lot (3 × 2,50 €) sous la tuile, badge prix unitaire dans la zone méta
+    expect(wrapper.get(".col-state .price-lot").text()).toContain("7,50")
+    expect(wrapper.get(".card-tile .price-tag").text()).toContain("2,50")
+    wrapper.unmount()
+  })
+
+  it("tri par prix : le sélecteur déclenche le paramètre sort et le synchronise à l'URL", async () => {
+    const { wrapper, router } = await mountView()
+    api.mockClear()
+    await wrapper.get("select.filter-sort").setValue("price_desc")
+    await vi.waitFor(() => {
+      expect(api.mock.calls.some(([path]) => String(path).includes("sort=price_desc"))).toBe(true)
+    })
+    expect(router.currentRoute.value.query.sort).toBe("price_desc")
+
+    api.mockClear()
+    await wrapper.get("select.filter-sort").setValue("price_asc")
+    await vi.waitFor(() => {
+      expect(api.mock.calls.some(([path]) => String(path).includes("sort=price_asc"))).toBe(true)
+    })
     wrapper.unmount()
   })
 

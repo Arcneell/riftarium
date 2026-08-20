@@ -261,5 +261,6 @@ export function cardsQuery(state, size) {
   if (state.rarity.length) params.set("rarity", csvJoin(state.rarity))
   if (state.energy.length) params.set("energy", csvJoin(state.energy))
   if (state.owned) params.set("owned", state.owned)
+  if (state.sort) params.set("sort", state.sort)
   return params
 }

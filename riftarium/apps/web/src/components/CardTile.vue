@@ -2,6 +2,7 @@
 import { computed } from "vue"
 import { cardThumb, DOMAINS, TYPES, RARITIES } from "../api.js"
 import { isFoil, variantLabel } from "../cardText.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import CardHoverPreview from "./CardHoverPreview.vue"
 
 const props = defineProps({
@@ -13,6 +14,7 @@ const badge = computed(() => {
   const label = variantLabel(props.card)
   return label === "Normale" ? "" : label
 })
+const price = computed(() => formatEur(props.card.price_eur))
 </script>
 
 <template>
@@ -43,6 +45,7 @@ const badge = computed(() => {
       </div>
       <div class="t-meta">
         <span>{{ TYPES[card.type] || card.type }} · {{ RARITIES[card.rarity] || card.rarity }}</span>
+        <span v-if="price" class="price-tag" :title="PRICE_NOTE">{{ price }}</span>
       </div>
     </RouterLink>
   </CardHoverPreview>

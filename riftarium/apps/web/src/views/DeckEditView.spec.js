@@ -20,6 +20,7 @@ function card(overrides) {
     orientation: null,
     text: "",
     owned_qty: 0,
+    price_eur: null,
     ...overrides
   }
 }
@@ -47,7 +48,8 @@ const unit = card({
   rarity: "Epic",
   energy: 4,
   text: "[Assault 2]",
-  owned_qty: 2
+  owned_qty: 2,
+  price_eur: 4.5
 })
 const phoenixOn = card({
   id: "u1-on",
@@ -82,6 +84,7 @@ function freshDeck() {
     card_count: 0,
     cards: [],
     checks: [{ rule: "legend", ok: false, message: "Exactement 1 légende (0 actuellement)" }],
+    prices: null,
     updated_at: null
   }
 }
@@ -280,6 +283,43 @@ describe("DeckEditView", () => {
     expect(modal.textContent).toContain("Phénix Immortel")
     expect(modal.querySelectorAll("tbody tr")).toHaveLength(1)
     expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1" && options?.method === "PUT")).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("affiche la valeur du deck, la pastille € de la galerie et le coût des manquants", async () => {
+    const pricedDeck = {
+      ...freshDeck(),
+      cards: [
+        { card: legend, qty: 1 },
+        { card: unit, qty: 3 }
+      ],
+      prices: { total_eur: 30.5, missing_eur: 4.5 }
+    }
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/1" && options.method === "PUT") {
+        return Promise.resolve({ checks: [], moderation_status: "published", updated_at: "2026-08-18T00:00:00" })
+      }
+      if (path === "/api/decks/1") return Promise.resolve(pricedDeck)
+      if (path === "/api/decks/1/missing") {
+        return Promise.resolve({
+          items: [{ card: unit, needed: 3, owned: 2, missing: 1 }],
+          missing_total: 1,
+          deck_total: 4
+        })
+      }
+      if (path.startsWith("/api/cards")) return Promise.resolve({ total: 1, page: 1, size: 24, items: [unit] })
+      if (path === "/api/sets") return Promise.resolve([])
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.get(".dbuilder-overview .price-deck").text()).toContain("30,50")
+    expect(tile(wrapper, "Phénix").get(".gcard-price").text()).toContain("4,50")
+
+    await wrapper.get(".missing-btn").trigger("click")
+    await flushPromises()
+    const modal = document.body.querySelector(".modal")
+    expect(modal.textContent).toContain("Coût pour compléter :")
+    expect(modal.textContent).toContain("4,50")
     wrapper.unmount()
   })
 

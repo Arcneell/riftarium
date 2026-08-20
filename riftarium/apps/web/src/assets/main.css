@@ -5672,3 +5672,128 @@ button.deck-box-stat:hover,
     max-width: none;
   }
 }
+
+/* ============================================================
+   Prix indicatifs des cartes (source TCGplayer → € taux BCE)
+   Ton volontairement sobre : encre et muted, jamais criard.
+   ============================================================ */
+
+/* Badge € dans la zone méta des tuiles (cartothèque, collection)
+   et mention € des boîtes de deck : discret, jamais sur l'illustration. */
+.price-tag {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Valeur du lot sous une tuile de collection. */
+.col-state .price-lot {
+  flex: 1 1 auto;
+  text-align: right;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fiche carte : bloc « Prix indicatif ». */
+.price-block {
+  margin: 26px 0 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.price-block .eyebrow {
+  margin-bottom: 6px;
+}
+.price-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+.price-amount {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+}
+.price-foil {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.price-note {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.price-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--gold-deep);
+}
+
+/* Decks : « Valeur du deck » près des stats, même gabarit que l'énergie. */
+.price-deck {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.price-deck .price-amount {
+  font-size: 1.05rem;
+}
+
+/* Modale des cartes manquantes : colonne prix et coût pour compléter. */
+.missing-table .price-cell {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.price-missing {
+  margin-top: 12px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.price-missing .price-amount {
+  font-size: 1rem;
+}
+
+/* Galerie du deck builder : pastille € en pied de vignette, opposée à « possédée ». */
+.gcard-price {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  padding: 2px 7px;
+  border-radius: var(--r-full);
+  background: rgba(253, 250, 242, 0.92);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  pointer-events: none;
+}
+
+/* Sélecteur de tri de la collection : aligné sur les champs du filter-board. */
+.filter-sort {
+  height: 40px;
+}
+
+@media (max-width: 560px) {
+  .price-block {
+    padding: 14px;
+  }
+  .price-amount {
+    font-size: 1.2rem;
+  }
+  .price-missing {
+    text-align: left;
+  }
+  .filter-sort {
+    flex: 1 1 100%;
+  }
+}

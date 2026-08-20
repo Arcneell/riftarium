@@ -45,6 +45,11 @@ def _upsert_card(db: Session, payload: dict) -> None:
         db.add(row)
     row.riftbound_id = payload["riftbound_id"]
     row.name = payload["name"]
+    # Identifiant produit TCGplayer (mapping des prix, voir app/prices.py).
+    # On ne l'écrase jamais par du vide : certaines cartes ne sont pas vendues.
+    tcgplayer_id = payload.get("tcgplayer_id")
+    if tcgplayer_id:
+        row.tcgplayer_id = str(tcgplayer_id)
     row.collector_number = payload.get("collector_number")
     row.set_id = (card_set.get("set_id") or "").upper()
     row.type = classification.get("type") or "Unknown"

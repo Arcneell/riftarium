@@ -3,6 +3,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTO_SYNC"] = "0"
 os.environ["HASH_AUTOSTART"] = "0"  # pas de téléchargements d'images en arrière-plan pendant les tests
+os.environ["PRICES_AUTOREFRESH"] = "0"  # pas de veille des prix (threads/réseau) pendant les tests
 os.environ["RIFTARIUM_ENV"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-not-for-production-use!"
 os.environ["ADMIN_TOKEN"] = "test-admin-token-ok"

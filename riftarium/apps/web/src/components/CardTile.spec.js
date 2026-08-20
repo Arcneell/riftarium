@@ -59,6 +59,20 @@ describe("CardTile", () => {
     wrapper.unmount()
   })
 
+  it("badge prix discret dans la zone méta quand la carte est pricée, rien sinon", () => {
+    const priced = mountTile(sampleCard({ price_eur: 13.3 }))
+    const badge = priced.get(".t-meta .price-tag")
+    expect(badge.text()).toContain("13,30")
+    expect(badge.attributes("title")).toContain("TCGplayer")
+    // jamais sur l'illustration : le badge vit sous la carte, pas dans .card-art
+    expect(priced.find(".card-art .price-tag").exists()).toBe(false)
+    priced.unmount()
+
+    const unpriced = mountTile(sampleCard({ price_eur: null }))
+    expect(unpriced.find(".price-tag").exists()).toBe(false)
+    unpriced.unmount()
+  })
+
   it("montre un terrain en entier, sans le forcer en portrait", () => {
     const wrapper = mountTile(
       sampleCard({

@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -97,6 +98,33 @@ class Card(Base):
     signature: Mapped[bool] = mapped_column(Boolean, default=False)
     overnumbered: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_on: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Prix TCGplayer (voir app/prices.py). tcgplayer_id vient de Riftcodex (sync ou
+    # backfill) ; price_usd = marketPrice de la version « Normal », sinon « Foil »
+    # à défaut ; price_foil_usd = marketPrice « Foil ». NULL tant qu'inconnu.
+    tcgplayer_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
+    price_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price_foil_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class PriceHistory(Base):
+    """Prix du marché (USD) d'une carte, une ligne par jour : historique des cours."""
+
+    __tablename__ = "price_history"
+    __table_args__ = (UniqueConstraint("day", "card_id", name="uq_price_history_day_card"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    card_id: Mapped[str] = mapped_column(ForeignKey("cards.id"), index=True)
+    market_usd: Mapped[float] = mapped_column(Float)
+
+
+class AppState(Base):
+    """Petit stockage clé/valeur applicatif (taux de change, jour du dernier refresh…)."""
+
+    __tablename__ = "app_state"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(255))
 
 
 class CollectionItem(Base):
