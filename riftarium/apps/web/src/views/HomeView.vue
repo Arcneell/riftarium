@@ -9,18 +9,19 @@ import CardRiver from "../components/CardRiver.vue"
 const cardCount = ref(null)
 const setCount = ref(null)
 
-/* Trois « Overnumbered » : les illustrations alternatives numérotées au-delà du set. */
+/* Trois cartes « Signature » (signées par leur illustrateur) :
+   Ahri - Nine-Tailed Fox, Lee Sin - Blind Monk, Kai'Sa - Daughter of the Void. */
 const FAN = [
   {
-    hash: "8a7dbbed04133926e58843f1d586f51178ef2ebd-1488x2078.png",
+    hash: "e5fe571a8f09c0a9e76345ec32b446480f54617c-1488x2078.png",
     style: "left:2%; top:60px; rotate:-9deg; z-index:1"
   },
   {
-    hash: "dc89c6a2415debd5bf504ed46843f5dcc1d9b815-1488x2078.png",
+    hash: "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
     style: "left:30%; top:18px; rotate:1deg; z-index:2"
   },
   {
-    hash: "2c804ec513085702763a9145fac93a8adb6c4783-1488x2078.png",
+    hash: "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png",
     style: "left:58%; top:52px; rotate:9deg; z-index:1"
   }
 ]
