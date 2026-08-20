@@ -24,7 +24,7 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Deck builder + validation règles tournoi / mode libre | ✅ |
 | Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
-| Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 |
+| Scan mobile, textes FR, fil social complet | 🔜 |
 
 ## Architecture
 

@@ -146,7 +146,7 @@ onMounted(async () => {
 
 <template>
   <PageBanner :art="BANNERS.collection" eyebrow="Collection" title="Mon inventaire">
-    Vos cartes, leurs états, leurs langues. L'estimation Cardmarket arrive.
+    Vos cartes, leurs états, leurs langues.
   </PageBanner>
 
   <section style="padding-top: 40px">

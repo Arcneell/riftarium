@@ -148,14 +148,16 @@ async function logout() {
           </ul>
         </div>
       </div>
-      <p>{{ RIOT_DISCLAIMER_EN }}</p>
-      <p>{{ RIOT_DISCLAIMER_FR }}</p>
-      <p>
-        Riftbound, League of Legends, les visuels de cartes, illustrations et textes officiels sont la propriété de ©
-        Riot Games, Inc. Les visuels sont servis depuis le CDN officiel de Riot, jamais copiés ni redistribués. En bêta,
-        les textes de cartes proviennent de l'API communautaire Riftcodex en attendant l'API officielle Riot. Chaque
-        carte mentionne son code collector et son illustrateur.
-      </p>
+      <div class="footer-legal">
+        <p>{{ RIOT_DISCLAIMER_EN }}</p>
+        <p>{{ RIOT_DISCLAIMER_FR }}</p>
+        <p class="footer-legal-wide">
+          Riftbound, League of Legends, les visuels de cartes, illustrations et textes officiels sont la propriété de ©
+          Riot Games, Inc. Les visuels sont servis depuis le CDN officiel de Riot, jamais copiés ni redistribués. En
+          bêta, les textes de cartes proviennent de l'API communautaire Riftcodex en attendant l'API officielle Riot.
+          Chaque carte mentionne son code collector et son illustrateur.
+        </p>
+      </div>
     </div>
   </footer>
   <TraceursNotice />
