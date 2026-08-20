@@ -6,8 +6,8 @@ NULL tant que l'empreinte n'a pas été calculée ou après un changement de vis
 
 Générée par autogenerate puis relue à la main.
 
-Revision ID: 0002
-Revises: 0001
+Revision ID: 0003
+Revises: 0002
 Create Date: 2026-08-19
 """
 
@@ -15,8 +15,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # Identifiants de révision utilisés par Alembic.
-revision = "0002"
-down_revision = "0001"
+revision = "0003"
+down_revision = "0002"
 branch_labels = None
 depends_on = None
 
