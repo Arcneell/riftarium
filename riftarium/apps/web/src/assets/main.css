@@ -5797,3 +5797,226 @@ button.deck-box-stat:hover,
     flex: 1 1 100%;
   }
 }
+
+/* ============================================================
+   Pack collectionneur — progression par set, wishlist,
+   decks constructibles. Même sobriété que les prix :
+   parchemin, encre, et un seul accent doré (la barre).
+   ============================================================ */
+
+/* ---------- Collection : progression par set ---------- */
+.progress-panel {
+  margin: 26px 0 30px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.progress-title {
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+}
+.progress-loading {
+  font-size: 0.78rem;
+}
+.progress-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 210px) 1fr auto minmax(150px, auto);
+  gap: 8px 14px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  border-radius: var(--r);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+}
+/* Les lignes de set sont cliquables : elles appliquent le filtre Sets de la grille. */
+button.progress-row {
+  cursor: pointer;
+  transition: background 0.18s;
+}
+button.progress-row:hover {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.progress-overall {
+  padding-bottom: 13px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.progress-overall .progress-name {
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+.progress-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Barre en pur CSS : piste neutre, remplissage doré du thème. */
+.progress-bar {
+  height: 10px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  overflow: hidden;
+}
+.progress-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold-grad);
+  transition: width 0.5s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+.progress-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.progress-missing {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: right;
+}
+.progress-missing.done {
+  color: var(--gold-deep);
+}
+
+/* ---------- Wishlist : grille, stepper 1-99 et retrait ---------- */
+.wish-cell {
+  min-width: 0;
+}
+.wish-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.wish-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: #fdfaf2;
+  overflow: hidden;
+}
+.wish-stepper button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.wish-stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.wish-stepper input {
+  width: 38px;
+  border: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 4px 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  appearance: textfield;
+}
+.wish-remove {
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.18s;
+}
+.wish-remove:hover {
+  color: #a33a2a;
+}
+.wish-empty {
+  max-width: 560px;
+}
+
+/* Fiche carte : bouton cœur, contour au repos, teinte chaos une fois souhaitée. */
+.wish-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  background: rgba(253, 250, 242, 0.7);
+  color: var(--muted);
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.wish-toggle:hover {
+  color: var(--ink-strong);
+  border-color: var(--line-strong);
+}
+.wish-toggle.on {
+  color: var(--chaos-text);
+  border-color: color-mix(in srgb, var(--chaos) 45%, var(--line));
+}
+.wish-toggle .icon {
+  flex: 0 0 auto;
+}
+
+/* ---------- Decks communauté : constructible avec ma collection ---------- */
+.deck-buildable {
+  color: var(--gold-deep);
+  white-space: nowrap;
+}
+.deck-box-plate .deck-missing {
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  /* Barres de progression pleine largeur, compteur à côté du nom. */
+  .progress-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .progress-name {
+    order: 0;
+    flex: 1 1 auto;
+  }
+  .progress-count {
+    order: 1;
+  }
+  .progress-bar {
+    order: 2;
+    flex: 1 1 100%;
+  }
+  .progress-missing {
+    order: 3;
+    flex: 1 1 100%;
+    text-align: left;
+    white-space: normal;
+  }
+  /* Mentions « manquantes » des boîtes de deck : à la ligne, jamais tronquées. */
+  .deck-box-plate .deck-missing,
+  .deck-buildable {
+    display: inline-block;
+  }
+  .wish-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+  .buildable-filter {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

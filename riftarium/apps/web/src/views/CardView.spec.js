@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import CardView from "./CardView.vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
 import { resetPricesMeta } from "../prices.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -46,7 +46,7 @@ async function mountView(id, card, meta = null) {
   router.push(`/cartes/${id}`)
   await router.isReady()
   const wrapper = mount(CardView, {
-    global: { plugins: [router], directives: { tilt: {} } }
+    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
   })
   await flushPromises()
   return { wrapper, router }
@@ -54,6 +54,8 @@ async function mountView(id, card, meta = null) {
 
 describe("CardView", () => {
   beforeEach(() => {
+    session.token = null
+    session.handle = null
     api.mockReset()
     resetPricesMeta()
   })
@@ -128,6 +130,58 @@ describe("CardView", () => {
     const { wrapper } = await mountView("ogn-037-298", sample({ price_eur: null, price_foil_eur: 8 }))
     expect(wrapper.find(".price-block").exists()).toBe(false)
     expect(wrapper.find(".price-link").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("visiteur non connecté : pas de bouton wishlist sur la fiche", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample())
+    expect(wrapper.find(".wish-toggle").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("connecté : le cœur bascule l'ajout (PUT qty 1) puis le retrait (DELETE) de la wishlist", async () => {
+    session.token = "jeton"
+    session.handle = "visiteur"
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample({ wished_qty: 0 }))
+      if (path === "/api/collection/ogn-037-298") return Promise.resolve({ entries: [], total_qty: 0 })
+      return Promise.resolve(options.method ? null : {})
+    })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/cartes", component: { template: "<div />" } },
+        { path: "/cartes/:id", component: CardView }
+      ]
+    })
+    router.push("/cartes/ogn-037-298")
+    await router.isReady()
+    const wrapper = mount(CardView, {
+      global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
+    })
+    await flushPromises()
+
+    const toggle = wrapper.get(".wish-toggle")
+    expect(toggle.text()).toContain("Ajouter à la wishlist")
+    expect(toggle.attributes("aria-pressed")).toBe("false")
+
+    await toggle.trigger("click")
+    await flushPromises()
+    const put = api.mock.calls.find(
+      ([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "PUT"
+    )
+    expect(put[1].body).toEqual({ qty: 1 })
+    expect(toggle.text()).toContain("Dans ma wishlist")
+    expect(toggle.attributes("aria-pressed")).toBe("true")
+    expect(toggle.classes()).toContain("on")
+
+    await toggle.trigger("click")
+    await flushPromises()
+    expect(
+      api.mock.calls.some(([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "DELETE")
+    ).toBe(true)
+    expect(toggle.text()).toContain("Ajouter à la wishlist")
+    expect(toggle.attributes("aria-pressed")).toBe("false")
     wrapper.unmount()
   })
 

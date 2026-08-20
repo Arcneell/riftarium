@@ -7,7 +7,7 @@ from ..cache import cache_get, cache_set
 from ..config import settings
 from ..db import get_db
 from ..imagehash import ALGO as HASH_ALGO
-from ..models import Card, CardSet, CollectionItem, User
+from ..models import Card, CardSet, CollectionItem, User, WishlistItem
 from ..prices import CURRENCY_NOTE, RATE_DATE_KEY, UPDATED_DAY_KEY, current_rate, state_get, to_eur
 from ..security import sanitize_image_url
 from ..variants import variant_family, variant_id_clause
@@ -58,7 +58,9 @@ def is_foil(card: Card) -> bool:
     return bool(card.alternate_art or card.signature or card.overnumbered or card.rarity == "Showcase")
 
 
-def card_out(card: Card, owned_qty: int | None = None, rate: float | None = None) -> dict:
+def card_out(
+    card: Card, owned_qty: int | None = None, rate: float | None = None, wished_qty: int | None = None
+) -> dict:
     payload = {
         "id": card.id,
         "riftbound_id": card.riftbound_id,
@@ -88,6 +90,8 @@ def card_out(card: Card, owned_qty: int | None = None, rate: float | None = None
     }
     if owned_qty is not None:
         payload["owned_qty"] = owned_qty
+    if wished_qty is not None:
+        payload["wished_qty"] = wished_qty
     return payload
 
 
@@ -98,6 +102,18 @@ def owned_quantities(db: Session, user: User | None, card_ids: list[str]) -> dic
         select(CollectionItem.card_id, func.sum(CollectionItem.qty))
         .where(CollectionItem.user_id == user.id, CollectionItem.card_id.in_(card_ids))
         .group_by(CollectionItem.card_id)
+    ).all()
+    return {card_id: qty for card_id, qty in rows}
+
+
+def wished_quantities(db: Session, user: User | None, card_ids: list[str]) -> dict[str, int]:
+    """Quantités en wishlist par carte, en une requête (même mécanique qu'owned_quantities)."""
+    if user is None or not card_ids:
+        return {}
+    rows = db.execute(
+        select(WishlistItem.card_id, WishlistItem.qty).where(
+            WishlistItem.user_id == user.id, WishlistItem.card_id.in_(card_ids)
+        )
     ).all()
     return {card_id: qty for card_id, qty in rows}
 
@@ -211,12 +227,21 @@ def list_cards(
         order = [Card.set_id, Card.collector_number, Card.id]
     rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
     owned_map = owned_quantities(db, viewer, [card.id for card in rows])
+    wished_map = wished_quantities(db, viewer, [card.id for card in rows])
     rate = current_rate(db)
     payload = {
         "total": total,
         "page": page,
         "size": size,
-        "items": [card_out(card, owned_map.get(card.id, 0) if viewer else None, rate) for card in rows],
+        "items": [
+            card_out(
+                card,
+                owned_map.get(card.id, 0) if viewer else None,
+                rate,
+                wished_map.get(card.id, 0) if viewer else None,
+            )
+            for card in rows
+        ],
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
@@ -258,8 +283,12 @@ def list_variants(
         raise HTTPException(status_code=404, detail="Carte introuvable")
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows])
+    wished = wished_quantities(db, viewer, [row.id for row in rows])
     rate = current_rate(db)
-    return [card_out(row, owned.get(row.id, 0) if viewer else None, rate) for row in rows]
+    return [
+        card_out(row, owned.get(row.id, 0) if viewer else None, rate, wished.get(row.id, 0) if viewer else None)
+        for row in rows
+    ]
 
 
 @router.get("/cards/{card_id}")
@@ -284,12 +313,18 @@ def get_card(
         raise HTTPException(status_code=404, detail="Carte introuvable")
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows] + [card.id])
+    wished = wished_quantities(db, viewer, [row.id for row in rows] + [card.id])
     rate = current_rate(db)
-    payload = card_out(card, owned.get(card.id, 0) if viewer else None, rate)
+    payload = card_out(
+        card, owned.get(card.id, 0) if viewer else None, rate, wished.get(card.id, 0) if viewer else None
+    )
     # Le détail expose aussi le prix brut USD et l'estimation foil en euros.
     payload["price_usd"] = card.price_usd
     payload["price_foil_eur"] = to_eur(card.price_foil_usd, rate)
-    payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None, rate) for row in rows]
+    payload["variants"] = [
+        card_out(row, owned.get(row.id, 0) if viewer else None, rate, wished.get(row.id, 0) if viewer else None)
+        for row in rows
+    ]
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
     return payload

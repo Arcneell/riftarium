@@ -9,6 +9,12 @@ defineProps({
   community: { type: Boolean, default: false }
 })
 defineEmits(["like", "remove"])
+
+/* « 3 manquante(s) (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
+function missingNote(deck) {
+  const cost = formatEur(deck.missing_cost_eur)
+  return `${deck.missing_cards} manquante(s)${cost ? ` (~${cost})` : ""}`
+}
 </script>
 
 <template>
@@ -48,6 +54,14 @@ defineEmits(["like", "remove"])
         {{ deck.card_count }} cartes · {{ formatLabel(deck.format) }}
         <template v-if="formatEur(deck.prices?.total_eur)">
           · <span class="price-tag" :title="PRICE_NOTE">{{ formatEur(deck.prices.total_eur) }}</span>
+        </template>
+        <!-- Renseigné par l'API pour les visiteurs connectés uniquement. -->
+        <template v-if="community && deck.missing_cards !== undefined && deck.missing_cards !== null">
+          ·
+          <span v-if="deck.missing_cards === 0" class="deck-buildable" title="Vous possédez toutes les cartes">
+            Complet ✓
+          </span>
+          <span v-else class="deck-missing" :title="PRICE_NOTE">{{ missingNote(deck) }}</span>
         </template>
         <template v-if="deck.checks">
           · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·

@@ -16,7 +16,7 @@ from ..schemas import DeckIn, ExampleDeckIn
 from ..security import client_ip, sanitize_image_url
 from ..validation import validate_deck
 from ..variants import copy_family
-from .cards import card_out, csv_parts, escape_like, owned_quantities
+from .cards import card_out, csv_parts, escape_like, owned_quantities, wished_quantities
 
 router = APIRouter(prefix="/api", tags=["decks"])
 
@@ -30,10 +30,11 @@ def deck_out(
     *,
     liked: bool | None = None,
     owned: dict[str, int] | None = None,
+    wished: dict[str, int] | None = None,
     owner_avatar=_UNSET,
     rate: float | None = _UNSET,
 ) -> dict:
-    """Sérialise un deck. liked/owned/owner_avatar/rate peuvent être pré-calculés en lot (cf. _decks_out)."""
+    """Sérialise un deck. liked/owned/wished/owner_avatar/rate peuvent être pré-calculés en lot (cf. _decks_out)."""
     if rate is _UNSET:
         rate = current_rate(db) if db is not None else None
     if liked is None:
@@ -44,6 +45,8 @@ def deck_out(
         )
     if owned is None:
         owned = owned_quantities(db, viewer, [dc.card_id for dc in deck.cards]) if viewer and db else {}
+    if wished is None:
+        wished = wished_quantities(db, viewer, [dc.card_id for dc in deck.cards]) if viewer and db else {}
     if owner_avatar is _UNSET:
         owner_avatar = avatar_urls(db, [deck.owner]).get(deck.owner.id) if db and deck.owner else None
     has_viewer = viewer is not None and db is not None
@@ -73,7 +76,15 @@ def deck_out(
         "card_count": sum(dc.qty for dc in deck.cards),
         "prices": {"total_eur": total_eur, "missing_eur": missing_eur},
         "cards": [
-            {"card": card_out(dc.card, owned.get(dc.card_id, 0) if has_viewer else None, rate), "qty": dc.qty}
+            {
+                "card": card_out(
+                    dc.card,
+                    owned.get(dc.card_id, 0) if has_viewer else None,
+                    rate,
+                    wished.get(dc.card_id, 0) if has_viewer else None,
+                ),
+                "qty": dc.qty,
+            }
             for dc in deck.cards
         ],
         "checks": validate_deck([(dc.card, dc.qty) for dc in deck.cards]),
@@ -86,12 +97,14 @@ def _decks_out(db: Session, decks: list[Deck], viewer: User | None) -> list[dict
     ids = [deck.id for deck in decks]
     liked_ids: set[int] = set()
     owned: dict[str, int] = {}
+    wished: dict[str, int] = {}
     if viewer is not None and ids:
         liked_ids = set(
             db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id, DeckLike.deck_id.in_(ids))).all()
         )
-        card_ids = {dc.card_id for deck in decks for dc in deck.cards}
-        owned = owned_quantities(db, viewer, list(card_ids))
+        card_ids = list({dc.card_id for deck in decks for dc in deck.cards})
+        owned = owned_quantities(db, viewer, card_ids)
+        wished = wished_quantities(db, viewer, card_ids)
     avatars = avatar_urls(db, [deck.owner for deck in decks if deck.owner])
     rate = current_rate(db)
     return [
@@ -101,6 +114,7 @@ def _decks_out(db: Session, decks: list[Deck], viewer: User | None) -> list[dict
             db,
             liked=deck.id in liked_ids,
             owned=owned,
+            wished=wished,
             owner_avatar=avatars.get(deck.owner.id) if deck.owner else None,
             rate=rate,
         )
@@ -348,7 +362,14 @@ def _legend_decks():
 
 
 def _community_deck_out(
-    deck: Deck, *, legend: Card | None, card_count: int, liked: bool, owner_avatar: str | None = None
+    deck: Deck,
+    *,
+    legend: Card | None,
+    card_count: int,
+    liked: bool,
+    owner_avatar: str | None = None,
+    missing_cards: int | None = None,
+    missing_cost_eur: float | None = None,
 ) -> dict:
     domains = [d for d in (legend.domains or []) if d != "Colorless"] if legend else []
     return {
@@ -364,8 +385,57 @@ def _community_deck_out(
         "card_count": card_count,
         "legend": card_out(legend) if legend else None,
         "domains": domains,
+        # Manque par rapport à la collection du visiteur connecté (null si anonyme) :
+        # nombre d'exemplaires manquants et coût estimé des manquants pricés.
+        "missing_cards": missing_cards,
+        "missing_cost_eur": missing_cost_eur,
         "updated_at": deck.updated_at.isoformat() if deck.updated_at else None,
     }
+
+
+def _buildable_deck_filter(viewer: User):
+    """Sous-requête des decks NON constructibles : au moins une carte en déficit.
+
+    Comparaison par identifiant exact de carte (même mécanique qu'owned_quantities) :
+    une quantité demandée supérieure à la quantité possédée disqualifie le deck.
+    Filtre côté SQL : le tri et la pagination du listing s'appliquent donc
+    naturellement APRÈS filtrage, sans page élargie en mémoire.
+    """
+    owned_sub = (
+        select(CollectionItem.card_id.label("card_id"), func.sum(CollectionItem.qty).label("owned"))
+        .where(CollectionItem.user_id == viewer.id)
+        .group_by(CollectionItem.card_id)
+        .subquery()
+    )
+    return (
+        select(DeckCard.deck_id)
+        .outerjoin(owned_sub, owned_sub.c.card_id == DeckCard.card_id)
+        .where(DeckCard.qty > func.coalesce(owned_sub.c.owned, 0))
+    )
+
+
+def _community_missing(db: Session, decks: list[Deck], viewer: User | None) -> dict[int, tuple[int, float | None]]:
+    """Manque par deck pour la page du listing : deck_id → (missing_cards, missing_cost_eur).
+
+    Une seule requête collection pour toutes les cartes de la page (owned_quantities),
+    puis une passe en mémoire sur deck.cards (déjà chargées par le selectin du modèle).
+    """
+    if viewer is None or not decks:
+        return {}
+    rate = current_rate(db)
+    card_ids = list({dc.card_id for deck in decks for dc in deck.cards})
+    owned = owned_quantities(db, viewer, card_ids)
+    result: dict[int, tuple[int, float | None]] = {}
+    for deck in decks:
+        shortfall = {dc.card_id: max(0, dc.qty - owned.get(dc.card_id, 0)) for dc in deck.cards}
+        missing_cards = sum(shortfall.values())
+        # Même convention que deck_out : coût des manquants pricés, null si
+        # aucune carte du deck n'a de prix connu (0.0 si tout est couvert).
+        known = [(dc, to_eur(dc.card.price_usd, rate)) for dc in deck.cards]
+        known = [(dc, price) for dc, price in known if price is not None]
+        cost = round(sum(shortfall[dc.card_id] * price for dc, price in known), 2) if known else None
+        result[deck.id] = (missing_cards, cost)
+    return result
 
 
 @router.post("/decks/{deck_id}/view")
@@ -422,6 +492,7 @@ def community_decks(
     format: str | None = None,
     sort: str = Query("likes"),
     liked: str | None = None,
+    buildable: str | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=50),
     viewer: User | None = Depends(optional_user),
@@ -445,6 +516,10 @@ def community_decks(
         query = query.where(Deck.format.in_(formats))
     if liked in {"1", "true"} and viewer is not None:
         query = query.where(Deck.id.in_(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id)))
+    # Decks constructibles : toutes les cartes couvertes par la collection
+    # (anonyme : paramètre ignoré, comme « liked »).
+    if buildable in {"1", "true"} and viewer is not None:
+        query = query.where(Deck.id.not_in(_buildable_deck_filter(viewer)))
     if q:
         needle = f"%{escape_like(q.lower())}%"
         query = query.where(
@@ -491,6 +566,7 @@ def community_decks(
             db.scalars(select(DeckLike.deck_id).where(DeckLike.user_id == viewer.id, DeckLike.deck_id.in_(ids))).all()
         )
     owner_pics = avatar_urls(db, [deck.owner for deck in decks if deck.owner])
+    missing = _community_missing(db, list(decks), viewer)
 
     return {
         "total": total,
@@ -503,6 +579,8 @@ def community_decks(
                 card_count=int(counts.get(deck.id, 0)),
                 liked=deck.id in liked_ids,
                 owner_avatar=owner_pics.get(deck.owner.id) if deck.owner else None,
+                missing_cards=missing.get(deck.id, (None, None))[0],
+                missing_cost_eur=missing.get(deck.id, (None, None))[1],
             )
             for deck in decks
         ],

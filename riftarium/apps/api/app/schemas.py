@@ -216,6 +216,12 @@ class CollectionBulk(BaseModel):
         return self
 
 
+class WishlistPut(BaseModel):
+    """Quantité visée pour une carte de la wishlist (l'upsert écrase la valeur)."""
+
+    qty: int = Field(ge=1, le=99)
+
+
 class DeckCardIn(BaseModel):
     card_id: str
     qty: int = Field(ge=1, le=12)

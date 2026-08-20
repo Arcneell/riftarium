@@ -68,6 +68,12 @@ defineProps({
         stroke="none"
       />
     </g>
+    <!-- cœur en contour (wishlist, état vide) -->
+    <g v-else-if="name === 'heart-line'">
+      <path
+        d="M12 19.4s-7.2-4.4-8.8-9.1C2.2 7.4 3.8 5 6.4 5c1.6 0 2.6.9 3.6 2.2C11 5.9 12 5 13.6 5c2.6 0 4.2 2.4 3.2 5.3-1.6 4.7-8.8 9.1-8.8 9.1Z"
+      />
+    </g>
     <!-- œil (vues) -->
     <g v-else-if="name === 'eye'">
       <path d="M2.6 12s3.4-6.2 9.4-6.2S21.4 12 21.4 12s-3.4 6.2-9.4 6.2S2.6 12 2.6 12Z" />

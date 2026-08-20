@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import CollectionView from "./CollectionView.vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -49,9 +49,43 @@ async function mountView() {
 
 describe("CollectionView", () => {
   beforeEach(() => {
+    session.token = null
     api.mockReset()
     api.mockImplementation((path) => {
       if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN", name: "Origins" }])
+      if (path === "/api/collection/sets") {
+        return Promise.resolve({
+          sets: [
+            {
+              set_id: "OGN",
+              name: "Origins",
+              total: 298,
+              owned: 149,
+              missing: 149,
+              missing_cost_eur: 42.5,
+              owned_value_eur: 100
+            },
+            {
+              set_id: "SFD",
+              name: "Spirit Forged",
+              total: 100,
+              owned: 100,
+              missing: 0,
+              missing_cost_eur: null,
+              owned_value_eur: 50
+            }
+          ],
+          overall: {
+            set_id: null,
+            name: "Tous",
+            total: 398,
+            owned: 249,
+            missing: 149,
+            missing_cost_eur: 42.5,
+            owned_value_eur: 150
+          }
+        })
+      }
       if (path === "/api/collection/bulk") return Promise.resolve({ updated: 1, removed: 0 })
       const multi = fakeItem(2, 3)
       multi.entries = [
@@ -132,6 +166,51 @@ describe("CollectionView", () => {
     await flushPromises()
     const call = api.mock.calls.find(([path]) => path === "/api/collection/bulk")
     expect(call[1].body).toEqual({ card_ids: ["card-1"], qty_delta: 1 })
+    wrapper.unmount()
+  })
+
+  it("affiche la progression par set : ligne globale en tête, barres et cartes manquantes", async () => {
+    const { wrapper } = await mountView()
+    const panel = wrapper.get(".progress-panel")
+    expect(panel.get(".progress-title").text()).toBe("Progression par set")
+
+    // la ligne « tous sets confondus » (overall) ouvre la section
+    const overall = panel.get(".progress-overall")
+    expect(overall.get(".progress-name").text()).toBe("Tous sets confondus")
+    expect(overall.get(".progress-count").text()).toContain("249/398")
+    expect(overall.get(".progress-count").text()).toContain("63 %")
+    expect(overall.get(".progress-bar i").attributes("style")).toContain("width: 63%")
+    expect(overall.get(".progress-missing").text()).toContain("il manque 149 carte(s) (~42,50")
+
+    // une ligne cliquable par set, set complet signalé sans coût
+    const rows = panel.findAll("button.progress-row")
+    expect(rows).toHaveLength(2)
+    expect(rows[0].get(".progress-name").text()).toBe("Origins")
+    expect(rows[0].get(".progress-bar i").attributes("style")).toContain("width: 50%")
+    expect(rows[1].get(".progress-missing").text()).toContain("set complet ✓")
+    expect(rows[1].get(".progress-missing").classes()).toContain("done")
+    wrapper.unmount()
+  })
+
+  it("clic sur un set de la progression : applique le filtre Sets de la vue", async () => {
+    const { wrapper, router } = await mountView()
+    api.mockClear()
+    await wrapper.findAll("button.progress-row")[0].trigger("click")
+    await vi.waitFor(() => {
+      expect(api.mock.calls.some(([path]) => String(path).includes("set_id=OGN"))).toBe(true)
+    })
+    expect(router.currentRoute.value.query.set).toBe("OGN")
+    wrapper.unmount()
+  })
+
+  it("connecté : le bouton Exporter (CSV) pointe directement sur l'export, sans fetch", async () => {
+    session.token = "1"
+    const { wrapper } = await mountView()
+    const link = wrapper.findAll(".filter-board a").find((a) => a.text().includes("Exporter (CSV)"))
+    expect(link).toBeTruthy()
+    expect(link.attributes("href")).toBe("/api/collection/export.csv")
+    expect(link.attributes("download")).toBeDefined()
+    expect(api.mock.calls.some(([path]) => String(path).includes("export.csv"))).toBe(false)
     wrapper.unmount()
   })
 

@@ -83,6 +83,16 @@ export const router = createRouter({
       }
     },
     {
+      path: "/wishlist",
+      component: () => import("./views/WishlistView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Ma wishlist",
+        description: "Cartes Riftbound recherchées : quantités souhaitées et valeur estimée."
+      }
+    },
+    {
       /* Accessible sans compte : le scan identifie la carte, l'ajout à la collection demande la connexion. */
       path: "/scan",
       component: () => import("./views/ScanView.vue"),

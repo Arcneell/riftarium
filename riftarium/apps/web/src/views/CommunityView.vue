@@ -28,6 +28,7 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
     /* Le tri n'est pas un filtre : hors compteur et épargné par la remise à zéro. */
     sort: { kind: "enum", values: SORTS.map((item) => item.value), default: "likes", reset: false },
     liked: { kind: "flag" },
+    buildable: { kind: "flag" },
     page: { kind: "page" }
   },
   {
@@ -50,6 +51,7 @@ function communityQuery() {
   if (state.domain.length) params.set("domain", csvJoin(state.domain))
   if (state.format.length) params.set("format", csvJoin(state.format))
   if (state.liked) params.set("liked", "1")
+  if (state.buildable) params.set("buildable", "1")
   return params
 }
 
@@ -138,6 +140,16 @@ onMounted(async () => {
         />
         <button type="button" class="btn btn-ghost btn-sm" :aria-pressed="state.liked" @click="toggleLiked">
           {{ state.liked ? "Mes likes" : "Aimés" }}
+        </button>
+        <!-- Réservé aux connectés : la comparaison se fait avec leur collection. -->
+        <button
+          v-if="session.token"
+          type="button"
+          class="filter buildable-filter"
+          :aria-pressed="state.buildable"
+          @click="setFilter('buildable', !state.buildable)"
+        >
+          Constructibles avec ma collection
         </button>
         <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
           Réinitialiser ({{ activeCount }})

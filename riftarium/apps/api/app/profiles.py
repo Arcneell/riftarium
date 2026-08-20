@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from .models import AuthToken, Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User
+from .models import AuthToken, Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User, WishlistItem
 from .moderation import review
 from .security import sanitize_image_url
 
@@ -171,6 +171,7 @@ def delete_user_account(db: Session, user: User) -> None:
     db.execute(delete(DeckLike).where(DeckLike.user_id == user.id))
     db.execute(delete(AuthToken).where(AuthToken.user_id == user.id))
     db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
+    db.execute(delete(WishlistItem).where(WishlistItem.user_id == user.id))
     db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))
     owned_ids = list(db.scalars(select(Deck.id).where(Deck.owner_id == user.id)).all())
     if owned_ids:

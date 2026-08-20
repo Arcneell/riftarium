@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue"
-import { cardThumb } from "../api.js"
+import { api, cardThumb, session } from "../api.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import ModalDialog from "./ModalDialog.vue"
 
@@ -9,13 +9,31 @@ import ModalDialog from "./ModalDialog.vue"
 const props = defineProps({
   missing: { type: Object, default: null }, // null tant que l'analyse est en cours
   error: { type: String, default: "" },
-  missingEur: { type: Number, default: null } // prices.missing_eur du deck (null si rien de pricé)
+  missingEur: { type: Number, default: null }, // prices.missing_eur du deck (null si rien de pricé)
+  deckId: { type: [Number, String], default: null } // requis pour « ajouter à la wishlist »
 })
 defineEmits(["close", "preview", "hide-preview"])
 
 const missingCost = computed(() => formatEur(props.missingEur))
 
 const copyLabel = ref("Copier la liste")
+
+/* Toutes les manquantes en un clic : l'API remplit la wishlist depuis le deck. */
+const wishLabel = ref("Ajouter les manquantes à ma wishlist")
+const wishBusy = ref(false)
+
+async function addMissingToWishlist() {
+  if (wishBusy.value || !props.deckId) return
+  wishBusy.value = true
+  try {
+    const payload = await api(`/api/wishlist/from-deck/${props.deckId}`, { method: "POST" })
+    wishLabel.value = `${payload.added} ajoutée(s) ✓`
+  } catch (e) {
+    wishLabel.value = e.message
+  } finally {
+    wishBusy.value = false
+  }
+}
 
 async function copyMissing() {
   if (!props.missing?.items.length) return
@@ -86,6 +104,14 @@ async function copyMissing() {
         Coût pour compléter : <b class="price-amount">{{ missingCost }}</b>
       </p>
       <div class="modal-actions">
+        <button
+          v-if="deckId && session.token"
+          class="btn btn-gold wish-from-deck"
+          :disabled="wishBusy"
+          @click="addMissingToWishlist"
+        >
+          {{ wishLabel }}
+        </button>
         <button class="btn btn-ghost" @click="copyMissing">{{ copyLabel }}</button>
       </div>
     </template>
