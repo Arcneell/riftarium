@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
@@ -43,6 +44,8 @@ async def lifespan(app: FastAPI):
                     run_sync(db)
                 except Exception:  # le service démarre même si la source est indisponible
                     log.exception("synchronisation initiale échouée — réessayez via POST /api/admin/sync")
+    # Empreintes du scan : les manquantes se calculent toutes seules en arrière-plan.
+    schedule_hash_backfill()
     yield
 
 
@@ -102,6 +105,8 @@ def admin_sync(
         # Même en cas d'échec partiel, on ne laisse pas un cache incohérent avec la base.
         cache_clear("cards:")
         cache_clear("sets:")
+    # Les cartes nouvelles ou au visuel changé n'ont plus d'empreinte : recalcul auto.
+    schedule_hash_backfill()
     return counts
 
 
@@ -128,17 +133,8 @@ def _missing_hash_clause():
     return (Card.image_hash.is_(None), Card.image_url.is_not(None))
 
 
-@app.post("/api/admin/cards/hashes")
-def admin_compute_card_hashes(
-    db: Session = Depends(get_db),
-    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
-):
-    """Calcule les empreintes perceptuelles manquantes (scan mobile).
-
-    Télécharge les visuels depuis le CDN Riot (jamais pendant la sync), borné à
-    HASH_BATCH_SIZE cartes par appel : rappeler l'endpoint tant que remaining > 0.
-    """
-    require_admin_token(x_admin_token)
+def _compute_hash_batch(db: Session) -> dict:
+    """Calcule un lot d'empreintes manquantes (HASH_BATCH_SIZE max) et le bilan."""
     batch = db.scalars(select(Card).where(*_missing_hash_clause()).order_by(Card.id).limit(HASH_BATCH_SIZE)).all()
 
     computed = failed = 0
@@ -167,6 +163,53 @@ def admin_compute_card_hashes(
 
     remaining = db.scalar(select(func.count()).select_from(select(Card.id).where(*_missing_hash_clause()).subquery()))
     return {"computed": computed, "failed": failed, "remaining": remaining or 0}
+
+
+# Remplissage automatique en tâche de fond : au démarrage et après chaque sync,
+# les empreintes manquantes sont calculées lot par lot sans intervention.
+_hash_worker_lock = threading.Lock()
+_HASH_WORKER_PAUSE = 2.0  # souffle entre deux lots (ménage le CDN et la base)
+
+
+def _hash_backfill_worker() -> None:
+    if not _hash_worker_lock.acquire(blocking=False):
+        return  # un remplissage est déjà en cours
+    try:
+        while True:
+            with SessionLocal() as db:
+                result = _compute_hash_batch(db)
+            if result["remaining"] == 0:
+                if result["computed"]:
+                    log.info("empreintes de scan : remplissage terminé")
+                return
+            if result["computed"] == 0:
+                # Lot entièrement en échec (réseau/CDN) : on n'insiste pas, le
+                # prochain démarrage ou la prochaine sync retentera.
+                log.warning("empreintes de scan : %s cartes en attente, calcul interrompu", result["remaining"])
+                return
+            log.info("empreintes de scan : %s calculées, %s restantes", result["computed"], result["remaining"])
+            time.sleep(_HASH_WORKER_PAUSE)
+    except Exception:  # jamais bloquant pour l'application
+        log.exception("remplissage des empreintes interrompu par une erreur inattendue")
+    finally:
+        _hash_worker_lock.release()
+
+
+def schedule_hash_backfill() -> None:
+    """Lance (au plus un) remplissage d'empreintes en arrière-plan."""
+    if not settings.hash_autostart:
+        return
+    threading.Thread(target=_hash_backfill_worker, name="hash-backfill", daemon=True).start()
+
+
+@app.post("/api/admin/cards/hashes")
+def admin_compute_card_hashes(
+    db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+):
+    """Calcule un lot d'empreintes manquantes (secours manuel du remplissage auto)."""
+    require_admin_token(x_admin_token)
+    return _compute_hash_batch(db)
 
 
 _DEMO_SECRETS = {"dev-secret-change-me", "test-secret", "test-secret-not-for-production-use!"}

@@ -265,3 +265,54 @@ def test_sync_invalidates_hash_only_when_image_url_changes(client):
         row = session.get(Card, "scan-sync")
         assert row.image_url == "https://cdn.example/v2.png"
         assert row.image_hash is None
+
+
+def test_hash_backfill_worker_loops_until_done(monkeypatch):
+    """Le worker enchaîne les lots jusqu'à remaining=0 puis s'arrête."""
+    from app import main
+
+    results = iter(
+        [
+            {"computed": 300, "failed": 0, "remaining": 100},
+            {"computed": 100, "failed": 0, "remaining": 0},
+        ]
+    )
+    calls = []
+    monkeypatch.setattr(main, "_compute_hash_batch", lambda db: calls.append(1) or next(results))
+    monkeypatch.setattr(main, "_HASH_WORKER_PAUSE", 0)
+
+    main._hash_backfill_worker()
+
+    assert len(calls) == 2
+
+
+def test_hash_backfill_worker_stops_on_stagnation(monkeypatch):
+    """Lot entièrement en échec (CDN injoignable) : le worker n'insiste pas."""
+    from app import main
+
+    calls = []
+    monkeypatch.setattr(
+        main, "_compute_hash_batch", lambda db: calls.append(1) or {"computed": 0, "failed": 300, "remaining": 300}
+    )
+    monkeypatch.setattr(main, "_HASH_WORKER_PAUSE", 0)
+
+    main._hash_backfill_worker()
+
+    assert len(calls) == 1
+
+
+def test_schedule_hash_backfill_respects_autostart(monkeypatch):
+    """HASH_AUTOSTART=0 (les tests) : aucun thread lancé ; activé : un thread part."""
+    from app import main
+
+    started = []
+    monkeypatch.setattr(
+        main.threading, "Thread", lambda **kw: started.append(kw) or type("T", (), {"start": lambda s: None})()
+    )
+
+    main.schedule_hash_backfill()
+    assert started == []  # autostart désactivé par conftest
+
+    monkeypatch.setattr(main.settings, "hash_autostart", True)
+    main.schedule_hash_backfill()
+    assert len(started) == 1 and started[0]["daemon"] is True

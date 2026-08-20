@@ -202,9 +202,10 @@ fichiers suivis.
 
 ## Scan mobile
 
-La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) calculées
-côté serveur : après une sync, lancer `POST /api/admin/cards/hashes` (en-tête
-`X-Admin-Token`) et répéter l'appel jusqu'à `remaining=0` pour peupler les empreintes.
+La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) des
+visuels, calculées automatiquement en arrière-plan (au démarrage de l'API et après
+chaque sync). Rien à lancer ; `POST /api/admin/cards/hashes` (`X-Admin-Token`)
+reste disponible en secours manuel.
 
 ## Sources de données
 
