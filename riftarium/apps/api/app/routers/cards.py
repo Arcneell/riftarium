@@ -8,6 +8,7 @@ from ..config import settings
 from ..db import get_db
 from ..imagehash import ALGO as HASH_ALGO
 from ..models import Card, CardSet, CollectionItem, User
+from ..prices import CURRENCY_NOTE, RATE_DATE_KEY, UPDATED_DAY_KEY, current_rate, state_get, to_eur
 from ..security import sanitize_image_url
 from ..variants import variant_family, variant_id_clause
 
@@ -57,7 +58,7 @@ def is_foil(card: Card) -> bool:
     return bool(card.alternate_art or card.signature or card.overnumbered or card.rarity == "Showcase")
 
 
-def card_out(card: Card, owned_qty: int | None = None) -> dict:
+def card_out(card: Card, owned_qty: int | None = None, rate: float | None = None) -> dict:
     payload = {
         "id": card.id,
         "riftbound_id": card.riftbound_id,
@@ -81,6 +82,9 @@ def card_out(card: Card, owned_qty: int | None = None) -> dict:
         "signature": card.signature,
         "overnumbered": card.overnumbered,
         "foil": is_foil(card),
+        # Estimation en euros (marché US TCGplayer × taux BCE stocké) : null si
+        # prix ou taux inconnu — l'appelant fournit le taux via current_rate(db).
+        "price_eur": to_eur(card.price_usd, rate),
     }
     if owned_qty is not None:
         payload["owned_qty"] = owned_qty
@@ -207,11 +211,12 @@ def list_cards(
         order = [Card.set_id, Card.collector_number, Card.id]
     rows = db.scalars(query.order_by(*order).offset((page - 1) * size).limit(size)).all()
     owned_map = owned_quantities(db, viewer, [card.id for card in rows])
+    rate = current_rate(db)
     payload = {
         "total": total,
         "page": page,
         "size": size,
-        "items": [card_out(card, owned_map.get(card.id, 0) if viewer else None) for card in rows],
+        "items": [card_out(card, owned_map.get(card.id, 0) if viewer else None, rate) for card in rows],
     }
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
@@ -253,7 +258,8 @@ def list_variants(
         raise HTTPException(status_code=404, detail="Carte introuvable")
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows])
-    return [card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows]
+    rate = current_rate(db)
+    return [card_out(row, owned.get(row.id, 0) if viewer else None, rate) for row in rows]
 
 
 @router.get("/cards/{card_id}")
@@ -278,10 +284,34 @@ def get_card(
         raise HTTPException(status_code=404, detail="Carte introuvable")
     rows = variant_cards(db, card)
     owned = owned_quantities(db, viewer, [row.id for row in rows] + [card.id])
-    payload = card_out(card, owned.get(card.id, 0) if viewer else None)
-    payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None) for row in rows]
+    rate = current_rate(db)
+    payload = card_out(card, owned.get(card.id, 0) if viewer else None, rate)
+    # Le détail expose aussi le prix brut USD et l'estimation foil en euros.
+    payload["price_usd"] = card.price_usd
+    payload["price_foil_eur"] = to_eur(card.price_foil_usd, rate)
+    payload["variants"] = [card_out(row, owned.get(row.id, 0) if viewer else None, rate) for row in rows]
     if cache_key:
         cache_set(cache_key, payload, settings.cache_ttl_seconds)
+    return payload
+
+
+@router.get("/prices/meta")
+def prices_meta(response: Response, db: Session = Depends(get_db)):
+    """Météo des prix : fraîcheur, taux de conversion et couverture (public, cache 1 h)."""
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["Vary"] = "Authorization, Cookie"
+    cached = cache_get("prices:meta")
+    if cached is not None:
+        return cached
+    payload = {
+        "updated_day": state_get(db, UPDATED_DAY_KEY),
+        "rate": current_rate(db),
+        "rate_date": state_get(db, RATE_DATE_KEY) or None,
+        "priced_cards": db.scalar(select(func.count(Card.id)).where(Card.price_usd.is_not(None))) or 0,
+        "source": "tcgplayer",
+        "currency_note": CURRENCY_NOTE,
+    }
+    cache_set("prices:meta", payload, 3600)
     return payload
 
 

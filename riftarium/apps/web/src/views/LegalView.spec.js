@@ -29,6 +29,8 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain(RIOT_GENERAL_DISCLAIMER_EN)
     expect(wrapper.text()).toContain("bêta fermée")
     expect(wrapper.text()).toContain("Riftcodex")
+    expect(wrapper.text()).toContain("TCGplayer")
+    expect(wrapper.text()).toContain("Banque centrale européenne")
     expect(wrapper.text()).toContain("OVH SAS")
     expect(wrapper.text()).toContain("contact@riftarium.re")
     expect(wrapper.find(".legal-nav").text()).toContain("CGU")

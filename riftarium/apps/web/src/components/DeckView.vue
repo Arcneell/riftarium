@@ -4,6 +4,7 @@ import { DOMAINS } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
 import { DECK_ZONES, formatLabel, groupDeck, runesOf } from "../deckDisplay.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import DeckExportBar from "./DeckExportBar.vue"
 import DeckVisual from "./DeckVisual.vue"
 import UserAvatar from "./UserAvatar.vue"
@@ -24,6 +25,9 @@ const zoneCounts = computed(() => {
 })
 
 const { curve, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards || [])
+
+/* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
+const deckValue = computed(() => formatEur(props.deck.prices?.total_eur))
 </script>
 
 <template>
@@ -92,6 +96,9 @@ const { curve, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards
         <aside class="deck-view-side">
           <p class="overview-energy">
             <b>{{ energyTotal }}</b> énergie
+          </p>
+          <p v-if="deckValue" class="price-deck" :title="PRICE_NOTE">
+            Valeur du deck : <b class="price-amount">{{ deckValue }}</b>
           </p>
           <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
             <div class="bar" v-for="bucket in curve" :key="bucket.cost">

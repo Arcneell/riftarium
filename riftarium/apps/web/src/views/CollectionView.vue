@@ -10,6 +10,7 @@ import {
 } from "../cardText.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import { useScrollMemory } from "../useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
@@ -33,11 +34,12 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
       domain: { kind: "list" },
       rarity: { kind: "list" },
       energy: { kind: "list" },
+      sort: { kind: "text" },
       page: { kind: "page" }
     },
     {
       fetcher: (filters) => api(`/api/collection?${cardsQuery(filters, size.value)}`),
-      initialResult: { total: 0, total_cards: 0, unique_cards: 0, items: [] },
+      initialResult: { total: 0, total_cards: 0, unique_cards: 0, value_eur: null, items: [] },
       pageSize: size,
       onLoaded: (data) => {
         if (state.page > 1 && !data.items.length) state.page = 1
@@ -158,7 +160,9 @@ onMounted(async () => {
         <div class="stat" v-reveal="1">
           Uniques<b>{{ result.unique_cards }}</b>
         </div>
-        <div class="stat" v-reveal="2">Valeur estimée<b>—</b></div>
+        <div class="stat" v-reveal="2" :title="PRICE_NOTE">
+          Valeur estimée<b>{{ formatEur(result.value_eur) || "—" }}</b>
+        </div>
       </div>
 
       <div class="filter-board">
@@ -202,6 +206,16 @@ onMounted(async () => {
           :model-value="state.set_id"
           @update:model-value="setFilter('set_id', $event)"
         />
+        <select
+          class="filter-sort"
+          aria-label="Trier la collection"
+          :value="state.sort"
+          @change="setFilter('sort', $event.target.value)"
+        >
+          <option value="">Trier : par défaut</option>
+          <option value="price_desc">Prix décroissant</option>
+          <option value="price_asc">Prix croissant</option>
+        </select>
         <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
           Réinitialiser ({{ activeCount }})
         </button>
@@ -277,6 +291,9 @@ onMounted(async () => {
           <div class="t-meta col-state">
             <span v-if="item.entries.length === 1"> {{ item.entries[0].condition }} · {{ item.entries[0].lang }} </span>
             <span v-else :title="lotsTitle(item)">{{ item.entries.length }} lots</span>
+            <span v-if="formatEur(item.value_eur)" class="price-lot" :title="PRICE_NOTE">
+              {{ formatEur(item.value_eur) }}
+            </span>
             <span>×{{ item.total_qty }}</span>
           </div>
         </div>

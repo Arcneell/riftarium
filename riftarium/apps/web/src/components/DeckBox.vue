@@ -1,5 +1,6 @@
 <script setup>
 import { coverStyle, formatLabel, legendOf, okCount, runesOf } from "../deckDisplay.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import UserAvatar from "./UserAvatar.vue"
 
 defineProps({
@@ -45,6 +46,9 @@ defineEmits(["like", "remove"])
           ·
         </template>
         {{ deck.card_count }} cartes · {{ formatLabel(deck.format) }}
+        <template v-if="formatEur(deck.prices?.total_eur)">
+          · <span class="price-tag" :title="PRICE_NOTE">{{ formatEur(deck.prices.total_eur) }}</span>
+        </template>
         <template v-if="deck.checks">
           · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·
           {{ deck.is_public ? "public" : "privé" }}

@@ -1,15 +1,19 @@
 <script setup>
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { cardThumb } from "../api.js"
+import { PRICE_NOTE, formatEur } from "../prices.js"
 import ModalDialog from "./ModalDialog.vue"
 
 /* Modale « cartes manquantes » : la comparaison deck/collection calculée par l'API.
    L'aperçu au survol reste géré par l'éditeur (événements preview / hide-preview). */
 const props = defineProps({
   missing: { type: Object, default: null }, // null tant que l'analyse est en cours
-  error: { type: String, default: "" }
+  error: { type: String, default: "" },
+  missingEur: { type: Number, default: null } // prices.missing_eur du deck (null si rien de pricé)
 })
 defineEmits(["close", "preview", "hide-preview"])
+
+const missingCost = computed(() => formatEur(props.missingEur))
 
 const copyLabel = ref("Copier la liste")
 
@@ -44,6 +48,7 @@ async function copyMissing() {
             <th>Requis</th>
             <th>Possédé</th>
             <th>À trouver</th>
+            <th>Prix</th>
           </tr>
         </thead>
         <tbody>
@@ -73,9 +78,13 @@ async function copyMissing() {
             <td class="num">
               <b>{{ item.missing }}</b>
             </td>
+            <td class="num price-cell" :title="PRICE_NOTE">{{ formatEur(item.card.price_eur) || "—" }}</td>
           </tr>
         </tbody>
       </table>
+      <p v-if="missingCost" class="price-missing" :title="PRICE_NOTE">
+        Coût pour compléter : <b class="price-amount">{{ missingCost }}</b>
+      </p>
       <div class="modal-actions">
         <button class="btn btn-ghost" @click="copyMissing">{{ copyLabel }}</button>
       </div>

@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, session, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } from "../api.js"
 import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
+import { PRICE_SOURCE_NOTE, cardmarketUrl, formatEur, usePricesMeta } from "../prices.js"
 import { applySeo } from "../seo.js"
 import CardText from "../components/CardText.vue"
 
@@ -35,6 +36,14 @@ const energySrc = computed(() =>
 )
 const powerRunes = computed(() => powerRuneGlyphs(card.value))
 const mightSrc = glyphUrl("might")
+
+/* Prix indicatif : rien n'est affiché tant que la carte n'a pas de prix. */
+const pricesMeta = usePricesMeta()
+const priceMain = computed(() => formatEur(card.value?.price_eur))
+/* Cartes n'existant qu'en foil : le prix principal EST le prix foil, inutile de doubler. */
+const priceFoil = computed(() =>
+  card.value?.price_foil_eur !== card.value?.price_eur ? formatEur(card.value?.price_foil_eur) : null
+)
 
 watch(
   () => route.params.id,
@@ -212,6 +221,22 @@ function openVariant(id) {
             <CardText :text="card.text" />
           </div>
           <p class="flavour" v-if="card.flavour">« {{ card.flavour }} »</p>
+
+          <div class="price-block" v-if="priceMain">
+            <p class="eyebrow">Prix indicatif</p>
+            <p class="price-line">
+              <b class="price-amount">{{ priceMain }}</b>
+              <span v-if="priceFoil" class="price-foil">foil : {{ priceFoil }}</span>
+            </p>
+            <p class="price-note">
+              {{ pricesMeta.currency_note || PRICE_SOURCE_NOTE
+              }}<template v-if="pricesMeta.updated_day"> Mise à jour : {{ pricesMeta.updated_day }}.</template>
+              Ni cote officielle ni offre d'achat.
+            </p>
+            <a class="price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
+              Voir sur Cardmarket ↗
+            </a>
+          </div>
 
           <div class="panel sheet-collection" v-if="session.token">
             <h3>

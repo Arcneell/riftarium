@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ..auth import current_user
 from ..db import get_db
 from ..models import Card, CollectionItem, User
+from ..prices import current_rate, to_eur
 from ..schemas import CollectionBulk, CollectionEntryIn, CollectionEntryPatch, CollectionPut
 from .cards import apply_filters, card_out, find_card
 
@@ -53,6 +54,7 @@ def my_collection(
     domain: str | None = None,
     rarity: str | None = None,
     energy: str | None = None,
+    sort: str | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(30, ge=1, le=100),
     user: User = Depends(current_user),
@@ -72,12 +74,15 @@ def my_collection(
         energy=energy,
     )
     total = db.scalar(select(func.count()).select_from(id_query.subquery())) or 0
+    # Tri par prix optionnel : les cartes sans prix connu passent en dernier
+    # dans les deux sens (is_(None) trie False avant True sur SQLite et Postgres).
+    if sort in {"price_desc", "price_asc"}:
+        direction = Card.price_usd.desc() if sort == "price_desc" else Card.price_usd.asc()
+        order = (Card.price_usd.is_(None), direction, Card.set_id, Card.collector_number, Card.id)
+    else:
+        order = (Card.set_id, Card.collector_number, Card.id)
     cards = db.scalars(
-        select(Card)
-        .where(Card.id.in_(id_query))
-        .order_by(Card.set_id, Card.collector_number, Card.id)
-        .offset((page - 1) * size)
-        .limit(size)
+        select(Card).where(Card.id.in_(id_query)).order_by(*order).offset((page - 1) * size).limit(size)
     ).all()
 
     entries_by_card: dict[str, list[CollectionItem]] = defaultdict(list)
@@ -97,20 +102,37 @@ def my_collection(
         )
     ).one()
 
+    # Valeur totale de la collection (toutes cartes possédées, pas seulement la
+    # page) : SUM ignore les cartes sans prix (qty × NULL = NULL). Null tant
+    # qu'aucun taux n'est stocké ou qu'aucune carte possédée n'est pricée.
+    rate = current_rate(db)
+    total_value_usd = db.scalar(
+        select(func.sum(CollectionItem.qty * Card.price_usd))
+        .join(Card, Card.id == CollectionItem.card_id)
+        .where(CollectionItem.user_id == user.id)
+    )
+    value_eur = to_eur(total_value_usd, rate)
+
+    def item_out(card: Card) -> dict:
+        entries = entries_by_card[card.id]
+        total_qty = sum(entry.qty for entry in entries)
+        price_eur = to_eur(card.price_usd, rate)
+        return {
+            "card": card_out(card, rate=rate),
+            "total_qty": total_qty,
+            "entries": [entry_out(entry) for entry in entries],
+            "price_eur": price_eur,
+            "value_eur": round(total_qty * price_eur, 2) if price_eur is not None else None,
+        }
+
     return {
         "total_cards": total_cards,
         "unique_cards": unique_cards,
+        "value_eur": value_eur,
         "total": total,
         "page": page,
         "size": size,
-        "items": [
-            {
-                "card": card_out(card),
-                "total_qty": sum(entry.qty for entry in entries_by_card[card.id]),
-                "entries": [entry_out(entry) for entry in entries_by_card[card.id]],
-            }
-            for card in cards
-        ],
+        "items": [item_out(card) for card in cards],
     }
 
 

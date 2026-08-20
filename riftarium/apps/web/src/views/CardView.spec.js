@@ -3,6 +3,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import CardView from "./CardView.vue"
 import { api } from "../api.js"
+import { resetPricesMeta } from "../prices.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -31,8 +32,9 @@ function sample(extras = {}) {
   }
 }
 
-async function mountView(id, card) {
-  api.mockResolvedValue(card)
+async function mountView(id, card, meta = null) {
+  if (meta) api.mockImplementation((path) => Promise.resolve(path === "/api/prices/meta" ? meta : card))
+  else api.mockResolvedValue(card)
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -53,6 +55,7 @@ async function mountView(id, card) {
 describe("CardView", () => {
   beforeEach(() => {
     api.mockReset()
+    resetPricesMeta()
   })
 
   it("affiche une unité en deux colonnes, avec l'image entière", async () => {
@@ -89,6 +92,42 @@ describe("CardView", () => {
     expect(wrapper.text()).toContain("Terrain")
     expect(wrapper.text()).toContain("Champ de bataille")
     expect(wrapper.find(".stat-row .stat").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("affiche le bloc prix : montant, foil, note de la méta et lien Cardmarket non affilié", async () => {
+    const { wrapper } = await mountView(
+      "ogn-037-298",
+      sample({ price_eur: 13.3, price_usd: 15.6, price_foil_eur: 42.05 }),
+      {
+        updated_day: "2026-08-19",
+        rate: 0.92,
+        rate_date: "2026-08-19",
+        priced_cards: 512,
+        source: "tcgplayer",
+        currency_note: "Prix du marché US (TCGplayer), convertis en euros au taux BCE — estimation indicative."
+      }
+    )
+    const block = wrapper.get(".price-block")
+    expect(block.text()).toContain("Prix indicatif")
+    expect(block.get(".price-amount").text()).toContain("13,30")
+    expect(block.get(".price-foil").text()).toContain("42,05")
+    expect(block.get(".price-note").text()).toContain("TCGplayer")
+    expect(block.get(".price-note").text()).toContain("Mise à jour : 2026-08-19")
+    expect(block.get(".price-note").text()).toContain("Ni cote officielle ni offre d'achat")
+    const link = block.get("a.price-link")
+    expect(link.attributes("href")).toBe(
+      "https://www.cardmarket.com/fr/Riftbound/Products/Search?searchString=Immortal%20Phoenix"
+    )
+    expect(link.attributes("target")).toBe("_blank")
+    expect(link.attributes("rel")).toBe("noopener")
+    wrapper.unmount()
+  })
+
+  it("sans prix : aucun bloc vide ni lien Cardmarket", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ price_eur: null, price_foil_eur: 8 }))
+    expect(wrapper.find(".price-block").exists()).toBe(false)
+    expect(wrapper.find(".price-link").exists()).toBe(false)
     wrapper.unmount()
   })
 

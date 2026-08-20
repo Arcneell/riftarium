@@ -15,6 +15,7 @@ from .db import SessionLocal, get_db, run_migrations
 from .demo import seed_community
 from .imagehash import dhash_hex
 from .models import Card
+from .prices import PriceRefreshBusy, run_price_refresh, start_price_watch
 from .routers import admin, auth_routes, cards, collection, decks, metrics
 from .routers.admin import sync_admin_flags
 from .security import require_admin_token, sanitize_image_url
@@ -50,6 +51,8 @@ async def lifespan(app: FastAPI):
                     log.exception("synchronisation initiale échouée — réessayez via POST /api/admin/sync")
     # Empreintes du scan : les manquantes se calculent toutes seules en arrière-plan.
     schedule_hash_backfill()
+    # Prix des cartes : la veille interne rafraîchit dès que nécessaire (aucun cron).
+    start_price_watch()
     yield
 
 
@@ -216,6 +219,19 @@ def admin_compute_card_hashes(
     """Calcule un lot d'empreintes manquantes (secours manuel du remplissage auto)."""
     require_admin_token(x_admin_token)
     return _compute_hash_batch(db)
+
+
+@app.post("/api/admin/prices/refresh")
+def admin_refresh_prices(
+    db: Session = Depends(get_db),
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+):
+    """Force un rafraîchissement des prix (secours manuel de la veille automatique)."""
+    require_admin_token(x_admin_token)
+    try:
+        return run_price_refresh(db)
+    except PriceRefreshBusy as exc:
+        raise HTTPException(status_code=409, detail="Rafraîchissement des prix déjà en cours") from exc
 
 
 _DEMO_SECRETS = {"dev-secret-change-me", "test-secret", "test-secret-not-for-production-use!"}
