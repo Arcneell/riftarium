@@ -192,6 +192,38 @@ def create_deck(payload: DeckIn, user: User = Depends(current_user), db: Session
     return deck_out(_reload_deck(db, deck.id), user, db)
 
 
+@router.post("/decks/{deck_id}/copy", status_code=201)
+def copy_deck(deck_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Copie un deck accessible (le sien, ou public publié) dans « Mes decks ».
+
+    La copie est privée, créditée à l'auteur d'origine, et repasse par la
+    modération comme n'importe quel deck (elle est privée : sans incidence).
+    """
+    src = db.get(Deck, deck_id)
+    if src is None or (src.owner_id != user.id and not (src.is_public and src.moderation_status == "published")):
+        raise HTTPException(status_code=404, detail="Deck introuvable")
+
+    name = f"{src.name} (copie)"[:80]
+    description = src.description or ""
+    if src.owner_id != user.id and src.owner is not None:
+        credit = f"D'après « {src.name} » de {src.owner.handle}."
+        description = f"{credit}\n\n{description}"[:2000] if description else credit
+
+    deck = Deck(
+        owner_id=user.id,
+        name=name,
+        description=description,
+        format=src.format,
+        is_public=False,
+        moderation_status=review(f"{name}\n{description}"),
+    )
+    for entry in src.cards:
+        deck.cards.append(DeckCard(card_id=entry.card_id, qty=entry.qty))
+    db.add(deck)
+    db.commit()
+    return deck_out(_reload_deck(db, deck.id), user, db)
+
+
 @router.get("/decks/{deck_id}")
 def get_deck(
     deck_id: int,
