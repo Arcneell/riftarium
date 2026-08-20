@@ -122,6 +122,18 @@ def _visits_stats(db: Session, now: datetime) -> dict:
     }
 
 
+def _daily_series(db: Session, column, now: datetime, days: int = 30) -> list[dict]:
+    """Comptes par jour sur les `days` derniers jours, jours vides à zéro (pour les graphiques)."""
+    start = (now - timedelta(days=days - 1)).date()
+    rows = db.execute(select(func.date(column), func.count()).where(column >= start).group_by(func.date(column))).all()
+    # func.date() renvoie un objet date (Postgres) ou une chaîne ISO (SQLite) : on normalise.
+    counts = {str(day): total for day, total in rows}
+    return [
+        {"day": str(start + timedelta(days=offset)), "count": counts.get(str(start + timedelta(days=offset)), 0)}
+        for offset in range(days)
+    ]
+
+
 @router.get("/stats")
 def admin_stats(_admin: User = Depends(require_admin_user), db: Session = Depends(get_db)):
     """Tableau de bord : compteurs globaux et dernières activités."""
@@ -150,12 +162,19 @@ def admin_stats(_admin: User = Depends(require_admin_user), db: Session = Depend
             "total": count(Deck),
             "public": count(Deck, Deck.is_public.is_(True)),
             "pending": count(Deck, Deck.moderation_status == "pending"),
+            "published": count(Deck, Deck.moderation_status == "published"),
+            "rejected": count(Deck, Deck.moderation_status == "rejected"),
             "likes_total": int(likes_total),
             "views_total": int(views_total),
         },
         "collection": {"entries_total": entries_total, "cards_total": int(cards_total)},
         "cards": {"total": count(Card), "sets": count(CardSet)},
         "visits": _visits_stats(db, now),
+        # Séries quotidiennes (30 jours, jours vides à zéro) pour les graphiques.
+        "series": {
+            "signups_daily": _daily_series(db, User.created_at, now),
+            "decks_daily": _daily_series(db, Deck.created_at, now),
+        },
         "recent": {
             "signups": [{"handle": user.handle, "created_at": _iso(user.created_at)} for user in signups],
             "decks": [

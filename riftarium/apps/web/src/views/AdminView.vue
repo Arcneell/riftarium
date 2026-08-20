@@ -2,6 +2,10 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
+import ColumnChart from "../components/charts/ColumnChart.vue"
+import HBarChart from "../components/charts/HBarChart.vue"
+import StackedBar from "../components/charts/StackedBar.vue"
+import { lastDays, zeroFillDays } from "../components/charts/chartUtils.js"
 import ModalDialog from "../components/ModalDialog.vue"
 import PageBanner from "../components/PageBanner.vue"
 
@@ -72,10 +76,36 @@ const stats = ref(null)
 const statsLoading = ref(false)
 const statsError = ref("")
 
-/* Histogramme 30 jours en pur CSS : hauteur des barres proportionnelle au pic. */
-const histoMax = computed(() => Math.max(1, ...(stats.value?.visits?.daily || []).map((day) => day.hits)))
-const histoHeight = (hits) => Math.max(2, Math.round((hits / histoMax.value) * 100))
-const histoDate = (iso) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+/* Axe de 30 jours des graphiques : celui des séries serveur (zéro-remplies) pour éviter
+   tout décalage de fuseau, sinon les 30 derniers jours locaux. */
+const chartDays = computed(() => {
+  const serverAxis = (stats.value?.series?.signups_daily || []).map((point) => point.day)
+  return serverAxis.length ? serverAxis : lastDays(30)
+})
+/* visits.daily peut avoir des trous (jours sans visite) : zéro-remplissage côté client. */
+const visitsDaily = computed(() => zeroFillDays(stats.value?.visits?.daily, chartDays.value, { hits: 0, uniques: 0 }))
+const visitHits = computed(() => visitsDaily.value.map((day) => day.hits))
+const visitUniques = computed(() => visitsDaily.value.map((day) => day.uniques))
+const signupCounts = computed(() => (stats.value?.series?.signups_daily || []).map((point) => point.count))
+const deckDays = computed(() => (stats.value?.series?.decks_daily || []).map((point) => point.day))
+const deckCounts = computed(() => (stats.value?.series?.decks_daily || []).map((point) => point.count))
+/* Delta 7 jours des decks : somme des 7 derniers points de la série quotidienne. */
+const decksNew7d = computed(() =>
+  (stats.value?.series?.decks_daily || []).slice(-7).reduce((sum, point) => sum + point.count, 0)
+)
+const sectionRows = computed(() =>
+  (stats.value?.visits?.sections_7d || []).map((row) => ({
+    label: SECTION_LABELS[row.section] || row.section,
+    value: row.hits
+  }))
+)
+/* Barre empilée des statuts de modération (couleurs réservées à ce graphique). */
+const moderationSegments = computed(() => [
+  { label: "Publiés", value: stats.value?.decks?.published ?? 0, color: "var(--chart-status-ok)" },
+  { label: "En attente", value: stats.value?.decks?.pending ?? 0, color: "var(--chart-status-wait)" },
+  { label: "Rejetés", value: stats.value?.decks?.rejected ?? 0, color: "var(--chart-status-ko)" }
+])
+const moderationTotal = computed(() => moderationSegments.value.reduce((sum, segment) => sum + segment.value, 0))
 
 async function loadStats() {
   statsLoading.value = true
@@ -344,6 +374,9 @@ onBeforeUnmount(() => {
           <div class="stat-row">
             <div class="stat">
               Total<b>{{ stats.users.total }}</b>
+              <span class="stat-delta" :class="{ 'is-up': stats.users.new_7d > 0 }">
+                +{{ stats.users.new_7d }} (7 j)
+              </span>
             </div>
             <div class="stat">
               Nouveaux (7 j)<b>{{ stats.users.new_7d }}</b>
@@ -363,6 +396,9 @@ onBeforeUnmount(() => {
           <div class="stat-row">
             <div class="stat">
               Total<b>{{ stats.decks.total }}</b>
+              <span v-if="stats.series" class="stat-delta" :class="{ 'is-up': decksNew7d > 0 }">
+                +{{ decksNew7d }} (7 j)
+              </span>
             </div>
             <div class="stat">
               Publics<b>{{ stats.decks.public }}</b>
@@ -414,45 +450,59 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <div class="admin-panels">
-              <div class="panel">
-                <h3>Visites par jour (30 jours)</h3>
-                <div class="admin-histo" role="img" aria-label="Histogramme des visites quotidiennes sur 30 jours">
-                  <div
-                    v-for="day in stats.visits.daily"
-                    :key="day.day"
-                    class="admin-histo-bar"
-                    :title="`${histoDate(day.day)} : ${day.hits} visite(s), ${day.uniques} unique(s)`"
-                  >
-                    <i :style="{ height: `${histoHeight(day.hits)}%` }"></i>
-                  </div>
-                </div>
-                <p v-if="stats.visits.daily.length" class="muted mono admin-histo-range">
-                  <span>{{ histoDate(stats.visits.daily[0].day) }}</span>
-                  <span>{{ histoDate(stats.visits.daily[stats.visits.daily.length - 1].day) }}</span>
-                </p>
-                <p v-else class="muted">Pas encore de données.</p>
-              </div>
-              <div class="panel">
-                <h3>Rubriques les plus visitées (7 j)</h3>
-                <table v-if="stats.visits.sections_7d.length" class="admin-sections">
-                  <thead>
-                    <tr>
-                      <th>Rubrique</th>
-                      <th>Visites</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="row in stats.visits.sections_7d" :key="row.section">
-                      <td>{{ SECTION_LABELS[row.section] || row.section }}</td>
-                      <td class="num">{{ row.hits }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <p v-else class="muted">Pas encore de données.</p>
-              </div>
+            <div class="panel chart-panel-wide">
+              <ColumnChart
+                title="Fréquentation (30 jours)"
+                :days="chartDays"
+                :values="visitHits"
+                value-label="Visites"
+                color="var(--chart-gold)"
+                :line-values="visitUniques"
+                line-label="Visiteurs uniques"
+                line-color="var(--chart-teal)"
+              />
             </div>
           </template>
+
+          <div v-if="stats.series" class="admin-panels">
+            <div class="panel">
+              <ColumnChart
+                title="Inscriptions (30 jours)"
+                :days="chartDays"
+                :values="signupCounts"
+                value-label="Inscriptions"
+                color="var(--chart-teal)"
+              />
+            </div>
+            <div class="panel">
+              <ColumnChart
+                title="Decks créés (30 jours)"
+                :days="deckDays"
+                :values="deckCounts"
+                value-label="Decks créés"
+                color="var(--chart-violet)"
+              />
+            </div>
+          </div>
+
+          <div v-if="stats.visits || moderationTotal > 0" class="admin-panels">
+            <div v-if="stats.visits" class="panel">
+              <HBarChart
+                v-if="sectionRows.length"
+                title="Rubriques les plus visitées (7 j)"
+                :rows="sectionRows"
+                value-label="Visites"
+                color="var(--chart-gold)"
+              />
+              <template v-else>
+                <h3>Rubriques les plus visitées (7 j)</h3>
+                <p class="muted">Pas encore de données.</p>
+              </template>
+            </div>
+            <div v-if="moderationTotal > 0" class="panel">
+              <StackedBar title="Statuts de modération" :segments="moderationSegments" />
+            </div>
+          </div>
 
           <div class="admin-panels">
             <div class="panel">

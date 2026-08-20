@@ -5334,40 +5334,194 @@ button.deck-box-stat:hover,
   margin-left: auto;
 }
 
-/* Fréquentation : histogramme 30 jours en pur CSS (hauteur % du pic). */
-.admin-histo {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 120px;
-  margin-top: 14px;
+/* ---- Tableau de bord : graphiques SVG maison ----
+   Palette validée (CVD) : la couleur suit l'entité sur tout le tableau de bord —
+   visites = or, utilisateurs = sarcelle, decks = violet. Les couleurs de statut
+   sont réservées à la barre de modération, jamais réutilisées comme série. */
+.admin-stats {
+  --chart-gold: #c08508;
+  --chart-teal: #0a8b7c;
+  --chart-violet: #7355cf;
+  --chart-status-ok: #2f7340;
+  --chart-status-wait: #cf9200;
+  --chart-status-ko: #ad2417;
+  /* Grille hairline à peine plus foncée que la surface ; surface = fond des panneaux. */
+  --chart-grid: rgba(107, 100, 80, 0.16);
+  --chart-surface: #fbf7ec;
 }
-.admin-histo-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  min-width: 0;
+
+/* Tuiles KPI : valeur en semibold, delta 7 j discret sous la valeur. */
+.admin-stats .stat b {
+  font-weight: 600;
 }
-.admin-histo-bar i {
+.stat-delta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.stat-delta.is-up {
+  color: var(--body-text);
+}
+
+/* Panneau pleine largeur (fréquentation). */
+.chart-panel-wide {
+  margin-top: 30px;
+  padding: 26px;
+}
+
+.chart-figure {
+  margin: 0;
+}
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.chart-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.chart-toggle:hover {
+  color: var(--ink-strong);
+}
+.chart-plot {
+  position: relative;
+  margin-top: 12px;
+}
+.chart-plot svg {
   display: block;
   width: 100%;
-  min-height: 2px;
-  border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(to top, var(--gold-deep), var(--gold-soft));
+  height: auto;
+  overflow: visible;
 }
-.admin-histo-range {
+.chart-grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+  shape-rendering: crispedges;
+}
+.chart-line-dot {
+  stroke: var(--chart-surface);
+  stroke-width: 2;
+}
+/* Textes des graphiques : toujours l'encre du site, jamais la couleur de série. */
+.chart-axis-text {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+.chart-value-text {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.chart-row-label {
+  fill: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+}
+.chart-legend {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.66rem;
-  margin-top: 6px;
-}
-.admin-sections {
+  flex-wrap: wrap;
+  gap: 6px 18px;
   margin-top: 10px;
-  font-size: 0.88rem;
+  font-size: 0.76rem;
+  color: var(--muted);
 }
-.admin-sections td.num {
+.chart-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.chart-key i,
+.chart-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.chart-key b {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+.chart-tooltip {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #fffdf7;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: var(--shadow-soft);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.chart-tooltip-date {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+.chart-tooltip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chart-tooltip-row .chart-dot {
+  display: inline-block;
+  margin-right: 3px;
+}
+.chart-tooltip-row b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+.chart-table {
+  margin-top: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.chart-table th,
+.chart-table td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.chart-table th {
+  position: sticky;
+  top: 0;
+  background: var(--chart-surface);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.chart-table .num {
   text-align: right;
+  font-family: var(--font-mono);
 }
 
 /* Barre de recherche / filtres des listes. */

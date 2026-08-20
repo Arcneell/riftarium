@@ -3,15 +3,19 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import AdminView from "./AdminView.vue"
 import { api, session } from "../api.js"
+import { lastDays } from "../components/charts/chartUtils.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, api: vi.fn() }
 })
 
+/* Axe de 30 jours zéro-remplis (comme le backend), se terminant le 19 août. */
+const seriesDays = lastDays(30, "2026-08-19")
+
 const statsFixture = {
   users: { total: 42, new_7d: 3, new_30d: 9, suspended: 1, verified: 40 },
-  decks: { total: 18, public: 7, pending: 2, likes_total: 55, views_total: 640 },
+  decks: { total: 18, public: 7, pending: 2, published: 12, rejected: 4, likes_total: 55, views_total: 640 },
   collection: { entries_total: 130, cards_total: 780 },
   cards: { total: 512, sets: 3 },
   visits: {
@@ -20,6 +24,7 @@ const statsFixture = {
     hits_30d: 900,
     uniques_today: 12,
     uniques_7d: 88,
+    /* Volontairement à trous : le zéro-remplissage sur 30 jours se fait côté client. */
     daily: [
       { day: "2026-08-18", hits: 30, uniques: 14 },
       { day: "2026-08-19", hits: 15, uniques: 8 }
@@ -28,6 +33,10 @@ const statsFixture = {
       { section: "cartes", hits: 120 },
       { section: "home", hits: 60 }
     ]
+  },
+  series: {
+    signups_daily: seriesDays.map((day) => ({ day, count: day === "2026-08-19" ? 2 : 0 })),
+    decks_daily: seriesDays.map((day) => ({ day, count: day === "2026-08-19" ? 3 : day === "2026-08-17" ? 1 : 0 }))
   },
   recent: {
     signups: [{ handle: "nova", created_at: "2026-08-18T10:00:00+00:00" }],
@@ -154,12 +163,69 @@ describe("AdminView", () => {
     expect(wrapper.text()).toContain("Contrôle Ordre")
     /* Statut de modération en badge sur les derniers decks. */
     expect(wrapper.find(".admin-badge.is-wait").text()).toBe("En attente")
-    /* Fréquentation : chiffres + histogramme CSS + rubriques. */
-    expect(wrapper.text()).toContain("Fréquentation")
+    /* Deltas 7 j sous les tuiles Total (utilisateurs : new_7d ; decks : somme de la série). */
+    const deltas = wrapper.findAll(".stat-delta").map((node) => node.text())
+    expect(deltas).toContain("+3 (7 j)")
+    expect(deltas).toContain("+4 (7 j)")
     expect(wrapper.text()).toContain("210")
-    expect(wrapper.findAll(".admin-histo-bar")).toHaveLength(2)
-    expect(wrapper.findAll(".admin-histo-bar")[0].get("i").attributes("style")).toContain("height: 100%")
-    expect(wrapper.get(".admin-sections").text()).toContain("Cartothèque")
+    wrapper.unmount()
+  })
+
+  it("trace les graphiques : fréquentation zéro-remplie, séries 30 j, rubriques et modération", async () => {
+    const { wrapper } = await mountView()
+    const figures = wrapper.findAll("figure.chart-figure")
+
+    /* Fréquentation : 30 colonnes malgré 2 jours de données (zéro-remplissage client), 2 séries → légende. */
+    const frequentation = figures.find((figure) => figure.text().includes("Fréquentation (30 jours)"))
+    expect(frequentation).toBeTruthy()
+    expect(frequentation.findAll(".chart-band")).toHaveLength(30)
+    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--chart-teal)")
+    expect(frequentation.findAll(".chart-legend .chart-key").map((key) => key.text())).toEqual([
+      "Visites",
+      "Visiteurs uniques"
+    ])
+
+    /* Séries serveur : inscriptions (sarcelle) et decks créés (violet), 30 colonnes chacune. */
+    const inscriptions = figures.find((figure) => figure.text().includes("Inscriptions (30 jours)"))
+    expect(inscriptions.findAll(".chart-band")).toHaveLength(30)
+    const decksCrees = figures.find((figure) => figure.text().includes("Decks créés (30 jours)"))
+    expect(decksCrees.findAll(".chart-band")).toHaveLength(30)
+
+    /* Rubriques : barres horizontales avec libellés traduits et valeurs directes. */
+    const rubriques = figures.find((figure) => figure.text().includes("Rubriques les plus visitées"))
+    expect(rubriques.findAll(".chart-bar")).toHaveLength(2)
+    expect(rubriques.findAll(".chart-row-label").map((node) => node.text())).toEqual(["Cartothèque", "Accueil"])
+    expect(rubriques.findAll(".chart-value-text").map((node) => node.text())).toEqual(["120", "60"])
+
+    /* Modération : barre empilée avec légende comptée. */
+    const moderation = figures.find((figure) => figure.text().includes("Statuts de modération"))
+    expect(moderation.findAll(".chart-segment")).toHaveLength(3)
+    expect(moderation.findAll(".chart-legend .chart-key").map((key) => key.text())).toEqual([
+      "Publiés 12",
+      "En attente 2",
+      "Rejetés 4"
+    ])
+
+    /* Chaque graphique offre son alternative texte. */
+    const toggle = frequentation.get(".chart-toggle")
+    await toggle.trigger("click")
+    expect(frequentation.findAll(".chart-table tbody tr")).toHaveLength(30)
+    wrapper.unmount()
+  })
+
+  it("masque la barre des statuts de modération quand le total vaut zéro", async () => {
+    api.mockImplementation((path) => {
+      if (path === "/api/admin/stats") {
+        const fixture = structuredClone(statsFixture)
+        fixture.decks.published = 0
+        fixture.decks.pending = 0
+        fixture.decks.rejected = 0
+        return Promise.resolve(fixture)
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.text()).not.toContain("Statuts de modération")
     wrapper.unmount()
   })
 

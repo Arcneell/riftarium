@@ -127,9 +127,23 @@ def test_admin_stats_reflect_seeded_data(client, admin_auth, member):
     assert stats.status_code == 200
     data = stats.json()
     assert data["users"] == {"total": 2, "new_7d": 2, "new_30d": 2, "suspended": 0, "verified": 0}
-    assert data["decks"] == {"total": 2, "public": 2, "pending": 1, "likes_total": 1, "views_total": 0}
+    assert data["decks"] == {
+        "total": 2,
+        "public": 2,
+        "pending": 1,
+        "published": 1,
+        "rejected": 0,
+        "likes_total": 1,
+        "views_total": 0,
+    }
     assert data["collection"] == {"entries_total": 2, "cards_total": 4}
     assert data["cards"] == {"total": 11, "sets": 1}
+    # Séries quotidiennes pour les graphiques : 30 jours zéro-remplis, activité du jour visible.
+    assert len(data["series"]["signups_daily"]) == 30
+    assert data["series"]["signups_daily"][-1]["count"] == 2
+    assert len(data["series"]["decks_daily"]) == 30
+    assert data["series"]["decks_daily"][-1]["count"] == 2
+    assert all(point["count"] == 0 for point in data["series"]["signups_daily"][:-1])
     assert [entry["handle"] for entry in data["recent"]["signups"]] == ["membre", "superviseur"]
     recent_decks = data["recent"]["decks"]
     assert {deck["name"] for deck in recent_decks} == {"Deck public", "deck de connard"}
