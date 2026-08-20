@@ -6,7 +6,17 @@ import Logo from "./components/Logo.vue"
 import UserAvatar from "./components/UserAvatar.vue"
 import TraceursNotice from "./components/TraceursNotice.vue"
 import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
-import { LEGAL_NAV, RIOT_DISCLAIMER_EN, RIOT_DISCLAIMER_FR, CONTACT_EMAIL, CONTACT_MAILTO } from "./legal.js"
+import {
+  LEGAL_NAV,
+  CLOSED_BETA,
+  SHOW_DONATIONS,
+  RIOT_DISCLAIMER_EN,
+  RIOT_DISCLAIMER_FR,
+  RIOT_GENERAL_DISCLAIMER_EN,
+  RIOT_GENERAL_DISCLAIMER_FR,
+  CONTACT_EMAIL,
+  CONTACT_MAILTO
+} from "./legal.js"
 
 const router = useRouter()
 const route = useRoute()
@@ -77,7 +87,9 @@ async function logout() {
         </template>
         <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
       </nav>
-      <span class="beta-mark">bêta</span>
+      <span class="beta-mark" :title="CLOSED_BETA ? 'Bêta fermée, non indexée, accès sur invitation' : 'Bêta'">{{
+        CLOSED_BETA ? "bêta fermée" : "bêta"
+      }}</span>
     </div>
   </header>
   <div class="prism"></div>
@@ -101,6 +113,10 @@ async function logout() {
           <p>
             Un site fan-made pour tout retrouver sur Riftbound : les cartes, les règles officielles, sa collection et
             ses decks. Développé par un joueur, sur son temps libre. Gratuit, au code source accessible.
+          </p>
+          <p v-if="CLOSED_BETA" class="footer-contact">
+            Bêta fermée : le site n'est pas annoncé publiquement et n'est pas indexé. Accès sur invitation, pour tests
+            et retours de bugs.
           </p>
           <p class="footer-contact">
             Contact :
@@ -132,7 +148,7 @@ async function logout() {
             <li>
               <a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a>
             </li>
-            <li>
+            <li v-if="SHOW_DONATIONS">
               <a href="https://ko-fi.com/arcneell" target="_blank" rel="noopener" class="footer-support"
                 >☕ Soutenir le projet (Ko-fi)</a
               >
@@ -148,6 +164,8 @@ async function logout() {
           </ul>
         </div>
       </div>
+      <p>{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
+      <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
       <p>{{ RIOT_DISCLAIMER_EN }}</p>
       <p>{{ RIOT_DISCLAIMER_FR }}</p>
       <p>

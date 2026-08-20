@@ -4,7 +4,7 @@ Compagnon communautaire tout-en-un pour **Riftbound**, le TCG de Riot Games :
 cartothèque, collection personnelle, deck builder avec validation des règles officielles,
 et partage de decks avec likes et modération automatique.
 
-**Projet fan-made à but non lucratif, non affilié à Riot Games.**
+**Projet fan-made à but non lucratif, non affilié à Riot Games. Bêta fermée, non indexée.**
 
 ## Licence
 
@@ -24,7 +24,7 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Deck builder + validation règles tournoi / mode libre | ✅ |
 | Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
-| Scan mobile, estimation Cardmarket, textes FR, fil social complet | 🔜 |
+| Scan mobile, estimation Cardmarket, textes FR (sans stats de méta) | 🔜 |
 
 ## Architecture
 
@@ -49,7 +49,11 @@ Docker : `http://riftarium-web:8080`). Réglages WAF : `bunkerweb.env.example`.
 
 Le service `web` est le seul rattaché au réseau externe `bunkerweb` ;
 `api`, `db` et `redis` restent sur le réseau interne du projet. Créer ce
-réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb :
+réseau une fois sur le VPS, puis y rattacher le conteneur BunkerWeb.
+BunkerWeb n'autorise par défaut que GET/POST/HEAD : sans
+`ALLOWED_METHODS=GET|POST|HEAD|OPTIONS|PUT|PATCH|DELETE` (voir
+`bunkerweb.env.example`), les changements d'avatar, de collection et de
+decks répondent 405.
 
 ```bash
 docker network create bunkerweb
@@ -72,7 +76,7 @@ passe) partent de la boîte OVH `contact@riftarium.re`. Variables dans `.env` :
 | `SMTP_PORT` | `465` (SSL implicite) ou `587` (STARTTLS) |
 | `SMTP_USER` | l'adresse complète : `contact@riftarium.re` |
 | `SMTP_PASSWORD` | mot de passe de la boîte |
-| `MAIL_FROM` | `Riftarium <contact@riftarium.re>` (défaut) |
+| `MAIL_FROM` | `Riftarium <no-reply@riftarium.re>` (défaut ; SMTP_USER reste `contact@`) |
 | `PUBLIC_BASE_URL` | base des liens ; vide = `https://riftarium.re` en prod, `http://localhost:8888` sinon |
 
 En développement, ne rien configurer : `SMTP_HOST` vide active le **mode
@@ -114,8 +118,9 @@ cd apps/api && alembic revision --autogenerate -m "description du changement"
 Reprise des instances existantes : une base créée avant Alembic (via
 l'ancien `create_all` + `ensure_schema`) est détectée au démarrage (tables
 présentes, pas de table `alembic_version`) et marquée (`stamp`) sur la
-migration baseline sans la rejouer ; seules les migrations suivantes
-s'appliquent.
+baseline 0001 sans la rejouer. 0001 décrit le schéma visé (e-mails inclus),
+pas forcément celui réellement en place : la migration 0002 backfill alors
+`users.email_verified_at` et `auth_tokens` si elles manquent.
 
 ### Sauvegardes PostgreSQL
 
@@ -128,9 +133,10 @@ programmer une sauvegarde quotidienne :
 0 4 * * * cd /opt/riftarium/riftarium && bash scripts/backup_db.sh >> /var/log/riftarium-backup.log 2>&1
 ```
 
-**Recommandé** : copier régulièrement `backups/` hors du VPS (rsync/rclone
-vers un stockage distant) — une sauvegarde sur la même machine ne protège
-ni d'une panne disque ni d'une compromission.
+Le dossier `backups/` n'est ni versionné ni envoyé dans le contexte de build
+Docker (`.gitignore` + `.dockerignore`). **Recommandé** : copier régulièrement
+ces dumps hors du VPS (rsync/rclone vers un stockage distant) — une sauvegarde
+sur la même machine ne protège ni d'une panne disque ni d'une compromission.
 
 ### CD depuis main
 
@@ -208,6 +214,10 @@ côté serveur : après une sync, lancer `POST /api/admin/cards/hashes` (en-têt
 - Règles officielles : texte français intégral embarqué dans le dépôt (`data/rules-fr.json`).
 
 ## Mentions légales
+
+Riftarium isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+
+Riftarium n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ni de quiconque officiellement impliqué dans la production ou la gestion des propriétés de Riot Games.
 
 Riftarium was created under Riot Games' "Legal Jibber Jabber" policy using assets
 owned by Riot Games. Riot Games does not endorse or sponsor this project.

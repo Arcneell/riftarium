@@ -1,9 +1,9 @@
 """Schéma initial (baseline).
 
-Schéma complet au moment de l'adoption d'Alembic : reflète exactement
-app/models.py de l'époque. Les bases créées avant Alembic (create_all +
-ensure_schema) ont déjà ce schéma : run_migrations() les « stampe » à cette
-révision sans la rejouer.
+Schéma *visé* à l'adoption d'Alembic (models.py de l'époque, e-mails inclus).
+Les bases pré-Alembic (create_all + ensure_schema) n'ont pas forcément
+email_verified_at ni auth_tokens : run_migrations() les tamponne quand même
+ici pour ne pas rejouer les CREATE TABLE, puis 0002 backfill l'écart.
 
 Revision ID: 0001
 Revises:

@@ -46,6 +46,47 @@ def _alembic_revision(engine):
         return conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
 
 
+def _create_pre_alembic_users(engine) -> None:
+    """Schéma users tel qu'en prod avant la PR e-mails (create_all + ensure_schema).
+
+    Pas de email_verified_at, pas de table auth_tokens : c'est exactement ce
+    que le stamp 0001 a marqué « déjà appliqué » sans le jouer.
+    """
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE users (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    handle VARCHAR(32) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    bio VARCHAR(280) DEFAULT '' NOT NULL,
+                    avatar_card_id VARCHAR(32),
+                    token_version INTEGER DEFAULT 1 NOT NULL,
+                    created_at DATETIME NOT NULL
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO users (id, handle, email, password_hash, bio, token_version, created_at) "
+                "VALUES (1, 'ancien', 'ancien@example.org', 'hash', '', 1, CURRENT_TIMESTAMP)"
+            )
+        )
+
+
+def _assert_email_schema(engine) -> None:
+    snapshot = _schema_snapshot(engine)
+    assert "email_verified_at" in snapshot["users"]["columns"]
+    assert "auth_tokens" in snapshot
+    assert {"user_id", "purpose", "token_hash", "expires_at"} <= snapshot["auth_tokens"]["columns"]
+    with engine.connect() as conn:
+        user = conn.execute(text("SELECT handle, email, email_verified_at FROM users WHERE id = 1")).one()
+        assert (user.handle, user.email, user.email_verified_at) == ("ancien", "ancien@example.org", None)
+
+
 def test_run_migrations_on_empty_database_matches_models(empty_engine):
     """Base neuve : la chaîne de migrations reconstruit exactement Base.metadata."""
     run_migrations(bind=empty_engine)
@@ -65,31 +106,33 @@ def test_run_migrations_on_empty_database_matches_models(empty_engine):
     assert "ix_deck_cards_card_id" in snapshot["deck_cards"]["indexes"]
     assert "uq_collection_entry" in snapshot["collection_items"]["uniques"]
     assert "uq_deck_like" in snapshot["deck_likes"]["uniques"]
+    assert "auth_tokens" in snapshot
 
 
 def test_run_migrations_stamps_legacy_database_without_data_loss(empty_engine):
-    """Base pré-Alembic (schéma baseline, pas d'alembic_version) : stamp + upgrade, données intactes."""
-    # Schéma exactement tel que le créait l'ancien create_all + ensure_schema :
-    # celui de la baseline (0001), sans la table alembic_version.
-    command.upgrade(_alembic_config(empty_engine), "0001")
-    with empty_engine.begin() as conn:
-        conn.execute(text("DROP TABLE alembic_version"))
-        conn.execute(
-            text(
-                "INSERT INTO users (id, handle, email, password_hash, bio, token_version, created_at) "
-                "VALUES (1, 'ancien', 'ancien@example.org', 'hash', '', 1, CURRENT_TIMESTAMP)"
-            )
-        )
+    """Base pré-Alembic réelle (users sans email_verified_at) : stamp 0001 puis 0002 backfill."""
+    _create_pre_alembic_users(empty_engine)
 
     run_migrations(bind=empty_engine)
 
-    # Stampée sur la baseline puis amenée à head : les migrations suivantes
-    # (ex. 0002, cards.image_hash) s'appliquent sans rejouer la baseline.
     assert _alembic_revision(empty_engine) == _head_revision()
+    _assert_email_schema(empty_engine)
+    # Les migrations postérieures (0003, cards.image_hash) s'appliquent aussi.
     assert "image_hash" in _schema_snapshot(empty_engine)["cards"]["columns"]
-    with empty_engine.connect() as conn:
-        user = conn.execute(text("SELECT handle, email FROM users WHERE id = 1")).one()
-        assert (user.handle, user.email) == ("ancien", "ancien@example.org")
+
+
+def test_run_migrations_backfills_when_0001_was_stamped_on_legacy_schema(empty_engine):
+    """Prod actuelle : 0001 tamponnée, schéma ancien, upgrade head doit réparer."""
+    _create_pre_alembic_users(empty_engine)
+    command.stamp(_alembic_config(empty_engine), "0001")
+    assert _alembic_revision(empty_engine) == "0001"
+    assert "email_verified_at" not in _schema_snapshot(empty_engine)["users"]["columns"]
+    assert "auth_tokens" not in _schema_snapshot(empty_engine)
+
+    run_migrations(bind=empty_engine)
+
+    assert _alembic_revision(empty_engine) == _head_revision()
+    _assert_email_schema(empty_engine)
 
 
 def test_run_migrations_is_idempotent(empty_engine):
