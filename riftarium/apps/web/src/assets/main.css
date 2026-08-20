@@ -522,7 +522,7 @@ section {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   /* Texte opaque (l'ancienne opacité 0.4 rendait la mention illisible), cadre laissé discret. */
   color: var(--gold-deep);
@@ -532,7 +532,6 @@ section {
   border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
   border-radius: 4px;
   background: color-mix(in srgb, var(--paper) 35%, transparent);
-  white-space: nowrap;
 }
 
 .burger {

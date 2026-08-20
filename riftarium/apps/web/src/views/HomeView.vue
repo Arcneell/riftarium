@@ -3,7 +3,6 @@ import { onMounted, ref } from "vue"
 import { RouterLink } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
-import { CLOSED_BETA } from "../legal.js"
 import { RULE_COUNTS } from "../stats.js"
 import CardRiver from "../components/CardRiver.vue"
 
@@ -108,17 +107,11 @@ onMounted(async () => {
   <section class="hero-splash" :style="splashStyle">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">
-          {{ CLOSED_BETA ? "Bêta fermée — accès sur invitation" : "Le compagnon tout-en-un pour Riftbound" }}
-        </p>
+        <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
         <h1>Vos cartes, vos decks,<br />vos règles. Un seul site.</h1>
         <p class="lead" style="margin-top: 20px">
           Cartothèque complète, suivi de collection, deck builder et règles officielles : tout ce qu'il faut pour jouer
           à Riftbound, réuni au même endroit.
-        </p>
-        <p v-if="CLOSED_BETA" class="muted" style="margin-top: 16px; max-width: 52ch">
-          Le site n'est pas indexé et n'est pas annoncé publiquement. Si vous avez le lien, vous pouvez tester et
-          signaler les bugs — merci de ne pas le relayer largement.
         </p>
         <div style="display: flex; gap: 16px; margin-top: 34px; flex-wrap: wrap">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>

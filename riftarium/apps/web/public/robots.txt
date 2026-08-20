@@ -1,2 +1,7 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /connexion
+Disallow: /profil
+Disallow: /collection
+
+Sitemap: https://riftarium.re/sitemap.xml

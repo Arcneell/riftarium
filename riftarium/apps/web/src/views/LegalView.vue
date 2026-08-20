@@ -12,8 +12,6 @@ import {
   LEGAL_UPDATED,
   RIOT_DISCLAIMER_EN,
   RIOT_DISCLAIMER_FR,
-  RIOT_GENERAL_DISCLAIMER_EN,
-  RIOT_GENERAL_DISCLAIMER_FR,
   RIOT_LEGAL,
   RIOT_RIFTBOUND_POLICY,
   RIFTBOUND_OFFICIAL,
@@ -69,8 +67,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             Riftarium est un site communautaire édité à titre non professionnel, bénévole et non commercial, par
             l'auteur du dépôt
             <a :href="GITHUB_REPO" target="_blank" rel="noopener">github.com/Arcneell/riftarium</a>
-            (pseudonyme Arcneell). Le site est actuellement en <strong>bêta fermée</strong> : il n'est pas annoncé
-            publiquement et n'est pas indexé par les moteurs de recherche.
+            (pseudonyme Arcneell).
           </p>
           <p>
             Contact :
@@ -92,8 +89,6 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
           <h3>Propriété intellectuelle — Riot Games</h3>
           <p class="legal-quote">{{ RIOT_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_DISCLAIMER_FR }}</p>
-          <p class="legal-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
-          <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
           <p>
             Riftbound, League of Legends, les visuels de cartes, illustrations, glyphes, textes de cartes et documents
             de règles sont la propriété de © Riot Games, Inc. Riftarium n'est ni affilié, ni soutenu, ni sponsorisé par
@@ -206,13 +201,11 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
           <h3>Objet</h3>
           <p>
             Riftarium est un compagnon fan-made gratuit pour le jeu de cartes Riftbound : cartothèque, règles,
-            collection personnelle, deck builder et partage de decks. C'est un projet en <strong>bêta fermée</strong>,
-            indépendant de Riot Games, non annoncé publiquement.
+            collection personnelle, deck builder et partage de decks. C'est un projet en bêta, indépendant de Riot
+            Games.
           </p>
           <p class="legal-quote">{{ RIOT_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_DISCLAIMER_FR }}</p>
-          <p class="legal-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
-          <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
 
           <h3>Compte</h3>
           <p>

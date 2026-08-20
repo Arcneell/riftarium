@@ -3,7 +3,6 @@ import { ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session, setSession } from "../api.js"
 import { BANNERS } from "../banners.js"
-import { CLOSED_BETA } from "../legal.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
@@ -76,9 +75,7 @@ async function submit() {
     {{
       mode === "login"
         ? "Connectez-vous pour retrouver vos decks et votre collection."
-        : CLOSED_BETA
-          ? "Bêta fermée : créez un compte seulement si vous avez été invité à tester."
-          : "Créez un compte pour construire des decks et suivre vos cartes."
+        : "Créez un compte pour construire des decks et suivre vos cartes."
     }}
   </PageBanner>
 
@@ -94,10 +91,6 @@ async function submit() {
       </div>
 
       <template v-else>
-        <p v-if="CLOSED_BETA" class="muted" style="margin: 0 0 22px">
-          Accès sur invitation. Pas d'annonce publique, pas d'indexation. Les retours de bugs vont sur
-          <a href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener">GitHub</a>.
-        </p>
         <div class="filters" style="margin: 0 0 26px">
           <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
           <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>

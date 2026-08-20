@@ -1,11 +1,10 @@
 import { BANNERS } from "./banners.js"
-import { CLOSED_BETA } from "./legal.js"
 
 export const SITE_ORIGIN = "https://riftarium.re"
 export const SITE_NAME = "Riftarium"
 export const DEFAULT_TITLE = "Riftarium — Cartes, decks et règles Riftbound"
 export const DEFAULT_DESCRIPTION =
-  "Bêta fermée. Cartothèque, deck builder, règles officielles et collection pour Riftbound. Site fan-made gratuit, en français, non affilié à Riot Games."
+  "Cartothèque, deck builder, règles officielles et collection pour Riftbound. Site fan-made gratuit, en français, non affilié à Riot Games."
 
 function origin() {
   if (typeof window !== "undefined" && /^https?:/.test(window.location.origin)) return window.location.origin
@@ -48,7 +47,7 @@ export function applySeo({ title, description, path = "/", noindex = false, imag
 
   document.title = fullTitle
   upsertMeta("name", "description", desc)
-  upsertMeta("name", "robots", noindex || CLOSED_BETA ? "noindex, nofollow" : "index, follow")
+  upsertMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow")
   upsertMeta("property", "og:title", fullTitle)
   upsertMeta("property", "og:description", desc)
   upsertMeta("property", "og:url", url)

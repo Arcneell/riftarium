@@ -15,9 +15,10 @@
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue 3" />
   <img src="https://img.shields.io/badge/postgresql-16-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
   <img src="https://img.shields.io/badge/tests-CI-55b368?style=flat-square" alt="Tests CI" />
+  <a href="https://ko-fi.com/arcneell"><img src="https://img.shields.io/badge/soutenir-Ko--fi-ff5e5b?style=flat-square&logo=kofi&logoColor=white" alt="Soutenir sur Ko-fi" /></a>
 </p>
 
-<p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games. Bêta fermée, non indexée.</em></p>
+<p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games.</em></p>
 
 ---
 
@@ -98,7 +99,19 @@ images Docker et validation de la configuration Compose.
 - [ ] Scan mobile (PWA + caméra, reconnaissance par empreinte visuelle)
 - [ ] Estimation des prix via l'API Cardmarket
 - [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours)
-- [ ] Fil communautaire (partage de decks, profils) — sans résultats de tournoi ni statistiques de méta
+- [ ] Fil communautaire complet : pulls, résultats de tournoi, profils, commentaires
+
+## Soutenir le projet
+
+Riftarium est gratuit, sans publicité et sans mesure d'audience — mais
+l'hébergement (VPS, domaine, e-mails), lui, n'est pas gratuit. Si le site vous
+est utile et que vous voulez contribuer aux frais :
+
+<p>
+  <a href="https://ko-fi.com/arcneell">
+    <img src="https://img.shields.io/badge/☕_M'offrir_un_café_sur_Ko--fi-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white" alt="Soutenir sur Ko-fi" />
+  </a>
+</p>
 
 ## Contribuer
 
@@ -109,10 +122,6 @@ et la politique « Jargon juridique » de Riot Games. En soumettant une contribu
 vous acceptez qu'elle soit intégrée au projet sous les termes de la [licence](LICENSE).
 
 ## Mentions légales
-
-Riftarium isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-
-Riftarium n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ni de quiconque officiellement impliqué dans la production ou la gestion des propriétés de Riot Games. Riot Games et toutes les propriétés associées sont des marques ou des marques déposées de Riot Games, Inc.
 
 Riftarium was created under Riot Games' "Legal Jibber Jabber" policy using assets
 owned by Riot Games. Riot Games does not endorse or sponsor this project.

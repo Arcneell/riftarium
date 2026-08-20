@@ -61,7 +61,6 @@ describe("HomeView", () => {
     expect(wrapper.find(".sc-serial").exists()).toBe(false)
     expect(wrapper.find(".sc-sign").exists()).toBe(false)
     expect(wrapper.text()).not.toMatch(/Nº\s*\d+\s*\/\s*\d+/)
-    expect(wrapper.text()).toContain("Bêta fermée")
 
     const sources = wrapper.findAll(".fan-card img").map((img) => img.attributes("src"))
     for (const hash of OVERNUMBERED) {
