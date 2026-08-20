@@ -118,6 +118,8 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
         else:
             user.avatar_card_id = card_id
     if "handle" in data and data["handle"] != user.handle:
+        if review(data["handle"]) != "published":
+            raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")
         taken = db.scalar(select(User).where(User.handle == data["handle"], User.id != user.id))
         if taken:
             raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
