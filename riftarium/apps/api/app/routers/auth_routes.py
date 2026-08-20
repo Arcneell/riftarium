@@ -19,6 +19,7 @@ from ..auth import (
 )
 from ..db import get_db
 from ..models import User, utcnow
+from ..moderation import review
 from ..profiles import apply_profile, avatar_urls, delete_user_account, export_account, list_legend_avatars, user_out
 from ..schemas import (
     AccountDelete,
@@ -63,6 +64,8 @@ def register(
     _: None = Depends(limit_auth),
     __: None = Depends(enforce_same_origin),
 ):
+    if review(payload.handle) != "published":
+        raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")
     if _account_conflict(db, payload.handle, payload.email):
         raise HTTPException(status_code=409, detail="Impossible de créer ce compte")
     user = User(
