@@ -14,6 +14,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from .. import mailer
 from ..auth import bearer, current_user, optional_user
 from ..config import settings
 from ..db import get_db
@@ -78,13 +79,30 @@ def require_admin_user(
 
 
 def apply_deck_moderation(db: Session, deck_id: int, status: str) -> dict:
-    """Décision de modération sur un deck (partagée avec l'endpoint X-Admin-Token de main.py)."""
+    """Décision de modération sur un deck (partagée avec l'endpoint X-Admin-Token de main.py).
+
+    Quand la décision sort le deck de la file « pending », le propriétaire est
+    prévenu par e-mail en arrière-plan (thread du mailer, pas BackgroundTasks :
+    cette fonction est aussi appelable hors contexte requête). Jamais bloquant.
+    """
     deck = db.get(Deck, deck_id)
     if deck is None:
         raise HTTPException(status_code=404, detail="Deck introuvable")
+    previous = deck.moderation_status
     deck.moderation_status = "published" if status == "approved" else "rejected"
     db.commit()
+    if previous == "pending" and deck.moderation_status != previous:
+        _notify_moderation_outcome(deck)
     return {"deck_id": deck.id, "moderation_status": deck.moderation_status}
+
+
+def _notify_moderation_outcome(deck: Deck) -> None:
+    """Notifie le propriétaire, seulement si son adresse est vérifiée et la préférence active."""
+    owner = deck.owner
+    if owner is None or owner.email_verified_at is None or not owner.notify_moderation:
+        return
+    approved = deck.moderation_status == "published"
+    mailer.send_moderation_email_async(owner.email, deck.name, deck.id, approved)
 
 
 def _iso(value: datetime | None) -> str | None:

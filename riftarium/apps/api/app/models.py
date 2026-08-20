@@ -33,6 +33,9 @@ class User(Base):
     avatar_card_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, default=1)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Notification e-mail des décisions de modération sur ses decks (désactivable
+    # depuis le profil). N'est envoyée que si l'adresse est vérifiée.
+    notify_moderation: Mapped[bool] = mapped_column(Boolean, default=True)
     # Droits d'administration : pilotés exclusivement par ADMIN_EMAILS au démarrage
     # (voir routers/admin.py) — jamais modifiables via l'API.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)

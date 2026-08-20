@@ -1,10 +1,12 @@
-"""E-mails transactionnels : vérification d'adresse et réinitialisation de mot de passe.
+"""E-mails transactionnels : vérification d'adresse, réinitialisation de mot de
+passe et notifications de modération des decks.
 
 SMTP_HOST vide → « mode console » : le message est loggé au lieu d'être envoyé
 (c'est le mode développement). Sinon, envoi via SMTP OVH : SSL implicite sur le
 port 465, STARTTLS sur les autres ports (587). Les fonctions sont appelées en
-tâche de fond (BackgroundTasks) : un échec SMTP est loggé mais ne fait jamais
-échouer la requête HTTP (robustesse + anti-énumération des comptes).
+tâche de fond (BackgroundTasks, ou thread dédié hors contexte requête) : un
+échec SMTP est loggé mais ne fait jamais échouer la requête HTTP (robustesse +
+anti-énumération des comptes).
 
 Chaque envoi est multipart (texte + HTML) : le HTML reprend le thème parchemin
 du site ; le texte brut reste lisible si le client masque les images.
@@ -15,6 +17,7 @@ from __future__ import annotations
 import logging
 import smtplib
 import ssl
+import threading
 from dataclasses import dataclass
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid, parseaddr
@@ -93,13 +96,18 @@ def _logo_url() -> str:
     return f"{settings.base_url}/favicon.svg"
 
 
+def _footer_note(copy: MailCopy) -> str:
+    """Note de bas de message : validité puis mention « ignorer », champs vides omis."""
+    return " ".join(part for part in (copy.validity, copy.ignore) if part)
+
+
 def _plain(copy: MailCopy, link: str) -> str:
     body = "\n\n".join(copy.paragraphs)
     return (
         f"{copy.title}\n\n"
         f"{body}\n\n"
         f"{copy.cta} :\n{link}\n\n"
-        f"{copy.validity} {copy.ignore}\n\n"
+        f"{_footer_note(copy)}\n\n"
         "— L'équipe Riftarium\n"
         f"{settings.base_url}\n"
     )
@@ -152,7 +160,7 @@ def _html(copy: MailCopy, link: str) -> str:
                 </td>
               </tr>
             </table>
-            <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:{_MUTED};">{escape(copy.validity)} {escape(copy.ignore)}</p>
+            <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:{_MUTED};">{escape(_footer_note(copy))}</p>
             <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:{_MUTED};word-break:break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="{href}" style="color:{_HEX};">{escape(link)}</a></p>
           </td>
         </tr>
@@ -226,3 +234,67 @@ def send_verification_email(to: str, token: str) -> None:
 def send_reset_email(to: str, token: str) -> None:
     link = f"{settings.base_url}/reinitialisation?token={token}"
     _send_copy(to, _RESET, link)
+
+
+NOTIFY_OPT_OUT = "Vous pouvez désactiver ces notifications depuis votre profil."
+
+
+def _moderation_copy(deck_name: str, approved: bool) -> MailCopy:
+    """Contenu de la notification de modération : approbation, ou rejet bienveillant.
+
+    Le rejet ne détaille pas le motif : il rappelle simplement que le deck peut
+    être modifié puis proposé à nouveau.
+    """
+    if approved:
+        return MailCopy(
+            subject=f"Votre deck “{deck_name}” est publié — Riftarium",
+            preheader="Votre deck a été approuvé : il est visible par toute la communauté.",
+            title="Votre deck est publié",
+            paragraphs=(
+                f"Bonne nouvelle : votre deck « {deck_name} » vient d'être approuvé par la modération.",
+                "Il est désormais visible par toute la communauté Riftarium.",
+            ),
+            cta="Voir mon deck",
+            validity="",
+            ignore=NOTIFY_OPT_OUT,
+        )
+    return MailCopy(
+        subject=f"Votre deck “{deck_name}” n'a pas été retenu — Riftarium",
+        preheader="Votre deck reste privé pour le moment : il peut être modifié et proposé à nouveau.",
+        title="Votre deck n'a pas été retenu",
+        paragraphs=(
+            f"Après relecture, votre deck « {deck_name} » n'a pas été retenu par la modération cette fois-ci.",
+            "Rien d'irréversible : vous pouvez le modifier puis le proposer à nouveau quand vous le souhaitez.",
+        ),
+        cta="Modifier mon deck",
+        validity="",
+        ignore=NOTIFY_OPT_OUT,
+    )
+
+
+def send_moderation_email(to: str, deck_name: str, deck_id: int, approved: bool) -> None:
+    link = f"{settings.base_url}/decks/{deck_id}"
+    _send_copy(to, _moderation_copy(deck_name, approved), link)
+
+
+def send_moderation_email_async(to: str, deck_name: str, deck_id: int, approved: bool) -> threading.Thread | None:
+    """Envoi de la notification de modération dans un thread dédié (fire-and-forget).
+
+    apply_deck_moderation est aussi appelable hors contexte requête (chemin
+    X-Admin-Token, scripts) : pas de BackgroundTasks sous la main, donc un
+    thread daemon. Jamais bloquant : tout échec est loggé, jamais propagé
+    (send_moderation_email ne lève déjà jamais). Le thread est renvoyé pour
+    permettre aux tests de l'attendre.
+    """
+    try:
+        thread = threading.Thread(
+            target=send_moderation_email,
+            args=(to, deck_name, deck_id, approved),
+            name=f"mail-moderation-deck-{deck_id}",
+            daemon=True,
+        )
+        thread.start()
+    except Exception:
+        log.exception("impossible de lancer l'envoi de la notification de modération vers %s", to)
+        return None
+    return thread

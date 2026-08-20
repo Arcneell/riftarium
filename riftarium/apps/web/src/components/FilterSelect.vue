@@ -6,7 +6,9 @@ const props = defineProps({
   label: { type: String, required: true },
   options: { type: Array, required: true },
   modelValue: { type: Array, default: () => [] },
-  searchable: { type: Boolean, default: false }
+  searchable: { type: Boolean, default: false },
+  /* Mode choix unique (ex. tri) : sélectionner remplace, re-cliquer désélectionne, le popup se ferme. */
+  single: { type: Boolean, default: false }
 })
 const emit = defineEmits(["update:modelValue"])
 
@@ -24,8 +26,20 @@ const visibleOptions = computed(() => {
 })
 
 function toggle(value) {
+  if (props.single) {
+    emit("update:modelValue", props.modelValue.includes(value) ? [] : [value])
+    open.value = false
+    return
+  }
   emit("update:modelValue", toggleValue(props.modelValue, value))
 }
+
+/* En mode single, le bouton affiche le libellé du choix plutôt qu'un compteur. */
+const singleLabel = computed(() =>
+  props.single && props.modelValue.length
+    ? props.options.find((option) => option.value === props.modelValue[0])?.label
+    : null
+)
 
 function clear() {
   emit("update:modelValue", [])
@@ -82,6 +96,7 @@ onBeforeUnmount(() => {
           height="18"
         />
       </span>
+      <span v-else-if="singleLabel" class="fsel-single">{{ singleLabel }}</span>
       <span v-else-if="modelValue.length" class="fsel-count">{{ modelValue.length }}</span>
       <svg class="fsel-caret" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />

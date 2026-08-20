@@ -2,10 +2,12 @@
 import { onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
+import { useOnline } from "../composables/useOnline.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
 const router = useRouter()
+const online = useOnline()
 
 /* Les anciens liens /regles?doc=…&section=… pointent vers le lecteur officiel. */
 onMounted(() => {
@@ -48,6 +50,8 @@ const TIERS = [
     Débutant ? Suivez le guide animé. Une situation litigieuse en partie ? L'aide avancée. Et si le doute persiste, le
     texte officiel tranche.
   </PageBanner>
+
+  <div class="offline-note" v-if="!online" role="status">Hors ligne — règles servies depuis le cache</div>
 
   <section style="padding-top: 36px">
     <div class="wrap">

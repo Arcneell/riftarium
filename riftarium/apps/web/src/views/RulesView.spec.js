@@ -73,6 +73,68 @@ async function mountView() {
   return wrapper
 }
 
+/* Force navigator.onLine (getter configurable, retiré via restoreOnLine). */
+function setOnLine(value) {
+  Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => value })
+}
+function restoreOnLine() {
+  delete window.navigator.onLine
+}
+
+describe("RulesView — bandeau hors ligne", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(RULES) }))
+    vi.stubGlobal("requestAnimationFrame", (callback) => {
+      callback()
+      return 0
+    })
+    Element.prototype.scrollIntoView = vi.fn()
+    window.scrollTo = vi.fn()
+    stubMatchMedia(false)
+  })
+
+  afterEach(() => {
+    delete Element.prototype.scrollIntoView
+    restoreOnLine()
+    vi.unstubAllGlobals()
+  })
+
+  it("en ligne : aucun bandeau", async () => {
+    setOnLine(true)
+    const wrapper = await mountView()
+    expect(wrapper.find(".offline-note").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("hors ligne : bandeau affiché, retiré au retour du réseau", async () => {
+    setOnLine(false)
+    const wrapper = await mountView()
+    expect(wrapper.get(".offline-note").text()).toBe("Hors ligne — règles servies depuis le cache")
+
+    setOnLine(true)
+    window.dispatchEvent(new Event("online"))
+    await flushPromises()
+    expect(wrapper.find(".offline-note").exists()).toBe(false)
+
+    setOnLine(false)
+    window.dispatchEvent(new Event("offline"))
+    await flushPromises()
+    expect(wrapper.find(".offline-note").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("démontage : les écouteurs online/offline sont retirés", async () => {
+    setOnLine(true)
+    const wrapper = await mountView()
+    const removed = vi.spyOn(window, "removeEventListener")
+    wrapper.unmount()
+    const names = removed.mock.calls.map(([name]) => name)
+    expect(names).toContain("online")
+    expect(names).toContain("offline")
+    removed.mockRestore()
+  })
+})
+
 describe("RulesView — sommaire repliable sur mobile", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(RULES) }))
