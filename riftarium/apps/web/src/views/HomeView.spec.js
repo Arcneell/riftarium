@@ -9,10 +9,11 @@ vi.mock("../api.js", async (importOriginal) => {
   return { ...actual, api: vi.fn() }
 })
 
-const OVERNUMBERED = [
-  "8a7dbbed04133926e58843f1d586f51178ef2ebd-1488x2078.png",
-  "dc89c6a2415debd5bf504ed46843f5dcc1d9b815-1488x2078.png",
-  "2c804ec513085702763a9145fac93a8adb6c4783-1488x2078.png"
+/* Les trois cartes Signature de l'éventail du héros. */
+const SIGNATURES = [
+  "e5fe571a8f09c0a9e76345ec32b446480f54617c-1488x2078.png",
+  "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
+  "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png"
 ]
 
 function mountHome() {
@@ -65,7 +66,7 @@ describe("HomeView", () => {
     expect(wrapper.text()).not.toContain("Bêta fermée")
 
     const sources = wrapper.findAll(".fan-card img").map((img) => img.attributes("src"))
-    for (const hash of OVERNUMBERED) {
+    for (const hash of SIGNATURES) {
       expect(sources.some((src) => src.includes(hash) && src.includes("w=460"))).toBe(true)
     }
   })
