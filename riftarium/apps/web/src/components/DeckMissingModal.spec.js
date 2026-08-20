@@ -1,7 +1,13 @@
-import { mount } from "@vue/test-utils"
+import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import DeckMissingModal from "./DeckMissingModal.vue"
+import { api, session } from "../api.js"
+
+vi.mock("../api.js", async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, api: vi.fn() }
+})
 
 function missingCard(index, priceEur) {
   return {
@@ -36,6 +42,12 @@ async function mountModal(props) {
 const modal = () => document.body.querySelector(".modal")
 
 describe("DeckMissingModal", () => {
+  beforeEach(() => {
+    session.token = null
+    session.handle = null
+    api.mockReset()
+  })
+
   it("affiche le prix unitaire de chaque carte manquante et le coût pour compléter", async () => {
     const wrapper = await mountModal({
       missing: { items: [missingCard(1, 4.5), missingCard(2, null)], missing_total: 4, deck_total: 40 },
@@ -50,6 +62,33 @@ describe("DeckMissingModal", () => {
     expect(total.textContent).toContain("Coût pour compléter :")
     expect(total.textContent).toContain("9,00")
     expect(total.getAttribute("title")).toContain("TCGplayer")
+    wrapper.unmount()
+  })
+
+  it("connecté : « ajouter les manquantes à ma wishlist » appelle from-deck et confirme", async () => {
+    session.token = "jeton"
+    api.mockResolvedValue({ added: 2 })
+    const wrapper = await mountModal({
+      missing: { items: [missingCard(1, 4.5), missingCard(2, null)], missing_total: 4, deck_total: 40 },
+      missingEur: 9,
+      deckId: 7
+    })
+    const button = modal().querySelector(".wish-from-deck")
+    expect(button.textContent).toContain("Ajouter les manquantes à ma wishlist")
+    button.click()
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/wishlist/from-deck/7", { method: "POST" })
+    expect(modal().querySelector(".wish-from-deck").textContent).toContain("2 ajoutée(s) ✓")
+    wrapper.unmount()
+  })
+
+  it("sans deckId ou hors connexion : le bouton wishlist n'apparaît pas", async () => {
+    const wrapper = await mountModal({
+      missing: { items: [missingCard(1, 4.5)], missing_total: 2, deck_total: 40 },
+      missingEur: 9,
+      deckId: 7
+    })
+    expect(modal().querySelector(".wish-from-deck")).toBeNull()
     wrapper.unmount()
   })
 

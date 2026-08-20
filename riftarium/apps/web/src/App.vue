@@ -80,6 +80,7 @@ async function logout() {
         <RouterLink to="/decks">Decks</RouterLink>
         <RouterLink to="/communaute">Communauté</RouterLink>
         <template v-if="session.token">
+          <RouterLink to="/wishlist">Wishlist</RouterLink>
           <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
           <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
             <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
@@ -134,6 +135,7 @@ async function logout() {
             <li><RouterLink to="/decks">Deck builder</RouterLink></li>
             <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
             <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
+            <li v-if="session.token"><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
           </ul>
         </div>

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue"
-import { api, CONDITIONS, LANGS } from "../api.js"
+import { api, session, CONDITIONS, LANGS } from "../api.js"
 import {
   cardsQuery,
   domainFilterOptions,
@@ -52,6 +52,38 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
   )
 
 const sets = ref([])
+
+/* Progression par set : chargée à part, la grille n'attend pas ce calcul. */
+const progress = ref(null) // { sets: [...], overall: {...} } — null tant que rien n'est chargé
+const progressLoading = ref(false)
+
+async function loadProgress() {
+  progressLoading.value = true
+  try {
+    const data = await api("/api/collection/sets")
+    if (data && Array.isArray(data.sets) && data.overall) progress.value = data
+  } catch {
+    /* progression indisponible : la section reste masquée */
+  } finally {
+    progressLoading.value = false
+  }
+}
+
+function percentOf(row) {
+  if (!row.total) return 0
+  return Math.round((row.owned / row.total) * 100)
+}
+
+function missingText(row) {
+  if (!row.missing) return "set complet ✓"
+  const cost = formatEur(row.missing_cost_eur)
+  return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
+}
+
+/* Clic sur un set : la grille se filtre dessus, comme via le sélecteur Sets. */
+function filterBySet(setId) {
+  setFilter("set_id", [setId])
+}
 
 /* Mode sélection : le clic coche la carte au lieu d'ouvrir sa fiche. */
 const selectMode = ref(false)
@@ -138,6 +170,7 @@ watch(size, () => {
 
 onMounted(async () => {
   load()
+  loadProgress()
   try {
     sets.value = await api("/api/sets")
   } catch {
@@ -163,6 +196,46 @@ onMounted(async () => {
         <div class="stat" v-reveal="2" :title="PRICE_NOTE">
           Valeur estimée<b>{{ formatEur(result.value_eur) || "—" }}</b>
         </div>
+      </div>
+
+      <div v-if="progress || progressLoading" class="progress-panel" v-reveal>
+        <h2 class="progress-title">Progression par set</h2>
+        <p v-if="progressLoading && !progress" class="muted mono progress-loading">Calcul de votre progression…</p>
+        <template v-if="progress">
+          <div class="progress-row progress-overall">
+            <span class="progress-name">Tous sets confondus</span>
+            <div
+              class="progress-bar"
+              role="img"
+              :aria-label="`${progress.overall.owned} cartes possédées sur ${progress.overall.total}`"
+            >
+              <i :style="{ width: `${percentOf(progress.overall)}%` }"></i>
+            </div>
+            <span class="progress-count">
+              {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
+            </span>
+            <span class="progress-missing" :class="{ done: !progress.overall.missing }" :title="PRICE_NOTE">
+              {{ missingText(progress.overall) }}
+            </span>
+          </div>
+          <button
+            v-for="row in progress.sets"
+            :key="row.set_id"
+            type="button"
+            class="progress-row"
+            :title="`Filtrer la collection sur ${row.name}`"
+            @click="filterBySet(row.set_id)"
+          >
+            <span class="progress-name">{{ row.name }}</span>
+            <div class="progress-bar" role="img" :aria-label="`${row.owned} cartes possédées sur ${row.total}`">
+              <i :style="{ width: `${percentOf(row)}%` }"></i>
+            </div>
+            <span class="progress-count">{{ row.owned }}/{{ row.total }} · {{ percentOf(row) }} %</span>
+            <span class="progress-missing" :class="{ done: !row.missing }" :title="PRICE_NOTE">
+              {{ missingText(row) }}
+            </span>
+          </button>
+        </template>
       </div>
 
       <div class="filter-board">
@@ -223,6 +296,10 @@ onMounted(async () => {
           {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
         </button>
         <RouterLink class="btn btn-ghost btn-sm scan-entry" to="/scan">Scanner une carte</RouterLink>
+        <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
+        <a v-if="session.token" class="btn btn-ghost btn-sm" href="/api/collection/export.csv" download>
+          Exporter (CSV)
+        </a>
       </div>
 
       <div v-if="selectMode" class="bulk-bar" role="toolbar" aria-label="Opérations sur la sélection">

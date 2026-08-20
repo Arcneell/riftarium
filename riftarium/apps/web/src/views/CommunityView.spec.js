@@ -102,6 +102,68 @@ describe("CommunityView", () => {
     wrapper.unmount()
   })
 
+  it("le filtre « constructibles » n'apparaît qu'aux connectés et pilote le paramètre buildable", async () => {
+    let { wrapper } = await mountView()
+    expect(wrapper.find(".buildable-filter").exists()).toBe(false)
+    wrapper.unmount()
+
+    session.token = "jeton"
+    session.handle = "visiteur"
+    ;({ wrapper } = await mountView())
+    const toggle = wrapper.get(".buildable-filter")
+    expect(toggle.text()).toContain("Constructibles avec ma collection")
+    expect(toggle.attributes("aria-pressed")).toBe("false")
+
+    api.mockClear()
+    await toggle.trigger("click")
+    await vi.waitFor(() => {
+      expect(api.mock.calls.some(([path]) => String(path).includes("buildable=1"))).toBe(true)
+    })
+    expect(toggle.attributes("aria-pressed")).toBe("true")
+    wrapper.unmount()
+  })
+
+  it("le filtre buildable est repris depuis l'URL", async () => {
+    session.token = "jeton"
+    const { wrapper, router } = await mountView("/communaute?buildable=1")
+    expect(wrapper.get(".buildable-filter").attributes("aria-pressed")).toBe("true")
+    expect(api.mock.calls.some(([path]) => String(path).includes("buildable=1"))).toBe(true)
+    expect(router.currentRoute.value.query.buildable).toBe("1")
+    wrapper.unmount()
+  })
+
+  it("connecté : chaque boîte indique Complet ✓ ou le nombre de manquantes et leur coût", async () => {
+    session.token = "jeton"
+    api.mockImplementation((path) => {
+      if (path.startsWith("/api/community/decks")) {
+        return Promise.resolve({
+          total: 2,
+          page: 1,
+          size: 20,
+          items: [
+            { ...deck, missing_cards: 0, missing_cost_eur: null },
+            { ...deck, id: 4, name: "Presque prêt", missing_cards: 3, missing_cost_eur: 4.5 }
+          ]
+        })
+      }
+      if (path === "/api/community/legends") return Promise.resolve([])
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    const boxes = wrapper.findAll(".deck-box")
+    expect(boxes[0].get(".deck-buildable").text()).toContain("Complet ✓")
+    expect(boxes[0].find(".deck-missing").exists()).toBe(false)
+    expect(boxes[1].get(".deck-missing").text()).toContain("3 manquante(s) (~4,50")
+    wrapper.unmount()
+  })
+
+  it("visiteur non connecté : aucune mention de manquantes sur les boîtes", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".deck-buildable").exists()).toBe(false)
+    expect(wrapper.find(".deck-missing").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("synchronise le tri dans l'URL", async () => {
     const { wrapper, router } = await mountView()
     const views = wrapper.findAll(".owned-seg button")[1]

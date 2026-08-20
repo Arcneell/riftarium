@@ -143,6 +143,21 @@ class CollectionItem(Base):
     card: Mapped[Card] = relationship(lazy="joined")
 
 
+class WishlistItem(Base):
+    """Carte recherchée par un joueur (liste d'achats), avec la quantité visée."""
+
+    __tablename__ = "wishlist_items"
+    __table_args__ = (UniqueConstraint("user_id", "card_id", name="uq_wishlist_entry"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    card_id: Mapped[str] = mapped_column(ForeignKey("cards.id"), index=True)
+    qty: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    card: Mapped[Card] = relationship(lazy="joined")
+
+
 class Deck(Base):
     __tablename__ = "decks"
     # Index composite pour les listes publiques (communauté) filtrées par statut de modération.

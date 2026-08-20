@@ -809,6 +809,7 @@ onBeforeUnmount(() => {
       :missing="missing"
       :error="missingError"
       :missing-eur="deck.prices?.missing_eur ?? null"
+      :deck-id="deck.id"
       @close="closeMissing"
       @preview="showPreview"
       @hide-preview="hidePreview"

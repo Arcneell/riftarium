@@ -1,12 +1,15 @@
+import csv
+import io
 from collections import defaultdict
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
-from ..models import Card, CollectionItem, User
+from ..models import Card, CardSet, CollectionItem, User
 from ..prices import current_rate, to_eur
 from ..schemas import CollectionBulk, CollectionEntryIn, CollectionEntryPatch, CollectionPut
 from .cards import apply_filters, card_out, find_card
@@ -134,6 +137,116 @@ def my_collection(
         "size": size,
         "items": [item_out(card) for card in cards],
     }
+
+
+# Déclarées avant /{card_id} : sinon « sets » et « export.csv » seraient capturés comme des ids de carte.
+@router.get("/sets")
+def set_completion(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    """Avancement de la collection par set : possédées, manquantes et coûts estimés.
+
+    Trois requêtes groupées (aucun N+1) : les noms de sets, les agrégats par set
+    sur toutes les cartes (variantes incluses), et les mêmes agrégats restreints
+    aux cartes distinctes possédées. Le manque se déduit par différence.
+    Convention « complétion » : un exemplaire par carte — owned_value_eur et
+    missing_cost_eur comptent chaque carte une seule fois, quelle que soit la
+    quantité possédée.
+    """
+    rate = current_rate(db)
+    ordered_sets = db.scalars(select(CardSet).order_by(CardSet.published_on, CardSet.set_id)).all()
+
+    def aggregates(*conditions):
+        """set_id → (nb cartes, nb cartes pricées, somme des prix USD)."""
+        query = select(
+            Card.set_id,
+            func.count(Card.id),
+            func.count(Card.price_usd),  # count(colonne) ignore les NULL : nb de cartes pricées
+            func.coalesce(func.sum(Card.price_usd), 0.0),
+        ).group_by(Card.set_id)
+        if conditions:
+            query = query.where(*conditions)
+        rows = db.execute(query).all()
+        return {set_id: (int(count), int(priced), float(total_usd)) for set_id, count, priced, total_usd in rows}
+
+    totals = aggregates()
+    owned_ids = select(CollectionItem.card_id).where(CollectionItem.user_id == user.id).distinct()
+    owned = aggregates(Card.id.in_(owned_ids))
+
+    def entry(total, priced_total, usd_total, owned_count, priced_owned, usd_owned) -> dict:
+        # Coût des manquantes : null si aucune carte manquante n'est pricée
+        # (y compris quand le set est complet : plus rien à acheter).
+        missing_priced = priced_total - priced_owned
+        return {
+            "total": total,
+            "owned": owned_count,
+            "missing": total - owned_count,
+            "missing_cost_eur": to_eur(usd_total - usd_owned, rate) if missing_priced else None,
+            "owned_value_eur": to_eur(usd_owned, rate) if priced_owned else None,
+        }
+
+    sets = []
+    for card_set in ordered_sets:
+        stats = totals.get(card_set.set_id)
+        if stats is None:  # set référencé mais sans carte synchronisée : rien à compléter
+            continue
+        owned_stats = owned.get(card_set.set_id, (0, 0, 0.0))
+        sets.append({"set_id": card_set.set_id, "name": card_set.name, **entry(*stats, *owned_stats)})
+
+    overall = entry(
+        sum(stats[0] for stats in totals.values()),
+        sum(stats[1] for stats in totals.values()),
+        sum(stats[2] for stats in totals.values()),
+        sum(stats[0] for stats in owned.values()),
+        sum(stats[1] for stats in owned.values()),
+        sum(stats[2] for stats in owned.values()),
+    )
+    return {"sets": sets, "overall": overall}
+
+
+@router.get("/export.csv")
+def export_collection_csv(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    """Export CSV de la collection, une ligne par lot (carte, état, langue).
+
+    Format pensé pour Excel FR : UTF-8 avec BOM et point-virgule comme séparateur.
+    """
+    rows = db.execute(
+        select(CollectionItem, Card)
+        .join(Card, Card.id == CollectionItem.card_id)
+        .where(CollectionItem.user_id == user.id)
+        .order_by(Card.set_id, Card.collector_number, Card.id, *ENTRY_ORDER)
+    ).all()
+    rate = current_rate(db)
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, delimiter=";")  # le module csv gère l'échappement (; et guillemets)
+    writer.writerow(["card_id", "riftbound_id", "name", "set", "condition", "lang", "qty", "price_eur", "value_eur"])
+    for item, card in rows:
+        price_eur = to_eur(card.price_usd, rate)
+        writer.writerow(
+            [
+                card.id,
+                card.riftbound_id,
+                card.name,
+                card.set_id,
+                item.condition,
+                item.lang,
+                item.qty,
+                "" if price_eur is None else price_eur,
+                "" if price_eur is None else round(item.qty * price_eur, 2),
+            ]
+        )
+
+    filename = f"riftarium-collection-{datetime.now(UTC):%Y%m%d}.csv"
+    return Response(
+        content="﻿" + buffer.getvalue(),  # BOM : Excel détecte l'UTF-8 (accents corrects)
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/bulk")

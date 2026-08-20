@@ -121,6 +121,30 @@ function removeEntry(entry) {
   mutate(() => api(`/api/collection/entries/${entry.id}`, { method: "PATCH", body: { qty: 0 } }), "Lot retiré.")
 }
 
+/* Wishlist : un seul clic bascule « je la veux » (qty 1) / retrait complet.
+   La quantité fine se règle ensuite sur la page Ma wishlist. */
+const wished = computed(() => (card.value?.wished_qty ?? 0) > 0)
+const wishBusy = ref(false)
+
+async function toggleWish() {
+  if (wishBusy.value || !card.value) return
+  wishBusy.value = true
+  error.value = ""
+  try {
+    if (wished.value) {
+      await api(`/api/wishlist/${card.value.id}`, { method: "DELETE" })
+      card.value.wished_qty = 0
+    } else {
+      await api(`/api/wishlist/${card.value.id}`, { method: "PUT", body: { qty: 1 } })
+      card.value.wished_qty = 1
+    }
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    wishBusy.value = false
+  }
+}
+
 /* replace : passer d'une variante à l'autre ne pollue pas l'historique, le retour ramène à la liste. */
 function openVariant(id) {
   if (id !== card.value?.id) router.replace(`/cartes/${id}`)
@@ -176,6 +200,19 @@ function openVariant(id) {
             <span v-if="card.supertype" class="sheet-tag muted">{{ card.supertype }}</span>
             <span class="sheet-tag" :style="{ color: domainColor }">{{ domainLabel }}</span>
           </div>
+
+          <button
+            v-if="session.token"
+            type="button"
+            class="wish-toggle"
+            :class="{ on: wished }"
+            :aria-pressed="wished"
+            :disabled="wishBusy"
+            @click="toggleWish"
+          >
+            <Icon :name="wished ? 'heart' : 'heart-line'" :size="15" />
+            {{ wished ? "Dans ma wishlist" : "Ajouter à la wishlist" }}
+          </button>
 
           <div class="stat-row">
             <div class="stat" v-if="card.energy !== null && card.energy !== undefined">
