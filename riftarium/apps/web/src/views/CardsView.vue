@@ -71,7 +71,7 @@ onMounted(async () => {
 
 <template>
   <PageBanner :art="BANNERS.cards" eyebrow="Cartothèque" title="Toutes les cartes du jeu">
-    Cumulez les filtres : domaine, type, rareté, coût. Cherchez aussi par nom, code ou texte.
+    Cherchez par nom, code ou texte, puis affinez en cumulant les filtres : domaine, type, rareté, coût.
   </PageBanner>
 
   <section style="padding-top: 40px">

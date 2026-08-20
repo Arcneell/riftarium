@@ -46,7 +46,7 @@ const MODULES = [
     icon: "cards",
     chip: "var(--mind)",
     title: "Cartothèque",
-    text: "Toutes les cartes du jeu, variantes incluses. Recherche plein texte, filtres par domaine, type, rareté et set.",
+    text: "Toutes les cartes du jeu, variantes incluses — cherchez en plein texte, filtrez par domaine, type, rareté ou set.",
     to: "/cartes",
     go: "Parcourir"
   },
@@ -70,7 +70,7 @@ const MODULES = [
     icon: "box",
     chip: "var(--body)",
     title: "Collection",
-    text: "Suivez ce que vous possédez : quantités, état, langue. Votre inventaire, toujours à jour.",
+    text: "Suivez ce que vous possédez, avec la quantité, l'état et la langue de chaque exemplaire.",
     to: "/collection",
     go: "Inventorier"
   },
@@ -153,7 +153,7 @@ onMounted(async () => {
   <section style="padding-bottom: 40px">
     <div class="wrap" style="margin-bottom: 36px">
       <p class="eyebrow" v-reveal>Les cartes</p>
-      <h2 v-reveal>Toutes les cartes du jeu, à jour</h2>
+      <h2 v-reveal>La cartothèque complète, toujours à jour</h2>
     </div>
     <CardRiver />
     <div class="wrap" style="text-align: center; margin-top: 36px" v-reveal>
