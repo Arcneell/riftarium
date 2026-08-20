@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
     jwt_ttl_hours: int = 24
     admin_token: str = ""
+    # Adresses e-mail des administrateurs, séparées par des virgules (insensible à la casse).
+    # Source de vérité unique du drapeau users.is_admin, appliquée au démarrage.
+    admin_emails: str = ""
     cookie_secure: bool = False
     auth_rate_limit: int = 20  # tentatives / minute / IP (login + inscription)
     auth_account_rate_limit: int = 10  # tentatives / heure / compte (login)
@@ -45,6 +48,7 @@ class Settings(BaseSettings):
     mail_from: str = "Riftarium <no-reply@riftarium.re>"
     public_base_url: str = ""  # vide = déduit de l'environnement (voir base_url)
     email_rate_limit: int = 3  # e-mails / heure / adresse (reset + renvoi de vérification)
+    metrics_rate_limit: int = 120  # pings de fréquentation / minute / IP (anti-spam)
 
     @property
     def is_prod(self) -> bool:

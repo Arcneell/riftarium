@@ -183,6 +183,22 @@ def _user_from_token(token: str, db: Session) -> User | None:
     return user
 
 
+def ensure_not_suspended(user: User) -> None:
+    """Refuse un compte suspendu (403 explicite). Une suspension expirée est ignorée."""
+    until = user.suspended_until
+    if until is None:
+        return
+    if until.tzinfo is None:  # SQLite restitue des datetimes naïfs (stockés en UTC)
+        until = until.replace(tzinfo=UTC)
+    if until <= datetime.now(UTC):
+        return
+    reason = user.suspension_reason or "non précisé"
+    raise HTTPException(
+        status_code=403,
+        detail=f"Compte suspendu jusqu'au {until.strftime('%d/%m/%Y %H:%M')} — motif : {reason}",
+    )
+
+
 def current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
@@ -194,6 +210,7 @@ def current_user(
     user = _user_from_token(token, db)
     if user is None:
         raise HTTPException(status_code=401, detail="Jeton invalide ou expiré")
+    ensure_not_suspended(user)  # la suspension coupe aussi les sessions déjà ouvertes
     return user
 
 

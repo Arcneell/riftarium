@@ -66,6 +66,7 @@ def user_out(db: Session, user: User, *, include_email: bool = False, include_st
     if include_email:
         payload["email"] = user.email
         payload["email_verified"] = user.email_verified_at is not None
+        payload["is_admin"] = user.is_admin
     if include_stats:
         payload["stats"] = user_stats(db, user)
     return payload

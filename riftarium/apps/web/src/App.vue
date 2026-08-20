@@ -42,6 +42,7 @@ onMounted(async () => {
     const me = await api("/api/auth/me")
     setSession("1", me.handle, me.avatar_url)
     session.emailVerified = me.email_verified ?? null
+    session.isAdmin = me.is_admin ?? false
   } catch {
     /* 401 déjà géré par api() */
   }
@@ -79,6 +80,7 @@ async function logout() {
         <RouterLink to="/decks">Decks</RouterLink>
         <RouterLink to="/communaute">Communauté</RouterLink>
         <template v-if="session.token">
+          <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
           <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
             <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
             <span>{{ session.handle }}</span>

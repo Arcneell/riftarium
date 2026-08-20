@@ -24,7 +24,9 @@ export const session = reactive({
   handle: localStorage.getItem(HANDLE_KEY),
   avatarUrl: localStorage.getItem(AVATAR_KEY),
   /* Renseigné après /api/auth/me (email_verified). null = inconnu. Jamais persisté. */
-  emailVerified: null
+  emailVerified: null,
+  /* Renseigné après /api/auth/me (is_admin). null = inconnu. Jamais persisté. */
+  isAdmin: null
 })
 
 export function setSession(token, handle, avatarUrl = null) {
@@ -32,7 +34,10 @@ export function setSession(token, handle, avatarUrl = null) {
   session.token = loggedIn ? "1" : null
   session.handle = loggedIn ? handle : null
   session.avatarUrl = loggedIn ? avatarUrl || null : null
-  if (!loggedIn) session.emailVerified = null
+  if (!loggedIn) {
+    session.emailVerified = null
+    session.isAdmin = null
+  }
   try {
     if (loggedIn) {
       localStorage.setItem(SESSION_FLAG_KEY, "1")

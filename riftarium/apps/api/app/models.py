@@ -1,8 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -31,6 +32,13 @@ class User(Base):
     avatar_card_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, default=1)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Droits d'administration : pilotés exclusivement par ADMIN_EMAILS au démarrage
+    # (voir routers/admin.py) — jamais modifiables via l'API.
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Suspension : bloque login et sessions tant que suspended_until est dans le futur.
+    # Une suspension expirée est simplement ignorée (pas de nettoyage nécessaire).
+    suspended_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    suspension_reason: Mapped[str | None] = mapped_column(String(280), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -149,6 +157,25 @@ class DeckLike(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+
+class PageHit(Base):
+    """Fréquentation agrégée et anonyme : compteurs par jour et par section.
+
+    Aucune donnée personnelle n'est persistée (ni IP, ni identifiant, ni user-agent) :
+    seuls des compteurs jour × section, conformes à l'engagement « zéro traceur ».
+    Les visiteurs uniques (ligne réservée section="site") sont dédupliqués via une
+    empreinte salée éphémère stockée uniquement dans Redis (voir routers/metrics.py).
+    """
+
+    __tablename__ = "page_hits"
+    __table_args__ = (UniqueConstraint("day", "section", name="uq_page_hit_day_section"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    section: Mapped[str] = mapped_column(String(32))
+    hits: Mapped[int] = mapped_column(Integer, default=0)
+    uniques: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class DeckView(Base):

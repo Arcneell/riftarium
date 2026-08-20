@@ -14,9 +14,9 @@ from .config import settings, validate_production_settings
 from .db import SessionLocal, get_db, run_migrations
 from .demo import seed_community
 from .imagehash import dhash_hex
-from .models import Card, Deck
-from .routers import auth_routes, cards, collection, decks
-from .schemas import ModerationIn
+from .models import Card
+from .routers import admin, auth_routes, cards, collection, decks, metrics
+from .routers.admin import sync_admin_flags
 from .security import require_admin_token, sanitize_image_url
 from .sync import HEADERS as SYNC_HEADERS
 from .sync import run_sync
@@ -31,6 +31,10 @@ log = logging.getLogger("riftarium")
 async def lifespan(app: FastAPI):
     validate_production_settings()
     run_migrations()
+    # Droits d'administration : ADMIN_EMAILS est la seule source de vérité,
+    # appliquée à chaque démarrage (accord ET retrait, changements loggés).
+    with SessionLocal() as db:
+        sync_admin_flags(db)
     # Une instance précédente a pu mettre en cache un état partiel (sync en cours)
     # ou obsolète (schéma/données modifiés) : on repart d'un cache propre.
     cache_clear("cards:")
@@ -63,10 +67,12 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.expose_docs else None,
 )
 
+app.include_router(admin.router)
 app.include_router(auth_routes.router)
 app.include_router(cards.router)
 app.include_router(collection.router)
 app.include_router(decks.router)
+app.include_router(metrics.router)
 
 
 @app.get("/api/health")
@@ -232,18 +238,5 @@ def admin_demo_community(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@app.post("/api/admin/decks/{deck_id}/moderation")
-def admin_moderate_deck(
-    deck_id: int,
-    payload: ModerationIn,
-    db: Session = Depends(get_db),
-    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
-):
-    """Décision de modération sur un deck (débloque les decks « pending »)."""
-    require_admin_token(x_admin_token)
-    deck = db.get(Deck, deck_id)
-    if deck is None:
-        raise HTTPException(status_code=404, detail="Deck introuvable")
-    deck.moderation_status = "published" if payload.status == "approved" else "rejected"
-    db.commit()
-    return {"deck_id": deck.id, "moderation_status": deck.moderation_status}
+# NB : la modération des decks (POST /api/admin/decks/{id}/moderation) vit dans
+# routers/admin.py — elle accepte le jeton X-Admin-Token OU une session admin.

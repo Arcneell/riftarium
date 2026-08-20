@@ -134,6 +134,9 @@ class SessionOut(BaseModel):
 
     handle: str
     avatar_url: str | None = None
+    # Permet au front d'afficher l'entrée Administration dès la connexion (le
+    # serveur reste seul juge : toutes les routes admin revérifient la session).
+    is_admin: bool = False
 
 
 class ProfilePatch(BaseModel):
@@ -234,3 +237,24 @@ class ModerationIn(BaseModel):
     """Décision de modération admin sur un deck en attente."""
 
     status: Literal["approved", "rejected"]
+
+
+class HitIn(BaseModel):
+    """Ping de fréquentation anonyme : uniquement le nom d'écran visité."""
+
+    section: str = Field(min_length=1, max_length=64)
+
+
+class SuspendIn(BaseModel):
+    """Suspension de compte par un administrateur (durée en heures + motif affiché)."""
+
+    hours: int = Field(gt=0, le=24 * 3650)  # « définitif » = très grande durée côté front
+    reason: str = Field(min_length=1, max_length=280)
+
+    @field_validator("reason")
+    @classmethod
+    def strip_reason(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Le motif de suspension est obligatoire.")
+        return value

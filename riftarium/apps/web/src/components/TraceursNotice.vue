@@ -17,8 +17,8 @@ function dismiss() {
 <template>
   <div v-if="visible" class="traceurs-notice" role="dialog" aria-label="Information sur les traceurs">
     <p>
-      Riftarium n'utilise que des traceurs strictement nécessaires à la connexion — pas de publicité, pas de mesure
-      d'audience.
+      Riftarium n'utilise que des traceurs strictement nécessaires à la connexion, plus des statistiques de
+      fréquentation anonymes et agrégées, sans cookie — pas de publicité.
       <RouterLink to="/cookies">En savoir plus</RouterLink>
     </p>
     <button class="btn btn-gold btn-sm" type="button" @click="dismiss">J'ai compris</button>
