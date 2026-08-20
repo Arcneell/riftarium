@@ -3,17 +3,15 @@
 import app.db as db_module
 import app.main as main_module
 import pytest
-from app.db import Base
 from app.main import app
 from fastapi.testclient import TestClient
 
-from conftest import seed
+from conftest import create_schema, seed
 
 
 @pytest.fixture()
 def empty_db():
-    Base.metadata.drop_all(db_module.engine)
-    Base.metadata.create_all(db_module.engine)
+    create_schema()
 
 
 def test_lifespan_auto_syncs_empty_database(empty_db, monkeypatch):

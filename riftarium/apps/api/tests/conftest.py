@@ -2,6 +2,7 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTO_SYNC"] = "0"
+os.environ["HASH_AUTOSTART"] = "0"  # pas de téléchargements d'images en arrière-plan pendant les tests
 os.environ["RIFTARIUM_ENV"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-not-for-production-use!"
 os.environ["ADMIN_TOKEN"] = "test-admin-token-ok"
@@ -187,14 +188,23 @@ def _reset_module_state():
     _reset()
 
 
-@pytest.fixture()
-def client():
-    # create_all (et non run_migrations) pour préparer chaque test : bien plus rapide,
-    # et sûr car test_migrations.py vérifie que la chaîne Alembic produit un schéma
-    # identique à Base.metadata. Le lifespan (TestClient) exécute quand même
-    # run_migrations : premier test → stamp, suivants → upgrade no-op.
+def create_schema():
+    """Schéma neuf via create_all (et non run_migrations) : bien plus rapide, et sûr
+    car test_migrations.py vérifie que la chaîne Alembic produit un schéma identique
+    à Base.metadata. On stampe ensuite « head » : le lifespan (TestClient) exécute
+    run_migrations, qui ne doit rien rejouer sur ce schéma déjà à jour."""
+    from alembic import command
+
+    from app.db import _alembic_config
+
     Base.metadata.drop_all(db_module.engine)
     Base.metadata.create_all(db_module.engine)
+    command.stamp(_alembic_config(db_module.engine), "head", purge=True)
+
+
+@pytest.fixture()
+def client():
+    create_schema()
     with db_module.SessionLocal() as session:
         seed(session)
     with TestClient(app) as test_client:

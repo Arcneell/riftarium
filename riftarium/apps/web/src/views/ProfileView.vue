@@ -203,7 +203,7 @@ onMounted(load)
 
 <template>
   <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Mon profil">
-    Pseudo, portrait de légende, mot de passe et données de votre compte Riftarium.
+    Gérez votre pseudo, votre portrait de légende, votre mot de passe et les données de votre compte.
   </PageBanner>
 
   <section style="padding-top: 28px">

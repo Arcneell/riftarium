@@ -24,7 +24,7 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Deck builder + validation règles tournoi / mode libre | ✅ |
 | Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
-| Scan mobile, estimation Cardmarket, textes FR (sans stats de méta) | 🔜 |
+| Scan mobile, textes FR, fil social (sans stats de méta) | 🔜 |
 
 ## Architecture
 
@@ -199,6 +199,13 @@ fichiers suivis.
   `preconnect` au chargement, miniatures redimensionnées côté CDN (`w=180/260`),
   chargement paresseux. Elles ne sont volontairement pas rehébergées : la politique
   « Jargon juridique » interdit de redistribuer les visuels.
+
+## Scan mobile
+
+La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) des
+visuels, calculées automatiquement en arrière-plan (au démarrage de l'API et après
+chaque sync). Rien à lancer ; `POST /api/admin/cards/hashes` (`X-Admin-Token`)
+reste disponible en secours manuel.
 
 ## Sources de données
 

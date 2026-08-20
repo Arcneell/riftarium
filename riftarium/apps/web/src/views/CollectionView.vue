@@ -146,7 +146,7 @@ onMounted(async () => {
 
 <template>
   <PageBanner :art="BANNERS.collection" eyebrow="Collection" title="Mon inventaire">
-    Vos cartes, leurs états, leurs langues. L'estimation Cardmarket et le scan arrivent.
+    Tout ce que vous possédez, en un coup d'œil — états et langues compris.
   </PageBanner>
 
   <section style="padding-top: 40px">
@@ -208,6 +208,7 @@ onMounted(async () => {
         <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
           {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
         </button>
+        <RouterLink class="btn btn-ghost btn-sm scan-entry" to="/scan">Scanner une carte</RouterLink>
       </div>
 
       <div v-if="selectMode" class="bulk-bar" role="toolbar" aria-label="Opérations sur la sélection">
@@ -282,8 +283,8 @@ onMounted(async () => {
       </div>
 
       <p v-if="!loading && !result.items.length && !result.unique_cards" class="muted">
-        Collection vide. Ouvrez une <RouterLink to="/cartes">fiche carte</RouterLink> et notez combien d'exemplaires
-        vous possédez.
+        Votre collection est encore vide — ouvrez une <RouterLink to="/cartes">fiche carte</RouterLink> et notez combien
+        d'exemplaires vous possédez.
       </p>
       <p v-else-if="!loading && !result.items.length" class="muted">Aucune carte ne correspond aux filtres.</p>
 
@@ -298,7 +299,7 @@ onMounted(async () => {
   </section>
 
   <ModalDialog v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
-    <p>{{ selected.size }} carte(s) seront retirées de votre inventaire. Cette action est irréversible.</p>
+    <p>{{ selected.size }} carte(s) seront retirées de votre inventaire, sans retour en arrière possible.</p>
     <p v-if="removeError" class="error">{{ removeError }}</p>
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost" :disabled="bulk.busy" @click="cancelRemove">Annuler</button>

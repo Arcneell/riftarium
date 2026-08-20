@@ -3,7 +3,6 @@ import { onMounted, ref } from "vue"
 import { RouterLink } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
-import { CLOSED_BETA } from "../legal.js"
 import { RULE_COUNTS } from "../stats.js"
 import CardRiver from "../components/CardRiver.vue"
 
@@ -47,7 +46,7 @@ const MODULES = [
     icon: "cards",
     chip: "var(--mind)",
     title: "Cartothèque",
-    text: "Toutes les cartes du jeu, variantes incluses. Recherche plein texte, filtres par domaine, type, rareté et set.",
+    text: "Toutes les cartes du jeu, variantes incluses — cherchez en plein texte, filtrez par domaine, type, rareté ou set.",
     to: "/cartes",
     go: "Parcourir"
   },
@@ -71,7 +70,7 @@ const MODULES = [
     icon: "box",
     chip: "var(--body)",
     title: "Collection",
-    text: "Suivez ce que vous possédez : quantités, état, langue. Votre inventaire, toujours à jour.",
+    text: "Suivez ce que vous possédez, avec la quantité, l'état et la langue de chaque exemplaire.",
     to: "/collection",
     go: "Inventorier"
   },
@@ -108,17 +107,11 @@ onMounted(async () => {
   <section class="hero-splash" :style="splashStyle">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">
-          {{ CLOSED_BETA ? "Bêta fermée — accès sur invitation" : "Le compagnon tout-en-un pour Riftbound" }}
-        </p>
+        <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
         <h1>Vos cartes, vos decks,<br />vos règles. Un seul site.</h1>
         <p class="lead" style="margin-top: 20px">
           Cartothèque complète, suivi de collection, deck builder et règles officielles : tout ce qu'il faut pour jouer
           à Riftbound, réuni au même endroit.
-        </p>
-        <p v-if="CLOSED_BETA" class="muted" style="margin-top: 16px; max-width: 52ch">
-          Le site n'est pas indexé et n'est pas annoncé publiquement. Si vous avez le lien, vous pouvez tester et
-          signaler les bugs — merci de ne pas le relayer largement.
         </p>
         <div style="display: flex; gap: 16px; margin-top: 34px; flex-wrap: wrap">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
@@ -160,7 +153,7 @@ onMounted(async () => {
   <section style="padding-bottom: 40px">
     <div class="wrap" style="margin-bottom: 36px">
       <p class="eyebrow" v-reveal>Les cartes</p>
-      <h2 v-reveal>Toutes les cartes du jeu, à jour</h2>
+      <h2 v-reveal>La cartothèque complète, toujours à jour</h2>
     </div>
     <CardRiver />
     <div class="wrap" style="text-align: center; margin-top: 36px" v-reveal>

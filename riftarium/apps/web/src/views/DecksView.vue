@@ -121,7 +121,7 @@ onMounted(load)
         />
       </div>
       <p v-if="!decks.length" class="muted">
-        Pas encore de deck. Cliquez sur « Nouveau deck », le reste se passe dans l'éditeur.
+        Aucun deck pour l'instant — cliquez sur « Nouveau deck », le reste se passe dans l'éditeur.
       </p>
     </div>
   </section>
@@ -177,7 +177,7 @@ onMounted(load)
 
   <ModalDialog v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
     <p>
-      Le deck <strong>{{ pendingDelete.name }}</strong> sera définitivement retiré. Cette action est irréversible.
+      Le deck <strong>{{ pendingDelete.name }}</strong> sera supprimé pour de bon — impossible de le récupérer ensuite.
     </p>
     <p v-if="deleteError" class="error">{{ deleteError }}</p>
     <div class="modal-actions">

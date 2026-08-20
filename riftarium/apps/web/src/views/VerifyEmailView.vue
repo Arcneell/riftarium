@@ -56,7 +56,7 @@ async function resend() {
 
 <template>
   <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Vérification de l'adresse e-mail">
-    Confirmation de l'adresse e-mail associée à votre compte Riftarium.
+    Un instant — nous confirmons l'adresse associée à votre compte Riftarium.
   </PageBanner>
 
   <section style="padding-top: 36px">

@@ -253,7 +253,7 @@ onMounted(async () => {
         </button>
       </div>
       <p class="muted mono" v-else-if="searchQuery.trim().length >= 2" style="font-size: 0.8rem; margin-bottom: 20px">
-        Aucune règle trouvée.
+        Aucune règle trouvée — essayez un autre mot-clé, ou un numéro comme 002.
       </p>
 
       <div class="rules-layout">

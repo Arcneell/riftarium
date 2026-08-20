@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     scrypt_r: int = 8
     scrypt_p: int = 1
     auto_sync: bool = True
+    # Remplissage automatique des empreintes de scan (démarrage + après sync).
+    hash_autostart: bool = True
     riftcodex_base_url: str = "https://api.riftcodex.com"
     sync_sets: str = "OGN,OGS,SFD,UNL,VEN,PR"
     redis_url: str = ""  # vide = cache désactivé (tests, dev sans Redis)

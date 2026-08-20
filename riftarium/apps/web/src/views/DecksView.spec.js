@@ -115,7 +115,7 @@ describe("DecksView", () => {
     const modal = document.body.querySelector(".modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Jinx — prêt à jouer")
-    expect(modal.textContent).toContain("Cette action est irréversible")
+    expect(modal.textContent).toContain("impossible de le récupérer")
 
     const confirmButton = [...modal.querySelectorAll("button")].find(
       (button) => button.textContent.trim() === "Supprimer"

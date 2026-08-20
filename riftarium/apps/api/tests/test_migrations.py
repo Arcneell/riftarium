@@ -69,6 +69,20 @@ def _create_pre_alembic_users(engine) -> None:
                 """
             )
         )
+        # La base legacy avait aussi cards (sans image_hash) : les migrations
+        # postérieures au backfill (0003…) doivent pouvoir s'y appliquer.
+        conn.execute(
+            text(
+                """
+                CREATE TABLE cards (
+                    id VARCHAR(32) NOT NULL PRIMARY KEY,
+                    riftbound_id VARCHAR(32),
+                    name VARCHAR(255) NOT NULL,
+                    image_url VARCHAR(512)
+                )
+                """
+            )
+        )
         conn.execute(
             text(
                 "INSERT INTO users (id, handle, email, password_hash, bio, token_version, created_at) "
@@ -117,6 +131,8 @@ def test_run_migrations_stamps_legacy_database_without_data_loss(empty_engine):
 
     assert _alembic_revision(empty_engine) == _head_revision()
     _assert_email_schema(empty_engine)
+    # Les migrations postérieures (0003, cards.image_hash) s'appliquent aussi.
+    assert "image_hash" in _schema_snapshot(empty_engine)["cards"]["columns"]
 
 
 def test_run_migrations_backfills_when_0001_was_stamped_on_legacy_schema(empty_engine):

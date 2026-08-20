@@ -48,7 +48,7 @@ const grouped = computed(() =>
   <section style="padding-top: 30px">
     <div class="wrap">
       <p class="muted mono" v-if="!grouped.length" style="font-size: 0.8rem">
-        Rien ici. Essayez un autre mot, ou passez par les
+        Aucune mécanique ne correspond à cette recherche. Essayez un autre mot, ou passez par les
         <RouterLink to="/regles/officielles">règles officielles</RouterLink>.
       </p>
 

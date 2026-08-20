@@ -78,6 +78,10 @@ class Card(Base):
     text_plain: Mapped[str | None] = mapped_column(Text, nullable=True)
     text_flavour: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Empreinte perceptuelle du visuel (dHash 512 bits en hex, voir app/imagehash.py).
+    # NULL tant qu'elle n'a pas été calculée (POST /api/admin/cards/hashes) ou après
+    # un changement d'image_url à la sync.
+    image_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
     artist: Mapped[str | None] = mapped_column(String(128), nullable=True)
     orientation: Mapped[str | None] = mapped_column(String(16), nullable=True)
     tags: Mapped[list] = mapped_column(JSON, default=list)

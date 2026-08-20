@@ -96,7 +96,6 @@ images Docker et validation de la configuration Compose.
 
 - [x] Cartothèque, comptes, collection, deck builder, decks publics, modération V1
 - [ ] Scan mobile (PWA + caméra, reconnaissance par empreinte visuelle)
-- [ ] Estimation des prix via l'API Cardmarket
 - [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours)
 - [ ] Fil communautaire (partage de decks, profils) — sans résultats de tournoi ni statistiques de méta
 
@@ -125,7 +124,6 @@ Riftbound, League of Legends et l'ensemble des visuels de cartes, illustrations,
 de domaine et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont
 servis directement depuis le CDN officiel de Riot et ne sont ni copiés ni redistribués.
 En bêta, les textes de cartes sont synchronisés depuis l'API communautaire Riftcodex
-en attendant l'API officielle Riot. Cardmarket est une marque de Cardmarket GmbH. Le
-projet est et restera non commercial. La [licence](LICENSE) du code ne couvre ni le
+en attendant l'API officielle Riot. Le projet est et restera non commercial. La [licence](LICENSE) du code ne couvre ni le
 texte des règles officielles, ni les illustrations, ni aucun actif appartenant à
 Riot Games, Inc.

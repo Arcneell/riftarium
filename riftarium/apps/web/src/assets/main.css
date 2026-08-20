@@ -1743,13 +1743,13 @@ footer {
 .footer-in {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 28px 40px;
+  padding: 32px 28px 24px;
 }
 .footer-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.5fr 0.5fr 0.7fr;
-  gap: 40px;
-  margin-bottom: 32px;
+  gap: 28px;
+  margin-bottom: 20px;
 }
 /* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
 .footer-grid .foot-head {
@@ -1765,7 +1765,7 @@ footer {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 .footer-brand {
   display: flex;
@@ -1795,6 +1795,24 @@ footer {
   margin-bottom: 8px;
   max-width: 100ch;
   font-size: 0.76rem;
+}
+/* Mentions Riot : disclaimers EN/FR côte à côte, tout le contenu conservé mais compact. */
+.footer-legal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.footer-legal .footer-legal-wide {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .footer-legal {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .traceurs-notice {
@@ -5039,5 +5057,230 @@ button.deck-box-stat:hover,
   }
   .guide-copy {
     min-height: 0;
+  }
+}
+
+/* ============================================================
+   Scan de cartes (/scan) — mobile-first
+   La caméra remplit la largeur du téléphone, silhouette de
+   carte (ratio 63:88) au centre, gros déclencheur tactile.
+   Sur desktop, tout reste compact et centré : le fallback
+   « importer une photo » y est la voie normale. Aucune règle
+   ici ne touche l'existant (classes préfixées scan-).
+   ============================================================ */
+
+.scan-wrap {
+  max-width: 720px;
+  padding-top: 34px;
+  padding-bottom: 60px;
+}
+.scan-eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 6px;
+}
+.scan-intro {
+  margin: 8px 0 18px;
+}
+.scan-status {
+  margin: 12px 0;
+}
+.scan-empty,
+.scan-nocam,
+.scan-nomatch {
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+
+/* Scène caméra : le flux couvre (object-fit: cover), la silhouette flotte au centre. */
+.scan-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r);
+  border: 1px solid var(--line-strong);
+  background: #0a1428;
+  aspect-ratio: 3 / 4;
+  max-height: 70vh;
+}
+.scan-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Silhouette de carte, ratio officiel 63×88 mm ; l'ombre portée géante assombrit le reste du champ. */
+.scan-frame {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: min(62%, 70vh);
+  aspect-ratio: 63 / 88;
+  border: 2px solid var(--gold-soft);
+  border-radius: 12px;
+  box-shadow: 0 0 0 200vmax rgba(10, 20, 40, 0.45);
+  pointer-events: none;
+}
+/* Fenêtre d'illustration (la seule zone hachée : x 6→94 %, y 6→54 %) : pointillé discret
+   pour inciter à bien cadrer — surtout le haut de la carte, où vit l'illustration. */
+.scan-frame::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 6%;
+  bottom: 46%;
+  border: 1.5px dashed color-mix(in srgb, var(--gold-soft) 75%, transparent);
+  border-radius: 8px;
+}
+/* Déclencheur : grosse cible tactile (64 px), anneau doré façon appareil photo. */
+.scan-shutter {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-full);
+  border: 4px solid var(--gold-soft);
+  background: var(--gold-grad);
+  box-shadow: 0 6px 18px rgba(10, 20, 40, 0.5);
+  cursor: pointer;
+}
+.scan-shutter:active {
+  transform: translateX(-50%) scale(0.92);
+}
+.scan-shutter:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+/* Le vrai <input file> reste dans le DOM (déclenché par le label) mais invisible. */
+.scan-import {
+  position: relative;
+}
+.scan-import input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Candidats : liste verticale, visuel + infos, toute la rangée est la cible de confirmation. */
+.scan-results h2 {
+  font-size: 1.15rem;
+  margin: 18px 0 8px;
+}
+.scan-login {
+  margin-bottom: 10px;
+}
+/* Langue/état appliqués aux ajouts — mémorisés entre les scans. */
+.scan-prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.scan-prefs label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.scan-prefs select {
+  min-height: 38px;
+}
+.scan-qty {
+  width: 68px;
+  min-height: 38px;
+  text-align: center;
+}
+.scan-candidates {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  display: grid;
+  gap: 10px;
+}
+.scan-candidate {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.scan-candidate:hover,
+.scan-candidate:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+.scan-candidate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.scan-candidate img {
+  width: 64px;
+  border-radius: 6px;
+  flex: none;
+  display: block;
+}
+.scan-candidate-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.scan-candidate-info b {
+  font-family: "Marcellus", serif;
+  font-size: 1.02rem;
+}
+.scan-candidate-info .mono,
+.scan-distance {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.scan-added {
+  flex: none;
+  font-weight: 600;
+  color: var(--body-text);
+}
+.scan-add-hint {
+  flex: none;
+  color: var(--gold-deep);
+  font-size: 1.05rem;
+}
+.scan-again {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Desktop : scène moins haute (la caméra y est rare, le fallback fichier prime). */
+@media (min-width: 761px) {
+  .scan-stage {
+    aspect-ratio: 4 / 3;
+    max-height: 480px;
   }
 }
