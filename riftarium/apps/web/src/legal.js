@@ -1,12 +1,21 @@
 /** Textes légaux et mentions Riot — source unique pour le footer, l'inscription et les pages. */
 
+export const CLOSED_BETA = true
+export const SHOW_DONATIONS = false
+
 export const RIOT_DISCLAIMER_EN =
   'Riftarium was created under Riot Games\' "Legal Jibber Jabber" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.'
 
 export const RIOT_DISCLAIMER_FR =
   "Riftarium a été créé en vertu de la politique « Legal Jibber Jabber » (Jargon juridique) de Riot Games, à partir d'actifs appartenant à Riot Games. Riot Games ne soutient ni ne sponsorise ce projet."
 
-export const LEGAL_UPDATED = "18 août 2026"
+export const RIOT_GENERAL_DISCLAIMER_EN =
+  "Riftarium isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc."
+
+export const RIOT_GENERAL_DISCLAIMER_FR =
+  "Riftarium n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ni de quiconque officiellement impliqué dans la production ou la gestion des propriétés de Riot Games. Riot Games et toutes les propriétés associées sont des marques ou des marques déposées de Riot Games, Inc."
+
+export const LEGAL_UPDATED = "19 août 2026"
 
 export const LEGAL_NAV = [
   { path: "/mentions-legales", key: "mentions", label: "Mentions légales" },
