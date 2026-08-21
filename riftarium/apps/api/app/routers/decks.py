@@ -404,11 +404,17 @@ def _community_deck_out(
     missing_cost_eur: float | None = None,
 ) -> dict:
     domains = [d for d in (legend.domains or []) if d != "Colorless"] if legend else []
+    # Pastille « Légal » du listing : format officiel ET toutes les règles passées.
+    # Les cartes sont déjà chargées (selectin), la validation reste en mémoire.
+    legal = deck.format != "free" and all(
+        check["ok"] for check in validate_deck([(dc.card, dc.qty) for dc in deck.cards])
+    )
     return {
         "id": deck.id,
         "name": deck.name,
         "description": deck.description,
         "format": deck.format,
+        "legal": legal,
         "likes": deck.likes_count,
         "liked_by_me": liked,
         "views": deck.views_count,

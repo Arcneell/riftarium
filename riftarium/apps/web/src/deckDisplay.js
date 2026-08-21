@@ -69,3 +69,23 @@ export const FORMAT_OPTIONS = [
 export function formatLabel(format) {
   return format === "free" ? "illégal" : "légal"
 }
+
+/* Pastille « Légal / Illégal » des boîtes de deck. Un deck est légal s'il est
+   déclaré au format officiel ET qu'il passe toutes les règles de construction.
+   Le listing communauté envoie `legal` (booléen), les autres vues `checks`. */
+export function legalState(deck) {
+  if (!deck) return null
+  if (deck.format === "free") {
+    return { ok: false, label: "Illégal", title: "Format libre : ce deck ne suit pas les règles officielles." }
+  }
+  const valid =
+    typeof deck.legal === "boolean"
+      ? deck.legal
+      : Array.isArray(deck.checks)
+        ? deck.checks.every((check) => check.ok)
+        : null
+  if (valid === null) return { ok: true, label: "Légal", title: "Deck au format officiel." }
+  return valid
+    ? { ok: true, label: "Légal", title: "Toutes les règles officielles de construction sont respectées." }
+    : { ok: false, label: "Illégal", title: "Ce deck ne respecte pas encore toutes les règles de construction." }
+}

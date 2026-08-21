@@ -1,14 +1,17 @@
 <script setup>
-import { coverStyle, formatLabel, legendOf, okCount, runesOf } from "../deckDisplay.js"
+import { computed } from "vue"
+import { coverStyle, legalState, legendOf, runesOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import UserAvatar from "./UserAvatar.vue"
 
-defineProps({
+const props = defineProps({
   deck: { type: Object, required: true },
   to: { type: String, required: true },
   community: { type: Boolean, default: false }
 })
 defineEmits(["like", "remove"])
+
+const legal = computed(() => legalState(props.deck))
 
 /* « 3 manquante(s) (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
 function missingNote(deck) {
@@ -27,6 +30,10 @@ function missingNote(deck) {
       :aria-label="`Ouvrir le deck ${deck.name}`"
     >
       <span v-if="!legendOf(deck)" class="deck-box-nolegend">Sans légende</span>
+      <span class="deck-legal" :class="legal.ok ? 'ok' : 'ko'" :title="legal.title">
+        <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
+        {{ legal.label }}
+      </span>
       <span class="deck-box-runes" v-if="runesOf(deck).length">
         <img
           v-for="rune in runesOf(deck)"
@@ -51,7 +58,8 @@ function missingNote(deck) {
           </span>
           ·
         </template>
-        {{ deck.card_count }} cartes · {{ formatLabel(deck.format) }}
+        <!-- Le format n'est plus écrit ici : la pastille Légal / Illégal le porte. -->
+        {{ deck.card_count }} cartes
         <template v-if="formatEur(deck.prices?.total_eur)">
           · <span class="price-tag" :title="PRICE_NOTE">{{ formatEur(deck.prices.total_eur) }}</span>
         </template>
@@ -63,9 +71,8 @@ function missingNote(deck) {
           </span>
           <span v-else class="deck-missing" :title="PRICE_NOTE">{{ missingNote(deck) }}</span>
         </template>
-        <template v-if="deck.checks">
-          · {{ okCount(deck) }}/{{ deck.checks.length }} règles ·
-          {{ deck.is_public ? "public" : "privé" }}
+        <template v-if="!community">
+          · {{ deck.is_public ? "public" : "privé" }}
           <span v-if="deck.moderation_status === 'pending'" style="color: var(--order-text)"> · en modération</span>
         </template>
       </p>

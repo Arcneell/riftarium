@@ -4408,18 +4408,63 @@ body.drag-active * {
   transform: translateY(-5px);
   box-shadow: var(--shadow);
 }
+/* La carte de la légende est montrée en entier (contain) sur un fond composé de
+   la même illustration, agrandie et floutée : rien n'est rogné, la boîte reste pleine. */
 .deck-box-cover {
   position: relative;
   display: block;
-  aspect-ratio: 5 / 3;
-  background:
-    linear-gradient(to top, rgba(10, 20, 40, 0.45), transparent 45%),
-    var(--cover) center 16% / cover no-repeat,
-    linear-gradient(135deg, #16283a, #0a1428);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: linear-gradient(135deg, #16283a, #0a1428);
+}
+.deck-box-cover:not(.blank)::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  background: var(--cover) center / cover no-repeat;
+  filter: blur(22px) brightness(0.55) saturate(0.85);
+}
+.deck-box-cover:not(.blank)::after {
+  content: "";
+  position: absolute;
+  inset: 14px 14px 16px;
+  background: var(--cover) center / contain no-repeat;
+  filter: drop-shadow(0 8px 18px rgba(10, 20, 40, 0.55));
 }
 .deck-box-cover.blank {
   display: grid;
   place-items: center;
+}
+.deck-box-nolegend,
+.deck-box-runes,
+.deck-legal {
+  z-index: 1;
+}
+
+/* Pastille de légalité : même sémantique que le validateur (✓ hex, ✕ fury). */
+.deck-legal {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  background: rgba(253, 250, 242, 0.95);
+  box-shadow: 0 2px 8px rgba(10, 20, 40, 0.35);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.deck-legal.ok {
+  color: var(--hex-text);
+  border-color: rgba(11, 143, 132, 0.45);
+}
+.deck-legal.ko {
+  color: var(--fury-text);
+  border-color: rgba(207, 68, 55, 0.45);
 }
 .deck-box-nolegend {
   padding: 6px 14px;
@@ -4439,7 +4484,12 @@ body.drag-active * {
 .deck-box-runes img {
   filter: drop-shadow(0 2px 5px rgba(10, 20, 40, 0.85));
 }
+/* La plaque occupe la hauteur restante : d'une boîte à l'autre, la rangée de
+   boutons tombe toujours au même endroit, quelle que soit la longueur du texte. */
 .deck-box-plate {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: 14px 16px 16px;
   border-top: 3px solid var(--gold);
 }
@@ -4454,17 +4504,31 @@ body.drag-active * {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: auto;
+  padding-top: 12px;
 }
+/* Gouttière fixe pour les compteurs, boutons à largeur égale : « Ouvrir » et
+   « Supprimer » tombent au même endroit partout, que le deck ait 3 ou 1 234 j'aime. */
 .deck-box-actions .chip {
-  margin-right: auto;
+  flex: 0 0 auto;
+  min-width: 54px;
+  text-align: center;
+}
+.deck-box-actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 10px;
+  text-align: center;
 }
 .deck-box-stats {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-right: auto;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.deck-box-stats .deck-box-stat {
+  min-width: 38px;
+  font-variant-numeric: tabular-nums;
 }
 .deck-box-stat {
   display: inline-flex;
@@ -6028,6 +6092,14 @@ button.progress-row:hover {
   .deck-box-plate .deck-missing,
   .deck-buildable {
     display: inline-block;
+  }
+  /* Une seule colonne de boîtes : les boutons s'étirent plutôt que de déborder,
+     l'alignement d'une boîte à l'autre reste acquis. */
+  .deck-box-actions {
+    flex-wrap: wrap;
+  }
+  .deck-box-actions .btn {
+    flex: 1 1 auto;
   }
   .wish-toggle {
     width: 100%;

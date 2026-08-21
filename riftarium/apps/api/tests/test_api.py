@@ -946,6 +946,17 @@ def test_like_and_view_missing_deck_return_404(client, auth):
     assert client.get("/api/decks/999999/missing", headers=auth).status_code == 404
 
 
+def test_community_listing_exposes_legality(client, auth):
+    """La pastille « Légal » du listing : format officiel ET règles respectées."""
+    client.post("/api/decks", json=deck_payload(name="Officiel incomplet"), headers=auth)
+    client.post("/api/decks", json=deck_payload(name="Libre", format="free"), headers=auth)
+    listed = {deck["name"]: deck["legal"] for deck in client.get("/api/community/decks").json()["items"]}
+
+    assert listed["Libre"] is False  # format libre : jamais légal
+    # Le deck de test n'a pas 40 cartes en deck principal : règles non respectées.
+    assert listed["Officiel incomplet"] is False
+
+
 def test_community_format_filter(client, auth):
     tournament = client.post("/api/decks", json=deck_payload(name="Tournoi"), headers=auth).json()
     free = client.post("/api/decks", json=deck_payload(name="Libre", format="free"), headers=auth).json()
