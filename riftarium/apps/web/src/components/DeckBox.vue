@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue"
-import { deckIdentity, legalState, legendOf } from "../deckDisplay.js"
+import { deckIdentity, legalState, legendOf, runesOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import UserAvatar from "./UserAvatar.vue"
 
@@ -12,6 +12,8 @@ const props = defineProps({
 defineEmits(["like", "remove"])
 
 const legal = computed(() => legalState(props.deck))
+const legend = computed(() => legendOf(props.deck))
+const runes = computed(() => runesOf(props.deck))
 
 /* « 3 manquante(s) (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
 function missingNote(deck) {
@@ -21,51 +23,29 @@ function missingNote(deck) {
 </script>
 
 <template>
-  <!-- Ordre de lecture : nom, carte, informations. Les couleurs des domaines de
-       la légende habillent la boîte (halo derrière la carte, liseré du cadre). -->
+  <!-- Fiche horizontale : la carte de la légende à gauche, l'identité du deck à
+       droite. Les couleurs de ses domaines habillent la tranche et le halo de la
+       carte (deckIdentity pose --d1 / --d2). -->
   <article class="deck-box" :style="deckIdentity(deck)">
-    <div class="deck-box-head">
-      <h3 class="deck-box-title">
-        <RouterLink :to="to" :title="deck.name">{{ deck.name }}</RouterLink>
-      </h3>
-      <!-- Compteurs à droite du nom : ils occupent la place libre plutôt qu'une ligne. -->
-      <span class="deck-box-stats">
-        <button
-          v-if="community"
-          type="button"
-          class="deck-box-stat"
-          :class="{ liked: deck.liked_by_me }"
-          :aria-pressed="deck.liked_by_me"
-          :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
-          @click.stop="$emit('like', deck)"
-        >
-          <Icon name="heart" :size="13" />
-          {{ deck.likes }}
-        </button>
-        <span v-else class="deck-box-stat" :title="`${deck.likes} j'aime`">
-          <Icon name="heart" :size="13" />
-          {{ deck.likes }}
-        </span>
-        <span v-if="community" class="deck-box-stat" :title="`${deck.views} vue(s)`">
-          <Icon name="eye" :size="13" />
-          {{ deck.views }}
-        </span>
-      </span>
-    </div>
-    <RouterLink
-      class="deck-box-cover"
-      :class="{ blank: !legendOf(deck) }"
-      :to="to"
-      :aria-label="`Ouvrir le deck ${deck.name}`"
-    >
-      <span v-if="!legendOf(deck)" class="deck-box-nolegend">Sans légende</span>
-      <span class="deck-legal" :class="legal.ok ? 'ok' : 'ko'" :title="legal.title">
-        <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
-        {{ legal.label }}
-      </span>
+    <RouterLink class="deck-box-cover" :class="{ blank: !legend }" :to="to" :aria-label="`Ouvrir le deck ${deck.name}`">
+      <span v-if="!legend" class="deck-box-nolegend">Sans légende</span>
     </RouterLink>
-    <div class="deck-box-plate">
-      <p class="muted mono">
+
+    <div class="deck-box-body">
+      <div class="deck-box-head">
+        <h3 class="deck-box-title">
+          <RouterLink :to="to" :title="deck.name">{{ deck.name }}</RouterLink>
+        </h3>
+        <span class="deck-legal" :class="legal.ok ? 'ok' : 'ko'" :title="legal.title">
+          <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
+          {{ legal.label }}
+        </span>
+      </div>
+
+      <p class="deck-box-legend mono" v-if="legend">{{ legend.name }}</p>
+      <p class="deck-box-legend mono muted" v-else>Légende à choisir</p>
+
+      <p class="deck-box-meta mono">
         <template v-if="community">
           <span class="deck-box-owner">
             <UserAvatar :src="deck.owner_avatar" :handle="deck.owner" :size="18" />
@@ -80,7 +60,7 @@ function missingNote(deck) {
         </template>
         <template v-if="!community">
           · {{ deck.is_public ? "public" : "privé" }}
-          <span v-if="deck.moderation_status === 'pending'" style="color: var(--order-text)"> · en modération</span>
+          <span v-if="deck.moderation_status === 'pending'" class="deck-box-pending"> · en modération</span>
         </template>
         <!-- Renseigné par l'API pour les visiteurs connectés uniquement. -->
         <template v-if="community && deck.missing_cards !== undefined && deck.missing_cards !== null">
@@ -91,9 +71,45 @@ function missingNote(deck) {
           <span v-else class="deck-missing" :title="PRICE_NOTE">{{ missingNote(deck) }}</span>
         </template>
       </p>
-      <div class="deck-box-buttons">
-        <RouterLink class="btn btn-gold btn-sm" :to="to">Ouvrir</RouterLink>
-        <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
+
+      <div class="deck-box-foot">
+        <span class="deck-box-runes" v-if="runes.length">
+          <img
+            v-for="rune in runes"
+            :key="rune.domain"
+            :src="rune.src"
+            :alt="rune.label"
+            :title="rune.label"
+            width="22"
+            height="22"
+          />
+        </span>
+        <span class="deck-box-stats">
+          <button
+            v-if="community"
+            type="button"
+            class="deck-box-stat"
+            :class="{ liked: deck.liked_by_me }"
+            :aria-pressed="deck.liked_by_me"
+            :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
+            @click.stop="$emit('like', deck)"
+          >
+            <Icon name="heart" :size="14" />
+            {{ deck.likes }}
+          </button>
+          <span v-else class="deck-box-stat" :title="`${deck.likes} j'aime`">
+            <Icon name="heart" :size="14" />
+            {{ deck.likes }}
+          </span>
+          <span v-if="community" class="deck-box-stat" :title="`${deck.views} vue(s)`">
+            <Icon name="eye" :size="14" />
+            {{ deck.views }}
+          </span>
+        </span>
+        <div class="deck-box-buttons">
+          <RouterLink class="btn btn-gold btn-sm" :to="to">Ouvrir</RouterLink>
+          <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
+        </div>
       </div>
     </div>
   </article>

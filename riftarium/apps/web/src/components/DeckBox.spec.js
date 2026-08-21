@@ -45,7 +45,7 @@ describe("DeckBox", () => {
 
   it("mentionne la valeur € du deck quand total_eur est présent", () => {
     const wrapper = mountBox(fakeDeck({ prices: { total_eur: 87.4, missing_eur: null } }))
-    const price = wrapper.get(".deck-box-plate .price-tag")
+    const price = wrapper.get(".deck-box-meta .price-tag")
     expect(price.text()).toContain("87,40")
     expect(price.attributes("title")).toContain("TCGplayer")
     wrapper.unmount()
@@ -79,7 +79,7 @@ describe("DeckBox", () => {
   it("n'affiche plus le décompte de règles ni le format en texte", () => {
     const wrapper = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: true, message: "" }] }))
     expect(wrapper.text()).not.toContain("règles")
-    expect(wrapper.get(".deck-box-plate .mono").text()).not.toContain("légal")
+    expect(wrapper.get(".deck-box-meta").text()).not.toContain("légal")
     expect(wrapper.text()).toContain("public")
     wrapper.unmount()
   })
