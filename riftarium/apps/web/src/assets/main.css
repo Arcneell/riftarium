@@ -4387,10 +4387,12 @@ body.drag-active * {
 }
 
 /* Boîtes de deck (page Mes decks) */
+/* Vignettes étroites : la carte de la légende occupe toute la couverture,
+   c'est elle qui donne le format de la boîte. */
 .deck-boxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(206px, 1fr));
+  gap: 20px;
 }
 .deck-box {
   display: flex;
@@ -4408,12 +4410,13 @@ body.drag-active * {
   transform: translateY(-5px);
   box-shadow: var(--shadow);
 }
-/* La carte de la légende est montrée en entier (contain) sur un fond composé de
-   la même illustration, agrandie et floutée : rien n'est rogné, la boîte reste pleine. */
+/* Format d'une carte Riftbound (744 × 1040) : l'illustration remplit la
+   couverture bord à bord, sans rognage. Le fond flouté ne sert que de filet de
+   sécurité pour un visuel au format inattendu (champ de bataille en paysage). */
 .deck-box-cover {
   position: relative;
   display: block;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 744 / 1040;
   overflow: hidden;
   background: linear-gradient(135deg, #16283a, #0a1428);
 }
@@ -4427,16 +4430,14 @@ body.drag-active * {
 .deck-box-cover:not(.blank)::after {
   content: "";
   position: absolute;
-  inset: 14px 14px 16px;
+  inset: 0;
   background: var(--cover) center / contain no-repeat;
-  filter: drop-shadow(0 8px 18px rgba(10, 20, 40, 0.55));
 }
 .deck-box-cover.blank {
   display: grid;
   place-items: center;
 }
 .deck-box-nolegend,
-.deck-box-runes,
 .deck-legal {
   z-index: 1;
 }
@@ -4500,31 +4501,30 @@ body.drag-active * {
 .deck-box-plate .mono {
   font-size: 0.7rem;
 }
+/* Compteurs sur une ligne, boutons sur la suivante et à largeur égale : sur une
+   vignette étroite, « Ouvrir » et « Supprimer » restent au même endroit d'une
+   boîte à l'autre, quel que soit le compteur ou la longueur du nom. */
 .deck-box-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   margin-top: auto;
   padding-top: 12px;
 }
-/* Gouttière fixe pour les compteurs, boutons à largeur égale : « Ouvrir » et
-   « Supprimer » tombent au même endroit partout, que le deck ait 3 ou 1 234 j'aime. */
-.deck-box-actions .chip {
-  flex: 0 0 auto;
-  min-width: 54px;
-  text-align: center;
+.deck-box-buttons {
+  display: flex;
+  gap: 8px;
 }
-.deck-box-actions .btn {
+.deck-box-buttons .btn {
   flex: 1 1 0;
   min-width: 0;
-  padding-inline: 10px;
+  padding-inline: 8px;
   text-align: center;
 }
 .deck-box-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+  gap: 12px;
 }
 .deck-box-stats .deck-box-stat {
   min-width: 38px;
@@ -6088,18 +6088,21 @@ button.progress-row:hover {
     text-align: left;
     white-space: normal;
   }
-  /* Mentions « manquantes » des boîtes de deck : à la ligne, jamais tronquées. */
+  /* Mentions « manquantes » des boîtes de deck : à la ligne, jamais tronquées.
+     Vignettes étroites : la mention se coupe plutôt que de déborder. */
   .deck-box-plate .deck-missing,
   .deck-buildable {
     display: inline-block;
+    white-space: normal;
   }
-  /* Une seule colonne de boîtes : les boutons s'étirent plutôt que de déborder,
-     l'alignement d'une boîte à l'autre reste acquis. */
-  .deck-box-actions {
-    flex-wrap: wrap;
+  /* Deux vignettes par ligne sur téléphone : la carte reste lisible sans
+     transformer la page en colonne interminable. */
+  .deck-boxes {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
   }
-  .deck-box-actions .btn {
-    flex: 1 1 auto;
+  .deck-box-plate {
+    padding: 12px 12px 14px;
   }
   .wish-toggle {
     width: 100%;

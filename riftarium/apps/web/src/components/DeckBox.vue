@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue"
-import { coverStyle, legalState, legendOf, runesOf } from "../deckDisplay.js"
+import { coverStyle, legalState, legendOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import UserAvatar from "./UserAvatar.vue"
 
@@ -34,17 +34,8 @@ function missingNote(deck) {
         <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
         {{ legal.label }}
       </span>
-      <span class="deck-box-runes" v-if="runesOf(deck).length">
-        <img
-          v-for="rune in runesOf(deck)"
-          :key="rune.domain"
-          :src="rune.src"
-          :alt="rune.label"
-          :title="rune.label"
-          width="24"
-          height="24"
-        />
-      </span>
+      <!-- Pas de pastilles de runes ici : la carte est affichée en entier, ses
+           propres icônes de domaine sont lisibles. -->
     </RouterLink>
     <div class="deck-box-plate">
       <h3>
@@ -90,14 +81,21 @@ function missingNote(deck) {
             <Icon name="heart" :size="14" />
             {{ deck.likes }}
           </button>
-          <span v-else class="chip" style="--chip: var(--chaos)">♥ {{ deck.likes }}</span>
+          <span v-else class="deck-box-stat" :title="`${deck.likes} j'aime`">
+            <Icon name="heart" :size="14" />
+            {{ deck.likes }}
+          </span>
           <span v-if="community" class="deck-box-stat" :title="`${deck.views} vue(s)`">
             <Icon name="eye" :size="14" />
             {{ deck.views }}
           </span>
         </div>
-        <RouterLink class="btn btn-ghost btn-sm" :to="to">Ouvrir</RouterLink>
-        <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
+        <!-- Boutons sur leur propre ligne : la vignette est étroite, ils gardent
+             la même largeur et la même position d'une boîte à l'autre. -->
+        <div class="deck-box-buttons">
+          <RouterLink class="btn btn-ghost btn-sm" :to="to">Ouvrir</RouterLink>
+          <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
+        </div>
       </div>
     </div>
   </article>
