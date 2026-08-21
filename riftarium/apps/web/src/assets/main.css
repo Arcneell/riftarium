@@ -2021,7 +2021,31 @@ footer {
   }
 }
 
-@media (max-width: 760px) {
+/* Palier intermédiaire : la barre complète est resserrée avant de basculer en
+   menu déroulant, sinon elle déborde entre 980 et 1 140 px pour un visiteur
+   connecté (liens + profil + déconnexion + marque bêta). */
+@media (max-width: 1140px) {
+  .nav {
+    gap: 2px;
+  }
+  .nav a {
+    padding: 8px 10px;
+    font-size: 0.86rem;
+  }
+  .nav-profile {
+    padding: 4px 8px 4px 4px;
+  }
+  .brand-name {
+    font-size: 1.15rem;
+  }
+  .beta-mark {
+    letter-spacing: 0.12em;
+  }
+}
+
+/* Navigation en menu déroulant dès que la barre complète ne tient plus : une fois
+   connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px. */
+@media (max-width: 980px) {
   .burger {
     display: grid;
     place-items: center;
@@ -2058,6 +2082,9 @@ footer {
     right: 70px;
     transform: translateY(-50%);
   }
+}
+
+@media (max-width: 760px) {
   .filter-search {
     flex-basis: 100%;
     max-width: none;
@@ -4396,10 +4423,15 @@ body.drag-active * {
   gap: 18px;
 }
 .deck-box {
+  /* Largeur de la carte : elle fixe aussi la hauteur minimale de la fiche, sinon
+     une fiche au corps plus court rognerait le bas de la carte. */
+  --cover-w: 128px;
+  --cover-h: calc(var(--cover-w) * 1040 / 744);
   position: relative;
   display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
+  grid-template-columns: var(--cover-w) minmax(0, 1fr);
   gap: 16px;
+  min-height: calc(var(--cover-h) + 28px);
   padding: 14px 16px 14px 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
@@ -4412,16 +4444,17 @@ body.drag-active * {
     transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1),
     box-shadow 0.25s;
 }
-/* Tranche colorée : les deux domaines de la légende, façon dos de classeur. */
+/* Fondu de couleur : les deux domaines de la légende diffusent depuis la carte
+   vers le parchemin, sans bord net. */
 .deck-box::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 5px;
-  background: linear-gradient(180deg, var(--d1, var(--gold)), var(--d2, var(--gold)));
-  opacity: 0.85;
+  inset: 0;
+  background:
+    radial-gradient(115% 130% at 3% 42%, var(--d1, var(--gold)) 0%, transparent 47%),
+    radial-gradient(85% 105% at 20% 92%, var(--d2, var(--gold)) 0%, transparent 55%);
+  opacity: 0.2;
+  pointer-events: none;
   transition: opacity 0.25s;
 }
 .deck-box:hover {
@@ -4429,28 +4462,18 @@ body.drag-active * {
   box-shadow: var(--shadow);
 }
 .deck-box:hover::before {
-  opacity: 1;
+  opacity: 0.3;
 }
-/* v-tilt : le survol doit composer avec l'inclinaison, sinon translateY
-   écraserait la rotation posée par la directive. */
-.deck-box.tilt:hover {
-  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px);
-}
-.deck-box.tilt::after {
-  background: radial-gradient(
-    320px circle at var(--gx, 50%) var(--gy, 50%),
-    rgba(255, 255, 255, 0.55),
-    transparent 62%
-  );
-  mix-blend-mode: soft-light;
-}
+/* Le survol reste en CSS pur : l'inclinaison v-tilt dépendait d'un mousemove
+   reçu par la fiche, elle ne s'appliquait donc pas de la même façon partout. */
 
 /* La carte, en entier, sur un halo de domaine ; légèrement inclinée, elle se
    redresse au survol. */
 .deck-box-cover {
   position: relative;
   display: block;
-  aspect-ratio: 744 / 1040;
+  width: var(--cover-w);
+  height: var(--cover-h);
   align-self: center;
 }
 .deck-box-cover::before {
@@ -4459,7 +4482,7 @@ body.drag-active * {
   inset: -6% -9%;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, var(--d1, var(--gold)), var(--d2, var(--gold)) 55%, transparent 70%);
-  opacity: 0.26;
+  opacity: 0.22;
   filter: blur(16px);
   transition: opacity 0.25s;
 }
@@ -4471,6 +4494,7 @@ body.drag-active * {
   content: "";
   position: absolute;
   inset: 5px 7px;
+  border-radius: 7px;
   background: var(--cover) center / contain no-repeat;
   filter: drop-shadow(0 8px 16px rgba(74, 56, 22, 0.35));
   transform: rotate(-2.5deg);
@@ -6182,9 +6206,15 @@ button.progress-row:hover {
     gap: 14px;
   }
   .deck-box {
-    grid-template-columns: 104px minmax(0, 1fr);
+    --cover-w: 104px;
     gap: 12px;
+    min-height: calc(var(--cover-h) + 24px);
     padding: 12px 13px 12px 15px;
+  }
+  /* Deux boutons dans une colonne étroite : un cran plus compacts. */
+  .deck-box-buttons .btn {
+    padding-inline: 8px;
+    font-size: 0.72rem;
   }
   .deck-box-title {
     font-size: 1rem;

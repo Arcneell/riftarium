@@ -115,7 +115,6 @@ onMounted(load)
           v-for="(deck, i) in decks"
           :key="deck.id"
           v-reveal="i"
-          v-tilt
           :deck="deck"
           :to="`/decks/${deck.id}`"
           @remove="askRemove"

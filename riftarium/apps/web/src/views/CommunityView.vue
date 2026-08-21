@@ -166,7 +166,6 @@ onMounted(async () => {
           v-for="(deck, i) in result.items"
           :key="deck.id"
           v-reveal="i"
-          v-tilt
           community
           :deck="deck"
           :to="`/decks/${deck.id}`"
