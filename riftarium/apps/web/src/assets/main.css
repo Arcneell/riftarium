@@ -4489,15 +4489,18 @@ body.drag-active * {
 .deck-box:hover .deck-box-cover::before {
   opacity: 0.42;
 }
-/* Marge intérieure : la légère rotation ne doit pas sortir du cadre arrondi. */
+/* Marge intérieure en pourcentage : la couche garde exactement le format d'une
+   carte, donc l'image la remplit et les coins arrondis rognent bien l'illustration
+   — y compris les visuels Signature, opaques et à angles droits. La marge laisse
+   aussi la place à la légère rotation, qui sinon serait rognée par la fiche. */
 .deck-box-cover:not(.blank)::after {
   content: "";
   position: absolute;
-  inset: 5px 7px;
-  border-radius: 7px;
-  background: var(--cover) center / contain no-repeat;
+  inset: 3.2%;
+  border-radius: calc(var(--cover-w) * 0.05);
+  background: var(--cover) center / cover no-repeat;
   filter: drop-shadow(0 8px 16px rgba(74, 56, 22, 0.35));
-  transform: rotate(-2.5deg);
+  transform: rotate(-2deg);
   transition: transform 0.25s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 .deck-box:hover .deck-box-cover:not(.blank)::after {
