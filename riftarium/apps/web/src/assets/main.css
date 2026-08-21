@@ -4394,56 +4394,106 @@ body.drag-active * {
   grid-template-columns: repeat(auto-fill, minmax(204px, 1fr));
   gap: 18px;
 }
+/* Boîte sombre façon vitrine : la carte flotte sur un halo aux couleurs des
+   domaines de la légende (--d1 / --d2, posées par deckIdentity), dans un cadre
+   au liseré dégradé. Même langage visuel que la vitrine de l'éditeur de deck. */
 .deck-box {
+  position: relative;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  background:
+    radial-gradient(130% 60% at 50% 8%, rgba(255, 255, 255, 0.06), transparent 60%),
+    linear-gradient(180deg, #16283a 0%, #0d1a2e 45%, #0a1428 100%);
+  box-shadow: 0 14px 32px rgba(10, 20, 40, 0.26);
   transition:
-    transform 0.18s cubic-bezier(0.22, 0.8, 0.32, 1),
-    box-shadow 0.2s;
+    transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1),
+    box-shadow 0.25s;
+}
+/* Liseré dégradé (technique du masque : un cadre de 1 px, pas un fond). */
+.deck-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(155deg, var(--d1, var(--gold)), rgba(217, 189, 130, 0.15) 48%, var(--d2, var(--gold)));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.65;
+  pointer-events: none;
+  transition: opacity 0.25s;
 }
 .deck-box:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow);
+  transform: translateY(-6px);
+  box-shadow:
+    0 22px 44px rgba(10, 20, 40, 0.34),
+    0 0 0 1px rgba(217, 189, 130, 0.18);
 }
-/* Couverture un peu plus large que la carte (744 × 1040) : celle-ci est
-   contenue en entier, donc de fines marges de parchemin restent sur les côtés,
-   comme une carte posée sur un tapis. */
+/* v-tilt : la boîte s'incline sous le curseur et un reflet la balaie. Le survol
+   doit composer avec l'inclinaison, sinon translateY écraserait la rotation. */
+.deck-box.tilt:hover {
+  transform: perspective(950px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px) scale(1.015);
+}
+.deck-box.tilt::after {
+  background: radial-gradient(
+    280px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(255, 255, 255, 0.16),
+    transparent 60%
+  );
+  z-index: 2;
+}
+.deck-box:hover::before {
+  opacity: 1;
+}
+
+/* Couverture un peu plus large que la carte (744 × 1040) : celle-ci tient en
+   entier, le halo de domaine occupe la marge autour d'elle. */
 .deck-box-cover {
   position: relative;
   display: block;
   aspect-ratio: 5 / 6.35;
   overflow: hidden;
 }
+.deck-box-cover::before {
+  content: "";
+  position: absolute;
+  inset: 4% 2% 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, var(--d1, var(--gold)), var(--d2, var(--gold)) 55%, transparent 72%);
+  opacity: 0.5;
+  filter: blur(26px);
+  transition: opacity 0.25s;
+}
+.deck-box:hover .deck-box-cover::before {
+  opacity: 0.7;
+}
 .deck-box-cover:not(.blank)::after {
   content: "";
   position: absolute;
-  inset: 9px 11px;
+  inset: 10px 12px;
   background: var(--cover) center / contain no-repeat;
-  filter: drop-shadow(0 5px 12px rgba(10, 20, 40, 0.3));
+  filter: drop-shadow(0 10px 16px rgba(4, 10, 22, 0.6));
+  transition: transform 0.25s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+.deck-box:hover .deck-box-cover:not(.blank)::after {
+  transform: translateY(-3px) scale(1.035);
 }
 .deck-box-cover.blank {
   display: grid;
   place-items: center;
 }
-/* Sans légende : le panneau sombre garde les mêmes marges que la carte. */
-.deck-box-cover.blank::before {
-  content: "";
-  position: absolute;
-  inset: 9px 11px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #16283a, #0a1428);
-}
 .deck-box-nolegend,
 .deck-legal {
-  z-index: 1;
+  z-index: 2;
 }
 
-/* Pastille de légalité : même sémantique que le validateur (✓ hex, ✕ fury). */
+/* Pastille de légalité : verre sombre, même sémantique que le validateur. */
 .deck-legal {
   position: absolute;
   top: 16px;
@@ -4454,43 +4504,46 @@ body.drag-active * {
   padding: 4px 11px;
   border-radius: var(--r-full);
   border: 1px solid transparent;
-  background: rgba(253, 250, 242, 0.95);
-  box-shadow: 0 2px 8px rgba(10, 20, 40, 0.35);
+  background: rgba(6, 14, 28, 0.82);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(4, 10, 22, 0.5);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .deck-legal.ok {
-  color: var(--hex-text);
-  border-color: rgba(11, 143, 132, 0.45);
+  color: #6fe0d2;
+  border-color: rgba(111, 224, 210, 0.5);
 }
 .deck-legal.ko {
-  color: var(--fury-text);
-  border-color: rgba(207, 68, 55, 0.45);
+  color: #ff9084;
+  border-color: rgba(255, 144, 132, 0.45);
 }
 .deck-box-nolegend {
   padding: 6px 14px;
   border-radius: var(--r-full);
-  border: 1px dashed rgba(253, 250, 242, 0.6);
-  color: rgba(253, 250, 242, 0.85);
+  border: 1px dashed rgba(253, 250, 242, 0.45);
+  color: rgba(253, 250, 242, 0.8);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }
-/* Bandeau du nom, au-dessus de la carte : nom sur une seule ligne coupée à
-   l'ellipse (nom complet en infobulle), compteurs à droite. Hauteur identique
-   partout, donc les couvertures démarrent à la même ordonnée d'une boîte à l'autre. */
+
+/* Bandeau du nom : une seule ligne coupée à l'ellipse (nom complet en
+   infobulle), compteurs à droite. Hauteur identique partout, donc les cartes
+   démarrent à la même ordonnée d'une boîte à l'autre. */
 .deck-box-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 12px 8px;
-  border-bottom: 2px solid var(--gold);
+  padding: 10px 13px 9px;
+  border-bottom: 1px solid rgba(217, 189, 130, 0.22);
 }
 .deck-box-title {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   line-height: 1.3;
 }
 .deck-box-title a {
@@ -4498,29 +4551,45 @@ body.drag-active * {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: var(--paper);
+}
+.deck-box-title a:hover {
+  color: var(--gold-soft);
 }
 .deck-box-head .deck-box-stats {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-variant-numeric: tabular-nums;
 }
+
 /* La plaque occupe la hauteur restante : d'une boîte à l'autre, la rangée de
    boutons tombe toujours au même endroit, quelle que soit la longueur du texte. */
 .deck-box-plate {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 9px;
-  padding: 9px 12px 11px;
+  gap: 10px;
+  padding: 10px 13px 12px;
+  border-top: 1px solid rgba(217, 189, 130, 0.16);
 }
 .deck-box-plate .mono {
   font-size: 0.68rem;
   line-height: 1.5;
+  color: rgba(245, 239, 225, 0.66);
 }
-/* Boutons à largeur égale, collés en pied de plaque : « Ouvrir » et
-   « Supprimer » restent au même endroit d'une boîte à l'autre. */
+.deck-box .price-tag {
+  color: var(--gold-soft);
+}
+.deck-box .deck-buildable {
+  color: #7fd6a1;
+}
+.deck-box .deck-missing {
+  color: rgba(245, 239, 225, 0.66);
+}
+/* Boutons à largeur égale, collés en pied de plaque, redessinés pour le fond
+   sombre (le .btn-ghost du site est taillé pour le parchemin). */
 .deck-box-buttons {
   display: flex;
   gap: 8px;
@@ -4532,10 +4601,43 @@ body.drag-active * {
   padding-inline: 6px;
   text-align: center;
 }
-.deck-box-plate .deck-box-stat {
+.deck-box-buttons .btn-ghost {
+  border-color: rgba(217, 189, 130, 0.42);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--paper);
+}
+.deck-box-buttons .btn-ghost:hover {
+  border-color: var(--gold-soft);
+  background: rgba(217, 189, 130, 0.18);
+  color: #fff;
+}
+.deck-box .deck-box-stat {
+  color: rgba(245, 239, 225, 0.6);
   vertical-align: middle;
   font-size: inherit;
   font-variant-numeric: tabular-nums;
+}
+.deck-box button.deck-box-stat:hover,
+.deck-box .deck-box-stat.liked {
+  color: #ff8fc4;
+}
+.deck-box .deck-box-owner {
+  color: rgba(245, 239, 225, 0.78);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-box,
+  .deck-box::before,
+  .deck-box-cover::before,
+  .deck-box-cover::after {
+    transition: none;
+  }
+  .deck-box:hover {
+    transform: none;
+  }
+  .deck-box:hover .deck-box-cover:not(.blank)::after {
+    transform: none;
+  }
 }
 .deck-box-stat {
   display: inline-flex;

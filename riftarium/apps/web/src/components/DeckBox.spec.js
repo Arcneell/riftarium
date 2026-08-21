@@ -29,6 +29,20 @@ function mountBox(deck, props = {}) {
 }
 
 describe("DeckBox", () => {
+  it("habille la boîte des couleurs des domaines de la légende", () => {
+    const legend = { id: "l1", name: "Ahri", type: "Legend", domains: ["Fury", "Mind", "Colorless"], image_url: "u" }
+    const wrapper = mountBox(fakeDeck({ cards: [{ card: legend, qty: 1 }] }))
+    const style = wrapper.get(".deck-box").attributes("style")
+    expect(style).toContain("--d1: var(--fury)")
+    expect(style).toContain("--d2: var(--mind)") // Colorless ignoré
+    wrapper.unmount()
+
+    // Sans légende : repli sur l'or du site, jamais de variable vide.
+    const plain = mountBox(fakeDeck())
+    expect(plain.get(".deck-box").attributes("style")).toContain("--d1: var(--gold)")
+    plain.unmount()
+  })
+
   it("mentionne la valeur € du deck quand total_eur est présent", () => {
     const wrapper = mountBox(fakeDeck({ prices: { total_eur: 87.4, missing_eur: null } }))
     const price = wrapper.get(".deck-box-plate .price-tag")

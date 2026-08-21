@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue"
-import { coverStyle, legalState, legendOf } from "../deckDisplay.js"
+import { deckIdentity, legalState, legendOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import UserAvatar from "./UserAvatar.vue"
 
@@ -21,9 +21,9 @@ function missingNote(deck) {
 </script>
 
 <template>
-  <!-- Ordre de lecture : nom, carte, informations. Le nom est plafonné à deux
-       lignes pour que les couvertures s'alignent d'une boîte à l'autre. -->
-  <article class="deck-box">
+  <!-- Ordre de lecture : nom, carte, informations. Les couleurs des domaines de
+       la légende habillent la boîte (halo derrière la carte, liseré du cadre). -->
+  <article class="deck-box" :style="deckIdentity(deck)">
     <div class="deck-box-head">
       <h3 class="deck-box-title">
         <RouterLink :to="to" :title="deck.name">{{ deck.name }}</RouterLink>
@@ -56,7 +56,6 @@ function missingNote(deck) {
       class="deck-box-cover"
       :class="{ blank: !legendOf(deck) }"
       :to="to"
-      :style="coverStyle(deck)"
       :aria-label="`Ouvrir le deck ${deck.name}`"
     >
       <span v-if="!legendOf(deck)" class="deck-box-nolegend">Sans légende</span>
@@ -93,7 +92,7 @@ function missingNote(deck) {
         </template>
       </p>
       <div class="deck-box-buttons">
-        <RouterLink class="btn btn-ghost btn-sm" :to="to">Ouvrir</RouterLink>
+        <RouterLink class="btn btn-gold btn-sm" :to="to">Ouvrir</RouterLink>
         <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
       </div>
     </div>

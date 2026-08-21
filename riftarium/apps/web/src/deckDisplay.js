@@ -1,4 +1,4 @@
-import { cardThumb } from "./api.js"
+import { DOMAINS, cardThumb } from "./api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "./cardText.js"
 
 export const DECK_ZONES = [
@@ -53,6 +53,15 @@ export function runesOf(deck) {
 export function coverStyle(deck) {
   const art = legendOf(deck)?.image_url || deck?.cards?.[0]?.card.image_url
   return art ? { "--cover": `url(${cardThumb(art, 480)})` } : {}
+}
+
+/* Identité visuelle d'une boîte de deck : l'illustration de la légende plus les
+   deux couleurs de ses domaines, servies en variables CSS (halo, liseré). */
+export function deckIdentity(deck) {
+  const domains = (legendOf(deck)?.domains || []).filter((domain) => domain !== "Colorless")
+  const first = DOMAINS[domains[0]]?.color || "var(--gold)"
+  const second = DOMAINS[domains[1]]?.color || first
+  return { ...coverStyle(deck), "--d1": first, "--d2": second }
 }
 
 export function okCount(deck) {
