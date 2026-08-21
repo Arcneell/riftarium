@@ -310,11 +310,18 @@ def test_profile_avatar_password_export_and_delete(client, auth):
     )
 
     client.put("/api/collection/ogn-037-298", json={"qty": 2}, headers=auth)
+    client.put("/api/wishlist/ogn-200-298", json={"qty": 3}, headers=auth)
     client.post("/api/decks", json=deck_payload(), headers=auth)
     export = client.get("/api/auth/export", headers=auth).json()
     assert export["handle"] == "nyra"
     assert export["collection"][0]["qty"] == 2
     assert export["decks"][0]["name"] == "Étincelle de Fureur"
+    # Export RGPD complet : la wishlist est supprimée à la clôture du compte,
+    # c'est donc de la donnée détenue — elle doit être exportable.
+    assert export["wishlist"] == [
+        {"card_id": "ogn-200-298", "qty": 3, "created_at": export["wishlist"][0]["created_at"]}
+    ]
+    assert export["wishlist"][0]["created_at"] is not None
 
     assert (
         client.request(

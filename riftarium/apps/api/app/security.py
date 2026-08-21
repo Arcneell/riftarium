@@ -48,6 +48,29 @@ def require_admin_token(provided: str | None) -> None:
         raise HTTPException(status_code=403, detail="Jeton d'administration requis")
 
 
+_ANALYTICS_INFO = b"riftarium-analytics-v1"
+
+
+def _analytics_key() -> bytes:
+    """Clé des empreintes anonymes : ANALYTICS_SALT, sinon dérivée du JWT secret.
+
+    Un usage, une clé : on ne hache jamais une IP avec le secret de signature
+    directement, pour qu'une fuite d'empreintes ne donne aucune prise sur lui.
+    """
+    if settings.analytics_salt:
+        return settings.analytics_salt.encode()
+    return hmac.new(settings.jwt_secret.encode(), _ANALYTICS_INFO, hashlib.sha256).digest()
+
+
+def analytics_digest(*parts: str) -> str:
+    """Empreinte anonyme et non réversible (IP, jour, contexte…), salée par clé dédiée.
+
+    Un SHA-256 nu d'adresse IP se casse par force brute (2^32 en IPv4) : le HMAC
+    à clé secrète rend l'empreinte inexploitable sans la clé du serveur.
+    """
+    return hmac.new(_analytics_key(), ":".join(parts).encode(), hashlib.sha256).hexdigest()
+
+
 def allow_rate(key: str, limit: int, window: int = 60) -> bool:
     """Fenêtre glissante. Redis si disponible (plusieurs workers), sinon mémoire process."""
     if limit <= 0:

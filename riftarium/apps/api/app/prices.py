@@ -107,9 +107,15 @@ def _backfill_tcgplayer_ids(db: Session, http: httpx.Client) -> int:
             data = response.json()
             for item in data.get("items", []):
                 tcgplayer_id = item.get("tcgplayer_id")
-                if tcgplayer_id and item.get("id") in missing:
-                    db.get(Card, item["id"]).tcgplayer_id = str(tcgplayer_id)
-                    filled += 1
+                if not tcgplayer_id or item.get("id") not in missing:
+                    continue
+                # La carte a pu disparaître entre le select de `missing` et ici
+                # (sync concurrente) : sans ce garde-fou, tout le backfill tombe.
+                card = db.get(Card, item["id"])
+                if card is None:
+                    continue
+                card.tcgplayer_id = str(tcgplayer_id)
+                filled += 1
             if page >= data.get("pages", 1):
                 break
             page += 1

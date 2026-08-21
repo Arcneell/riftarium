@@ -103,3 +103,17 @@ def test_admin_stats_visits_aggregates(client, register_user):
     assert [entry["day"] for entry in visits["daily"]] == sorted(entry["day"] for entry in visits["daily"])
     assert len(visits["daily"]) == 3  # le jour vieux de 40 jours est exclu
     assert visits["sections_7d"] == [{"section": "home", "hits": 15}, {"section": "cartes", "hits": 2}]
+
+
+def test_bump_without_any_counter_is_a_noop(client):
+    """UPDATE ... VALUES () est une erreur SQL : le garde-fou évite le piège si un
+    appelant futur passe hits=0 et uniques=0."""
+    import app.db as db_module
+    from app.models import PageHit, utcnow
+    from app.routers.metrics import _bump
+    from sqlalchemy import func, select
+
+    with db_module.SessionLocal() as session:
+        _bump(session, utcnow().date(), "home")  # aucun compteur demandé
+        session.commit()
+        assert session.scalar(select(func.count()).select_from(PageHit)) == 0

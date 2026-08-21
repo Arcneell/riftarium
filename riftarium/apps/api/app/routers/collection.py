@@ -20,6 +20,21 @@ MAX_QTY = 999
 ENTRY_ORDER = (CollectionItem.condition, CollectionItem.lang)
 
 
+# Caractères qu'Excel et LibreOffice interprètent comme le début d'une formule.
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(value: str | None) -> str:
+    """Neutralise l'injection de formule : une cellule ne doit jamais s'exécuter à l'ouverture.
+
+    Le module csv échappe les séparateurs, pas les préfixes de formule. Les noms
+    viennent aujourd'hui de Riftcodex, mais le tableur de l'utilisateur ne doit
+    pas dépendre de la confiance qu'on accorde à une source externe.
+    """
+    text = "" if value is None else str(value)
+    return f"'{text}" if text.startswith(_CSV_FORMULA_PREFIXES) else text
+
+
 def entry_out(entry: CollectionItem) -> dict:
     return {"id": entry.id, "qty": entry.qty, "condition": entry.condition, "lang": entry.lang}
 
@@ -229,10 +244,10 @@ def export_collection_csv(
         price_eur = to_eur(card.price_usd, rate)
         writer.writerow(
             [
-                card.id,
-                card.riftbound_id,
-                card.name,
-                card.set_id,
+                _csv_safe(card.id),
+                _csv_safe(card.riftbound_id),
+                _csv_safe(card.name),
+                _csv_safe(card.set_id),
                 item.condition,
                 item.lang,
                 item.qty,

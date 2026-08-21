@@ -41,6 +41,10 @@ MUTED = (176, 170, 154)
 HTTP_TIMEOUT = 8
 MAX_ART_BYTES = 6 * 1024 * 1024
 CACHE_SIZE = 96
+# Garde-fou « bombe de décompression » : un PNG de quelques Ko peut déclarer
+# 30000×30000 pixels et faire exploser la RAM à l'ouverture. 1200×630 suffit ici,
+# on laisse large pour un visuel de carte plein format.
+MAX_ART_PIXELS = 40_000_000
 
 
 @lru_cache(maxsize=16)
@@ -54,20 +58,43 @@ def _font(name: str, size: int) -> ImageFont.FreeTypeFont:
 
 
 def _fetch_art(url: str | None) -> Image.Image | None:
-    """Télécharge une illustration de carte (hôte CDN autorisé uniquement)."""
+    """Télécharge une illustration de carte (hôte CDN autorisé uniquement).
+
+    Trois garde-fous, parce que cette requête sort du réseau Docker et qu'aucun
+    reverse proxy en entrée ne peut la surveiller :
+    - follow_redirects=False : sanitize_image_url ne valide que l'URL de départ ;
+      une redirection du CDN emmènerait la requête vers n'importe quel hôte,
+      y compris les services internes (api:8000, db:5432, redis:6379).
+    - lecture en flux, coupée à MAX_ART_BYTES : la taille était vérifiée après
+      avoir déjà tout mis en mémoire.
+    - MAX_ART_PIXELS : refuse les images dont les dimensions déclarées feraient
+      exploser la RAM au décodage.
+    """
     safe = sanitize_image_url(url)
     if not safe:
         return None
     try:
-        with httpx.Client(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
-            response = client.get(safe)
-            response.raise_for_status()
-            if len(response.content) > MAX_ART_BYTES:
-                return None
-            art = Image.open(BytesIO(response.content))
-            art.load()
-            return art.convert("RGB")
-    except Exception as exc:  # réseau, format exotique, image tronquée…
+        with httpx.Client(timeout=HTTP_TIMEOUT, follow_redirects=False) as client:
+            with client.stream("GET", safe) as response:
+                if response.is_redirect:
+                    log.info("Illustration refusée pour l'aperçu (%s) : redirection hors allow-list", safe)
+                    return None
+                response.raise_for_status()
+                buffer = BytesIO()
+                for chunk in response.iter_bytes():
+                    buffer.write(chunk)
+                    if buffer.tell() > MAX_ART_BYTES:
+                        log.info("Illustration ignorée pour l'aperçu (%s) : plus de %s octets", safe, MAX_ART_BYTES)
+                        return None
+        buffer.seek(0)
+        art = Image.open(buffer)
+        width, height = art.size
+        if width * height > MAX_ART_PIXELS:
+            log.info("Illustration ignorée pour l'aperçu (%s) : %sx%s pixels", safe, width, height)
+            return None
+        art.load()
+        return art.convert("RGB")
+    except Exception as exc:  # réseau, redirection refusée, format exotique, image tronquée…
         log.info("Illustration indisponible pour l'aperçu (%s) : %s", safe, exc)
         return None
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed, onUnmounted, ref } from "vue"
 import { atlasList, copyText, deckCode, nameList } from "../deckExport.js"
 import { pageUrl } from "../seo.js"
 
@@ -21,6 +21,9 @@ function flash(message) {
     note.value = ""
   }, 2400)
 }
+
+/* Le composant peut disparaître avant l'échéance (navigation, fermeture du deck). */
+onUnmounted(() => clearTimeout(timer))
 
 async function copy(kind) {
   note.value = ""

@@ -123,6 +123,14 @@ def test_production_settings_reject_weak_secrets(monkeypatch):
     except RuntimeError:
         pass
     monkeypatch.setattr(config.settings, "admin_token", "admin-token-16ch")
+    # Secrets corrects mais cookie de session sans Secure : on refuse aussi de démarrer.
+    monkeypatch.setattr(config.settings, "cookie_secure", False)
+    try:
+        validate_production_settings()
+        raise AssertionError("expected RuntimeError")
+    except RuntimeError:
+        pass
+    monkeypatch.setattr(config.settings, "cookie_secure", True)
     validate_production_settings()
     assert "test-secret" in WEAK_JWT_SECRETS
     assert Settings(riftarium_env="prod").is_prod is True
@@ -321,3 +329,55 @@ def test_moderation_catches_spaced_and_homoglyph_variants():
     assert review("сonnard") == "pending"  # premier « с » cyrillique
     assert review("Deck contrôle Fureur, plan de jeu classique") == "published"
     assert review("Liste de tournoi retravaillée à la table") == "published"
+
+
+def test_analytics_digest_is_salted_and_stable(monkeypatch):
+    """Empreinte anonyme : stable à sel constant, différente d'un sel à l'autre,
+    et jamais un SHA-256 nu de l'entrée (qui serait brute-forçable sur l'espace IPv4)."""
+    import hashlib
+
+    from app import config
+    from app.security import analytics_digest
+
+    monkeypatch.setattr(config.settings, "analytics_salt", "sel-de-test")
+    first = analytics_digest("deck-view", "203.0.113.7")
+    assert first == analytics_digest("deck-view", "203.0.113.7")  # déterministe
+    assert first != analytics_digest("deck-view", "203.0.113.8")  # une IP, une empreinte
+    assert first != analytics_digest("metrics-uniq", "203.0.113.7")  # contextes cloisonnés
+    assert first != hashlib.sha256(b"deck-view:203.0.113.7").hexdigest()  # bien salé
+
+    monkeypatch.setattr(config.settings, "analytics_salt", "autre-sel")
+    assert analytics_digest("deck-view", "203.0.113.7") != first
+
+    # Sel absent : clé dérivée du JWT secret, jamais le secret lui-même.
+    monkeypatch.setattr(config.settings, "analytics_salt", "")
+    derived = analytics_digest("deck-view", "203.0.113.7")
+    assert derived != hashlib.sha256(f"deck-view:203.0.113.7:{config.settings.jwt_secret}".encode()).hexdigest()
+
+
+def test_deck_view_key_does_not_expose_the_visitor_ip(client, auth, register_user):
+    """La clé de vue anonyme ne doit contenir aucune trace réversible de l'IP."""
+    import app.db as db_module
+    from app.models import DeckView
+    from sqlalchemy import select
+
+    from test_api import deck_payload
+
+    deck = client.post("/api/decks", json=deck_payload(), headers=auth).json()
+    client.cookies.clear()
+    assert client.post(f"/api/decks/{deck['id']}/view", headers={"X-Real-IP": "198.51.100.4"}).json()["counted"] is True
+
+    with db_module.SessionLocal() as session:
+        keys = list(session.scalars(select(DeckView.visitor_key).where(DeckView.deck_id == deck["id"])).all())
+    assert keys and all(key.startswith("a:") for key in keys)
+    assert not any("198.51.100.4" in key for key in keys)
+    # Le SHA-256 nu de l'IP (ancienne implémentation) ne doit plus correspondre.
+    import hashlib
+
+    assert "a:" + hashlib.sha256(b"198.51.100.4").hexdigest()[:24] not in keys
+
+
+def test_login_rejects_oversized_password(client):
+    """Un mot de passe non borné partirait dans scrypt (n=2^17) à chaque tentative."""
+    response = client.post("/api/auth/login", json={"email": "testeur@example.org", "password": "x" * 5000})
+    assert response.status_code == 422

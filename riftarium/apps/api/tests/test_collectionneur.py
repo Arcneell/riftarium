@@ -383,3 +383,30 @@ def test_collection_export_csv_format_and_values(client, auth):
     assert "ogn-037-298;ogn-037-298;Immortal Phoenix;OGN;NM;EN;2;5.0;10.0" in lines
     # Nom contenant ; et guillemets : encadré et guillemets doublés ; prix inconnu → champs vides.
     assert 'ogn-299-298;ogn-299-298;"Vex; l\'ombre ""morose""";OGN;NM;EN;3;;' in lines
+
+
+def test_collection_export_csv_neutralises_formula_injection(client, auth):
+    """Une cellule commençant par = + - @ s'exécute à l'ouverture dans Excel et
+    LibreOffice : le module csv échappe les séparateurs, pas les formules."""
+    import app.db as db_module
+    from app.models import Card
+
+    with db_module.SessionLocal() as session:
+        session.add(
+            Card(
+                id="ogn-298-298",
+                riftbound_id="ogn-298-298",
+                name='=HYPERLINK("http://evil.example";"gagné")',
+                set_id="OGN",
+                type="Unit",
+                collector_number=298,
+            )
+        )
+        session.commit()
+
+    client.put("/api/collection/ogn-298-298", json={"qty": 1}, headers=auth)
+    body = client.get("/api/collection/export.csv", headers=auth).content.decode("utf-8-sig")
+
+    ligne = next(line for line in body.splitlines() if "HYPERLINK" in line)
+    assert "'=HYPERLINK" in ligne  # apostrophe de tête : le tableur lit du texte
+    assert ";=HYPERLINK" not in ligne  # jamais une cellule qui démarre par =
