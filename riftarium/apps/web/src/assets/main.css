@@ -4391,8 +4391,8 @@ body.drag-active * {
    c'est elle qui donne le format de la boîte. */
 .deck-boxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(206px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 18px;
 }
 .deck-box {
   display: flex;
@@ -4475,15 +4475,35 @@ body.drag-active * {
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }
-.deck-box-runes {
-  position: absolute;
-  bottom: 10px;
-  left: 12px;
+/* Bandeau du nom, au-dessus de la carte : nom sur une seule ligne coupée à
+   l'ellipse (nom complet en infobulle), compteurs à droite. Hauteur identique
+   partout, donc les couvertures démarrent à la même ordonnée d'une boîte à l'autre. */
+.deck-box-head {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px 8px;
+  border-bottom: 2px solid var(--gold);
 }
-.deck-box-runes img {
-  filter: drop-shadow(0 2px 5px rgba(10, 20, 40, 0.85));
+.deck-box-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+.deck-box-title a {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.deck-box-head .deck-box-stats {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
 }
 /* La plaque occupe la hauteur restante : d'une boîte à l'autre, la rangée de
    boutons tombe toujours au même endroit, quelle que soit la longueur du texte. */
@@ -4491,43 +4511,29 @@ body.drag-active * {
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding: 14px 16px 16px;
-  border-top: 3px solid var(--gold);
-}
-.deck-box-plate h3 {
-  font-size: 1.05rem;
-  margin-bottom: 2px;
+  gap: 9px;
+  padding: 9px 12px 11px;
 }
 .deck-box-plate .mono {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+  line-height: 1.5;
 }
-/* Compteurs sur une ligne, boutons sur la suivante et à largeur égale : sur une
-   vignette étroite, « Ouvrir » et « Supprimer » restent au même endroit d'une
-   boîte à l'autre, quel que soit le compteur ou la longueur du nom. */
-.deck-box-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 12px;
-}
+/* Boutons à largeur égale, collés en pied de plaque : « Ouvrir » et
+   « Supprimer » restent au même endroit d'une boîte à l'autre. */
 .deck-box-buttons {
   display: flex;
   gap: 8px;
+  margin-top: auto;
 }
 .deck-box-buttons .btn {
   flex: 1 1 0;
   min-width: 0;
-  padding-inline: 8px;
+  padding-inline: 6px;
   text-align: center;
 }
-.deck-box-stats {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.deck-box-stats .deck-box-stat {
-  min-width: 38px;
+.deck-box-plate .deck-box-stat {
+  vertical-align: middle;
+  font-size: inherit;
   font-variant-numeric: tabular-nums;
 }
 .deck-box-stat {
