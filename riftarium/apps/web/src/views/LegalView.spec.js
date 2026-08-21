@@ -44,9 +44,10 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("OVH SAS")
   })
 
-  it("qualifie le mode libre de format non officiel dans les CGU", async () => {
+  it("qualifie le deck illégal de format non officiel dans les CGU", async () => {
     const wrapper = await mountPage("/cgu")
     expect(wrapper.text()).toContain("format non officiel")
+    expect(wrapper.text()).toContain("Illégal")
     expect(wrapper.text()).toContain(RIOT_DISCLAIMER_EN)
     expect(wrapper.text()).toContain(RIOT_GENERAL_DISCLAIMER_EN)
   })

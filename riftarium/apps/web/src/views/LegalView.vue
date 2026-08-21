@@ -228,12 +228,12 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
           <h3>Formats de decks</h3>
           <ul>
             <li>
-              <strong>Mode tournoi</strong> : le site vérifie les règles officielles de construction (légende, champs de
+              <strong>Légal</strong> : le site vérifie les règles officielles de construction (légende, champs de
               bataille, runes, taille, exemplaires, domaines, champion élu).
             </li>
             <li>
-              <strong>Mode libre</strong> : format <strong>non officiel</strong>. Il n'applique pas les contraintes de
-              tournoi. Il ne s'agit pas d'un format Riot.
+              <strong>Illégal</strong> : deck libre, <strong>format non officiel</strong>. Il n'applique pas les
+              contraintes de tournoi et ne correspond à aucun format Riot.
             </li>
           </ul>
 

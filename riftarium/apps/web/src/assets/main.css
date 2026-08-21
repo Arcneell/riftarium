@@ -3635,9 +3635,6 @@ footer {
 h2.dbuilder-name {
   margin: 0;
 }
-.dbuilder-bar select {
-  max-width: 170px;
-}
 .dbuilder-save {
   font-family: var(--font-mono);
   font-size: 0.74rem;
@@ -3743,10 +3740,6 @@ h2.dbuilder-name {
   font-size: 0.66rem;
   font-weight: 600;
   pointer-events: none;
-}
-.gcard-owned.zero {
-  color: var(--muted);
-  font-weight: 400;
 }
 .gcard-indeck {
   position: absolute;
@@ -4277,10 +4270,12 @@ body.drag-active * {
 }
 
 /* Contrôles de la barre d'édition alignés sur la hauteur des boutons */
-.dbuilder-bar input[type="text"],
-.dbuilder-bar select {
+.dbuilder-bar input[type="text"] {
   height: 44px;
   padding: 0 16px;
+}
+.dbuilder-bar .fsel-btn {
+  height: 44px;
 }
 
 /* Vitrine de la légende : boîte de deck avec l'illustration en gros plan */

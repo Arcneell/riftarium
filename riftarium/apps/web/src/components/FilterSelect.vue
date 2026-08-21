@@ -8,7 +8,9 @@ const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   searchable: { type: Boolean, default: false },
   /* Mode choix unique (ex. tri) : sélectionner remplace, re-cliquer désélectionne, le popup se ferme. */
-  single: { type: Boolean, default: false }
+  single: { type: Boolean, default: false },
+  /* Choix unique obligatoire (ex. format d'un deck) : jamais de valeur vide, pas de « Tout décocher ». */
+  required: { type: Boolean, default: false }
 })
 const emit = defineEmits(["update:modelValue"])
 
@@ -27,7 +29,8 @@ const visibleOptions = computed(() => {
 
 function toggle(value) {
   if (props.single) {
-    emit("update:modelValue", props.modelValue.includes(value) ? [] : [value])
+    const cleared = props.modelValue.includes(value) && !props.required
+    emit("update:modelValue", cleared ? [] : [value])
     open.value = false
     return
   }
@@ -137,7 +140,9 @@ onBeforeUnmount(() => {
         {{ option.label }}
       </button>
       <p v-if="searchable && !visibleOptions.length" class="fsel-empty">Aucun résultat</p>
-      <button v-if="modelValue.length" type="button" class="fsel-clear" @click="clear">Tout décocher</button>
+      <button v-if="modelValue.length && !required" type="button" class="fsel-clear" @click="clear">
+        Tout décocher
+      </button>
     </div>
   </div>
 </template>

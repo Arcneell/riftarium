@@ -2,7 +2,7 @@ import { computed, toValue } from "vue"
 import { DOMAIN_RUNE, RUNE_LABELS, copyFamily, glyphUrl } from "../cardText.js"
 import { DECK_ZONES, groupDeck, zoneOf } from "../deckDisplay.js"
 
-/* Plafond d'exemplaires par carte, appliqué en mode tournoi (12 = limite du schéma en mode libre). */
+/* Plafond d'exemplaires par carte pour un deck légal (12 = limite du schéma pour un deck illégal). */
 export const TOURNAMENT_CAPS = { Legend: 1, Battlefield: 1, Rune: 12, main: 3 }
 
 /* Règles de construction d'un deck : zones, plafonds de copies, identité de domaines fixée

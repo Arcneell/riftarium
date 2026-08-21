@@ -59,11 +59,13 @@ export function okCount(deck) {
   return deck?.checks?.filter((check) => check.ok).length ?? 0
 }
 
+/* « Légal » = conforme aux règles officielles de construction, « Illégal » = tout le reste
+   (format libre, non reconnu par Riot). Les valeurs en base restent tournament / free. */
 export const FORMAT_OPTIONS = [
-  { value: "tournament", label: "Tournoi (officiel)" },
-  { value: "free", label: "Libre (non officiel)" }
+  { value: "tournament", label: "Légal" },
+  { value: "free", label: "Illégal" }
 ]
 
 export function formatLabel(format) {
-  return format === "free" ? "libre · non officiel" : "tournoi"
+  return format === "free" ? "illégal" : "légal"
 }
