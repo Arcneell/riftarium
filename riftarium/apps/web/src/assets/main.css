@@ -4387,11 +4387,11 @@ body.drag-active * {
 }
 
 /* Boîtes de deck (page Mes decks) */
-/* Vignettes étroites : la carte de la légende occupe toute la couverture,
-   c'est elle qui donne le format de la boîte. */
+/* Vignettes au format de la carte, un peu plus larges : la carte est posée sur
+   le parchemin de la boîte, avec de fines marges claires sur les côtés. */
 .deck-boxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(204px, 1fr));
   gap: 18px;
 }
 .deck-box {
@@ -4410,32 +4410,33 @@ body.drag-active * {
   transform: translateY(-5px);
   box-shadow: var(--shadow);
 }
-/* Format d'une carte Riftbound (744 × 1040) : l'illustration remplit la
-   couverture bord à bord, sans rognage. Le fond flouté ne sert que de filet de
-   sécurité pour un visuel au format inattendu (champ de bataille en paysage). */
+/* Couverture un peu plus large que la carte (744 × 1040) : celle-ci est
+   contenue en entier, donc de fines marges de parchemin restent sur les côtés,
+   comme une carte posée sur un tapis. */
 .deck-box-cover {
   position: relative;
   display: block;
-  aspect-ratio: 744 / 1040;
+  aspect-ratio: 5 / 6.35;
   overflow: hidden;
-  background: linear-gradient(135deg, #16283a, #0a1428);
-}
-.deck-box-cover:not(.blank)::before {
-  content: "";
-  position: absolute;
-  inset: -14%;
-  background: var(--cover) center / cover no-repeat;
-  filter: blur(22px) brightness(0.55) saturate(0.85);
 }
 .deck-box-cover:not(.blank)::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 9px 11px;
   background: var(--cover) center / contain no-repeat;
+  filter: drop-shadow(0 5px 12px rgba(10, 20, 40, 0.3));
 }
 .deck-box-cover.blank {
   display: grid;
   place-items: center;
+}
+/* Sans légende : le panneau sombre garde les mêmes marges que la carte. */
+.deck-box-cover.blank::before {
+  content: "";
+  position: absolute;
+  inset: 9px 11px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #16283a, #0a1428);
 }
 .deck-box-nolegend,
 .deck-legal {
@@ -4445,8 +4446,8 @@ body.drag-active * {
 /* Pastille de légalité : même sémantique que le validateur (✓ hex, ✕ fury). */
 .deck-legal {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 16px;
+  right: 18px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -6106,6 +6107,13 @@ button.progress-row:hover {
   .deck-boxes {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 14px;
+  }
+  /* Pastille proportionnée à la petite carte. */
+  .deck-legal {
+    top: 12px;
+    right: 13px;
+    padding: 3px 8px;
+    font-size: 0.6rem;
   }
   .deck-box-plate {
     padding: 12px 12px 14px;
