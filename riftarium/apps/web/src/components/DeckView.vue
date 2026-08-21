@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import { api, session, DOMAINS } from "../api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "../cardText.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
-import { DECK_ZONES, formatLabel, groupDeck, runesOf } from "../deckDisplay.js"
+import { DECK_ZONES, groupDeck, legalState, runesOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import DeckExportBar from "./DeckExportBar.vue"
 import DeckVisual from "./DeckVisual.vue"
@@ -17,6 +17,7 @@ defineEmits(["like"])
 
 const grouped = computed(() => groupDeck(props.deck))
 const runes = computed(() => runesOf(props.deck))
+const legal = computed(() => legalState(props.deck))
 const zoneCounts = computed(() => {
   const counts = {}
   for (const zone of DECK_ZONES) {
@@ -59,7 +60,11 @@ async function copyDeck() {
         <RouterLink to="/communaute" class="dbuilder-back">← Communauté</RouterLink>
         <h2 class="deck-view-title">{{ deck.name }}</h2>
         <p class="muted mono deck-view-meta">
-          {{ formatLabel(deck.format) }}
+          <!-- Même pastille que sur les fiches : format officiel ET règles respectées. -->
+          <span class="deck-legal" :class="legal.ok ? 'ok' : 'ko'" :title="legal.title">
+            <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
+            {{ legal.label }}
+          </span>
           ·
           <span class="deck-box-owner">
             <UserAvatar :src="deck.owner_avatar" :handle="deck.owner" :size="20" />

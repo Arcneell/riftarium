@@ -4655,7 +4655,7 @@ button.deck-box-stat {
 }
 button.deck-box-stat:hover,
 .deck-box-stat.liked {
-  color: var(--chaos);
+  color: var(--chaos-text);
 }
 .deck-read-desc {
   margin: 0;
