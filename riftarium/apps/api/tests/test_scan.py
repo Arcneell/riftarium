@@ -316,3 +316,36 @@ def test_schedule_hash_backfill_respects_autostart(monkeypatch):
     monkeypatch.setattr(main.settings, "hash_autostart", True)
     main.schedule_hash_backfill()
     assert len(started) == 1 and started[0]["daemon"] is True
+
+
+def test_dhash_refuses_an_oversized_image(monkeypatch):
+    """Bombe de décompression : le seuil par défaut de Pillow ne lève qu'au double,
+    trop tard pour un conteneur limité à 512 Mo."""
+    from io import BytesIO
+
+    import pytest
+    from app import imagehash
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (200, 200), (10, 20, 30)).save(buffer, format="PNG")
+
+    monkeypatch.setattr(imagehash, "MAX_IMAGE_PIXELS", 100)  # 200x200 dépasse
+    with pytest.raises(ValueError, match="trop grande"):
+        imagehash.dhash_hex(buffer.getvalue())
+
+
+def test_image_hash_download_is_size_capped(monkeypatch):
+    """4 téléchargements en parallèle × réponse non bornée = RAM du conteneur.
+    La coupure doit intervenir pendant la lecture, pas après."""
+    import httpx
+    import respx
+    from app import main as main_module
+
+    monkeypatch.setattr(main_module, "HASH_MAX_BYTES", 512)
+    url = "https://cdn.example/enorme.png"
+
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, content=b"\x00" * 4096))
+        with httpx.Client() as http:
+            assert main_module._fetch_image_hash(http, url) is None

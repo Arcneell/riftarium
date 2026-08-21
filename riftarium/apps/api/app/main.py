@@ -126,14 +126,23 @@ def admin_sync(
 HASH_BATCH_SIZE = 300
 HASH_DOWNLOAD_WORKERS = 4
 HASH_DOWNLOAD_TIMEOUT = 10
+# Un visuel de carte pèse quelques centaines de Ko : au-delà, on n'insiste pas
+# (4 téléchargements en parallèle × réponse non bornée = RAM du conteneur).
+HASH_MAX_BYTES = 6 * 1024 * 1024
 
 
 def _fetch_image_hash(http: httpx.Client, url: str) -> str | None:
-    """Télécharge un visuel et calcule son dHash ; toute erreur est loggée et tolérée."""
+    """Télécharge un visuel (taille bornée) et calcule son dHash ; toute erreur est tolérée."""
     try:
-        response = http.get(url)
-        response.raise_for_status()
-        return dhash_hex(response.content)
+        with http.stream("GET", url) as response:
+            response.raise_for_status()
+            buffer = bytearray()
+            for chunk in response.iter_bytes():
+                buffer.extend(chunk)
+                if len(buffer) > HASH_MAX_BYTES:
+                    log.warning("empreinte ignorée pour %s : visuel de plus de %s octets", url, HASH_MAX_BYTES)
+                    return None
+        return dhash_hex(bytes(buffer))
     except Exception as exc:  # erreur par carte (réseau, HTTP, image invalide) : on passe à la suivante
         log.warning("empreinte impossible pour %s : %s", url, exc)
         return None

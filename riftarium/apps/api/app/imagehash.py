@@ -32,6 +32,12 @@ HASH_HEX_LENGTH = 128  # 512 bits
 ART_LEFT, ART_RIGHT = 0.06, 0.94
 ART_TOP, ART_BOTTOM = 0.06, 0.54
 
+# Garde-fou « bombe de décompression » : un fichier de quelques Ko peut déclarer
+# des dimensions énormes et faire exploser la RAM au décodage (mem_limit du
+# conteneur : 512 Mo). Le seuil par défaut de Pillow ne lève qu'au double, trop
+# tard pour nous. Un visuel de carte plein format reste très en dessous.
+MAX_IMAGE_PIXELS = 40_000_000
+
 
 def _art_window(image: Image.Image) -> Image.Image:
     """Recadre sur la fenêtre d'art : exclut cadre et zones de texte (dépendantes de la langue)."""
@@ -54,6 +60,9 @@ def _pack_bits_hex(bits: list[int]) -> str:
 def dhash_hex(image_bytes: bytes) -> str:
     """dHash 512 bits (gradients horizontal puis vertical) de la fenêtre d'art d'une image encodée."""
     with Image.open(BytesIO(image_bytes)) as image:
+        width, height = image.size
+        if width * height > MAX_IMAGE_PIXELS:
+            raise ValueError(f"Image trop grande pour une empreinte : {width}x{height}")
         gray = _art_window(image).convert("L")
         horizontal = list(gray.resize((GRID + 1, GRID), Image.Resampling.LANCZOS).getdata())
         vertical = list(gray.resize((GRID, GRID + 1), Image.Resampling.LANCZOS).getdata())
