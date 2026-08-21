@@ -126,7 +126,9 @@ class RegisterIn(BaseModel):
 
 class LoginIn(BaseModel):
     email: EmailStr
-    password: str
+    # Borné comme à l'inscription : sans plafond, une saisie d'un mégaoctet part
+    # dans scrypt (n=2^17) à chaque tentative.
+    password: str = Field(max_length=128)
 
 
 class SessionOut(BaseModel):
@@ -143,14 +145,14 @@ class ProfilePatch(BaseModel):
     handle: str | None = Field(default=None, min_length=3, max_length=32, pattern=HANDLE_PATTERN)
     email: EmailStr | None = None
     bio: str | None = Field(default=None, max_length=280)
-    avatar_card_id: str | None = None
+    avatar_card_id: str | None = Field(default=None, max_length=32)
     # Préférence e-mail (décisions de modération) : modifiable sans mot de passe.
     notify_moderation: bool | None = None
-    current_password: str | None = None
+    current_password: str | None = Field(default=None, max_length=128)
 
 
 class PasswordChange(BaseModel):
-    current_password: str
+    current_password: str = Field(max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
 
     @field_validator("new_password")
@@ -180,7 +182,7 @@ class VerifyEmailIn(BaseModel):
 
 
 class AccountDelete(BaseModel):
-    password: str
+    password: str = Field(max_length=128)
     handle: str = Field(min_length=3, max_length=32)
 
 

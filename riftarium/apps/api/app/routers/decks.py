@@ -1,5 +1,3 @@
-import hashlib
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +11,7 @@ from ..moderation import review
 from ..prices import current_rate, to_eur
 from ..profiles import avatar_urls
 from ..schemas import DeckIn, ExampleDeckIn
-from ..security import client_ip, sanitize_image_url
+from ..security import analytics_digest, client_ip, sanitize_image_url
 from ..validation import validate_deck
 from ..variants import copy_family
 from .cards import card_out, csv_parts, escape_like, owned_quantities, wished_quantities
@@ -383,10 +381,14 @@ def toggle_like(deck_id: int, user: User = Depends(current_user), db: Session = 
 
 
 def _visitor_key(user: User | None, request: Request) -> str:
+    """Clé de déduplication des vues. Anonyme : empreinte salée de l'IP, jamais l'IP.
+
+    Le HMAC à clé serveur (analytics_digest) remplace un SHA-256 nu, qui restait
+    réversible par force brute sur l'espace IPv4.
+    """
     if user:
         return f"u:{user.id}"
-    ip = client_ip(request)
-    return "a:" + hashlib.sha256(ip.encode()).hexdigest()[:24]
+    return "a:" + analytics_digest("deck-view", client_ip(request))[:24]
 
 
 def _legend_decks():

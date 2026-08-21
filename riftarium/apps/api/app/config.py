@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     prices_autorefresh: bool = True
     tcgcsv_base_url: str = "https://tcgcsv.com"
     frankfurter_base_url: str = "https://api.frankfurter.dev"
+    # Sel des empreintes anonymes (visiteurs uniques, vues de decks). Vide = clé
+    # dérivée du JWT secret (voir security.analytics_digest) : jamais le secret
+    # de signature lui-même. Le changer réinitialise les compteurs de visiteurs.
+    analytics_salt: str = ""
     redis_url: str = ""  # vide = cache désactivé (tests, dev sans Redis)
     cache_ttl_seconds: int = 6 * 3600
     sync_min_interval_minutes: int = 10  # protège l'API Riftcodex des resync en rafale
@@ -82,3 +86,7 @@ def validate_production_settings() -> None:
         raise RuntimeError("JWT_SECRET doit être défini (24 caractères min.) et ne pas être une valeur d'exemple.")
     if len(settings.admin_token) < 16:
         raise RuntimeError("ADMIN_TOKEN (16 caractères min.) est requis pour la synchronisation admin.")
+    # BunkerWeb pose déjà le drapeau Secure (COOKIE_AUTO_SECURE_FLAG), mais on ne
+    # démarre pas en comptant sur une couche qu'on ne contrôle pas depuis ce dépôt.
+    if not settings.cookie_secure:
+        raise RuntimeError("COOKIE_SECURE=1 est requis en production (session servie derrière TLS).")

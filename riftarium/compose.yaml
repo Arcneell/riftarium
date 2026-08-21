@@ -55,6 +55,8 @@ services:
       # Comptes administrateurs (page d'admin) : e-mails séparés par des virgules.
       ADMIN_EMAILS: "${ADMIN_EMAILS:-}"
       COOKIE_SECURE: "${COOKIE_SECURE:-1}"
+      # Vide = clé dérivée de JWT_SECRET (voir security.analytics_digest).
+      ANALYTICS_SALT: "${ANALYTICS_SALT:-}"
       AUTO_SYNC: "1"
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       # E-mails (SMTP OVH). Optionnels : SMTP_HOST vide = mode console (messages loggés).

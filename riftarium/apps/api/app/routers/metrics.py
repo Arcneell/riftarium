@@ -13,7 +13,6 @@ normalement mais les uniques restent à 0 : aucune déduplication n'est possible
 sans stocker l'empreinte, ce qu'on refuse de faire en base.
 """
 
-import hashlib
 from datetime import date
 
 from fastapi import APIRouter, Depends, Request
@@ -26,7 +25,7 @@ from ..config import settings
 from ..db import get_db
 from ..models import PageHit, utcnow
 from ..schemas import HitIn
-from ..security import allow_rate, client_ip
+from ..security import allow_rate, analytics_digest, client_ip
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 
@@ -58,6 +57,8 @@ def _bump(db: Session, day: date, section: str, *, hits: int = 0, uniques: int =
         values["hits"] = PageHit.hits + hits
     if uniques:
         values["uniques"] = PageHit.uniques + uniques
+    if not values:  # rien à incrémenter : un UPDATE sans valeur est une erreur SQL
+        return
     result = db.execute(update(PageHit).where(PageHit.day == day, PageHit.section == section).values(**values))
     if result.rowcount:
         return
@@ -69,8 +70,8 @@ def _bump(db: Session, day: date, section: str, *, hits: int = 0, uniques: int =
 
 
 def _visitor_fingerprint(ip: str, day: date) -> str:
-    """Empreinte anonyme et non rejouable d'un jour sur l'autre (salée par le secret serveur)."""
-    return hashlib.sha256(f"{day.isoformat()}:{ip}:{settings.jwt_secret}".encode()).hexdigest()
+    """Empreinte anonyme et non rejouable d'un jour sur l'autre (clé serveur dédiée)."""
+    return analytics_digest("metrics-uniq", day.isoformat(), ip)
 
 
 def _is_new_visitor_today(ip: str, day: date) -> bool:

@@ -11,18 +11,21 @@ try {
   /* stockage indisponible (tests / mode privé) */
 }
 
-function readFlag() {
+/* Toute lecture passe par ici : en navigation privée ou stockage bloqué,
+   localStorage lève, et une exception au chargement du module casserait
+   l'application entière. */
+function readKey(key) {
   try {
-    return localStorage.getItem(SESSION_FLAG_KEY)
+    return localStorage.getItem(key)
   } catch {
     return null
   }
 }
 
 export const session = reactive({
-  token: readFlag(),
-  handle: localStorage.getItem(HANDLE_KEY),
-  avatarUrl: localStorage.getItem(AVATAR_KEY),
+  token: readKey(SESSION_FLAG_KEY),
+  handle: readKey(HANDLE_KEY),
+  avatarUrl: readKey(AVATAR_KEY),
   /* Renseigné après /api/auth/me (email_verified). null = inconnu. Jamais persisté. */
   emailVerified: null,
   /* Renseigné après /api/auth/me (is_admin). null = inconnu. Jamais persisté. */

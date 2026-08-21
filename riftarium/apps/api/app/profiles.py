@@ -137,7 +137,15 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
 
 
 def export_account(db: Session, user: User) -> dict:
+    """Export RGPD : toutes les données rattachées au compte, sans exception.
+
+    Doit rester aligné sur delete_user_account — ce qui est supprimé à la clôture
+    du compte est de la donnée détenue, donc de la donnée exportable.
+    """
     items = db.scalars(select(CollectionItem).where(CollectionItem.user_id == user.id)).all()
+    wishes = db.scalars(
+        select(WishlistItem).where(WishlistItem.user_id == user.id).order_by(WishlistItem.created_at)
+    ).all()
     decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
     return {
         "handle": user.handle,
@@ -147,6 +155,14 @@ def export_account(db: Session, user: User) -> dict:
         "exported_at": datetime.now(UTC).isoformat(),
         "collection": [
             {"card_id": item.card_id, "qty": item.qty, "condition": item.condition, "lang": item.lang} for item in items
+        ],
+        "wishlist": [
+            {
+                "card_id": wish.card_id,
+                "qty": wish.qty,
+                "created_at": wish.created_at.isoformat() if wish.created_at else None,
+            }
+            for wish in wishes
         ],
         "decks": [
             {
