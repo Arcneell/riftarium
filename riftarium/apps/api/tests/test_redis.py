@@ -150,3 +150,28 @@ def test_auth_rate_limit_uses_redis_when_available(client, fake_redis, monkeypat
     assert client.post("/api/auth/login", json=payload, headers=headers).status_code == 401
     assert client.post("/api/auth/login", json=payload, headers=headers).status_code == 429
     assert int(fake_redis.get("riftarium:rl:auth:203.0.113.77")) == 3
+
+
+def test_card_list_cache_key_is_collision_free():
+    """q="x|OGN" et q="x" + set_id="OGN" produisaient la même clé : le visiteur
+    anonyme recevait la réponse de l'autre requête pendant tout le TTL."""
+    from app.routers.cards import _cache_key
+
+    with_separator = _cache_key("cards:list:", "x|OGN", None, None, None, None, None, None, 1, 30)
+    two_fields = _cache_key("cards:list:", "x", "OGN", None, None, None, None, None, 1, 30)
+    assert with_separator != two_fields
+
+    # Longueur bornée quelle que soit la saisie (pas de clé Redis démesurée).
+    assert len(_cache_key("cards:list:", "x" * 5000)) == len("cards:list:") + 64
+    # Toujours déterministe : deux appels identiques touchent la même entrée.
+    assert two_fields == _cache_key("cards:list:", "x", "OGN", None, None, None, None, None, 1, 30)
+
+
+def test_card_detail_of_impossible_length_is_not_cached(client, fake_redis):
+    """cards.id est un String(32) : au-delà, aucune carte ne peut correspondre,
+    et on n'ouvre pas une entrée de cache par saisie fantaisiste."""
+    assert client.get("/api/cards/" + "z" * 200).status_code == 404
+    assert not list(fake_redis.scan_iter("riftarium:cards:detail:*"))
+
+    assert client.get("/api/cards/ogn-037-298").status_code == 200
+    assert list(fake_redis.scan_iter("riftarium:cards:detail:*"))

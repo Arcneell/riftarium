@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.orm import Session
@@ -25,6 +28,27 @@ def _cacheable_headers(response: Response) -> None:
 def escape_like(value: str) -> str:
     """Neutralise les jokers SQL (%, _) d'une saisie utilisateur pour un LIKE avec escape='\\\\'."""
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+# Longueur max d'un identifiant de carte : cards.id et cards.riftbound_id sont
+# des String(32). Au-delà, aucune carte ne peut correspondre — inutile d'ouvrir
+# une entrée de cache par saisie fantaisiste.
+MAX_CARD_ID_LEN = 32
+# Borne de la recherche plein texte : suffisant pour un nom de carte, et le
+# nombre de clés de cache distinctes reste raisonnable.
+MAX_QUERY_LEN = 100
+
+
+def _cache_key(prefix: str, *parts) -> str:
+    """Clé de cache injective et de longueur fixe.
+
+    Un f-string joint par un séparateur collisionne dès qu'une saisie contient ce
+    séparateur : q="x|OGN" produisait la même clé que q="x" + set_id="OGN", et le
+    visiteur anonyme recevait la réponse de l'autre requête. On hache la liste
+    sérialisée : plus de collision, et plus de clé Redis de taille arbitraire.
+    """
+    payload = json.dumps(parts, default=str, ensure_ascii=False)
+    return f"{prefix}{hashlib.sha256(payload.encode()).hexdigest()}"
 
 
 RARITY_RANK = case(
@@ -181,7 +205,7 @@ def apply_filters(query, *, q, set_id, type_, domain, rarity, energy):
 @router.get("/cards")
 def list_cards(
     response: Response,
-    q: str | None = None,
+    q: str | None = Query(None, max_length=MAX_QUERY_LEN),
     set_id: str | None = None,
     type_: str | None = Query(None, alias="type"),  # « type » masquerait le builtin Python
     domain: str | None = None,
@@ -198,7 +222,7 @@ def list_cards(
     cache_key = None
     if viewer is None and sort != "random":
         _cacheable_headers(response)
-        cache_key = f"cards:list:{q}|{set_id}|{type_}|{domain}|{rarity}|{energy}|{sort}|{page}|{size}"
+        cache_key = _cache_key("cards:list:", q, set_id, type_, domain, rarity, energy, sort, page, size)
         cached = cache_get(cache_key)
         if cached is not None:
             return cached
@@ -303,10 +327,13 @@ def get_card(
         _cacheable_headers(response)
         # Pas de lower() : find_card résout l'id primaire avec sa casse exacte,
         # deux casse différentes peuvent désigner des cartes différentes.
-        cache_key = f"cards:detail:{card_id}"
-        cached = cache_get(cache_key)
-        if cached is not None:
-            return cached
+        # Au-delà de MAX_CARD_ID_LEN, la carte ne peut pas exister : on ne crée
+        # pas d'entrée de cache pour une saisie qui finira en 404.
+        if len(card_id) <= MAX_CARD_ID_LEN:
+            cache_key = _cache_key("cards:detail:", card_id)
+            cached = cache_get(cache_key)
+            if cached is not None:
+                return cached
 
     card = find_card(db, card_id)
     if card is None:
