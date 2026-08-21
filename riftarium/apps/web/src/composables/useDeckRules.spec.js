@@ -38,18 +38,18 @@ function setup({ format = "tournament", cards = [], canEdit = true } = {}) {
 }
 
 describe("useDeckRules", () => {
-  it("expose les plafonds officiels du mode tournoi", () => {
+  it("expose les plafonds officiels du deck légal", () => {
     expect(TOURNAMENT_CAPS).toEqual({ Legend: 1, Battlefield: 1, Rune: 12, main: 3 })
   })
 
-  it("tournoi : refuse toute carte tant que la légende n'est pas choisie", () => {
+  it("légal : refuse toute carte tant que la légende n'est pas choisie", () => {
     const { rules, onLimit } = setup()
     expect(rules.addCard(unit)).toBe(false)
     expect(onLimit).toHaveBeenCalledWith("Choisissez d'abord votre légende : elle fixe les domaines du deck.", "u1")
     expect(rules.zoneCounts.value.main).toBe(0)
   })
 
-  it("tournoi : une seule légende, remplacée si on en choisit une autre", () => {
+  it("légal : une seule légende, remplacée si on en choisit une autre", () => {
     const { rules, onLimit, onNotice } = setup()
     expect(rules.addCard(legend)).toBe(true)
     expect(rules.legendEntry.value.card.id).toBe("l1")
@@ -77,13 +77,13 @@ describe("useDeckRules", () => {
     expect(rules.offDomain(calmUnit)).toBe(false)
   })
 
-  it("tournoi : refuse une carte hors des domaines de la légende", () => {
+  it("légal : refuse une carte hors des domaines de la légende", () => {
     const { rules, onLimit } = setup({ cards: [{ card: legend, qty: 1 }] })
     expect(rules.addCard(calmUnit)).toBe(false)
     expect(onLimit).toHaveBeenCalledWith("Moine du Calme est hors des domaines de votre légende.", "c1")
   })
 
-  it("tournoi : plafond de 3 exemplaires, reprints et variantes comptent ensemble", () => {
+  it("légal : plafond de 3 exemplaires, reprints et variantes comptent ensemble", () => {
     const { rules, onLimit } = setup({ cards: [{ card: legend, qty: 1 }] })
     expect(rules.addCard(unit)).toBe(true)
     expect(rules.addCard(unit)).toBe(true)
@@ -99,7 +99,7 @@ describe("useDeckRules", () => {
     expect(rules.zoneCounts.value.main).toBe(3)
   })
 
-  it("tournoi : 3 champs de bataille maximum, un seul exemplaire de chaque", () => {
+  it("légal : 3 champs de bataille maximum, un seul exemplaire de chaque", () => {
     const { rules, onLimit } = setup({ cards: [{ card: legend, qty: 1 }] })
     expect(rules.addCard(battlefield(1))).toBe(true)
     expect(rules.addCard(battlefield(2))).toBe(true)
@@ -113,7 +113,7 @@ describe("useDeckRules", () => {
     expect(rules.zoneCounts.value.Battlefield).toBe(3)
   })
 
-  it("tournoi : 12 runes maximum de la même carte", () => {
+  it("légal : 12 runes maximum de la même carte", () => {
     const { rules, onLimit } = setup({
       cards: [
         { card: legend, qty: 1 },
@@ -124,7 +124,7 @@ describe("useDeckRules", () => {
     expect(onLimit).toHaveBeenCalledWith("Maximum 12 exemplaire(s) de Rune de Fureur.", "r1")
   })
 
-  it("mode libre : ni légende requise ni domaines, plafond global de 12 exemplaires", () => {
+  it("deck illégal : ni légende requise ni domaines, plafond global de 12 exemplaires", () => {
     const { rules, onLimit, onAdded } = setup({ format: "free", cards: [{ card: calmUnit, qty: 11 }] })
     expect(rules.addCard(calmUnit)).toBe(true)
     expect(onAdded).toHaveBeenCalledWith(calmUnit)

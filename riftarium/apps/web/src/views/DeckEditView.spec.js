@@ -151,6 +151,28 @@ describe("DeckEditView", () => {
     session.handle = null
   })
 
+  it("format : sélecteur au style des filtres, bascule légal / illégal", async () => {
+    const { wrapper } = await mountView()
+    const button = wrapper.get(".dbuilder-bar .fsel-btn")
+    expect(button.text()).toContain("Format")
+    expect(button.get(".fsel-single").text()).toBe("Légal")
+
+    await button.trigger("click")
+    expect(wrapper.find(".dbuilder-bar .fsel-clear").exists()).toBe(false) // un deck a toujours un format
+    const illegal = wrapper.findAll(".dbuilder-bar .fsel-opt").find((o) => o.text() === "Illégal")
+    await illegal.trigger("click")
+    expect(wrapper.get(".dbuilder-bar .fsel-btn .fsel-single").text()).toBe("Illégal")
+
+    // re-cliquer sur l'option active ne laisse jamais le deck sans format
+    await wrapper.get(".dbuilder-bar .fsel-btn").trigger("click")
+    await wrapper
+      .findAll(".dbuilder-bar .fsel-opt")
+      .find((o) => o.text() === "Illégal")
+      .trigger("click")
+    expect(wrapper.get(".dbuilder-bar .fsel-btn .fsel-single").text()).toBe("Illégal")
+    wrapper.unmount()
+  })
+
   it("sans légende : galerie ouverte sur les légendes, ajout d'une autre carte refusé", async () => {
     const { wrapper } = await mountView()
     // le deck vide force le filtre type=Legend (rechargement débouncé de la galerie)
@@ -229,7 +251,8 @@ describe("DeckEditView", () => {
     expect(tile(wrapper, "Phénix").find(".gcard-owned").text()).toBe("×2")
     const ghostTile = tile(wrapper, "Carte Fantôme")
     expect(ghostTile.classes()).toContain("unowned")
-    expect(ghostTile.find(".gcard-owned").text()).toBe("non possédée")
+    /* Manquante : pas de pastille du tout, la vignette grisée porte l'information. */
+    expect(ghostTile.find(".gcard-owned").exists()).toBe(false)
 
     await ghostTile.trigger("click")
     expect(wrapper.findAll(".deck-row .row-name").some((n) => n.text() === "Carte Fantôme")).toBe(true)

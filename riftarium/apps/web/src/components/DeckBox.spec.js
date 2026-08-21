@@ -17,23 +17,70 @@ function fakeDeck(extras = {}) {
   }
 }
 
-function mountBox(deck) {
+function mountBox(deck, props = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: "/decks/:id", component: { template: "<div />" } }]
   })
   return mount(DeckBox, {
-    props: { deck, to: "/decks/1" },
+    props: { deck, to: "/decks/1", ...props },
     global: { plugins: [router], stubs: { Icon: true } }
   })
 }
 
 describe("DeckBox", () => {
+  it("habille la boîte des couleurs des domaines de la légende", () => {
+    const legend = { id: "l1", name: "Ahri", type: "Legend", domains: ["Fury", "Mind", "Colorless"], image_url: "u" }
+    const wrapper = mountBox(fakeDeck({ cards: [{ card: legend, qty: 1 }] }))
+    const style = wrapper.get(".deck-box").attributes("style")
+    expect(style).toContain("--d1: var(--fury)")
+    expect(style).toContain("--d2: var(--mind)") // Colorless ignoré
+    wrapper.unmount()
+
+    // Sans légende : repli sur l'or du site, jamais de variable vide.
+    const plain = mountBox(fakeDeck())
+    expect(plain.get(".deck-box").attributes("style")).toContain("--d1: var(--gold)")
+    plain.unmount()
+  })
+
   it("mentionne la valeur € du deck quand total_eur est présent", () => {
     const wrapper = mountBox(fakeDeck({ prices: { total_eur: 87.4, missing_eur: null } }))
-    const price = wrapper.get(".deck-box-plate .price-tag")
+    const price = wrapper.get(".deck-box-meta .price-tag")
     expect(price.text()).toContain("87,40")
     expect(price.attributes("title")).toContain("TCGplayer")
+    wrapper.unmount()
+  })
+
+  it("affiche la pastille Légal quand toutes les règles passent", () => {
+    const wrapper = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: true, message: "" }] }))
+    const badge = wrapper.get(".deck-legal")
+    expect(badge.text()).toContain("Légal")
+    expect(badge.classes()).toContain("ok")
+    wrapper.unmount()
+  })
+
+  it("passe la pastille en Illégal si une règle échoue ou si le format est libre", () => {
+    const failing = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: false, message: "" }] }))
+    expect(failing.get(".deck-legal").classes()).toContain("ko")
+    expect(failing.get(".deck-legal").text()).toContain("Illégal")
+    failing.unmount()
+
+    const free = mountBox(fakeDeck({ format: "free", checks: [{ rule: "legend", ok: true, message: "" }] }))
+    expect(free.get(".deck-legal").classes()).toContain("ko")
+    free.unmount()
+  })
+
+  it("communauté : la pastille suit le booléen legal du listing", () => {
+    const wrapper = mountBox(fakeDeck({ legal: false, checks: undefined }), { community: true })
+    expect(wrapper.get(".deck-legal").classes()).toContain("ko")
+    wrapper.unmount()
+  })
+
+  it("n'affiche plus le décompte de règles ni le format en texte", () => {
+    const wrapper = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: true, message: "" }] }))
+    expect(wrapper.text()).not.toContain("règles")
+    expect(wrapper.get(".deck-box-meta").text()).not.toContain("légal")
+    expect(wrapper.text()).toContain("public")
     wrapper.unmount()
   })
 

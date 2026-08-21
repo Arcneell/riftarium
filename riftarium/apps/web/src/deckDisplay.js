@@ -1,4 +1,4 @@
-import { cardThumb } from "./api.js"
+import { DOMAINS, cardThumb } from "./api.js"
 import { DOMAIN_RUNE, RUNE_LABELS, glyphUrl } from "./cardText.js"
 
 export const DECK_ZONES = [
@@ -55,15 +55,46 @@ export function coverStyle(deck) {
   return art ? { "--cover": `url(${cardThumb(art, 480)})` } : {}
 }
 
+/* Identité visuelle d'une boîte de deck : l'illustration de la légende plus les
+   deux couleurs de ses domaines, servies en variables CSS (halo, liseré). */
+export function deckIdentity(deck) {
+  const domains = (legendOf(deck)?.domains || []).filter((domain) => domain !== "Colorless")
+  const first = DOMAINS[domains[0]]?.color || "var(--gold)"
+  const second = DOMAINS[domains[1]]?.color || first
+  return { ...coverStyle(deck), "--d1": first, "--d2": second }
+}
+
 export function okCount(deck) {
   return deck?.checks?.filter((check) => check.ok).length ?? 0
 }
 
+/* « Légal » = conforme aux règles officielles de construction, « Illégal » = tout le reste
+   (format libre, non reconnu par Riot). Les valeurs en base restent tournament / free. */
 export const FORMAT_OPTIONS = [
-  { value: "tournament", label: "Tournoi (officiel)" },
-  { value: "free", label: "Libre (non officiel)" }
+  { value: "tournament", label: "Légal" },
+  { value: "free", label: "Illégal" }
 ]
 
 export function formatLabel(format) {
-  return format === "free" ? "libre · non officiel" : "tournoi"
+  return format === "free" ? "illégal" : "légal"
+}
+
+/* Pastille « Légal / Illégal » des boîtes de deck. Un deck est légal s'il est
+   déclaré au format officiel ET qu'il passe toutes les règles de construction.
+   Le listing communauté envoie `legal` (booléen), les autres vues `checks`. */
+export function legalState(deck) {
+  if (!deck) return null
+  if (deck.format === "free") {
+    return { ok: false, label: "Illégal", title: "Format libre : ce deck ne suit pas les règles officielles." }
+  }
+  const valid =
+    typeof deck.legal === "boolean"
+      ? deck.legal
+      : Array.isArray(deck.checks)
+        ? deck.checks.every((check) => check.ok)
+        : null
+  if (valid === null) return { ok: true, label: "Légal", title: "Deck au format officiel." }
+  return valid
+    ? { ok: true, label: "Légal", title: "Toutes les règles officielles de construction sont respectées." }
+    : { ok: false, label: "Illégal", title: "Ce deck ne respecte pas encore toutes les règles de construction." }
 }

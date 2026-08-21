@@ -66,10 +66,10 @@ describe("CommunityView", () => {
   it("affiche les decks en boîtes comme la page Mes decks", async () => {
     const { wrapper } = await mountView()
     expect(wrapper.findAll(".deck-box")).toHaveLength(1)
-    expect(wrapper.get(".deck-box-plate h3").text()).toContain("Fureur d'Ahri")
+    expect(wrapper.get(".deck-box-title").text()).toContain("Fureur d'Ahri")
     expect(wrapper.get(".deck-box-cover").attributes("href")).toBe("/decks/3")
-    expect(wrapper.text()).toContain("par testeur")
-    expect(wrapper.text()).toContain("12")
+    expect(wrapper.get(".deck-box-meta").text()).toContain("testeur")
+    expect(wrapper.get(".deck-box-foot").text()).toContain("12") // compteur de vues
     wrapper.unmount()
   })
 

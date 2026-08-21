@@ -63,7 +63,7 @@ const MODULES = [
     icon: "layers",
     chip: "var(--fury)",
     title: "Deck builder",
-    text: "Construisez vos decks avec validation des règles de tournoi — ou en mode libre, format non officiel.",
+    text: "Construisez vos decks : le site vérifie les règles officielles et vous dit si la liste est légale.",
     to: "/decks",
     go: "Construire"
   },

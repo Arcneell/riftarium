@@ -21,9 +21,10 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 | Cartothèque (recherche, filtres set/domaine/type, fiche carte) | ✅ |
 | Comptes (inscription, connexion, JWT) | ✅ |
 | Collection (quantités, état, langue) | ✅ |
-| Deck builder + validation règles tournoi / mode libre | ✅ |
+| Deck builder + validation des règles (deck légal / illégal) | ✅ |
 | Decks publics, likes, vues, filtres communauté | ✅ |
 | Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
+| Aperçu de partage (image Open Graph générée par deck) | ✅ |
 | Scan mobile, textes FR, fil social (sans stats de méta) | 🔜 |
 
 ## Architecture
@@ -206,6 +207,17 @@ La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) des
 visuels, calculées automatiquement en arrière-plan (au démarrage de l'API et après
 chaque sync). Rien à lancer ; `POST /api/admin/cards/hashes` (`X-Admin-Token`)
 reste disponible en secours manuel.
+
+## Aperçu de partage
+
+Le site est une application monopage : les robots d'aperçu de lien (Discord, Slack,
+Bluesky…) ne lisent pas le JavaScript. nginx les reconnaît à leur `User-Agent` et
+les seuls concernés sont réécrits de `/decks/{id}` vers `/api/decks/{id}/preview`,
+qui rend les méta Open Graph et pointe vers `/api/decks/{id}/og.png` — une image
+1200×630 dessinée par l'API (Pillow, polices du site embarquées dans
+`apps/api/app/assets/fonts/`). Les humains reçoivent l'application comme avant.
+Seuls les decks publics et publiés ont un aperçu ; les autres retombent sur les
+méta génériques du site.
 
 ## Sources de données
 

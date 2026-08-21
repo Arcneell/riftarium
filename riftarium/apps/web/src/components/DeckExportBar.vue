@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { atlasList, copyText, deckCode, nameList } from "../deckExport.js"
+import { pageUrl } from "../seo.js"
 
 const props = defineProps({
   deck: { type: Object, required: true }
@@ -9,20 +10,38 @@ const props = defineProps({
 const note = ref("")
 let timer = 0
 
+/* Le lien n'a d'intérêt que si un tiers peut l'ouvrir : deck public et publié.
+   C'est aussi la condition de l'aperçu Discord (image générée côté serveur). */
+const shareable = computed(() => Boolean(props.deck.is_public && props.deck.moderation_status === "published"))
+
+function flash(message) {
+  note.value = message
+  clearTimeout(timer)
+  timer = window.setTimeout(() => {
+    note.value = ""
+  }, 2400)
+}
+
 async function copy(kind) {
   note.value = ""
   try {
     const text =
       kind === "atlas" ? atlasList(props.deck) : kind === "names" ? nameList(props.deck) : deckCode(props.deck)
     await copyText(text)
-    note.value = "Copié dans le presse-papiers"
+    flash("Copié dans le presse-papiers")
   } catch (error) {
-    note.value = error.message || "Copie impossible"
+    flash(error.message || "Copie impossible")
   }
-  clearTimeout(timer)
-  timer = window.setTimeout(() => {
-    note.value = ""
-  }, 2400)
+}
+
+async function copyLink() {
+  note.value = ""
+  try {
+    await copyText(pageUrl(`/decks/${props.deck.id}`))
+    flash("Lien copié — Discord affichera l'aperçu du deck")
+  } catch (error) {
+    flash(error.message || "Copie impossible")
+  }
 }
 </script>
 
@@ -35,6 +54,7 @@ async function copy(kind) {
       <button type="button" class="btn btn-gold btn-sm" @click="copy('atlas')">Liste Rift Atlas</button>
       <button type="button" class="btn btn-ghost btn-sm" @click="copy('code')">Code de deck</button>
       <button type="button" class="btn btn-ghost btn-sm" @click="copy('names')">Liste texte</button>
+      <button v-if="shareable" type="button" class="btn btn-ghost btn-sm" @click="copyLink">Lien de partage</button>
     </div>
     <p v-if="note" class="dexport-note" role="status">{{ note }}</p>
   </div>

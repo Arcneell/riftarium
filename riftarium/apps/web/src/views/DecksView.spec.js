@@ -108,7 +108,7 @@ describe("DecksView", () => {
     const { wrapper } = await mountView()
     const confirmSpy = vi.spyOn(window, "confirm")
 
-    await wrapper.find(".deck-box-actions button").trigger("click")
+    await wrapper.find(".deck-box-buttons button").trigger("click")
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(api.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
 

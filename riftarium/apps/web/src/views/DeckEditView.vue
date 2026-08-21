@@ -23,9 +23,9 @@ import { useDeckRules } from "../composables/useDeckRules.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
-import { formatLabel } from "../deckDisplay.js"
+import { FORMAT_OPTIONS, formatLabel } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
-import { applySeo } from "../seo.js"
+import { applySeo, pageUrl } from "../seo.js"
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +70,12 @@ const { saveState, sessionExpired, save, markSaved } = useDeckAutosave(deck, per
   canEdit: () => canEdit.value,
   error
 })
+
+/* Le sélecteur de format partage le composant des filtres (mode choix unique) :
+   re-cliquer sur l'option active la désélectionne, on garde alors le format courant. */
+function setFormat(values) {
+  deck.value.format = values[0] || deck.value.format
+}
 
 /* Session expirée pendant l'édition : on garde le brouillon affiché et modifiable localement. */
 const canEdit = computed(() =>
@@ -362,7 +368,9 @@ async function load() {
         (deck.value.description || "").trim().slice(0, 160) ||
         `Deck Riftbound « ${deck.value.name} » (${formatLabel(deck.value.format)}) sur Riftarium.`,
       path: route.path,
-      noindex: !publicDeck
+      noindex: !publicDeck,
+      /* Image de partage dessinée par l'API (les robots, eux, passent par /preview). */
+      image: publicDeck ? pageUrl(`/api/decks/${deck.value.id}/og.png`) : undefined
     })
   } catch (e) {
     error.value = e.message
@@ -424,10 +432,15 @@ onBeforeUnmount(() => {
         aria-label="Nom du deck"
       />
       <h2 v-else class="dbuilder-name">{{ deck.name }}</h2>
-      <select v-if="canEdit" v-model="deck.format" aria-label="Format">
-        <option value="tournament">Mode tournoi — règles officielles</option>
-        <option value="free">Mode libre — format non officiel</option>
-      </select>
+      <FilterSelect
+        v-if="canEdit"
+        label="Format"
+        single
+        required
+        :options="FORMAT_OPTIONS"
+        :model-value="[deck.format]"
+        @update:model-value="setFormat"
+      />
       <span v-else class="muted mono"> {{ formatLabel(deck.format) }} · par {{ deck.owner }} </span>
       <label v-if="canEdit" class="switch"> <input type="checkbox" v-model="deck.is_public" /><i></i> Public </label>
       <div class="deck-box-stats">
@@ -547,9 +560,8 @@ onBeforeUnmount(() => {
             @focusout="hidePreview"
           >
             <img :src="cardThumb(card.image_url, 320)" :alt="''" loading="lazy" decoding="async" draggable="false" />
-            <span v-if="session.token" class="gcard-owned" :class="{ zero: !(card.owned_qty > 0) }">
-              {{ card.owned_qty > 0 ? `×${card.owned_qty}` : "non possédée" }}
-            </span>
+            <!-- Rien pour les cartes manquantes : la vignette grisée (.unowned) suffit. -->
+            <span v-if="session.token && card.owned_qty > 0" class="gcard-owned">×{{ card.owned_qty }}</span>
             <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
             <span v-if="formatEur(card.price_eur)" class="gcard-price">{{ formatEur(card.price_eur) }}</span>
             <span class="gcard-add" aria-hidden="true">+</span>
