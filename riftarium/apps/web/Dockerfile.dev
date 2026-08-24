@@ -1,5 +1,5 @@
 # Développement uniquement : le code est monté en volume, Vite recharge à chaud.
-# Même version majeure que l'image de prod (node:24-alpine).
+# Même version majeure que l'image de prod (node:26-alpine).
 FROM node:26-alpine
 WORKDIR /app
 EXPOSE 5173
