@@ -7,14 +7,17 @@ x-logging: &logging
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: riftarium-db
     environment:
       POSTGRES_DB: riftarium
       POSTGRES_USER: riftarium
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     volumes:
-      - dbdata:/var/lib/postgresql/data
+      # postgres 18+ : PGDATA = /var/lib/postgresql/<majeur>/docker, on monte
+      # donc le parent et non .../data (docker-library/postgres#1259).
+      # dbdata (cluster 16) est conservé tel quel pour le retour arrière.
+      - dbdata18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U riftarium -d riftarium"]
       interval: 5s
@@ -112,4 +115,7 @@ networks:
     external: true
 
 volumes:
+  # Cluster 16, plus monté : conservé pour pouvoir revenir en arrière.
   dbdata:
+  # Cluster 18, rempli par scripts/migrate_pg18.sh AVANT le merge de ce changement.
+  dbdata18:
