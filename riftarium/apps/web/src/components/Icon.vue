@@ -85,6 +85,11 @@ defineProps({
       <path d="M4.2 12h15.6" />
       <path d="M4.2 17h15.6" />
     </g>
+    <!-- croix (fermeture) -->
+    <g v-else-if="name === 'x'">
+      <path d="M6 6l12 12" />
+      <path d="M18 6 6 18" />
+    </g>
     <!-- flèche -->
     <g v-else-if="name === 'arrow'">
       <path d="M4.4 12h15.2" />

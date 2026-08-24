@@ -50,9 +50,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" eyebrow="Informations légales" :title="copy.title">
-    {{ copy.lead }}
-  </PageBanner>
+  <PageBanner :art="BANNERS.rules" :title="copy.title" show-title />
 
   <section class="legal-page">
     <div class="wrap legal-layout">

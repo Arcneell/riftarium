@@ -70,11 +70,9 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
 <template>
   <PageBanner :art="BANNERS.rules" title="Prise en main : apprenez à jouer">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Prise en main </template>
-    Une partie de duel (1c1) rejouée sous vos yeux sur la disposition du tapis officiel, avec de vraies cartes, une
-    vraie main et une vraie pioche. Les termes officiels sont mis en évidence à chaque étape.
   </PageBanner>
 
-  <section style="padding-top: 28px">
+  <section>
     <div
       ref="layoutEl"
       class="wrap guide-layout"

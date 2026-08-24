@@ -185,11 +185,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.collection" eyebrow="Collection" title="Mon inventaire">
-    Tout ce que vous possédez, en un coup d'œil — états et langues compris.
-  </PageBanner>
+  <PageBanner :art="BANNERS.collection" title="Mon inventaire" />
 
-  <section style="padding-top: 40px">
+  <section>
     <div class="wrap cards-wrap">
       <div class="stat-row">
         <div class="stat" v-reveal>
@@ -238,7 +236,6 @@ onMounted(async () => {
           @update:model-value="setFilter('energy', $event)"
         />
         <FilterSelect
-          v-if="setOptions.length"
           label="Sets"
           :options="setOptions"
           :model-value="state.set_id"

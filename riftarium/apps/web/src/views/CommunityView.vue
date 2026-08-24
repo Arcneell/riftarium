@@ -96,11 +96,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.community" eyebrow="Communauté" title="Decks partagés">
-    Parcourez les decks publiés, filtrez par légende, domaine ou format — officiel ou non officiel.
-  </PageBanner>
+  <PageBanner :art="BANNERS.community" title="Decks partagés" />
 
-  <section style="padding-top: 40px">
+  <section>
     <div class="wrap">
       <div class="filter-board">
         <label class="search filter-search">
@@ -119,7 +117,6 @@ onMounted(async () => {
           </button>
         </div>
         <FilterSelect
-          v-if="legendOptions.length"
           label="Légendes"
           searchable
           :options="legendOptions"

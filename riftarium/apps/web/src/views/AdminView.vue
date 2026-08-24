@@ -345,11 +345,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" eyebrow="Administration" title="Console d'administration">
-    Chiffres du site, gestion des comptes et file de modération des decks. Réservé aux administrateurs.
-  </PageBanner>
+  <PageBanner :art="BANNERS.auth" title="Console d'administration" />
 
-  <section style="padding-top: 28px">
+  <section>
     <div class="wrap admin-wrap">
       <div class="filters admin-tabs" role="group" aria-label="Sections d'administration">
         <button

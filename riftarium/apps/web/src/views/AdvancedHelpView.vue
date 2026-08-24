@@ -30,8 +30,6 @@ const grouped = computed(() =>
 <template>
   <PageBanner :art="BANNERS.rules" title="Chaque mécanique a sa page">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Aide avancée </template>
-    Un résumé par sujet ci-dessous ; ouvrez la page pour l'essentiel, les cas concrets, des cartes d'exemple et le texte
-    officiel intégral de la mécanique.
     <template #after>
       <label class="search" style="max-width: 420px; margin-top: 18px">
         <Icon name="search" :size="18" />
@@ -45,7 +43,7 @@ const grouped = computed(() =>
     </template>
   </PageBanner>
 
-  <section style="padding-top: 30px">
+  <section>
     <div class="wrap">
       <p class="muted mono" v-if="!grouped.length" style="font-size: 0.8rem">
         Aucune mécanique ne correspond à cette recherche. Essayez un autre mot, ou passez par les

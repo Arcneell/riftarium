@@ -203,11 +203,9 @@ onMounted(load)
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Mon profil">
-    Gérez votre pseudo, votre portrait de légende, votre mot de passe et les données de votre compte.
-  </PageBanner>
+  <PageBanner :art="BANNERS.auth" title="Mon profil" />
 
-  <section style="padding-top: 28px">
+  <section>
     <div class="wrap profile-page">
       <p v-if="error" class="error">{{ error }}</p>
       <p v-else-if="loading" class="muted">Chargement du profil…</p>

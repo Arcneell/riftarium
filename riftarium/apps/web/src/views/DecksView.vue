@@ -99,11 +99,9 @@ onMounted(load)
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.decks" eyebrow="Deck builder" title="Mes decks">
-    Construisez vos decks, vérifiez les règles de tournoi et listez les cartes qui vous manquent.
-  </PageBanner>
+  <PageBanner :art="BANNERS.decks" title="Mes decks" />
 
-  <section style="padding-top: 40px">
+  <section>
     <div class="wrap">
       <div class="toolbar">
         <button class="btn btn-gold" @click="openCreate">+ Nouveau deck</button>

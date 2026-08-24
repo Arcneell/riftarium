@@ -428,6 +428,21 @@ section {
   opacity: 1;
 }
 
+/* Titre réservé aux lecteurs d'écran et au référencement : présent dans le DOM,
+   absent de la mise en page (les pages de navigation répètent l'entrée de menu). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Bandeau prisme ---------- */
 .prism {
   height: 3px;
@@ -544,6 +559,15 @@ section {
   border: 1px solid var(--line-strong);
   color: var(--gold-deep);
   font-size: 1.15rem;
+}
+
+/* Tiroir de navigation mobile : voile et bouton de fermeture n'existent
+   qu'en dessous de 980 px, où .nav bascule en panneau latéral. */
+.nav-close {
+  display: none;
+}
+.nav-scrim {
+  display: none;
 }
 
 /* ---------- Boutons ---------- */
@@ -841,10 +865,15 @@ textarea {
   font-size: 0.84rem;
   transition: all 0.18s;
 }
-.fsel-btn:hover,
+.fsel-btn:hover:not(:disabled),
 .fsel-btn.open {
   color: var(--ink-strong);
   border-color: var(--line-strong);
+}
+/* Options pas encore chargées : la place est tenue, le bouton reste inerte. */
+.fsel-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .fsel-btn.active {
   color: var(--ink-strong);
@@ -1257,9 +1286,15 @@ textarea {
 }
 
 /* ---------- Fiche carte ---------- */
+/* Pages sans bandeau : le contenu démarre haut lui aussi, plutôt que sur les
+   88 px de <section> par défaut. */
 .card-detail {
-  padding-top: 36px;
+  padding-top: 20px;
   padding-bottom: 72px;
+}
+.scan {
+  padding-top: 24px;
+  padding-bottom: 64px;
 }
 .card-back {
   margin-bottom: 22px;
@@ -1552,12 +1587,34 @@ td.num {
 .hero-splash {
   position: relative;
   padding: 120px 0 140px;
+  overflow: hidden;
+}
+/* Même traitement que .page-banner : l'illustration s'efface par masque au lieu
+   d'être recouverte d'un aplat de parchemin, qui laissait un trait net au bord
+   bas là où le halo doré du fond reprenait. */
+.hero-splash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background-image:
-    linear-gradient(to right, var(--paper) 26%, rgba(245, 239, 225, 0.55) 55%, rgba(245, 239, 225, 0.2) 100%),
-    linear-gradient(to top, var(--paper) 2%, rgba(245, 239, 225, 0) 40%),
+    linear-gradient(
+      to right,
+      rgba(245, 239, 225, 0.92) 0%,
+      rgba(245, 239, 225, 0.8) 22%,
+      rgba(245, 239, 225, 0.5) 48%,
+      rgba(245, 239, 225, 0.2) 75%,
+      rgba(245, 239, 225, 0.08) 100%
+    ),
     linear-gradient(to bottom, rgba(245, 239, 225, 0.5), rgba(245, 239, 225, 0) 30%), var(--splash, none);
   background-size: cover;
   background-position: 76% 30%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0) 97%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0) 97%);
+}
+.hero-splash > * {
+  position: relative;
+  z-index: 1;
 }
 .hero-splash .lead {
   color: var(--ink);
@@ -1624,6 +1681,11 @@ td.num {
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
+/* Bandeau court : le bas est recouvert par le contenu, le crédit passe en haut. */
+.page-banner .splash-credit {
+  top: 10px;
+  bottom: auto;
+}
 
 /* ---------- Tuiles modules (accueil) ---------- */
 .modules {
@@ -1682,36 +1744,65 @@ td.num {
 }
 
 /* ---------- Bannières de page ---------- */
+/* Bandeau court : l'illustration sert de fond de haut de page, plus de bloc de
+   titre à faire défiler. La marge négative fait remonter la section suivante
+   par-dessus le dégradé, là où le parchemin garde le texte lisible.
+   Hauteur - marge = la bande d'illustration réellement dégagée (240 - 120 = 120 px). */
 .page-banner {
   position: relative;
   overflow: hidden;
-  min-height: 420px;
-  padding: 108px 0 168px;
+  min-height: 240px;
+  padding: 26px 0 172px;
+  margin-bottom: -120px;
+  --banner-x: 72%;
+  --banner-y: 45%;
+}
+/* Illustration et voile de parchemin isolés sur un calque, effacé par un masque
+   vers le bas.
+
+   Les recouvrir d'un aplat `var(--paper)` ne marchait pas : le fond de page porte
+   un halo doré fixe (body::before) que cet aplat masquait. Sous le bord du
+   bandeau le halo réapparaissait — d'où le trait net, visible à gauche où le halo
+   est le plus dense, invisible à droite où l'illustration laissait déjà passer le
+   fond. Un masque rend le calque transparent : c'est le vrai fond de page qui
+   reprend, sans démarcation possible. */
+.page-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background-image:
     linear-gradient(
       to right,
-      var(--paper) 0%,
-      var(--paper) 22%,
-      rgba(245, 239, 225, 0.92) 36%,
-      rgba(245, 239, 225, 0.45) 52%,
-      rgba(245, 239, 225, 0.12) 70%,
+      rgba(245, 239, 225, 0.9) 0%,
+      rgba(245, 239, 225, 0.74) 18%,
+      rgba(245, 239, 225, 0.5) 38%,
+      rgba(245, 239, 225, 0.26) 58%,
+      rgba(245, 239, 225, 0.08) 78%,
       rgba(245, 239, 225, 0) 100%
     ),
     linear-gradient(to bottom, rgba(245, 239, 225, 0.22), rgba(245, 239, 225, 0) 28%),
     var(--banner, radial-gradient(700px 320px at 78% 20%, rgba(11, 143, 132, 0.12), transparent 70%));
   background-size: cover;
-  background-position: 72% 28%;
-}
-/* Fondu vers le parchemin : plus de coupure nette image / fond. */
-.page-banner::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 46%;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgba(245, 239, 225, 0), rgba(245, 239, 225, 0.55) 42%, var(--paper) 88%);
+  /* Sur une bande large et courte, l'image déborde surtout en hauteur : on vise
+     le milieu de l'illustration (personnages) plutôt que le ciel du haut. */
+  background-position: var(--banner-x) var(--banner-y);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 26%,
+    rgba(0, 0, 0, 0.62) 48%,
+    rgba(0, 0, 0, 0.22) 70%,
+    rgba(0, 0, 0, 0) 90%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 26%,
+    rgba(0, 0, 0, 0.62) 48%,
+    rgba(0, 0, 0, 0.22) 70%,
+    rgba(0, 0, 0, 0) 90%
+  );
 }
 .page-banner .wrap {
   position: relative;
@@ -1720,10 +1811,26 @@ td.num {
 .page-banner h2 {
   color: var(--ink-strong);
   max-width: 14em;
+  margin-top: 0;
 }
-.page-banner .lead {
-  max-width: 36rem;
-  color: var(--ink);
+/* Titre affiché (mécanique, document légal, compte) : un peu d'air au-dessus. */
+.page-banner.has-title {
+  padding-top: 40px;
+}
+/* La section qui remonte sur la bannière fournit déjà l'espace du haut.
+   position/z-index : la bannière est positionnée, elle passerait sinon
+   par-dessus le contenu qui la chevauche. */
+.page-banner + section,
+.page-banner + .offline-note + section {
+  position: relative;
+  z-index: 1;
+  padding-top: 0;
+}
+/* Le bandeau hors ligne garde son propre rembourrage, il lui faut juste passer
+   au-dessus de l'illustration qu'il chevauche. */
+.page-banner + .offline-note {
+  position: relative;
+  z-index: 1;
 }
 
 /* Le temps que le composant de route (chargé à la demande) arrive, <main> réserve
@@ -1800,11 +1907,12 @@ footer {
 .footer-legal {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 24px;
+  gap: 4px 24px;
   border-top: 1px solid var(--line);
-  padding-top: 14px;
-  font-size: 0.7rem;
-  line-height: 1.45;
+  padding-top: 10px;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  color: var(--muted);
 }
 .footer-legal .footer-legal-wide {
   grid-column: 1 / -1;
@@ -1984,9 +2092,11 @@ footer {
     padding: 88px 0 104px;
   }
   .page-banner {
-    min-height: 300px;
-    padding: 80px 0 120px;
-    background-position: 80% 28%;
+    min-height: 200px;
+    padding: 20px 0 146px;
+    margin-bottom: -104px;
+    --banner-x: 76%;
+    --banner-y: 44%;
   }
   .hero-grid,
   .cols-2,
@@ -2003,7 +2113,7 @@ footer {
     display: none;
   }
   .card-detail {
-    padding-top: 24px;
+    padding-top: 14px;
   }
   .modules {
     grid-template-columns: 1fr 1fr;
@@ -2043,38 +2153,106 @@ footer {
   }
 }
 
-/* Navigation en menu déroulant dès que la barre complète ne tient plus : une fois
-   connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px. */
+/* Navigation en tiroir latéral dès que la barre complète ne tient plus : une fois
+   connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px.
+   Le panneau glisse depuis la droite (pouce à portée) plutôt que de tomber du haut. */
 @media (max-width: 980px) {
+  /* Page figée derrière le tiroir ouvert : sinon le geste de défilement
+     « traverse » le panneau. Cantonné au palier mobile — repasser en barre
+     complète après un redimensionnement ne doit pas bloquer la page. */
+  body.nav-locked {
+    overflow: hidden;
+  }
   .burger {
     display: grid;
     place-items: center;
   }
+  .nav-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    /* au-dessus du bandeau traceurs (80), qui sinon flottait sur le tiroir */
+    z-index: 85;
+    background: rgba(24, 18, 10, 0.44);
+    backdrop-filter: blur(2px);
+  }
+  .scrim-enter-active,
+  .scrim-leave-active {
+    transition: opacity 0.28s ease;
+  }
+  .scrim-enter-from,
+  .scrim-leave-to {
+    opacity: 0;
+  }
   .nav {
     position: fixed;
-    inset: 67px 0 auto 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(310px, 84vw);
+    margin-left: 0;
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: rgba(245, 239, 225, 0.98);
     backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--line-strong);
-    padding: 18px 24px 26px;
-    gap: 10px;
-    transform: translateY(-130%);
-    transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.32, 1);
-    z-index: 45;
+    border-left: 1px solid var(--line-strong);
+    box-shadow: -20px 0 56px rgba(24, 18, 10, 0.22);
+    transform: translateX(101%);
+    /* visibility retardée : le panneau reste focusable pendant la fermeture,
+       puis sort de l'ordre de tabulation une fois hors écran. */
+    transition:
+      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
+      visibility 0s linear 0.28s;
+    /* au-dessus de l'en-tête collant (50), du bandeau traceurs (80) et du voile (85) */
+    z-index: 90;
+    visibility: hidden;
   }
   .nav.open {
     transform: none;
+    visibility: visible;
+    transition:
+      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
+      visibility 0s;
   }
+  /* flex-shrink: 0 — sur un écran court, les entrées se tassaient au lieu de
+     laisser le panneau défiler. */
   .nav a {
-    padding: 13px 18px;
-    text-align: center;
+    flex: 0 0 auto;
+    padding: 13px 16px;
+    text-align: left;
     font-size: 1rem;
   }
+  .nav .btn {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding-left: 16px;
+  }
   .nav-profile {
-    justify-content: center;
-    padding: 10px 18px;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 10px 16px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .nav-close {
+    display: grid;
+    place-items: center;
+    align-self: flex-end;
+    flex: 0 0 auto;
+    margin-bottom: 6px;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--line-strong);
+    color: var(--gold-deep);
+    background: transparent;
   }
   .beta-mark {
     position: absolute;
@@ -3641,7 +3819,7 @@ footer {
 .dbuilder-page {
   max-width: 1560px;
   margin: 0 auto;
-  padding: 34px 28px 80px;
+  padding: 20px 28px 80px;
 }
 .dbuilder-bar {
   display: flex;
@@ -4284,7 +4462,7 @@ body.drag-active * {
 }
 @media (max-width: 760px) {
   .dbuilder-page {
-    padding: 24px 16px 60px;
+    padding: 16px 16px 60px;
   }
   .deck-meters {
     grid-template-columns: repeat(4, 1fr);
@@ -5140,8 +5318,11 @@ button.deck-box-stat:hover,
     padding: 48px 0;
   }
   .page-banner {
-    min-height: 0;
-    padding: 48px 0 64px;
+    min-height: 168px;
+    padding: 14px 0 118px;
+    margin-bottom: -84px;
+    --banner-x: 68%;
+    --banner-y: 42%;
   }
 
   /* Lecteur de règles : rangées empilées, indentation resserrée signalée par un filet. */
@@ -5250,18 +5431,11 @@ button.deck-box-stat:hover,
 
 .scan-wrap {
   max-width: 720px;
-  padding-top: 34px;
+  padding-top: 0;
   padding-bottom: 60px;
 }
-.scan-eyebrow {
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 6px;
-}
 .scan-intro {
-  margin: 8px 0 18px;
+  margin: 0 0 18px;
 }
 .scan-status {
   margin: 12px 0;

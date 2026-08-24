@@ -511,7 +511,6 @@ onBeforeUnmount(() => {
             @update:model-value="setFilter('energy', $event)"
           />
           <FilterSelect
-            v-if="setOptions.length"
             label="Sets"
             :options="setOptions"
             :model-value="gallery.set_id"
