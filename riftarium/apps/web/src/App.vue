@@ -11,9 +11,7 @@ import {
   CLOSED_BETA,
   SHOW_DONATIONS,
   RIOT_DISCLAIMER_EN,
-  RIOT_DISCLAIMER_FR,
   RIOT_GENERAL_DISCLAIMER_EN,
-  RIOT_GENERAL_DISCLAIMER_FR,
   CONTACT_EMAIL,
   CONTACT_MAILTO
 } from "./legal.js"
@@ -22,12 +20,34 @@ const router = useRouter()
 const route = useRoute()
 const menuOpen = ref(false)
 
+/* Le tiroir et son voile sont en position: fixed, mais l'en-tête porte un
+   backdrop-filter : il devient bloc conteneur et les bornerait à la hauteur de la
+   barre (panneau coupé au bout de quelques dizaines de pixels). Sous 980 px, on
+   les sort donc dans <body> ; au-dessus, la barre reprend sa place dans l'en-tête. */
+const drawerQuery = typeof window !== "undefined" ? window.matchMedia("(max-width: 980px)") : null
+const drawerMode = ref(drawerQuery?.matches ?? false)
+
+function onDrawerQuery(event) {
+  drawerMode.value = event.matches
+  if (!event.matches) menuOpen.value = false
+}
+
 watch(
   () => route.fullPath,
   () => {
     menuOpen.value = false
   }
 )
+
+/* Tiroir latéral : tant qu'il est ouvert, la page derrière ne défile plus
+   (sinon le scroll « traverse » le panneau sur iOS et Android). */
+watch(menuOpen, (open) => {
+  document.body.classList.toggle("nav-locked", open)
+})
+
+function onKeydown(event) {
+  if (event.key === "Escape") menuOpen.value = false
+}
 
 /* Session expirée (401 renvoyé par l'API) : direction la connexion, en gardant la page en cours. */
 function onSessionExpired() {
@@ -37,6 +57,8 @@ function onSessionExpired() {
 
 onMounted(async () => {
   window.addEventListener("riftarium:session-expired", onSessionExpired)
+  window.addEventListener("keydown", onKeydown)
+  drawerQuery?.addEventListener("change", onDrawerQuery)
   if (!session.token) return
   try {
     const me = await api("/api/auth/me")
@@ -50,6 +72,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("riftarium:session-expired", onSessionExpired)
+  window.removeEventListener("keydown", onKeydown)
+  drawerQuery?.removeEventListener("change", onDrawerQuery)
+  document.body.classList.remove("nav-locked")
 })
 
 async function logout() {
@@ -70,26 +95,41 @@ async function logout() {
         <Logo />
         <span class="brand-name">Riftarium</span>
       </RouterLink>
-      <button class="burger" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" aria-label="Menu">
+      <button
+        class="burger"
+        type="button"
+        @click="menuOpen = !menuOpen"
+        :aria-expanded="menuOpen"
+        aria-controls="nav-principale"
+        aria-label="Menu"
+      >
         <Icon name="menu" :size="20" />
       </button>
-      <nav class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
-        <RouterLink to="/cartes">Cartes</RouterLink>
-        <RouterLink to="/regles">Règles</RouterLink>
-        <RouterLink to="/collection">Collection</RouterLink>
-        <RouterLink to="/decks">Decks</RouterLink>
-        <RouterLink to="/communaute">Communauté</RouterLink>
-        <template v-if="session.token">
-          <RouterLink to="/wishlist">Wishlist</RouterLink>
-          <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
-          <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
-            <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
-            <span>{{ session.handle }}</span>
-          </RouterLink>
-          <button class="btn btn-ghost btn-sm" @click="logout">Déconnexion</button>
-        </template>
-        <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
-      </nav>
+      <Teleport to="body" :disabled="!drawerMode">
+        <Transition name="scrim">
+          <div v-if="menuOpen" class="nav-scrim" @click="menuOpen = false"></div>
+        </Transition>
+        <nav id="nav-principale" class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
+          <button class="nav-close" type="button" @click="menuOpen = false" aria-label="Fermer le menu">
+            <Icon name="x" :size="20" />
+          </button>
+          <RouterLink to="/cartes">Cartes</RouterLink>
+          <RouterLink to="/regles">Règles</RouterLink>
+          <RouterLink to="/collection">Collection</RouterLink>
+          <RouterLink to="/decks">Decks</RouterLink>
+          <RouterLink to="/communaute">Communauté</RouterLink>
+          <template v-if="session.token">
+            <RouterLink to="/wishlist">Wishlist</RouterLink>
+            <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
+            <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
+              <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
+              <span>{{ session.handle }}</span>
+            </RouterLink>
+            <button class="btn btn-ghost btn-sm" @click="logout">Déconnexion</button>
+          </template>
+          <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
+        </nav>
+      </Teleport>
       <span class="beta-mark" :title="CLOSED_BETA ? 'Bêta fermée, non indexée, accès sur invitation' : 'Bêta'">{{
         CLOSED_BETA ? "bêta fermée" : "bêta"
       }}</span>
@@ -168,16 +208,15 @@ async function logout() {
           </ul>
         </div>
       </div>
+      <!-- Avertissements Riot dans leur version anglaise, la seule que la politique
+           « Legal Jibber Jabber » impose de reproduire. La traduction française
+           reste sur les pages légales, où elle a la place d'être lue. -->
       <div class="footer-legal">
         <p>{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
-        <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
         <p>{{ RIOT_DISCLAIMER_EN }}</p>
-        <p>{{ RIOT_DISCLAIMER_FR }}</p>
         <p class="footer-legal-wide">
-          Riftbound, League of Legends, les visuels de cartes, illustrations et textes officiels sont la propriété de ©
-          Riot Games, Inc. Les visuels sont servis depuis le CDN officiel de Riot, jamais copiés ni redistribués. En
-          bêta, les textes de cartes proviennent de l'API communautaire Riftcodex en attendant l'API officielle Riot.
-          Chaque carte mentionne son code collector et son illustrateur.
+          Visuels et textes officiels © Riot Games, Inc., servis depuis le CDN de Riot. Détail sur les
+          <RouterLink to="/mentions-legales">mentions légales</RouterLink>.
         </p>
       </div>
     </div>

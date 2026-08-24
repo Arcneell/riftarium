@@ -43,11 +43,9 @@ async function submit() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Nouveau mot de passe">
-    Choisissez un nouveau mot de passe pour votre compte Riftarium.
-  </PageBanner>
+  <PageBanner :art="BANNERS.auth" title="Nouveau mot de passe" show-title />
 
-  <section style="padding-top: 36px">
+  <section>
     <div class="wrap" style="max-width: 480px">
       <div v-if="!token" class="panel">
         <p class="error" style="margin-top: 0">

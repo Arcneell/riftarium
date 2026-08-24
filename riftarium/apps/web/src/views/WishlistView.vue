@@ -66,11 +66,9 @@ onMounted(refresh)
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.collection" eyebrow="Wishlist" title="Ma wishlist">
-    Les cartes qui vous font de l'œil — quantités souhaitées et budget à prévoir.
-  </PageBanner>
+  <PageBanner :art="BANNERS.collection" title="Ma wishlist" />
 
-  <section style="padding-top: 40px">
+  <section>
     <div class="wrap cards-wrap">
       <div class="stat-row">
         <div class="stat" v-reveal>

@@ -214,16 +214,11 @@ onMounted(async () => {
 <template>
   <PageBanner :art="BANNERS.rules" title="Le texte intégral, consultable et cherchable">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Texte officiel </template>
-    Reproduit tel quel depuis les documents officiels de Riot Games. Chaque renvoi est cliquable. Pour une explication
-    plus lisible, passez par le <RouterLink to="/regles/debutant">guide du débutant</RouterLink> ou l'<RouterLink
-      to="/regles/avancee"
-      >aide avancée</RouterLink
-    >.
   </PageBanner>
 
   <div class="offline-note" v-if="!online" role="status">Hors ligne — règles servies depuis le cache</div>
 
-  <section style="padding-top: 36px" v-if="documents">
+  <section v-if="documents">
     <div class="wrap">
       <div class="toolbar">
         <div class="filters" role="group" aria-label="Document">

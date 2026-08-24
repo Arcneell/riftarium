@@ -72,12 +72,11 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
 
 <template>
   <template v-if="topic">
-    <PageBanner :art="BANNERS.rules" :title="topic.title">
+    <PageBanner :art="BANNERS.rules" :title="topic.title" show-title>
       <template #eyebrow>
         <RouterLink to="/regles">Règles</RouterLink> › <RouterLink to="/regles/avancee">Aide avancée</RouterLink> ›
         {{ categoryLabel }}
       </template>
-      {{ topic.summary }}
       <template #meta>
         <p v-if="keywordChips.length" style="margin: 6px 0 10px">
           <span
@@ -92,7 +91,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
       </template>
     </PageBanner>
 
-    <section style="padding-top: 32px">
+    <section>
       <div class="wrap topic-layout">
         <div class="topic-main">
           <h3 class="topic-part">L'essentiel</h3>

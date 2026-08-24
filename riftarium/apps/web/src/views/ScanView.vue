@@ -199,11 +199,9 @@ function newScan() {
 <template>
   <section class="scan">
     <div class="wrap scan-wrap">
-      <p class="scan-eyebrow mono">Collection</p>
-      <h1>Scanner une carte</h1>
+      <h1 class="sr-only">Scanner une carte</h1>
       <p class="muted scan-intro">
-        Cadrez la carte dans la silhouette puis capturez : les cartes les plus ressemblantes s'affichent, à vous de
-        confirmer la bonne.
+        Cadrez la carte dans la silhouette puis capturez : les plus ressemblantes s'affichent, à vous de confirmer.
       </p>
 
       <p v-if="index.loading" class="muted scan-status">Chargement des empreintes…</p>

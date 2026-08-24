@@ -46,14 +46,11 @@ const TIERS = [
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" eyebrow="Règles" title="Trouvez la bonne réponse, au bon niveau">
-    Débutant ? Suivez le guide animé. Une situation litigieuse en partie ? L'aide avancée. Et si le doute persiste, le
-    texte officiel tranche.
-  </PageBanner>
+  <PageBanner :art="BANNERS.rules" title="Trouvez la bonne réponse, au bon niveau" />
 
   <div class="offline-note" v-if="!online" role="status">Hors ligne — règles servies depuis le cache</div>
 
-  <section style="padding-top: 36px">
+  <section>
     <div class="wrap">
       <div class="tier-grid">
         <RouterLink

@@ -33,11 +33,9 @@ async function submit() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" eyebrow="Compte" title="Mot de passe oublié">
-    Indiquez votre adresse e-mail : si un compte y est associé, vous recevrez un lien de réinitialisation.
-  </PageBanner>
+  <PageBanner :art="BANNERS.auth" title="Mot de passe oublié" show-title />
 
-  <section style="padding-top: 36px">
+  <section>
     <div class="wrap" style="max-width: 480px">
       <div v-if="sent" class="panel">
         <p class="success" style="margin-top: 0">{{ NEUTRAL_MESSAGE }}</p>

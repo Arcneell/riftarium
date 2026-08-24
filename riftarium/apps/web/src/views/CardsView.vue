@@ -70,11 +70,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.cards" eyebrow="Cartothèque" title="Toutes les cartes du jeu">
-    Cherchez par nom, code ou texte, puis affinez en cumulant les filtres : domaine, type, rareté, coût.
-  </PageBanner>
+  <PageBanner :art="BANNERS.cards" title="Toutes les cartes du jeu" />
 
-  <section style="padding-top: 40px">
+  <section>
     <div class="wrap cards-wrap">
       <div class="filter-board">
         <label class="search filter-search">
@@ -111,7 +109,6 @@ onMounted(async () => {
           @update:model-value="setFilter('energy', $event)"
         />
         <FilterSelect
-          v-if="setOptions.length"
           label="Sets"
           :options="setOptions"
           :model-value="state.set_id"

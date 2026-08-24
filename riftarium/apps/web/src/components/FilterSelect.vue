@@ -14,6 +14,11 @@ const props = defineProps({
 })
 const emit = defineEmits(["update:modelValue"])
 
+/* Options chargées en différé (sets, légendes) : le bouton est rendu tout de suite,
+   inactif tant que la liste est vide. Le monter seulement une fois la réponse
+   arrivée faisait sauter la barre de filtres, et tout le contenu avec. */
+const empty = computed(() => !props.options.length)
+
 const root = ref(null)
 const searchInput = ref(null)
 const open = ref(false)
@@ -82,6 +87,7 @@ onBeforeUnmount(() => {
       type="button"
       class="fsel-btn"
       :class="{ open, active: modelValue.length > 0 }"
+      :disabled="empty"
       :aria-expanded="open"
       :aria-label="`Filtrer par ${label.toLowerCase()}`"
       @click="open = !open"

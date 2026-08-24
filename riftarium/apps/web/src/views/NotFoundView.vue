@@ -1,5 +1,5 @@
 <template>
-  <section style="padding-top: 72px; padding-bottom: 72px">
+  <section style="padding-top: 44px; padding-bottom: 72px">
     <div class="wrap" style="max-width: 560px; text-align: center">
       <p class="eyebrow">Erreur 404</p>
       <h1 style="margin-bottom: 14px">Page introuvable</h1>
