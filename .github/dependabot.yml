@@ -42,6 +42,21 @@ updates:
     commit-message:
       prefix: "deps(docker)"
 
+  # compose.yaml épingle postgres et redis : ces serveurs ne sont dans aucun
+  # Dockerfile, donc l'écosystème "docker" ci-dessus ne les voyait pas. Écosystème
+  # distinct (Compose v2/v3), non auto-mergé : une base de données et un cache se
+  # valident à la main. Le motif de Dependabot couvre compose.yaml et
+  # compose.dev.yaml.
+  - package-ecosystem: "docker-compose"
+    directory: "/riftarium"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
+    commit-message:
+      prefix: "deps(compose)"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
