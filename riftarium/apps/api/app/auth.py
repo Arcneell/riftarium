@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import os
 import secrets
+import threading
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -22,6 +23,10 @@ _LEGACY_SCRYPT = (2**14, 8, 1)
 
 _dummy_hash: str | None = None
 
+# Plafonne les hachages scrypt concurrents : chaque appel alloue ~128*n*r*2 octets,
+# une rafale de connexions ferait sinon un OOM-kill du conteneur (voir config).
+_scrypt_gate = threading.Semaphore(max(1, settings.scrypt_max_parallel))
+
 
 def _scrypt_target() -> tuple[int, int, int]:
     return (settings.scrypt_n, settings.scrypt_r, settings.scrypt_p)
@@ -30,7 +35,8 @@ def _scrypt_target() -> tuple[int, int, int]:
 def _scrypt(password: str, salt: bytes, params: tuple[int, int, int]) -> bytes:
     n, r, p = params
     # hashlib.scrypt exige maxmem > ~128*n*r octets : on prend une marge confortable.
-    return hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, maxmem=128 * r * n * 2)
+    with _scrypt_gate:
+        return hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, maxmem=128 * r * n * 2)
 
 
 def _parse_hash(stored: str) -> tuple[tuple[int, int, int], bytes, str] | None:

@@ -7,29 +7,41 @@ l'API fonctionne à l'identique, simplement sans cache.
 import contextlib
 import json
 import logging
+import time
 
 from .config import settings
 
 log = logging.getLogger("riftarium.cache")
 
+# Sans REDIS_URL, Redis est désactivé pour de bon (pas de cible à joindre).
+# Avec une URL mais un serveur injoignable, on retente après un délai : un simple
+# blip au démarrage (ordre docker-compose) ne doit pas couper cache + rate-limiting
+# pour toute la vie du process.
+_RETRY_AFTER_SECONDS = 30
+
 _client = None
-_disabled = not settings.redis_url
+_no_url = not settings.redis_url
+_next_retry = 0.0
 
 
 def _redis():
-    global _client, _disabled
-    if _disabled:
+    global _client, _next_retry
+    if _no_url:
         return None
-    if _client is None:
-        try:
-            import redis
+    if _client is not None:
+        return _client
+    if time.monotonic() < _next_retry:  # en fenêtre de backoff après un échec récent
+        return None
+    try:
+        import redis
 
-            _client = redis.Redis.from_url(settings.redis_url, socket_timeout=1, socket_connect_timeout=1)
-            _client.ping()
-        except Exception:
-            log.warning("Redis injoignable (%s) : cache désactivé", settings.redis_url)
-            _client = None
-            _disabled = True
+        client = redis.Redis.from_url(settings.redis_url, socket_timeout=1, socket_connect_timeout=1)
+        client.ping()
+    except Exception:
+        _next_retry = time.monotonic() + _RETRY_AFTER_SECONDS
+        log.warning("Redis injoignable (%s) : nouvel essai dans %ds", settings.redis_url, _RETRY_AFTER_SECONDS)
+        return None
+    _client = client
     return _client
 
 

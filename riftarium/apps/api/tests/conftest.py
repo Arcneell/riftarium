@@ -182,7 +182,8 @@ def _reset_module_state():
         security_module._last_purge = 0.0
         main_module._last_sync_fallback = 0.0
         cache_module._client = None
-        cache_module._disabled = not cache_module.settings.redis_url
+        cache_module._no_url = not cache_module.settings.redis_url
+        cache_module._next_retry = 0.0
 
     _reset()
     yield

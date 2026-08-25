@@ -50,11 +50,30 @@ def sync_admin_flags(db: Session) -> None:
             changed = True
             log.info("droits admin retirés à %s (%s) : absent de ADMIN_EMAILS", user.handle, user.email)
     if wanted:
-        rows = db.scalars(select(User).where(func.lower(User.email).in_(wanted), User.is_admin.is_(False))).all()
+        # Un compte n'obtient les droits admin que si son adresse est VÉRIFIÉE : sans
+        # cette garde, quiconque inscrit l'adresse d'un admin (jamais confirmée)
+        # hériterait du drapeau au démarrage suivant. La casse est déjà neutralisée
+        # à l'inscription (schemas.NormEmail), func.lower ne couvre que d'anciennes lignes.
+        rows = db.scalars(
+            select(User).where(
+                func.lower(User.email).in_(wanted),
+                User.is_admin.is_(False),
+                User.email_verified_at.is_not(None),
+            )
+        ).all()
         for user in rows:
             user.is_admin = True
             changed = True
             log.info("droits admin accordés à %s (%s) via ADMIN_EMAILS", user.handle, user.email)
+        # Alerte si plusieurs comptes revendiquent une même adresse admin (doublon
+        # de casse hérité d'avant la normalisation) : situation ambiguë à trancher.
+        for email, count in db.execute(
+            select(func.lower(User.email), func.count())
+            .where(func.lower(User.email).in_(wanted))
+            .group_by(func.lower(User.email))
+            .having(func.count() > 1)
+        ).all():
+            log.warning("adresse admin %s portée par %d comptes : vérifier les doublons", email, count)
     if changed:
         db.commit()
 

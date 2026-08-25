@@ -2,7 +2,7 @@
 # Sauvegarde PostgreSQL : pg_dump dans le conteneur db, compressé en gzip.
 # Appelé par deploy.sh avant chaque mise en service, et utilisable en cron :
 #   0 4 * * * cd /opt/riftarium/riftarium && bash scripts/backup_db.sh >> /var/log/riftarium-backup.log 2>&1
-# Penser à copier backups/ hors du VPS (voir README).
+# Copie hors-site automatique si BACKUP_REMOTE est défini (rclone) — voir plus bas.
 set -euo pipefail
 
 COMPOSE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,6 +11,10 @@ cd "$COMPOSE_DIR"
 # Nombre de sauvegardes conservées (les plus anciennes sont supprimées).
 RETENTION="${BACKUP_RETENTION:-14}"
 BACKUP_DIR="${BACKUP_DIR:-$COMPOSE_DIR/backups}"
+# Destination hors-site (rclone) : indispensable, la copie locale meurt avec le VPS.
+# Exemple dans .env :  BACKUP_REMOTE=ovh-s3:riftarium-backups
+# Vide = pas de copie distante (un avertissement est émis).
+BACKUP_REMOTE="${BACKUP_REMOTE:-}"
 
 # Comme deploy.sh : Compose interpole les secrets depuis .env (non versionné).
 if [[ ! -f .env ]]; then
@@ -36,6 +40,25 @@ if [[ ! -s "$out" ]]; then
   echo "sauvegarde vide : $out" >&2
   rm -f -- "$out"
   exit 1
+fi
+
+# Intégrité : un dump tronqué peut être non vide mais corrompu. gzip -t relit tout
+# le flux compressé et échoue si l'archive est incomplète.
+if ! gzip -t "$out"; then
+  echo "sauvegarde corrompue (gzip -t a échoué) : $out" >&2
+  rm -f -- "$out"
+  exit 1
+fi
+
+# Copie hors-site : une sauvegarde qui ne quitte pas le VPS ne protège de rien.
+if [[ -n "$BACKUP_REMOTE" ]]; then
+  echo "copie hors-site vers $BACKUP_REMOTE…"
+  if ! rclone copy "$out" "$BACKUP_REMOTE"; then
+    echo "échec de la copie hors-site vers $BACKUP_REMOTE" >&2
+    exit 1
+  fi
+else
+  echo "BACKUP_REMOTE non défini : sauvegarde locale uniquement (aucune copie hors-site)." >&2
 fi
 
 # Rétention : on garde les $RETENTION fichiers les plus récents.
