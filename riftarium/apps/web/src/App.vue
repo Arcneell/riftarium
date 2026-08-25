@@ -19,6 +19,11 @@ import {
 const router = useRouter()
 const route = useRoute()
 const menuOpen = ref(false)
+/* Menu du compte (desktop) : Profil, Wishlist, Administration, Déconnexion regroupés
+   derrière l'avatar — six liens de section plus quatre entrées de compte ne tenaient
+   plus sur une ligne à 1 280 px. Dans le tiroir mobile, ces entrées restent à plat. */
+const accountOpen = ref(false)
+const accountRef = ref(null)
 
 /* Le tiroir et son voile sont en position: fixed, mais l'en-tête porte un
    backdrop-filter : il devient bloc conteneur et les bornerait à la hauteur de la
@@ -30,14 +35,21 @@ const drawerMode = ref(drawerQuery?.matches ?? false)
 function onDrawerQuery(event) {
   drawerMode.value = event.matches
   if (!event.matches) menuOpen.value = false
+  accountOpen.value = false
 }
 
 watch(
   () => route.fullPath,
   () => {
     menuOpen.value = false
+    accountOpen.value = false
   }
 )
+
+/* Clic hors du menu du compte : fermeture (pointerdown, pour précéder la navigation du lien cliqué). */
+function onPointerDown(event) {
+  if (accountOpen.value && accountRef.value && !accountRef.value.contains(event.target)) accountOpen.value = false
+}
 
 /* Tiroir latéral : tant qu'il est ouvert, la page derrière ne défile plus
    (sinon le scroll « traverse » le panneau sur iOS et Android). */
@@ -46,7 +58,10 @@ watch(menuOpen, (open) => {
 })
 
 function onKeydown(event) {
-  if (event.key === "Escape") menuOpen.value = false
+  if (event.key === "Escape") {
+    menuOpen.value = false
+    accountOpen.value = false
+  }
 }
 
 /* Session expirée (401 renvoyé par l'API) : direction la connexion, en gardant la page en cours. */
@@ -58,6 +73,7 @@ function onSessionExpired() {
 onMounted(async () => {
   window.addEventListener("riftarium:session-expired", onSessionExpired)
   window.addEventListener("keydown", onKeydown)
+  window.addEventListener("pointerdown", onPointerDown)
   drawerQuery?.addEventListener("change", onDrawerQuery)
   if (!session.token) return
   try {
@@ -73,6 +89,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("riftarium:session-expired", onSessionExpired)
   window.removeEventListener("keydown", onKeydown)
+  window.removeEventListener("pointerdown", onPointerDown)
   drawerQuery?.removeEventListener("change", onDrawerQuery)
   document.body.classList.remove("nav-locked")
 })
@@ -119,7 +136,8 @@ async function logout() {
           <RouterLink to="/scan">Scanner</RouterLink>
           <RouterLink to="/decks">Decks</RouterLink>
           <RouterLink to="/communaute">Communauté</RouterLink>
-          <template v-if="session.token">
+          <!-- Tiroir mobile : entrées de compte à plat (la place ne manque pas). -->
+          <template v-if="session.token && drawerMode">
             <RouterLink to="/wishlist">Wishlist</RouterLink>
             <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
             <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
@@ -128,6 +146,33 @@ async function logout() {
             </RouterLink>
             <button class="btn btn-ghost btn-sm" @click="logout">Déconnexion</button>
           </template>
+          <!-- Desktop : un seul bouton (avatar + pseudo) qui déroule les entrées de compte. -->
+          <div v-else-if="session.token" ref="accountRef" class="account">
+            <button
+              type="button"
+              class="account-btn"
+              :class="{ open: accountOpen }"
+              :aria-expanded="accountOpen"
+              aria-haspopup="menu"
+              aria-controls="menu-compte"
+              :title="`Compte de ${session.handle}`"
+              @click="accountOpen = !accountOpen"
+            >
+              <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
+              <span class="account-name">{{ session.handle }}</span>
+              <Icon name="chevron" :size="14" />
+            </button>
+            <Transition name="account">
+              <div v-if="accountOpen" id="menu-compte" class="account-menu" role="menu" aria-label="Mon compte">
+                <RouterLink role="menuitem" to="/profil">Profil</RouterLink>
+                <RouterLink role="menuitem" to="/wishlist">Wishlist</RouterLink>
+                <RouterLink v-if="session.isAdmin" role="menuitem" class="nav-admin" to="/admin"
+                  >Administration</RouterLink
+                >
+                <button role="menuitem" type="button" @click="logout">Déconnexion</button>
+              </div>
+            </Transition>
+          </div>
           <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
         </nav>
       </Teleport>

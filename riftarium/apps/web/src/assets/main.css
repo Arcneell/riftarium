@@ -554,6 +554,102 @@ section {
   flex-shrink: 0;
 }
 
+/* Menu du compte (desktop) : bouton-pilule avatar + pseudo, panneau déroulant ancré à droite. */
+.account {
+  position: relative;
+  flex-shrink: 0;
+}
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 10px 4px 4px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-strong);
+  font: inherit;
+  font-size: 0.93rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.account-btn:hover,
+.account-btn.open {
+  background: rgba(176, 138, 62, 0.12);
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+.account-btn svg {
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.account-btn.open svg {
+  transform: rotate(180deg);
+}
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 200px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  box-shadow: 0 14px 34px rgba(10, 20, 40, 0.18);
+  z-index: 60;
+}
+.account-menu a,
+.account-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.93rem;
+  cursor: pointer;
+}
+.account-menu a:hover,
+.account-menu button:hover,
+.account-menu a:focus-visible,
+.account-menu button:focus-visible {
+  background: rgba(176, 138, 62, 0.14);
+  color: var(--ink-strong);
+}
+.account-menu button {
+  color: var(--fury-text);
+}
+.account-enter-active,
+.account-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.account-enter-from,
+.account-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+/* Largeurs intermédiaires (981–1140 px) : six liens de section + compte tiennent à
+   condition de retirer le pseudo (l'avatar suffit, le pseudo est dans le menu et le titre)
+   et la mention « bêta », que le pied de page répète. */
+@media (max-width: 1140px) {
+  .account-name {
+    display: none;
+  }
+  .top .beta-mark {
+    display: none;
+  }
+}
+
 .beta-mark {
   flex-shrink: 0;
   font-family: var(--font-mono);
