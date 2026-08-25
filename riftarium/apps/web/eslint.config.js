@@ -32,5 +32,20 @@ export default [
     languageOptions: {
       globals: { ...globals.browser, ...globals.vitest }
     }
+  },
+  {
+    // Fichiers de configuration/outillage : exécutés par Node (Vite), pas par le
+    // navigateur — ils accèdent à process, __dirname, etc.
+    files: ["*.config.js"],
+    languageOptions: {
+      globals: { ...globals.node }
+    }
+  },
+  {
+    // Service worker : contexte dédié (self, caches, clients, skipWaiting…).
+    files: ["public/sw.js"],
+    languageOptions: {
+      globals: { ...globals.serviceworker }
+    }
   }
 ];
