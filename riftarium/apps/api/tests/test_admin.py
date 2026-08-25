@@ -27,6 +27,15 @@ def grant_admin(handle):
         return user.id
 
 
+def mark_email_verified(handle):
+    """Marque l'adresse comme vérifiée : sync_admin_flags n'accorde les droits
+    admin qu'aux comptes dont l'e-mail est confirmé."""
+    with db_module.SessionLocal() as session:
+        user = session.scalar(select(User).where(User.handle == handle))
+        user.email_verified_at = datetime.now(UTC)
+        session.commit()
+
+
 def get_user(handle):
     with db_module.SessionLocal() as session:
         return session.scalar(select(User).where(User.handle == handle))
@@ -55,15 +64,35 @@ def test_startup_grants_and_revokes_admin_from_env(client, register_user, monkey
     register_user(client, "future-admin", email="Future-Admin@example.org")
     register_user(client, "ancien-admin", email="ancien-admin@example.org")
     grant_admin("ancien-admin")
+    mark_email_verified("future-admin")  # requis pour l'octroi des droits
 
-    # Liste avec casse différente et espaces : le compte listé gagne les droits,
-    # l'ancien admin absent de la liste les perd (source de vérité unique).
+    # Liste avec casse différente et espaces : le compte listé (adresse vérifiée)
+    # gagne les droits, l'ancien admin absent de la liste les perd (source unique).
     monkeypatch.setattr(settings, "admin_emails", "  FUTURE-ADMIN@example.org , inconnue@example.org ")
     with TestClient(app):
         pass
 
     assert get_user("future-admin").is_admin is True
     assert get_user("ancien-admin").is_admin is False
+
+
+def test_startup_denies_admin_when_email_not_verified(client, register_user, monkeypatch):
+    """Garde anti-escalade : une adresse listée mais NON vérifiée n'obtient pas les
+    droits. Sinon, inscrire l'adresse d'un admin (jamais confirmée) suffirait."""
+    register_user(client, "imposteur", email="patron@example.org")  # e-mail jamais vérifié
+    monkeypatch.setattr(settings, "admin_emails", "patron@example.org")
+    with TestClient(app):
+        pass
+    assert get_user("imposteur").is_admin is False
+
+
+def test_register_normalises_email_case(client, register_user):
+    """L'e-mail est stocké en minuscules : « Foo@x.com » et « foo@x.com » ne peuvent
+    pas coexister comme deux comptes distincts (base de l'escalade admin)."""
+    assert register_user(client, "casse-haute", email="MixedCase@Example.ORG").status_code == 201
+    assert get_user("casse-haute").email == "mixedcase@example.org"
+    # Même adresse en casse différente : conflit, pas un second compte.
+    assert register_user(client, "casse-autre", email="mixedcase@example.org").status_code == 409
 
 
 def test_startup_with_empty_admin_emails_revokes_everyone(client, register_user):

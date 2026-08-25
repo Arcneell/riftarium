@@ -12,7 +12,8 @@ from app.cache import cache_clear, cache_get, cache_set
 def fake_redis(monkeypatch):
     server = fakeredis.FakeRedis()
     monkeypatch.setattr(cache_module, "_client", server)
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     return server
 
 
@@ -32,28 +33,43 @@ class _BrokenRedis:
 def test_redis_client_connects_lazily_and_is_reused(monkeypatch):
     server = fakeredis.FakeRedis()
     monkeypatch.setattr(cache_module, "_client", None)
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     monkeypatch.setattr(cache_module.settings, "redis_url", "redis://redis.test:6379/0")
     monkeypatch.setattr(redis.Redis, "from_url", lambda *args, **kwargs: server)
     assert cache_module._redis() is server
     assert cache_module._redis() is server  # client mémorisé, pas de reconnexion
 
 
-def test_redis_unreachable_disables_cache(monkeypatch):
+def test_redis_unreachable_arms_backoff_then_retries(monkeypatch):
+    attempts = {"n": 0}
+
     def _refuse(*args, **kwargs):
+        attempts["n"] += 1
         raise redis.ConnectionError("refusé")
 
     monkeypatch.setattr(cache_module, "_client", None)
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     monkeypatch.setattr(cache_module.settings, "redis_url", "redis://redis.test:6379/0")
     monkeypatch.setattr(redis.Redis, "from_url", _refuse)
+
     assert cache_module._redis() is None
-    assert cache_module._disabled is True  # plus aucune tentative ensuite
+    assert attempts["n"] == 1
+    # Fenêtre de backoff armée : aucun nouvel essai tant qu'elle n'a pas expiré.
+    assert cache_module._next_retry > 0
+    assert cache_module._redis() is None
+    assert attempts["n"] == 1
     assert cache_get("clef") is None
+
+    # Une fois la fenêtre écoulée, on retente (pas de désactivation définitive).
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
+    assert cache_module._redis() is None
+    assert attempts["n"] == 2
 
 
 def test_cache_is_noop_without_redis_url():
-    # conftest force REDIS_URL="" : _disabled est vrai, toutes les fonctions sont no-op
+    # conftest force REDIS_URL="" : _no_url est vrai, toutes les fonctions sont no-op
     assert cache_module._redis() is None
     assert cache_get("clef") is None
     cache_set("clef", {"a": 1}, ttl=60)
@@ -89,7 +105,8 @@ def test_cache_clear_removes_only_prefix(fake_redis):
 
 def test_cache_swallows_redis_errors(monkeypatch):
     monkeypatch.setattr(cache_module, "_client", _BrokenRedis())
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     cache_set("clef", 1, ttl=60)  # ne lève pas
     assert cache_get("clef") is None
     assert cache_clear("clef") == 0
@@ -135,7 +152,8 @@ def test_allow_rate_redis_reposes_lost_ttl(fake_redis):
 
 def test_allow_rate_falls_back_to_memory_when_redis_fails(monkeypatch):
     monkeypatch.setattr(cache_module, "_client", _BrokenRedis())
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     assert security.allow_rate("fallback", 2, window=60) is True
     assert security.allow_rate("fallback", 2, window=60) is True
     assert security.allow_rate("fallback", 2, window=60) is False  # limite appliquée en mémoire

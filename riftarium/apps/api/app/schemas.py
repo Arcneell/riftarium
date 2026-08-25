@@ -1,8 +1,14 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, EmailStr, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, BeforeValidator, EmailStr, Field, field_validator, model_validator
 
 HANDLE_PATTERN = r"^[A-Za-z0-9_\-]+$"
+
+# E-mail normalisé en minuscules : l'unicité des comptes et l'attribution du
+# drapeau admin (ADMIN_EMAILS, comparé en minuscules) doivent voir la même
+# chaîne quelle que soit la casse saisie. Sans ça, « Foo@x.com » et « foo@x.com »
+# sont deux comptes distincts, dont l'un pourrait hériter des droits admin.
+NormEmail = Annotated[EmailStr, AfterValidator(lambda v: v.lower())]
 
 # Mots de passe ultra-communs (listes fr/en publiques) : refusés à l'inscription
 # et au changement de mot de passe, quelle que soit la casse.
@@ -107,7 +113,7 @@ Lang = Annotated[str, BeforeValidator(_norm_lang)]
 
 class RegisterIn(BaseModel):
     handle: str = Field(min_length=3, max_length=32, pattern=HANDLE_PATTERN)
-    email: EmailStr
+    email: NormEmail
     password: str = Field(min_length=8, max_length=128)
     accept_terms: bool
     confirm_age: bool
@@ -125,7 +131,7 @@ class RegisterIn(BaseModel):
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    email: NormEmail
     # Borné comme à l'inscription : sans plafond, une saisie d'un mégaoctet part
     # dans scrypt (n=2^17) à chaque tentative.
     password: str = Field(max_length=128)
@@ -143,7 +149,7 @@ class SessionOut(BaseModel):
 
 class ProfilePatch(BaseModel):
     handle: str | None = Field(default=None, min_length=3, max_length=32, pattern=HANDLE_PATTERN)
-    email: EmailStr | None = None
+    email: NormEmail | None = None
     bio: str | None = Field(default=None, max_length=280)
     avatar_card_id: str | None = Field(default=None, max_length=32)
     # Préférence e-mail (décisions de modération) : modifiable sans mot de passe.
@@ -162,7 +168,7 @@ class PasswordChange(BaseModel):
 
 
 class ForgotPasswordIn(BaseModel):
-    email: EmailStr
+    email: NormEmail
 
 
 class ResetPasswordIn(BaseModel):

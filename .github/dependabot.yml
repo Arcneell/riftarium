@@ -2,6 +2,12 @@
 # Patch et minor : regroupés par écosystème et auto-mergés si la CI passe
 # (voir workflows/dependabot-automerge.yml). Les majeurs restent des PR
 # individuelles à valider à la main.
+#
+# cooldown (pip/npm) : Dependabot attend 7 jours après la sortie d'une version
+# avant de proposer le bump. Comme ces deux écosystèmes sont auto-mergés puis
+# déployés sans revue humaine, ce délai laisse à l'écosystème le temps de repérer
+# et retirer un paquet fraîchement compromis (les audits CI ne voient que les CVE
+# déjà publiées). Ne s'applique pas aux images/actions, validées à la main.
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -11,6 +17,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Indian/Reunion"
+    cooldown:
+      default-days: 7
     groups:
       python-mineures:
         update-types: ["minor", "patch"]
@@ -24,6 +32,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Indian/Reunion"
+    cooldown:
+      default-days: 7
     groups:
       npm-mineures:
         update-types: ["minor", "patch"]

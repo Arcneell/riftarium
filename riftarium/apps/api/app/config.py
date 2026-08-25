@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     scrypt_n: int = 2**17
     scrypt_r: int = 8
     scrypt_p: int = 1
+    # Nombre max de hachages scrypt simultanés. Chaque hachage alloue ~128*n*r*2
+    # octets (~270 Mo avec n=2^17) : sans plafond, une rafale de connexions épuise
+    # la mémoire du conteneur (OOM-kill). Sérialise les hachages sous charge.
+    scrypt_max_parallel: int = 2
     auto_sync: bool = True
     # Remplissage automatique des empreintes de scan (démarrage + après sync).
     hash_autostart: bool = True

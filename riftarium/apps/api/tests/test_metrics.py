@@ -17,7 +17,8 @@ from conftest import bearer_headers
 def fake_redis(monkeypatch):
     server = fakeredis.FakeRedis()
     monkeypatch.setattr(cache_module, "_client", server)
-    monkeypatch.setattr(cache_module, "_disabled", False)
+    monkeypatch.setattr(cache_module, "_no_url", False)
+    monkeypatch.setattr(cache_module, "_next_retry", 0.0)
     return server
 
 
