@@ -85,6 +85,14 @@ const MODULES = [
     go: "Inventorier"
   },
   {
+    icon: "camera",
+    chip: "var(--calm)",
+    title: "Scanner",
+    text: "Présentez une carte à l'appareil photo : son code est lu, sa fiche et son prix s'affichent, un geste l'ajoute à la collection.",
+    to: "/scan",
+    go: "Scanner"
+  },
+  {
     icon: "users",
     chip: "var(--chaos)",
     title: "Communauté",

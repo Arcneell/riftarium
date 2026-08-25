@@ -116,6 +116,7 @@ async function logout() {
           <RouterLink to="/cartes">Cartes</RouterLink>
           <RouterLink to="/regles">Règles</RouterLink>
           <RouterLink to="/collection">Collection</RouterLink>
+          <RouterLink to="/scan">Scanner</RouterLink>
           <RouterLink to="/decks">Decks</RouterLink>
           <RouterLink to="/communaute">Communauté</RouterLink>
           <template v-if="session.token">

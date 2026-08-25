@@ -871,6 +871,14 @@ textarea {
   max-width: 420px;
   margin: 0;
 }
+/* Entrée du scanner depuis la cartothèque et la collection : icône + libellé court,
+   même hauteur que les filtres pour rester sur la rangée. */
+.scan-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
 .fsel {
   position: relative;
 }

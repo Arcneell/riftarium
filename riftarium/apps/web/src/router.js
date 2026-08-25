@@ -276,3 +276,22 @@ router.afterEach((to) => {
   applyRouteSeo(to)
   recordVisit(to.path)
 })
+
+/* Chunk de route introuvable (nouveau déploiement pendant la session, node_modules du
+   conteneur dev en retard) : sans cela la navigation échoue en silence et la page ne bouge
+   pas. On recharge la destination une fois — le nouveau bundle a les bons chunks — et on
+   laisse remonter les autres erreurs. Le garde-fou sessionStorage évite une boucle si le
+   rechargement lui-même échoue à charger le chunk. */
+const RELOAD_GUARD_KEY = "riftarium.chunkReload"
+router.onError((error, to) => {
+  const message = String(error?.message || "")
+  const chunkFailure = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(message)
+  if (!chunkFailure || typeof window === "undefined") return
+  try {
+    if (sessionStorage.getItem(RELOAD_GUARD_KEY) === to.fullPath) return
+    sessionStorage.setItem(RELOAD_GUARD_KEY, to.fullPath)
+  } catch {
+    /* stockage indisponible : on tente quand même un rechargement */
+  }
+  window.location.assign(to.fullPath)
+})
