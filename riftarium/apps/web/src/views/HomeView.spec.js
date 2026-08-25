@@ -1,6 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import HomeView from "./HomeView.vue"
 import { api } from "../api.js"
 
@@ -15,6 +15,25 @@ const SIGNATURES = [
   "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
   "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png"
 ]
+
+/* L'éventail du héros est conditionné à la media query desktop : on la pilote
+   explicitement, sinon jsdom répond « pas de correspondance » à tout. */
+function stubMatchMedia(wide) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query) => ({
+      matches: wide && String(query).includes("min-width: 761px"),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent() {
+        return false
+      }
+    }))
+  )
+}
 
 function mountHome() {
   const router = createRouter({
@@ -41,7 +60,12 @@ function mountHome() {
 }
 
 describe("HomeView", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   beforeEach(() => {
+    stubMatchMedia(true)
     api.mockReset()
     api.mockImplementation((path) => {
       if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN" }, { set_id: "SFD" }])
@@ -69,5 +93,16 @@ describe("HomeView", () => {
     for (const hash of SIGNATURES) {
       expect(sources.some((src) => src.includes(hash) && src.includes("w=460"))).toBe(true)
     }
+  })
+
+  it("sur téléphone, l'éventail décoratif n'est pas rendu du tout (aucune image téléchargée)", async () => {
+    stubMatchMedia(false)
+    const wrapper = mountHome()
+    await flushPromises()
+
+    expect(wrapper.find(".hero-fan").exists()).toBe(false)
+    expect(wrapper.findAll(".fan-card img")).toHaveLength(0)
+    /* Le reste du héros, lui, reste en place. */
+    expect(wrapper.text()).toContain("Vos cartes, vos decks,")
   })
 })

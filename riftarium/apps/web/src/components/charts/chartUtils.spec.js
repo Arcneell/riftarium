@@ -1,5 +1,7 @@
+import { mount } from "@vue/test-utils"
+import { nextTick, ref } from "vue"
 import { describe, expect, it } from "vitest"
-import { lastDays, niceScale, zeroFillDays } from "./chartUtils.js"
+import { lastDays, niceScale, useMeasuredWidth, zeroFillDays } from "./chartUtils.js"
 
 describe("niceScale", () => {
   it("arrondit à des ticks propres (3-4 valeurs)", () => {
@@ -23,6 +25,42 @@ describe("lastDays", () => {
     expect(days[29]).toBe("2026-08-19")
     expect(days[28]).toBe("2026-08-18")
     expect(days[0]).toBe("2026-07-21")
+  })
+})
+
+describe("useMeasuredWidth", () => {
+  /* Monte le hook sur un élément : la largeur mesurée est forcée par l'appelant. */
+  function mountHook() {
+    const Host = {
+      setup() {
+        const el = ref(null)
+        return { el, width: useMeasuredWidth(el, 640) }
+      },
+      template: `<div ref="el">{{ width }}</div>`
+    }
+    return mount(Host)
+  }
+
+  it("mesure le conteneur dès le montage plutôt que d'attendre le ResizeObserver", async () => {
+    /* Sans cela, un graphique de 328 px de large est rendu pour 640 px : tout le
+       texte du SVG est deux fois trop petit jusqu'à la première notification. */
+    const original = Object.getOwnPropertyDescriptor(Element.prototype, "clientWidth")
+    Object.defineProperty(Element.prototype, "clientWidth", { configurable: true, get: () => 328 })
+    try {
+      const wrapper = mountHook()
+      await nextTick()
+      expect(wrapper.text()).toBe("328")
+      wrapper.unmount()
+    } finally {
+      Object.defineProperty(Element.prototype, "clientWidth", original)
+    }
+  })
+
+  it("garde la valeur de repli tant que l'élément n'a pas de largeur (hors flux)", async () => {
+    const wrapper = mountHook()
+    await nextTick()
+    expect(wrapper.text()).toBe("640")
+    wrapper.unmount()
   })
 })
 

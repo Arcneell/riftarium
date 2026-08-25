@@ -256,6 +256,9 @@ onMounted(load)
                 id="profile-handle"
                 type="text"
                 v-model="identity.handle"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
                 minlength="3"
                 maxlength="32"
                 autocomplete="username"
@@ -436,7 +439,15 @@ onMounted(load)
       </label>
       <label>
         Pseudo
-        <input type="text" v-model="danger.handle" autocomplete="off" required />
+        <input
+          type="text"
+          v-model="danger.handle"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          required
+        />
       </label>
       <p v-if="danger.error" class="error">{{ danger.error }}</p>
       <div class="modal-actions">

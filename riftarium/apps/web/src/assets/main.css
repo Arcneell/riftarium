@@ -196,10 +196,18 @@
     animation: none !important;
     transition: none !important;
   }
+  /* Le défilement animé n'est pas une transition CSS : il faut le couper à part,
+     sinon chaque ancre des règles reste un long glissement. */
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 html {
   scroll-behavior: smooth;
+  /* En-tête collant (~67 px) : sans cette réserve, une ancre (scrollIntoView du
+     lecteur de règles) amenait la cible juste sous la barre, donc invisible. */
+  scroll-padding-top: 84px;
 }
 
 body {
@@ -208,8 +216,18 @@ body {
   font-family: var(--font-body);
   font-size: 16.5px;
   line-height: 1.7;
-  min-height: 100vh;
+  /* dvh : sur mobile, 100vh inclut la barre d'adresse rétractable et créait un
+     défilement d'une cinquantaine de pixels sur des pages pourtant courtes. */
+  min-height: 100dvh;
   overflow-x: hidden;
+}
+
+/* Défilement de la page bloqué : posé par le tiroir de navigation ET par toute
+   modale (ModalDialog). Règle globale et non cantonnée au palier mobile — sur
+   desktop aussi, la page défilait derrière une modale ouverte. */
+body.nav-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* Fond décoratif sur un calque fixe composité : zéro repaint au défilement. */
@@ -459,11 +477,15 @@ section {
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
 }
+/* viewport-fit=cover : en PWA installée, le contenu passe sous la barre d'état
+   et sous les encoches en paysage. Les insets valent 0 partout ailleurs, donc
+   le rendu desktop est inchangé. */
 .top-in {
   display: flex;
   align-items: center;
   gap: 28px;
-  padding: 12px 28px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(28px + env(safe-area-inset-right, 0px)) 12px
+    calc(28px + env(safe-area-inset-left, 0px));
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
@@ -1524,6 +1546,14 @@ td.num {
   font-size: 0.62rem;
   color: var(--muted);
 }
+/* Rappel « coût : nombre de cartes » sous la courbe : les petits chiffres des
+   barres ne se survolent pas au doigt, la légende dit la même chose en toutes lettres. */
+.curve-legend {
+  margin: 8px 0 0;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
 
 .validator {
   display: flex;
@@ -1836,7 +1866,7 @@ td.num {
 /* Le temps que le composant de route (chargé à la demande) arrive, <main> réserve
    l'écran : le pied de page démarre sous la ligne de flottaison et ne saute plus (CLS). */
 main {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100dvh - 70px);
 }
 
 /* ---------- Pied de page ---------- */
@@ -1928,7 +1958,7 @@ footer {
   z-index: 80;
   left: 16px;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   max-width: 640px;
   margin: 0 auto;
   display: flex;
@@ -1953,6 +1983,29 @@ footer {
 }
 .traceurs-notice .btn {
   flex-shrink: 0;
+}
+.traceurs-copy {
+  min-width: 0;
+}
+.traceurs-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+/* Phrase courte et bouton de dépliage : n'existent que sur téléphone (≤560),
+   où le bandeau complet mangeait le bas de chaque écran. Ailleurs, texte entier. */
+.traceurs-short,
+.traceurs-more {
+  display: none;
+}
+.traceurs-more {
+  padding: 0;
+  color: var(--gold-deep);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
 }
 
 /* Bandeau discret : adresse e-mail du compte non vérifiée. */
@@ -2069,7 +2122,9 @@ footer {
   line-height: 1.45;
 }
 .legal-check input {
-  width: auto;
+  /* 24 px : une case de 16 px se rate au doigt, et elle commande l'inscription. */
+  width: 24px;
+  height: 24px;
   margin-top: 3px;
   accent-color: var(--gold-deep);
   flex-shrink: 0;
@@ -2157,12 +2212,6 @@ footer {
    connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px.
    Le panneau glisse depuis la droite (pouce à portée) plutôt que de tomber du haut. */
 @media (max-width: 980px) {
-  /* Page figée derrière le tiroir ouvert : sinon le geste de défilement
-     « traverse » le panneau. Cantonné au palier mobile — repasser en barre
-     complète après un redimensionnement ne doit pas bloquer la page. */
-  body.nav-locked {
-    overflow: hidden;
-  }
   .burger {
     display: grid;
     place-items: center;
@@ -2196,7 +2245,8 @@ footer {
     align-items: stretch;
     justify-content: flex-start;
     gap: 4px;
-    padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+    padding: calc(14px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+      calc(24px + env(safe-area-inset-bottom, 0px)) 16px;
     overflow-y: auto;
     overscroll-behavior: contain;
     background: rgba(245, 239, 225, 0.98);
@@ -2309,7 +2359,7 @@ footer {
 .rules-toc {
   position: sticky;
   top: 84px;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
   overflow-y: auto;
   padding-right: 10px;
 }
@@ -2608,6 +2658,14 @@ footer {
   .rules-toc {
     position: static;
     max-height: none;
+  }
+  /* Dès que le sommaire passe au-dessus du texte, il doit pouvoir se replier :
+     déplié, ses ~90 entrées repoussaient les règles hors de l'écran. */
+  .rules-toc-toggle {
+    display: inline-flex;
+  }
+  .rules-toc.folded {
+    display: none;
   }
 }
 
@@ -3337,8 +3395,8 @@ footer {
   align-items: start;
 }
 .guide-layout.full .tb {
-  max-height: calc(100vh - 130px);
-  max-width: calc((100vh - 130px) * 16 / 12);
+  max-height: calc(100dvh - 130px);
+  max-width: calc((100dvh - 130px) * 16 / 12);
   width: 100%;
   margin: 0 auto;
 }
@@ -3702,8 +3760,21 @@ footer {
 }
 .demo-dots {
   display: flex;
+  align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+/* Lecture / pause : une animation qui tourne en boucle doit pouvoir s'arrêter. */
+.demo-play {
+  min-width: 32px;
+  height: 32px;
+  margin-right: 6px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.7rem;
+  line-height: 1;
 }
 .demo-dot {
   width: 9px;
@@ -3732,7 +3803,9 @@ footer {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  /* Au-dessus du bandeau traceurs (80), du voile (85) et du tiroir (90), qui
+     flottaient par-dessus les modales. Sous les visionneuses plein écran (1000). */
+  z-index: 200;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -3780,6 +3853,8 @@ footer {
 .modal-body {
   padding: 20px 26px 26px;
   overflow-y: auto;
+  /* Fin de liste atteinte : le geste ne repart pas dans la page derrière. */
+  overscroll-behavior: contain;
 }
 .modal-form {
   display: flex;
@@ -3883,6 +3958,12 @@ h2.dbuilder-name {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--tile-min, 150px), 1fr));
   gap: 14px;
+}
+/* Conteneur de tuile : le bouton « ℹ » est un frère du bouton d'ajout (un lien
+   dans un bouton est du HTML invalide), il se positionne donc sur ce calque. */
+.gcard-slot {
+  position: relative;
+  display: grid;
 }
 .gcard {
   position: relative;
@@ -4031,7 +4112,7 @@ h2.dbuilder-name {
   top: 84px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 104px);
+  max-height: calc(100dvh - 104px);
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
@@ -4201,7 +4282,9 @@ h2.dbuilder-name {
 }
 .row-lack {
   flex: none;
-  width: 18px;
+  width: auto;
+  padding: 0 7px;
+  white-space: nowrap;
   height: 18px;
   display: grid;
   place-items: center;
@@ -4453,8 +4536,11 @@ body.drag-active * {
     max-height: none;
     order: -1;
   }
+  /* Le panneau n'est plus collant à ce palier : une fenêtre de 46vh imposait un
+     défilement dans le défilement, avec la fin du deck inatteignable au doigt. */
   .deck-scroll {
-    max-height: 46vh;
+    max-height: none;
+    overflow: visible;
   }
   .builder-preview {
     display: none;
@@ -4766,6 +4852,13 @@ body.drag-active * {
   border-color: rgba(207, 68, 55, 0.35);
   background: rgba(207, 68, 55, 0.08);
 }
+/* Motif du refus : l'infobulle de la pastille ne s'ouvre pas au doigt. */
+.deck-legal-why {
+  margin: 4px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--fury-text);
+}
 
 /* Pied de fiche : runes, compteurs, puis les boutons. Le margin-top auto les
    colle en bas, donc ils tombent au même endroit d'une fiche à l'autre. */
@@ -5017,6 +5110,13 @@ button.deck-box-stat:hover,
     0 0 0 2px var(--gold),
     0 8px 18px rgba(10, 20, 40, 0.16);
 }
+/* Vignette cliquable : lien vers la fiche, sans soulignement ni couleur de lien. */
+.dvis-link {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  color: inherit;
+}
 .dvis-card {
   position: relative;
   border-radius: 10px;
@@ -5066,11 +5166,13 @@ button.deck-box-stat:hover,
   }
 }
 @media (max-width: 760px) {
+  /* 108 px : la vignette est devenue un lien vers la fiche, 96 px était juste
+     sous la cible tactile confortable. */
   .dvis-cell,
   .dvis-grid.legend .dvis-cell,
   .dvis-grid.battlefield .dvis-cell {
-    flex-basis: 96px;
-    width: 96px;
+    flex-basis: 108px;
+    width: 108px;
   }
 }
 
@@ -5099,7 +5201,8 @@ button.deck-box-stat:hover,
 }
 .avatar-fallback {
   font-family: var(--font-display);
-  font-size: 0.42em;
+  /* 0.42em d'une pastille de 22 px = 9 px : plancher absolu pour rester lisible. */
+  font-size: max(10px, 0.42em);
   color: var(--gold-deep);
   line-height: 1;
 }
@@ -5216,6 +5319,9 @@ button.deck-box-stat:hover,
 .gcard-info {
   display: none;
 }
+.rules-back-top {
+  display: none;
+}
 
 /* ---------- Tactile (hover: none) : équivalents des interactions au survol ---------- */
 @media (hover: none) {
@@ -5224,8 +5330,8 @@ button.deck-box-stat:hover,
     display: flex;
   }
   .row-actions button {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
   .deck-row {
     height: auto;
@@ -5235,15 +5341,15 @@ button.deck-box-stat:hover,
   .deck-hero-remove {
     opacity: 1;
   }
-  /* Accès à la fiche carte sans survol : petit bouton « ℹ » en coin de tuile (cible 32 px). */
+  /* Accès à la fiche carte sans survol : bouton « ℹ » en coin de tuile (cible 44 px). */
   .gcard-info {
     position: absolute;
     top: 6px;
     left: 6px;
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: var(--r-full);
     background: rgba(253, 250, 242, 0.92);
     border: 1px solid var(--line-strong);
@@ -5277,13 +5383,6 @@ button.deck-box-stat:hover,
 
 /* ---------- Tablette / téléphone (≤760) : compléments ---------- */
 @media (max-width: 760px) {
-  /* Règles : sommaire repliable au-dessus du texte. */
-  .rules-toc-toggle {
-    display: inline-flex;
-  }
-  .rules-toc.folded {
-    display: none;
-  }
   /* Zoom de carte du guide : sort du plateau (trop petit) et occupe l'écran. */
   .tb .tb-zoom {
     position: fixed;
@@ -5294,17 +5393,11 @@ button.deck-box-stat:hover,
   .topic-side {
     order: -1;
   }
-  /* Collection : la barre d'actions se cale sous le header sticky (~67 px). */
+  /* Collection : barre statique. Collante, ses 12 contrôles repliés sur 6 ou 7
+     rangées mangeaient la moitié de l'écran en permanence ; une barre flottante
+     en bas aurait masqué la grille au même endroit que le bandeau traceurs. */
   .bulk-bar {
-    top: 76px;
-  }
-  /* Barres d'adresse mobiles : dvh au lieu de vh (le desktop garde vh). */
-  .deck-scroll {
-    max-height: 46dvh;
-  }
-  .guide-layout.full .tb {
-    max-height: calc(100dvh - 130px);
-    max-width: calc((100dvh - 130px) * 16 / 12);
+    position: static;
   }
 }
 
@@ -5344,7 +5437,7 @@ button.deck-box-stat:hover,
     flex: 1 1 100%;
   }
   .rules-hits {
-    max-height: 50vh;
+    max-height: 50dvh;
   }
 
   /* Modales : boutons qui passent à la ligne, tableau qui défile, hauteur en dvh. */
@@ -5392,9 +5485,9 @@ button.deck-box-stat:hover,
   .fsel-pop {
     position: fixed;
     top: auto;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: calc(16px + env(safe-area-inset-left, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
     min-width: 0;
     max-width: calc(100vw - 32px);
     max-height: min(46dvh, 420px);
@@ -5423,12 +5516,24 @@ button.deck-box-stat:hover,
 /* ============================================================
    Scan de cartes (/scan) — mobile-first
    La caméra remplit la largeur du téléphone, silhouette de
-   carte (ratio 63:88) au centre, gros déclencheur tactile.
+   carte (ratio 63:88) au centre. Plus de déclencheur : la
+   reconnaissance est automatique, le cadre passe au vert au
+   verrouillage et un panneau résultat s'ouvre sous la scène.
+   Ce panneau est d'abord une fiche de consultation — le prix y
+   est l'information la plus grosse après le nom — et l'ajout à
+   la collection n'en est qu'une action parmi d'autres.
    Sur desktop, tout reste compact et centré : le fallback
    « importer une photo » y est la voie normale. Aucune règle
    ici ne touche l'existant (classes préfixées scan-).
    ============================================================ */
 
+/* Erreur bloquante + son bouton de reprise : le bouton doit respirer sous le message. */
+.scan-recover {
+  margin: 12px 0;
+}
+.scan-recover .error {
+  margin-bottom: 10px;
+}
 .scan-wrap {
   max-width: 720px;
   padding-top: 0;
@@ -5439,6 +5544,10 @@ button.deck-box-stat:hover,
 }
 .scan-status {
   margin: 12px 0;
+}
+.scan-note {
+  margin: 10px 0;
+  font-size: 0.82rem;
 }
 .scan-empty,
 .scan-nocam,
@@ -5464,7 +5573,9 @@ button.deck-box-stat:hover,
   height: 100%;
   object-fit: cover;
 }
-/* Silhouette de carte, ratio officiel 63×88 mm ; l'ombre portée géante assombrit le reste du champ. */
+/* Silhouette de carte, ratio officiel 63×88 mm ; l'ombre portée géante assombrit le reste du champ.
+   Le cadrage n'a plus besoin d'être exact (balayage multi-échelles côté JS) : le guide sert
+   à faire tenir la carte assez près et assez droite, pas à l'aligner au pixel. */
 .scan-frame {
   position: absolute;
   top: 44%;
@@ -5476,6 +5587,9 @@ button.deck-box-stat:hover,
   border-radius: 12px;
   box-shadow: 0 0 0 200vmax rgba(10, 20, 40, 0.45);
   pointer-events: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 /* Fenêtre d'illustration (la seule zone hachée : x 6→94 %, y 6→54 %) : pointillé discret
    pour inciter à bien cadrer — surtout le haut de la carte, où vit l'illustration. */
@@ -5489,31 +5603,67 @@ button.deck-box-stat:hover,
   border: 1.5px dashed color-mix(in srgb, var(--gold-soft) 75%, transparent);
   border-radius: 8px;
 }
-/* Déclencheur : grosse cible tactile (64 px), anneau doré façon appareil photo. */
-.scan-shutter {
+/* Bande du code collector (bas gauche) : c'est la zone que l'OCR lit, la montrer explique
+   pourquoi il faut que le bas de la carte soit net et éclairé. */
+.scan-frame::before {
+  content: "";
   position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 64px;
-  height: 64px;
+  left: 4%;
+  width: 44%;
+  top: 92.5%;
+  height: 7.3%;
+  border: 1.5px dashed color-mix(in srgb, var(--gold-soft) 55%, transparent);
+  border-radius: 4px;
+}
+/* Verrouillé : le vert est le seul signal visuel de réussite (avec la vibration). */
+.scan-stage.is-locked .scan-frame {
+  border-color: #4ea86a;
+  box-shadow:
+    0 0 0 200vmax rgba(10, 20, 40, 0.62),
+    0 0 18px rgba(78, 168, 106, 0.65);
+}
+
+/* HUD : état de la reconnaissance, lisible sur n'importe quelle image (fond translucide sombre). */
+.scan-hud {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  background: rgba(10, 20, 40, 0.72);
+  color: #fdfaf2;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: center;
+  pointer-events: none;
+}
+/* Lampe torche : cible tactile de 44 px, en haut à droite pour ne pas gêner le HUD. */
+.scan-torch {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-height: 44px;
+  padding: 0 14px;
   border-radius: var(--r-full);
-  border: 4px solid var(--gold-soft);
-  background: var(--gold-grad);
-  box-shadow: 0 6px 18px rgba(10, 20, 40, 0.5);
+  border: 1px solid var(--gold-soft);
+  background: rgba(10, 20, 40, 0.72);
+  color: #fdfaf2;
+  font: inherit;
+  font-size: 0.82rem;
   cursor: pointer;
 }
-.scan-shutter:active {
-  transform: translateX(-50%) scale(0.92);
-}
-.scan-shutter:disabled {
-  opacity: 0.55;
-  cursor: wait;
+.scan-torch[aria-pressed="true"] {
+  background: var(--gold-grad);
+  color: var(--ink-strong);
 }
 
 .scan-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin: 14px 0;
 }
@@ -5528,21 +5678,99 @@ button.deck-box-stat:hover,
   opacity: 0;
   pointer-events: none;
 }
+/* Ajout automatique : interrupteur discret, mais avec une cible tactile de 44 px. */
+.scan-auto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.scan-auto input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold-deep);
+}
 
-/* Candidats : liste verticale, visuel + infos, toute la rangée est la cible de confirmation. */
-.scan-results h2 {
-  font-size: 1.15rem;
-  margin: 18px 0 8px;
+/* Toast du mode automatique : confirmation qui n'interrompt pas le geste suivant. */
+.scan-toast {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface));
+  font-weight: 600;
 }
-.scan-login {
-  margin-bottom: 10px;
+
+/* ---------- Panneau résultat ---------- */
+
+.scan-result {
+  margin-top: 18px;
 }
-/* Langue/état appliqués aux ajouts — mémorisés entre les scans. */
+.scan-result-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.scan-result-visual {
+  width: 148px;
+  flex: none;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  display: block;
+}
+.scan-result-info {
+  min-width: 0;
+  flex: 1;
+}
+.scan-result-info h2 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.scan-result-info p {
+  margin: 0 0 4px;
+}
+.scan-result-code {
+  font-size: 0.82rem;
+  color: var(--gold-deep);
+}
+/* Prix : l'information que l'on vient chercher quand on scanne sans vouloir rien ajouter.
+   Même gabarit que le bloc de la fiche carte (.price-amount) pour ne pas réinventer. */
+.scan-price {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.scan-price .price-line {
+  margin: 0;
+}
+.scan-price .price-amount {
+  font-size: 1.6rem;
+}
+.scan-method {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.scan-ambiguous {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
+  font-size: 0.86rem;
+}
+
+/* Langue/état/quantité appliqués aux ajouts — mémorisés entre les scans. */
 .scan-prefs {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 12px;
+  margin: 16px 0 12px;
 }
 .scan-prefs label {
   display: flex;
@@ -5552,82 +5780,128 @@ button.deck-box-stat:hover,
   color: var(--muted);
 }
 .scan-prefs select {
-  min-height: 38px;
+  min-height: 44px;
 }
 .scan-qty {
-  width: 68px;
-  min-height: 38px;
+  width: 72px;
+  min-height: 44px;
   text-align: center;
 }
-.scan-candidates {
+.scan-login {
+  margin: 16px 0 12px;
+}
+
+.scan-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.scan-result-actions .btn {
+  min-height: 44px;
+}
+.scan-add {
+  flex: 1 1 auto;
+}
+.scan-added {
+  margin: 10px 0 0;
+  font-weight: 600;
+  color: var(--body-text);
+}
+
+/* Alternatives : repliées par défaut (le résultat est presque toujours le bon), dépliées
+   d'un lien discret. Les visuels ne sont chargés qu'à l'ouverture. */
+.scan-alt {
+  margin-top: 20px;
+}
+.scan-alt-toggle {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gold-deep);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.scan-alt-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 14px;
+  margin: 6px 0 0;
   display: grid;
   gap: 10px;
 }
-.scan-candidate {
+.scan-alt-item {
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
+  min-height: 44px;
   text-align: left;
   padding: 10px 14px;
   border-radius: var(--r);
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink);
-  text-decoration: none;
-  cursor: pointer;
   font: inherit;
+  cursor: pointer;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
-.scan-candidate:hover,
-.scan-candidate:focus-visible {
+.scan-alt-item:hover,
+.scan-alt-item:focus-visible {
   border-color: var(--gold);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 25%, transparent);
 }
-.scan-candidate:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-.scan-candidate img {
-  width: 64px;
+.scan-alt-item img {
+  width: 52px;
   border-radius: 6px;
   flex: none;
   display: block;
 }
-.scan-candidate-info {
+.scan-alt-info {
   display: grid;
   gap: 2px;
   min-width: 0;
-  flex: 1;
 }
-.scan-candidate-info b {
+.scan-alt-info b {
   font-family: "Marcellus", serif;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
 }
-.scan-candidate-info .mono,
-.scan-distance {
-  font-size: 0.78rem;
-  color: var(--muted);
+.scan-alt-info .mono {
+  font-size: 0.75rem;
 }
-.scan-added {
-  flex: none;
-  font-weight: 600;
-  color: var(--body-text);
-}
-.scan-add-hint {
-  flex: none;
-  color: var(--gold-deep);
-  font-size: 1.05rem;
-}
-.scan-again {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+
+/* Téléphones étroits (360–430 px) : visuel au-dessus des infos, boutons pleine largeur
+   empilés — un bouton de 44 px à côté d'un autre ne tient pas sous 560 px. */
+@media (max-width: 560px) {
+  .scan-result-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scan-result-visual {
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
+  }
+  .scan-result-info h2 {
+    font-size: 1.2rem;
+  }
+  .scan-price .price-amount {
+    font-size: 1.45rem;
+  }
+  .scan-result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scan-prefs label {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+  .scan-prefs select {
+    flex: 1 1 auto;
+  }
 }
 
 /* Desktop : scène moins haute (la caméra y est rare, le fallback fichier prime). */
@@ -6271,8 +6545,10 @@ button.progress-row:hover {
   overflow: hidden;
 }
 .wish-stepper button {
-  width: 28px;
-  height: 28px;
+  /* 44 px : le pas de quantité et le retrait sont des cibles de plein droit,
+     pas des icônes décoratives (28 px et ~20 px auparavant). */
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   background: none;
   color: var(--ink);
@@ -6285,7 +6561,8 @@ button.progress-row:hover {
   cursor: default;
 }
 .wish-stepper input {
-  width: 38px;
+  width: 52px;
+  min-height: 44px;
   border: none;
   background: none;
   box-shadow: none;
@@ -6297,6 +6574,9 @@ button.progress-row:hover {
   appearance: textfield;
 }
 .wish-remove {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
   border: none;
   background: none;
   font-size: 0.75rem;
@@ -6414,5 +6694,356 @@ button.progress-row:hover {
   .buildable-filter {
     flex: 1 1 100%;
     text-align: center;
+  }
+}
+
+/* ============================================================
+   Audit mobile (août 2026) — seconde salve
+   Placé en fin de feuille : ces règles corrigent des valeurs
+   déclarées plus haut (petits corps de texte, cibles tactiles,
+   hauteurs figées) et doivent donc gagner la cascade.
+   Rien ici ne touche le desktop à pointeur fin : tout est sous
+   media query, sauf les env(safe-area-inset-*) qui valent 0
+   hors PWA plein écran.
+   ============================================================ */
+
+/* ---------- Éditeur de deck (≤1100) : les messages viennent au pouce ---------- */
+@media (max-width: 1100px) {
+  /* Le panneau du deck passe en tête de page (order: -1) : au moment où l'on
+     touche une carte de la galerie, le message de limite et l'état de
+     sauvegarde sont plusieurs écrans plus haut. Ils deviennent des toasts. */
+  .deck-limit:not(.soft),
+  .dbuilder-save:not(.idle) {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    /* au-dessus du bandeau traceurs (80), sous les modales (200) */
+    z-index: 90;
+    margin: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    background: var(--paper);
+    box-shadow: 0 10px 26px rgba(10, 20, 40, 0.22);
+    text-align: center;
+  }
+  .deck-limit:not(.soft) {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Empilé au-dessus : une même action déclenche souvent les deux messages. */
+  .dbuilder-save:not(.idle) {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+  }
+  /* Entre deux sauvegardes la mention est vide : pas de pastille qui flotte. */
+  .dbuilder-save.idle {
+    display: none;
+  }
+}
+
+/* ---------- Tablette / téléphone (≤760) ---------- */
+@media (max-width: 760px) {
+  /* Zoom iOS : tout champ sous 16 px fait grossir la page au premier tap, et le
+     zoom ne revient jamais en arrière. Règle générale, puis les champs habillés
+     dont le sélecteur est plus précis. */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  .bulk-bar select,
+  .sheet-qty select,
+  .wish-stepper input,
+  .fsel-search,
+  .modal-form label :is(input, select, textarea) {
+    font-size: 16px;
+  }
+
+  /* Boutons : la hauteur figée coupait les libellés passés à la ligne
+     (« Plein écran », « Masquer le sommaire »). */
+  .btn {
+    height: auto;
+    min-height: 44px;
+    padding-block: 6px;
+  }
+  .btn-sm {
+    height: auto;
+    min-height: 38px;
+    padding-block: 5px;
+  }
+
+  /* Accueil : la coupure du titre n'a de sens que sur une ligne assez large. */
+  .hide-mobile {
+    display: none;
+  }
+  /* Dégradé animé 8 s derrière un texte détouré : coûteux et imperceptible ici. */
+  h1 {
+    animation: none;
+  }
+
+  /* Pied de page : 19 liens de 16 px de haut, collés les uns aux autres. */
+  .footer-grid ul {
+    gap: 2px;
+  }
+  .footer-grid ul a {
+    display: block;
+    padding: 12px 0;
+  }
+  .footer-in {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
+     bouton qu'au-delà de 600 px défilés). */
+  .rules-back-top {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    z-index: 70;
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--ink-strong);
+    font-size: 0.74rem;
+    box-shadow: 0 8px 20px rgba(10, 20, 40, 0.22);
+  }
+
+  /* Tableau de bord : « Voir les données » faisait 11 px de haut. */
+  .chart-toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+}
+
+/* ---------- Téléphone (≤560) ---------- */
+@media (max-width: 560px) {
+  /* Bandeau traceurs : une phrase et deux boutons sur une rangée (~90 px de
+     haut au lieu de 164). Le texte complet se déplie sur demande. */
+  .traceurs-notice {
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--r-sm);
+  }
+  .traceurs-notice p {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+  .traceurs-short {
+    display: block;
+  }
+  .traceurs-more {
+    display: inline-block;
+  }
+  .traceurs-notice:not(.expanded) .traceurs-full {
+    display: none;
+  }
+  .traceurs-notice.expanded .traceurs-short {
+    display: none;
+  }
+  .traceurs-actions {
+    justify-content: space-between;
+  }
+
+  /* Bandeau de page : le crédit chevauchait le surtitre et se perdait sur les
+     illustrations claires. Il sort de la superposition et passe sous le titre. */
+  .page-banner .splash-credit {
+    position: static;
+    display: block;
+    margin-top: 8px;
+    padding: 0 16px;
+    text-align: right;
+    white-space: normal;
+    font-size: 0.72rem;
+  }
+
+  /* Héros d'accueil : 192 px de rembourrage vertical sur un écran de 640 px. */
+  .hero-splash {
+    padding: 48px 0 56px;
+  }
+
+  /* Tuiles de carte : 9,6 px tronqués à l'ellipse ; le set passe à la ligne. */
+  .card-tile .t-meta,
+  .col-state {
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .card-tile .t-meta span {
+    white-space: normal;
+  }
+
+  /* Modales : 26 px de marge latérale sur 312 px de large. */
+  .modal-head {
+    padding: 16px 16px 12px;
+  }
+  .modal-body {
+    padding: 16px 16px 20px;
+  }
+
+  /* Cartes manquantes : six colonnes ne tiennent pas dans la modale, chaque
+     ligne devient une fiche dont les cellules portent l'intitulé de colonne. */
+  .missing-table,
+  .missing-table tbody,
+  .missing-table tr,
+  .missing-table td {
+    display: block;
+  }
+  .missing-table thead {
+    display: none;
+  }
+  .missing-table tr {
+    position: relative;
+    margin-bottom: 10px;
+    padding: 10px 12px 10px 66px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .missing-table td {
+    padding: 2px 0;
+    border: none;
+  }
+  .missing-table td[data-label]::before {
+    content: attr(data-label) " : ";
+    margin-right: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .missing-table td.missing-thumb {
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    padding: 0;
+  }
+  .missing-table .row-thumb {
+    width: 44px;
+  }
+
+  /* Export de deck : quatre boutons de 34 px serrés sur une seule rangée. */
+  .dexport-actions .btn {
+    min-height: 44px;
+    flex: 1 1 45%;
+  }
+
+  /* Profil : une zone défilante de 280 px imbriquée dans le défilement de page. */
+  .avatar-scroller {
+    max-height: none;
+  }
+
+  /* Guide du débutant : le plateau gardait le format 16/12, soit ~250 px vides
+     sous les zones une fois ramené à la largeur d'un téléphone. */
+  .tb {
+    aspect-ratio: 16 / 10;
+  }
+  /* Bords estompés : sans eux, rien ne dit que le plateau défile latéralement.
+     :has() — un masque crée un contexte d'empilement, qui rognerait le zoom
+     plein écran d'une carte, ouvert depuis l'intérieur du plateau. */
+  .tb-scroller:not(:has(.tb-zoom)) {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  }
+
+  /* Plancher de lisibilité : sous 0,75 rem ces mentions ne se lisent plus à bout
+     de bras (elles restent en 0,6–0,7 rem sur desktop). */
+  .tb-credit,
+  .deck-meters .meter span,
+  .gcard-price,
+  .gcard-owned,
+  .guide-term,
+  .topic-example span,
+  .card-credit,
+  .footer-legal,
+  .chart-table th,
+  .curve-legend,
+  .row-lack {
+    font-size: 0.75rem;
+  }
+  /* La pastille dit maintenant « manque N » : il lui faut la hauteur du texte. */
+  .row-lack {
+    height: auto;
+    padding: 2px 8px;
+  }
+}
+
+/* ---------- Tactile (hover: none) : cibles ≥ 44 px ----------
+   Après les paliers de largeur : sur un téléphone les deux s'appliquent et
+   c'est la cible tactile qui doit l'emporter. Un pointeur fin n'est jamais
+   concerné, quelle que soit la largeur de la fenêtre. */
+@media (hover: none) {
+  .btn-sm,
+  .fsel-btn {
+    height: auto;
+    min-height: 44px;
+  }
+  .owned-seg {
+    height: auto;
+  }
+  .owned-seg button {
+    min-height: 44px;
+  }
+  .modal-close {
+    width: 44px;
+    height: 44px;
+  }
+  .filter {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .fsel-opt {
+    min-height: 44px;
+    padding: 0 12px;
+  }
+  .deck-hero-remove {
+    width: 44px;
+    height: 44px;
+  }
+  /* Vues et j'aime : le bouton « aimer » faisait 35 × 20 px. Les marges
+     négatives absorbent la hauteur ajoutée dans le pied de fiche. */
+  .deck-box-stat {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 10px;
+    margin: -6px 0;
+  }
+  /* Sommaire et renvois des règles : des lignes de 25 à 36 px, sans écart. */
+  .toc-chapter-btn,
+  .toc-section {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .rref {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    margin: 2px 4px 2px 0;
+  }
+  /* Lecture / pause des mini-scènes animées. */
+  .demo-play {
+    min-width: 44px;
+    height: 44px;
+  }
+  /* Reflet foil : 7 s d'animation en boucle avec mix-blend-mode sur 8 à 40
+     tuiles à la fois — hachures au défilement et batterie qui fond. */
+  .card-art .card-foil {
+    animation: none;
   }
 }

@@ -15,6 +15,16 @@ export function useDeckStats(cards) {
     return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }))
   })
 
+  /* Libellé compact « 1 : 4 · 2 : 6 » de la courbe : au doigt les infobulles des
+     barres ne s'ouvrent jamais, la répartition doit se lire sous le graphique.
+     Les paniers vides sont écartés, ils n'apprennent rien. */
+  const curveLabel = computed(() =>
+    curve.value
+      .filter((bucket) => bucket.count)
+      .map((bucket) => `${bucket.cost}${bucket.cost === 7 ? "+" : ""} : ${bucket.count}`)
+      .join(" · ")
+  )
+
   const energyTotal = computed(() =>
     mainEntries.value.reduce((sum, entry) => sum + (entry.card.energy ?? 0) * entry.qty, 0)
   )
@@ -31,5 +41,5 @@ export function useDeckStats(cards) {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])
   })
 
-  return { curve, energyTotal, domainSpread }
+  return { curve, curveLabel, energyTotal, domainSpread }
 }

@@ -35,6 +35,11 @@ const grouped = computed(() =>
         <Icon name="search" :size="18" />
         <input
           type="search"
+          inputmode="search"
+          enterkeyhint="search"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
           v-model="query"
           placeholder="tank, conquête, réaction, recycler…"
           aria-label="Rechercher une mécanique"

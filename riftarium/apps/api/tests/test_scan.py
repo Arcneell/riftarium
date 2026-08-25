@@ -138,10 +138,18 @@ def test_hamming_hex():
 # ---------------------------------------------------------------------------
 
 
-def test_cards_hashes_empty(client):
+def test_cards_hashes_lists_every_card_even_without_hash(client):
+    """La voie « lecture du code » n'a besoin que de rid : aucune carte n'est omise."""
     response = client.get("/api/cards/hashes")
     assert response.status_code == 200
-    assert response.json() == {"algo": "dhash16-hv-art", "count": 0, "items": []}
+    payload = response.json()
+    assert payload["algo"] == "dhash16-hv-art"
+    assert payload["count"] == len(payload["items"]) > 0
+    # Aucune empreinte calculée dans le seed : h est null partout, rid toujours renseigné.
+    assert all(item["h"] is None and item["rid"] for item in payload["items"])
+    # Les variantes se distinguent par leur rid (étoile, lettre) : le client en a besoin.
+    rids = {item["rid"] for item in payload["items"]}
+    assert {"ogn-037-298", "ogn-037a-298", "ogn-037*-298"} <= rids
 
 
 def test_cards_hashes_cache_headers(client):
@@ -150,7 +158,27 @@ def test_cards_hashes_cache_headers(client):
     assert response.headers["Vary"] == "Authorization, Cookie"
 
 
-def test_cards_hashes_lists_only_hashed_cards(client):
+def test_cards_hashes_cache_key_is_versioned(client, monkeypatch):
+    """Le format a changé (rid, cartes sans empreinte). L'entrée Redis « cards:hashes »
+    d'avant le déploiement survit 6 h : la servir priverait le nouveau client de rid —
+    plus de lecture de code, et un regroupement par variante qui s'effondre. La clé
+    versionnée est le seul garde-fou (Redis n'est pas recréé au déploiement)."""
+    import app.routers.cards as cards_module
+
+    lus, ecrits = [], []
+    monkeypatch.setattr(cards_module, "cache_get", lambda key: lus.append(key) or None)
+    monkeypatch.setattr(cards_module, "cache_set", lambda key, value, ttl: ecrits.append(key))
+
+    payload = client.get("/api/cards/hashes").json()
+    assert payload["count"] > 0
+    # Ni lecture ni écriture sur l'ancienne clé : le vieux payload reste ignoré jusqu'à son TTL.
+    assert "cards:hashes:v2" in lus and "cards:hashes" not in lus
+    assert ecrits == ["cards:hashes:v2"]
+    # Le préfixe « cards: » reste celui qu'invalident la sync et le recalcul admin.
+    assert all(key.startswith("cards:") for key in ecrits)
+
+
+def test_cards_hashes_serves_hash_and_rid_side_by_side(client):
     digest = dhash_hex(checkerboard_png())
     with db_module.SessionLocal() as session:
         session.get(Card, "ogn-247-298").image_hash = digest
@@ -158,8 +186,11 @@ def test_cards_hashes_lists_only_hashed_cards(client):
 
     payload = client.get("/api/cards/hashes").json()
     assert payload["algo"] == "dhash16-hv-art"
-    assert payload["count"] == 1
-    assert payload["items"] == [{"id": "ogn-247-298", "h": digest}]
+    assert payload["count"] == len(payload["items"])
+    items = {item["id"]: item for item in payload["items"]}
+    assert items["ogn-247-298"] == {"id": "ogn-247-298", "rid": "ogn-247-298", "h": digest}
+    # Les cartes sans empreinte restent listées (h null) : elles restent identifiables par leur code.
+    assert items["ogn-275-298"]["h"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -196,9 +227,9 @@ def test_admin_hashes_computes_and_tolerates_per_card_errors(client):
         assert session.get(Card, "scan-404").image_hash is None
 
     # L'index public reflète immédiatement l'empreinte calculée.
-    payload = client.get("/api/cards/hashes").json()
-    assert payload["count"] == 1
-    assert payload["items"][0] == {"id": "ogn-247-298", "h": dhash_hex(image)}
+    items = {item["id"]: item for item in client.get("/api/cards/hashes").json()["items"]}
+    assert items["ogn-247-298"]["h"] == dhash_hex(image)
+    assert items["scan-404"]["h"] is None
 
 
 @respx.mock
@@ -218,9 +249,9 @@ def test_admin_hashes_bounded_per_call(client, monkeypatch):
     third = client.post("/api/admin/cards/hashes", headers=ADMIN).json()  # plus rien à faire
     assert third == {"computed": 0, "failed": 0, "remaining": 0}
 
-    payload = client.get("/api/cards/hashes").json()
-    assert payload["count"] == 4
-    assert all(item["h"] == dhash_hex(image) for item in payload["items"])
+    hashed = [item for item in client.get("/api/cards/hashes").json()["items"] if item["h"]]
+    assert len(hashed) == 4
+    assert all(item["h"] == dhash_hex(image) for item in hashed)
 
 
 # ---------------------------------------------------------------------------

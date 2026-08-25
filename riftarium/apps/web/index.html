@@ -2,7 +2,13 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- viewport-fit=cover : sans lui, les env(safe-area-inset-*) valent 0 en standalone
+         sur iPhone à encoche. interactive-widget=resizes-content : le clavier virtuel
+         rétrécit la mise en page au lieu de faire glisser tout le document. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <title>Riftarium — Cartes, decks et règles Riftbound</title>
     <meta
       name="description"
@@ -14,6 +20,9 @@
     <link rel="alternate" hreflang="fr" href="https://riftarium.re/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- iOS ignore les icônes du manifest : sans ce lien, l'écran d'accueil affiche une capture. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Riftarium" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="fr_FR" />
     <meta property="og:site_name" content="Riftarium" />

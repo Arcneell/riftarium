@@ -275,24 +275,35 @@ def list_cards(
 # Déclaré avant /cards/{card_id} : sinon « hashes » serait capturé comme un id de carte.
 @router.get("/cards/hashes")
 def list_card_hashes(response: Response, db: Session = Depends(get_db)):
-    """Index des empreintes perceptuelles (scan mobile) : le matching se fait côté client.
+    """Index du scan mobile : le matching (empreinte ET code imprimé) se fait côté client.
+
+    Toutes les cartes sont listées, ``h`` valant null quand l'empreinte n'a pas
+    encore été calculée : le scanner identifie aussi par lecture du code collector
+    (« UNL • 229*/219 »), qui n'a besoin que de ``rid`` — et il en déduit les totaux
+    d'impression connus pour rejeter les lectures fantaisistes.
 
     Endpoint public et stable entre deux syncs : cache long côté navigateur
-    (l'index complet pèse ~130 octets par carte) et cache serveur invalidé
+    (l'index complet pèse ~160 octets par carte) et cache serveur invalidé
     par la sync et par le recalcul admin (préfixe « cards: »).
+
+    Clé de cache versionnée (« :v2 ») : le format a gagné ``rid`` et les cartes
+    sans empreinte. Sans nouvelle clé, Redis (TTL 6 h, non recréé au déploiement)
+    servirait pendant des heures l'ancien payload à un bundle qui attend ``rid`` —
+    le client perdrait la lecture des codes ET le regroupement par variante.
+    Le client demande « ?v=2 » pour la même raison côté cache navigateur.
     """
     response.headers["Cache-Control"] = "public, max-age=3600"
     response.headers["Vary"] = "Authorization, Cookie"
-    cached = cache_get("cards:hashes")
+    cached = cache_get("cards:hashes:v2")
     if cached is not None:
         return cached
-    rows = db.execute(select(Card.id, Card.image_hash).where(Card.image_hash.is_not(None)).order_by(Card.id)).all()
+    rows = db.execute(select(Card.id, Card.riftbound_id, Card.image_hash).order_by(Card.id)).all()
     payload = {
         "algo": HASH_ALGO,
         "count": len(rows),
-        "items": [{"id": card_id, "h": image_hash} for card_id, image_hash in rows],
+        "items": [{"id": card_id, "rid": riftbound_id, "h": image_hash} for card_id, riftbound_id, image_hash in rows],
     }
-    cache_set("cards:hashes", payload, settings.cache_ttl_seconds)
+    cache_set("cards:hashes:v2", payload, settings.cache_ttl_seconds)
     return payload
 
 

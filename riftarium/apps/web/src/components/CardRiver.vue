@@ -7,6 +7,7 @@ import { api, cardThumb } from "../api.js"
 const BATCH = 40 // cartes demandées à chaque tirage
 const REFILL = 12 // en dessous, on retourne chercher des cartes
 const MEMORY = 200 // cartes déjà passées gardées de côté, au cas où l'API ne répondrait plus
+const RESUME_DELAY = 1200 // ms avant reprise après un appui, le temps de viser une carte
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches
@@ -23,7 +24,7 @@ let last = 0
 let observer
 
 function row(speed) {
-  return { speed, pool: [], seen: [], track: null, width: 0, loading: false }
+  return { speed, pool: [], seen: [], track: null, width: 0, loading: false, hovered: false, resume: 0 }
 }
 
 async function refill(i) {
@@ -96,6 +97,40 @@ function stop() {
   frame = 0
 }
 
+/* Mise en pause. Au doigt il n'y a pas de survol : sans pause, la carte visée
+   glisse sous le pouce entre l'appui et le relâchement et c'est la voisine qui
+   s'ouvre. On arrête donc la rangée touchée dès l'appui. */
+function hold(i) {
+  clearTimeout(state[i].resume)
+  state[i].resume = 0
+  rows[i].held = true
+}
+
+/* Reprise différée : au relâchement, le lecteur regarde encore la carte.
+   `delay = 0` reprend tout de suite (sortie du survol, perte du focus). */
+function release(i, delay = RESUME_DELAY) {
+  clearTimeout(state[i].resume)
+  state[i].resume = 0
+  if (!delay) {
+    rows[i].held = state[i].hovered
+    return
+  }
+  state[i].resume = window.setTimeout(() => {
+    state[i].resume = 0
+    rows[i].held = state[i].hovered
+  }, delay)
+}
+
+function onEnter(i) {
+  state[i].hovered = finePointer
+  if (finePointer) hold(i)
+}
+
+function onLeave(i) {
+  state[i].hovered = false
+  release(i, 0)
+}
+
 function onResize() {
   rows.forEach((_, i) => fill(i))
 }
@@ -115,6 +150,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stop()
+  state.forEach((own) => clearTimeout(own.resume))
   observer?.disconnect()
   window.removeEventListener("resize", onResize)
 })
@@ -127,10 +163,15 @@ onUnmounted(() => {
       v-for="(line, i) in rows"
       :key="i"
       :class="{ reverse: i === 1 }"
-      @mouseenter="line.held = finePointer"
-      @mouseleave="line.held = false"
-      @focusin="line.held = true"
-      @focusout="line.held = false"
+      @mouseenter="onEnter(i)"
+      @mouseleave="onLeave(i)"
+      @pointerdown="hold(i)"
+      @pointerup="release(i)"
+      @pointercancel="release(i)"
+      @touchstart.passive="hold(i)"
+      @touchend="release(i)"
+      @focusin="hold(i)"
+      @focusout="release(i, 0)"
     >
       <div
         class="river-track"

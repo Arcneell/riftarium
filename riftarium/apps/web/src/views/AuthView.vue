@@ -101,6 +101,9 @@ async function submit() {
               type="text"
               v-model="handle"
               autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
               required
               minlength="3"
               maxlength="32"

@@ -18,6 +18,11 @@ const DELAY = 2600
 /* Reduced motion : pas de défilement automatique, la navigation reste possible par les points. */
 const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
+/* Lecture/pause : une scène qui change toutes les 2,6 s sans commande est
+   impossible à lire au doigt, on n'a pas le temps de finir la légende. */
+const playing = ref(!reducedMotion)
+const playLabel = computed(() => (playing.value ? "Mettre l'animation en pause" : "Lire l'animation"))
+
 function next() {
   frameIndex.value = (frameIndex.value + 1) % props.demo.frames.length
 }
@@ -27,16 +32,23 @@ function goTo(i) {
 }
 function restart() {
   clearInterval(timer)
-  if (reducedMotion) return
+  timer = null
+  if (!playing.value) return
   timer = setInterval(next, DELAY)
+}
+function togglePlay() {
+  playing.value = !playing.value
+  restart()
 }
 onMounted(restart)
 onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
-  <div class="demo" role="img" :aria-label="demo.title">
-    <div class="demo-stage">
+  <!-- role="img" sur la scène seule : posé sur le conteneur, il masquait aux
+       lecteurs d'écran les boutons de la barre (points, lecture/pause). -->
+  <div class="demo">
+    <div class="demo-stage" role="img" :aria-label="demo.title">
       <TransitionGroup name="demo">
         <div
           v-for="item in frame.items"
@@ -56,6 +68,16 @@ onBeforeUnmount(() => clearInterval(timer))
     <div class="demo-bar">
       <p class="demo-caption">{{ frame.caption }}</p>
       <div class="demo-dots">
+        <button
+          type="button"
+          class="demo-play"
+          :aria-pressed="playing"
+          :aria-label="playLabel"
+          :title="playLabel"
+          @click="togglePlay"
+        >
+          {{ playing ? "❚❚" : "▶" }}
+        </button>
         <button
           v-for="(f, i) in demo.frames"
           :key="i"

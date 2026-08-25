@@ -111,6 +111,9 @@ async function mountView() {
 }
 
 const tile = (wrapper, name) => wrapper.findAll(".gcard").find((t) => t.attributes("aria-label").includes(name))
+/* Le lien « ℹ » est un frère du bouton (un lien dans un bouton est du HTML invalide) : on passe par la cellule. */
+const slot = (wrapper, name) =>
+  wrapper.findAll(".gcard-slot").find((cell) => cell.get(".gcard").attributes("aria-label").includes(name))
 
 describe("DeckEditView", () => {
   beforeEach(() => {
@@ -263,8 +266,12 @@ describe("DeckEditView", () => {
     const { wrapper, router } = await mountView()
     await tile(wrapper, "Légende Fury").trigger("click")
 
-    const info = tile(wrapper, "Phénix").get(".gcard-info")
+    const info = slot(wrapper, "Phénix").get(".gcard-info")
     expect(info.attributes("aria-label")).toContain("Voir la fiche")
+    /* Vrai lien, atteignable au clavier, et hors du bouton d'ajout. */
+    expect(info.element.tagName).toBe("A")
+    expect(info.attributes("href")).toBe("/cartes/u1")
+    expect(slot(wrapper, "Phénix").get(".gcard").find(".gcard-info").exists()).toBe(false)
 
     await info.trigger("click")
     await flushPromises()
@@ -297,7 +304,8 @@ describe("DeckEditView", () => {
     await unitTile.trigger("click")
     await unitTile.trigger("click")
     await unitTile.trigger("click")
-    expect(wrapper.find(".deck-row.lacking .row-lack").exists()).toBe(true)
+    /* Texte lisible au doigt : le « ! » n'était explicité que par une infobulle. */
+    expect(wrapper.get(".deck-row.lacking .row-lack").text()).toBe("manque 1")
 
     await wrapper.get(".missing-btn").trigger("click")
     await flushPromises()

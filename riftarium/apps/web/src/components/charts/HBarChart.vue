@@ -31,6 +31,18 @@ const maxValue = computed(() => Math.max(1, ...props.rows.map((row) => row.value
 const round = (n) => Math.round(n * 100) / 100
 
 const barLength = (row) => round((row.value / maxValue.value) * (plotWidth.value - gutter.value - PAD_RIGHT))
+
+/* Libellés tronqués à la gouttière réelle : ancrés à droite, les noms longs
+   sortaient du viewBox par la gauche sur un écran de 360 px (illisibles et
+   rognés). Largeur moyenne d'un caractère du corps de texte à 12,5 px. */
+const CHAR_PX = 6.4
+const shownRows = computed(() => {
+  const max = Math.floor((gutter.value - 12) / CHAR_PX)
+  return props.rows.map((row) => {
+    const clipped = row.label.length > max
+    return { ...row, short: clipped ? `${row.label.slice(0, Math.max(1, max - 1))}…` : row.label, clipped }
+  })
+})
 const rowTop = (index) => 4 + ROW_HEIGHT * index
 const barTop = (index) => rowTop(index) + (ROW_HEIGHT - BAR_HEIGHT) / 2
 
@@ -82,9 +94,11 @@ const tooltipStyle = computed(() => {
         role="img"
         :aria-label="`${title} — barres horizontales, bouton « Voir les données » pour le détail`"
       >
-        <g v-for="(row, i) in rows" :key="row.label">
+        <g v-for="(row, i) in shownRows" :key="row.label">
+          <!-- Le nom entier reste accessible : <title> au survol, infobulle, tableau des données. -->
+          <title v-if="row.clipped">{{ row.label }}</title>
           <text class="chart-row-label" :x="gutter - 10" :y="rowTop(i) + ROW_HEIGHT / 2 + 4" text-anchor="end">
-            {{ row.label }}
+            {{ row.short }}
           </text>
           <path class="chart-bar" :d="barPath(i)" :fill="color" />
           <text

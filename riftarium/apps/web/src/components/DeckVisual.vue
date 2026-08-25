@@ -41,18 +41,26 @@ const packs = computed(() =>
             :class="{ champion: entry.card.id === championId }"
           >
             <CardHoverPreview :card="entry.card">
-              <div
-                class="dvis-card"
-                :class="{ landscape: entry.card.orientation === 'landscape' || zone.key === 'Battlefield' }"
+              <!-- Vignette cliquable : l'aperçu au survol n'existe pas au doigt, la
+                   fiche de la carte est le seul moyen de la lire en grand sur téléphone. -->
+              <RouterLink
+                class="dvis-link"
+                :to="`/cartes/${entry.card.id}`"
+                :aria-label="`Voir la carte ${entry.card.name}`"
               >
-                <img
-                  :src="cardThumb(entry.card.image_url, 280)"
-                  :alt="entry.card.name"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <span class="dvis-qty">×{{ entry.qty }}</span>
-              </div>
+                <div
+                  class="dvis-card"
+                  :class="{ landscape: entry.card.orientation === 'landscape' || zone.key === 'Battlefield' }"
+                >
+                  <img
+                    :src="cardThumb(entry.card.image_url, 280)"
+                    :alt="entry.card.name"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="dvis-qty">×{{ entry.qty }}</span>
+                </div>
+              </RouterLink>
               <p class="dvis-name">{{ entry.card.name }}</p>
             </CardHoverPreview>
           </div>

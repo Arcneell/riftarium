@@ -70,8 +70,17 @@ async function copyMissing() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in missing.items" :key="item.card.id">
-            <td>
+          <!-- focusin/focusout : sans eux, l'aperçu de la carte n'existait qu'au survol
+               souris, inaccessible au clavier (le nom de la carte est un lien). -->
+          <tr
+            v-for="item in missing.items"
+            :key="item.card.id"
+            @focusin="$emit('preview', item.card, $event, 400)"
+            @focusout="$emit('hide-preview')"
+          >
+            <!-- data-label : sous 560 px le tableau devient une pile de cartes
+                 (CSS), les intitulés de colonnes sont repris cellule par cellule. -->
+            <td class="missing-thumb">
               <img
                 class="row-thumb missing-zoom"
                 :src="cardThumb(item.card.image_url, 84)"
@@ -91,12 +100,14 @@ async function copyMissing() {
                 item.card.riftbound_id.toUpperCase()
               }}</span>
             </td>
-            <td class="num">{{ item.needed }}</td>
-            <td class="num">{{ item.owned }}</td>
-            <td class="num">
+            <td class="num" data-label="Requis">{{ item.needed }}</td>
+            <td class="num" data-label="Possédé">{{ item.owned }}</td>
+            <td class="num" data-label="À trouver">
               <b>{{ item.missing }}</b>
             </td>
-            <td class="num price-cell" :title="PRICE_NOTE">{{ formatEur(item.card.price_eur) || "—" }}</td>
+            <td class="num price-cell" data-label="Prix" :title="PRICE_NOTE">
+              {{ formatEur(item.card.price_eur) || "—" }}
+            </td>
           </tr>
         </tbody>
       </table>

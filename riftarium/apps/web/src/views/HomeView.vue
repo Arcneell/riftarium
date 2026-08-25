@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue"
+import { onBeforeUnmount, onMounted, ref } from "vue"
 import { RouterLink } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
@@ -37,6 +37,15 @@ if (typeof document !== "undefined" && window.location.pathname === "/") {
   link.href = BANNERS.home
   link.fetchPriority = "high"
   document.head.appendChild(link)
+}
+
+/* L'éventail du héros est masqué par le CSS sous 761 px : sans ce v-if, le
+   téléphone téléchargerait quand même trois visuels de 460 px de large pour rien.
+   Repli à vrai quand matchMedia manque (tests) : on garde l'éventail. */
+const fanQuery = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(min-width: 761px)") : null
+const showFan = ref(fanQuery ? fanQuery.matches : true)
+function onFanQuery(event) {
+  showFan.value = event.matches
 }
 
 const splashStyle = { "--splash": `url("${BANNERS.home}")` }
@@ -93,7 +102,12 @@ const MODULES = [
   }
 ]
 
+onBeforeUnmount(() => {
+  fanQuery?.removeEventListener?.("change", onFanQuery)
+})
+
 onMounted(async () => {
+  fanQuery?.addEventListener?.("change", onFanQuery)
   try {
     const [sets, cards] = await Promise.all([api("/api/sets"), api("/api/cards?size=1")])
     setCount.value = sets.length
@@ -109,7 +123,7 @@ onMounted(async () => {
     <div class="wrap hero-grid">
       <div>
         <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
-        <h1>Vos cartes, vos decks,<br />vos règles. Un seul site.</h1>
+        <h1>Vos cartes, vos decks,<br class="hide-mobile" />vos règles. Un seul site.</h1>
         <p class="lead" style="margin-top: 20px">
           Cartothèque complète, suivi de collection, deck builder et règles officielles : tout ce qu'il faut pour jouer
           à Riftbound, réuni au même endroit.
@@ -119,7 +133,7 @@ onMounted(async () => {
           <RouterLink class="btn" to="/regles">Lire les règles</RouterLink>
         </div>
       </div>
-      <div class="hero-fan" aria-hidden="true">
+      <div v-if="showFan" class="hero-fan" aria-hidden="true">
         <div v-for="card in FAN" :key="card.hash" v-tilt class="fan-card" :style="card.style">
           <!-- Décoratives : priorité basse pour laisser la bande passante à la cinématique (LCP). -->
           <img :src="cardImg(card.hash)" alt="" loading="eager" fetchpriority="low" />
