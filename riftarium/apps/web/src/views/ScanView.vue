@@ -374,11 +374,6 @@ function onAutoAddChange() {
   <section class="scan">
     <div class="wrap scan-wrap">
       <h1 class="sr-only">Scanner une carte</h1>
-      <p class="muted scan-intro">
-        Présentez la carte dans la silhouette : elle est reconnue automatiquement, par son code imprimé ou par son
-        illustration. Aucun bouton à appuyer. Les champs de bataille, imprimés en paysage, sont reconnus à
-        l'illustration seule — leur code n'est pas lu.
-      </p>
 
       <p v-if="index.loading" class="muted scan-status">Chargement de l'index des cartes…</p>
       <p v-else-if="index.error" class="error">{{ index.error }}</p>
