@@ -1,4 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils"
+import { nextTick } from "vue"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import RulesView from "./RulesView.vue"
@@ -36,12 +37,12 @@ const RULES = {
   }
 }
 
-/* matchMedia mocké : `mobile` pilote la media query du sommaire (max-width: 760px). */
+/* matchMedia mocké : `mobile` pilote la media query du sommaire (max-width: 980px). */
 function stubMatchMedia(mobile) {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query) => ({
-      matches: mobile && String(query).includes("max-width: 760px"),
+      matches: mobile && String(query).includes("max-width: 980px"),
       media: query,
       addEventListener() {},
       removeEventListener() {},
@@ -192,6 +193,36 @@ describe("RulesView — sommaire repliable sur mobile", () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
     expect(window.scrollTo).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain("La partie")
+    wrapper.unmount()
+  })
+
+  it("le raccourci « Sommaire ↑ » n'apparaît qu'après un long défilement et redéplie le sommaire", async () => {
+    /* Le sommaire replié est en haut de page : sans raccourci, changer de section
+       après 3 000 px de lecture oblige à remonter au doigt. */
+    stubMatchMedia(true)
+    /* rAF synchrone : l'écouteur de défilement y diffère la lecture de scrollY. */
+    vi.stubGlobal("requestAnimationFrame", (callback) => {
+      callback(0)
+      return 1
+    })
+    const wrapper = await mountView()
+
+    expect(wrapper.find(".rules-back-top").exists()).toBe(false)
+
+    window.scrollY = 700
+    window.dispatchEvent(new Event("scroll"))
+    await nextTick()
+    const backTop = wrapper.get(".rules-back-top")
+    expect(backTop.text()).toContain("Sommaire")
+
+    await backTop.trigger("click")
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" })
+    expect(wrapper.get(".rules-toc").classes()).not.toContain("folded")
+
+    window.scrollY = 0
+    window.dispatchEvent(new Event("scroll"))
+    await nextTick()
+    expect(wrapper.find(".rules-back-top").exists()).toBe(false)
     wrapper.unmount()
   })
 })

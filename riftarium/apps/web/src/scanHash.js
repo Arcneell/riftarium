@@ -127,3 +127,98 @@ export function bestMatchesMulti(hexes, index, n = 3) {
   scored.sort((a, b) => a.distance - b.distance)
   return scored.slice(0, n)
 }
+
+/* ------------------------------------------------------------------
+   Index compact (boucle de scan temps réel)
+   ------------------------------------------------------------------
+   La boucle caméra compare ~17 empreintes par image à tout l'index
+   (~1 500 cartes) quatre fois par seconde. `hamming()` lit 128 chiffres
+   hexadécimaux un par un (parseInt + table) : ~200 000 parseInt par image,
+   hors budget sur un mobile milieu de gamme. On pré-emballe donc l'index
+   UNE fois en mots de 32 bits et la distance devient 16 XOR + 16 popcount.
+   ------------------------------------------------------------------ */
+
+/* 512 bits d'empreinte = 16 mots de 32 bits. */
+export const HASH_WORDS = 16
+const HASH_HEX_LENGTH = HASH_WORDS * 8
+
+/** Empreinte hexadécimale (128 chiffres) → 16 mots de 32 bits, ou null si le format ne colle pas. */
+export function packHash(hex) {
+  if (typeof hex !== "string" || hex.length !== HASH_HEX_LENGTH) return null
+  const words = new Uint32Array(HASH_WORDS)
+  for (let w = 0; w < HASH_WORDS; w++) {
+    const value = Number.parseInt(hex.slice(w * 8, w * 8 + 8), 16)
+    if (Number.isNaN(value)) return null
+    words[w] = value
+  }
+  return words
+}
+
+/** Popcount 32 bits sans table (SWAR) : moins de cache-miss qu'une table de 65 536 entrées. */
+export function popcount32(value) {
+  let v = value - ((value >>> 1) & 0x55555555)
+  v = (v & 0x33333333) + ((v >>> 2) & 0x33333333)
+  v = (v + (v >>> 4)) & 0x0f0f0f0f
+  return Math.imul(v, 0x01010101) >>> 24
+}
+
+/** Emballe l'index une fois pour toutes. `entries` garde les items d'origine (id, rid…)
+    dans l'ordre des blocs de `words` ; les entrées sans empreinte exploitable sont écartées
+    (elles restent identifiables par leur code imprimé, pas par ressemblance). */
+export function packIndex(index) {
+  const entries = []
+  const packed = []
+  for (const item of index || []) {
+    const words = packHash(item?.h)
+    if (!words) continue
+    entries.push(item)
+    packed.push(words)
+  }
+  const words = new Uint32Array(packed.length * HASH_WORDS)
+  for (let i = 0; i < packed.length; i++) words.set(packed[i], i * HASH_WORDS)
+  return { entries, words, count: entries.length }
+}
+
+/** Distance de Hamming entre deux empreintes emballées (l'index est lu à plat, avec un décalage). */
+function hammingPacked(query, words, offset) {
+  let distance = 0
+  for (let w = 0; w < HASH_WORDS; w++) distance += popcount32(query[w] ^ words[offset + w])
+  return distance
+}
+
+/** Comme bestMatchesMulti, mais sur un index emballé par packIndex().
+
+    `groupBy` (ex. "rid") ne garde que la meilleure carte par groupe : la décision de
+    verrouillage compare la meilleure carte à la meilleure d'un AUTRE riftbound_id — sinon
+    les variantes d'une même carte (étoile, art alternatif) se voleraient mutuellement l'écart. */
+export function bestMatchesPacked(hexes, packed, n = 3, { groupBy = null } = {}) {
+  if (!packed?.count) return []
+  const queries = []
+  for (const hex of hexes || []) {
+    const words = packHash(hex)
+    if (words) queries.push(words)
+  }
+  if (!queries.length) return []
+
+  const scored = []
+  const bestByGroup = groupBy ? new Map() : null
+  for (let i = 0; i < packed.count; i++) {
+    const offset = i * HASH_WORDS
+    let best = Infinity
+    for (const query of queries) {
+      const distance = hammingPacked(query, packed.words, offset)
+      if (distance < best) best = distance
+    }
+    const match = { ...packed.entries[i], distance: best }
+    if (!bestByGroup) {
+      scored.push(match)
+      continue
+    }
+    const key = match[groupBy]
+    const previous = bestByGroup.get(key)
+    if (!previous || best < previous.distance) bestByGroup.set(key, match)
+  }
+  const result = bestByGroup ? [...bestByGroup.values()] : scored
+  result.sort((a, b) => a.distance - b.distance)
+  return result.slice(0, n)
+}

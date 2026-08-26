@@ -26,7 +26,7 @@ const zoneCounts = computed(() => {
   return counts
 })
 
-const { curve, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards || [])
+const { curve, curveLabel, energyTotal, domainSpread } = useDeckStats(() => props.deck.cards || [])
 
 /* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
 const deckValue = computed(() => formatEur(props.deck.prices?.total_eur))
@@ -71,6 +71,8 @@ async function copyDeck() {
             par {{ deck.owner }}
           </span>
         </p>
+        <!-- Au doigt l'infobulle ne s'ouvre jamais : la raison de l'illégalité se lit en clair. -->
+        <p v-if="!legal.ok" class="deck-legal-why">{{ legal.title }}</p>
         <div class="deck-view-runes" v-if="runes.length">
           <img
             v-for="rune in runes"
@@ -92,11 +94,11 @@ async function copyDeck() {
             :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
             @click="$emit('like')"
           >
-            <Icon name="heart" :size="14" />
+            <Icon name="heart" :size="16" />
             {{ deck.likes }}
           </button>
           <span class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
-            <Icon name="eye" :size="14" />
+            <Icon name="eye" :size="16" />
             {{ deck.views ?? 0 }}
           </span>
           <button
@@ -138,12 +140,15 @@ async function copyDeck() {
           <p v-if="deckValue" class="price-deck" :title="PRICE_NOTE">
             Valeur du deck : <b class="price-amount">{{ deckValue }}</b>
           </p>
-          <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
+          <div class="curve" role="group" aria-label="Répartition des coûts en énergie du deck principal">
             <div class="bar" v-for="bucket in curve" :key="bucket.cost">
               <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
+              <span class="sr-only">{{ bucket.count }} carte(s) à {{ bucket.cost }} d'énergie</span>
               <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
             </div>
           </div>
+          <!-- Doublon visuel des barres : aria-hidden, les .sr-only des barres le disent déjà. -->
+          <p v-if="curveLabel" class="curve-legend mono" aria-hidden="true">{{ curveLabel }}</p>
           <div class="deck-domains" v-if="domainSpread.length">
             <span class="chip chip-rune" v-for="[domain, count] in domainSpread" :key="domain">
               <img

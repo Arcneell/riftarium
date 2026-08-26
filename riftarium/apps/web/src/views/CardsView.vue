@@ -79,11 +79,20 @@ onMounted(async () => {
           <Icon name="search" :size="18" />
           <input
             type="search"
+            inputmode="search"
+            enterkeyhint="search"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
             v-model="state.q"
             placeholder="Jinx, ogn-202, reaction…"
             aria-label="Rechercher une carte"
           />
         </label>
+        <RouterLink class="btn btn-ghost scan-entry" to="/scan" title="Identifier une carte avec l'appareil photo">
+          <Icon name="camera" :size="18" />
+          Scanner
+        </RouterLink>
         <FilterSelect
           label="Domaines"
           :options="domainOptions"

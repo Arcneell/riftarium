@@ -70,6 +70,17 @@ describe("DeckBox", () => {
     free.unmount()
   })
 
+  it("deck illégal : la raison est écrite sous la pastille, pas seulement dans l'infobulle", () => {
+    /* Au doigt le :title ne s'ouvre jamais : « Illégal » sans raison n'apprend rien. */
+    const failing = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: false, message: "" }] }))
+    expect(failing.get(".deck-legal-why").text()).toContain("ne respecte pas")
+    failing.unmount()
+
+    const ok = mountBox(fakeDeck({ checks: [{ rule: "legend", ok: true, message: "" }] }))
+    expect(ok.find(".deck-legal-why").exists()).toBe(false)
+    ok.unmount()
+  })
+
   it("communauté : la pastille suit le booléen legal du listing", () => {
     const wrapper = mountBox(fakeDeck({ legal: false, checks: undefined }), { community: true })
     expect(wrapper.get(".deck-legal").classes()).toContain("ko")

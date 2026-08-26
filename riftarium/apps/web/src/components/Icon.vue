@@ -23,6 +23,17 @@ defineProps({
       <rect x="3.2" y="5.5" width="12.2" height="15.2" rx="1.8" />
       <path d="M8.2 3.4h11.4A1.8 1.8 0 0 1 21.4 5.2v13.4" />
     </g>
+    <!-- chevron bas (menu déroulant) -->
+    <g v-else-if="name === 'chevron'">
+      <path d="M6 9.5l6 6 6-6" />
+    </g>
+    <!-- appareil photo (scanner de cartes) -->
+    <g v-else-if="name === 'camera'">
+      <path
+        d="M4 8.2h3.2l1.6-2.4h6.4l1.6 2.4H20a1.6 1.6 0 0 1 1.6 1.6v8.6A1.6 1.6 0 0 1 20 20H4a1.6 1.6 0 0 1-1.6-1.6V9.8A1.6 1.6 0 0 1 4 8.2Z"
+      />
+      <circle cx="12" cy="13.6" r="3.4" />
+    </g>
     <!-- livre ouvert -->
     <g v-else-if="name === 'book'">
       <path d="M4 5.2c2.2-1.2 4.6-1.2 6.8 0v14c-2.2-1.2-4.6-1.2-6.8 0V5.2Z" />

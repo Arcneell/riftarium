@@ -538,6 +538,11 @@ onBeforeUnmount(() => {
             <Icon name="search" :size="18" />
             <input
               type="search"
+              inputmode="search"
+              enterkeyhint="search"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               v-model="users.q"
               placeholder="Pseudo ou e-mail…"
               aria-label="Rechercher un utilisateur"
@@ -624,7 +629,17 @@ onBeforeUnmount(() => {
           </div>
           <label class="search">
             <Icon name="search" :size="18" />
-            <input type="search" v-model="decks.q" placeholder="Nom du deck…" aria-label="Rechercher un deck" />
+            <input
+              type="search"
+              inputmode="search"
+              enterkeyhint="search"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              v-model="decks.q"
+              placeholder="Nom du deck…"
+              aria-label="Rechercher un deck"
+            />
           </label>
           <span class="muted mono admin-count">
             {{ decks.total }} deck(s) <span v-if="decks.loading">— chargement…</span>
@@ -730,7 +745,15 @@ onBeforeUnmount(() => {
     <form class="modal-form" @submit.prevent="submitRemoval">
       <label>
         Pseudo
-        <input type="text" v-model="removal.confirm" autocomplete="off" required />
+        <input
+          type="text"
+          v-model="removal.confirm"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          required
+        />
       </label>
       <p v-if="removal.error" class="error">{{ removal.error }}</p>
       <div class="modal-actions">

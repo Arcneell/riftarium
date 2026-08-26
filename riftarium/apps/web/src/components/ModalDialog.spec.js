@@ -33,7 +33,7 @@ async function openModal() {
 describe("ModalDialog", () => {
   afterEach(() => {
     document.body.innerHTML = ""
-    document.body.style.overflow = ""
+    document.body.classList.remove("nav-locked")
   })
 
   it("prend le focus à l'ouverture sur le premier élément focusable", async () => {
@@ -51,6 +51,44 @@ describe("ModalDialog", () => {
 
     pressTab(true)
     expect(document.activeElement?.id).toBe("b")
+    wrapper.unmount()
+  })
+
+  it("verrouille le défilement de la page par la classe du tiroir, pas par un style inline", async () => {
+    /* `overflow: hidden` en style inline ne retient pas iOS Safari : c'est la
+       classe body.nav-locked (déjà stylée) qui fige la page derrière la modale. */
+    const wrapper = await openModal()
+    expect(document.body.classList.contains("nav-locked")).toBe(true)
+    expect(document.body.style.overflow).toBe("")
+
+    wrapper.unmount()
+    expect(document.body.classList.contains("nav-locked")).toBe(false)
+  })
+
+  it("deux modales empilées : la page reste figée tant que la dernière n'est pas fermée", async () => {
+    const first = await openModal()
+    const second = await openModal()
+    expect(document.body.classList.contains("nav-locked")).toBe(true)
+
+    second.unmount()
+    expect(document.body.classList.contains("nav-locked")).toBe(true)
+
+    first.unmount()
+    expect(document.body.classList.contains("nav-locked")).toBe(false)
+  })
+
+  it("le fond ferme au clic complet, pas au premier contact du doigt", async () => {
+    const wrapper = await openModal()
+    const overlay = document.querySelector(".modal-overlay")
+
+    /* Un début de glissement sur le fond ne doit plus fermer la modale. */
+    overlay.dispatchEvent(new Event("pointerdown", { bubbles: true }))
+    await nextTick()
+    expect(wrapper.vm.open).toBe(true)
+
+    overlay.dispatchEvent(new Event("click", { bubbles: true }))
+    await nextTick()
+    expect(wrapper.vm.open).toBe(false)
     wrapper.unmount()
   })
 

@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest"
 import {
   bestMatches,
   bestMatchesMulti,
+  bestMatchesPacked,
   bitsToHex,
   dhashFromImageData,
   grayscale,
   hamming,
   hashBits,
+  packHash,
+  packIndex,
+  popcount32,
   resizeGray
 } from "./scanHash.js"
 
@@ -186,5 +190,92 @@ describe("bestMatchesMulti", () => {
 
   it("équivaut à bestMatches avec une seule empreinte", () => {
     expect(bestMatchesMulti([zeros], index)).toEqual(bestMatches(zeros, index))
+  })
+})
+
+describe("index compact (packIndex / bestMatchesPacked)", () => {
+  const zeros = "0".repeat(128)
+  const ones = "f".repeat(128)
+
+  /* Empreinte pseudo-aléatoire déterministe : de vraies empreintes, pas des cas dégénérés. */
+  function fakeHash(seed) {
+    let state = seed * 2654435761 + 1
+    let hex = ""
+    for (let i = 0; i < 128; i++) {
+      state = (state * 1103515245 + 12345) & 0x7fffffff
+      hex += (state >>> 7).toString(16).slice(-1)
+    }
+    return hex
+  }
+
+  it("popcount32 compte les bits à 1, y compris sur le bit de signe", () => {
+    expect(popcount32(0)).toBe(0)
+    expect(popcount32(1)).toBe(1)
+    expect(popcount32(0xffffffff)).toBe(32)
+    expect(popcount32(0x80000000)).toBe(1)
+    expect(popcount32(0xdeadbeef)).toBe(24)
+  })
+
+  it("packHash refuse ce qui n'est pas une empreinte de 128 hexadécimaux", () => {
+    expect(packHash(zeros)).toBeInstanceOf(Uint32Array)
+    expect(packHash(zeros).length).toBe(16)
+    expect(packHash("00")).toBeNull()
+    expect(packHash(null)).toBeNull()
+    expect(packHash("z".repeat(128))).toBeNull()
+    /* Mot de poids fort au-delà de 2^31 : l'emballage doit rester non signé. */
+    expect(packHash(ones)[0]).toBe(0xffffffff)
+  })
+
+  it("packIndex écarte les entrées inexploitables et conserve les items d'origine", () => {
+    const packed = packIndex([
+      { id: "a", rid: "ogn-001-298", h: zeros },
+      { id: "cassé", rid: "ogn-002-298" },
+      { id: "court", rid: "ogn-003-298", h: "00" },
+      { id: "b", rid: "ogn-004-298", h: ones }
+    ])
+    expect(packed.count).toBe(2)
+    expect(packed.entries.map((e) => e.id)).toEqual(["a", "b"])
+    expect(packed.words.length).toBe(32)
+  })
+
+  it("donne exactement les mêmes distances que hamming() sur 40 empreintes aléatoires", () => {
+    const index = Array.from({ length: 40 }, (_, i) => ({ id: `c${i}`, rid: `ogn-${i}-298`, h: fakeHash(i + 1) }))
+    const query = fakeHash(999)
+    const packed = packIndex(index)
+    const fast = bestMatchesPacked([query], packed, 40)
+    const slow = bestMatches(query, index, 40)
+    expect(fast.map((m) => [m.id, m.distance])).toEqual(slow.map((m) => [m.id, m.distance]))
+    /* Contrôle direct : aucune distance ne dévie de la référence hexadécimale. */
+    for (const match of fast) expect(match.distance).toBe(hamming(query, match.h))
+  })
+
+  it("garde la meilleure distance parmi plusieurs orientations, comme bestMatchesMulti", () => {
+    const index = [
+      { id: "portrait", rid: "ogn-001-298", h: zeros },
+      { id: "paysage", rid: "ogn-002-298", h: ones },
+      { id: "loin", rid: "ogn-003-298", h: "0f" + ones.slice(2) }
+    ]
+    const packed = packIndex(index)
+    expect(bestMatchesPacked([zeros, ones], packed, 3).map((m) => [m.id, m.distance])).toEqual(
+      bestMatchesMulti([zeros, ones], index, 3).map((m) => [m.id, m.distance])
+    )
+  })
+
+  it("groupBy: 'rid' ne garde que la meilleure variante par carte", () => {
+    const packed = packIndex([
+      { id: "base", rid: "ogn-037-298", h: zeros },
+      { id: "etoile", rid: "ogn-037-298", h: zeros.slice(0, 127) + "1" }, // même rid, un bit d'écart
+      { id: "autre", rid: "ogn-040-298", h: zeros.slice(0, 126) + "ff" }
+    ])
+    const grouped = bestMatchesPacked([zeros], packed, 3, { groupBy: "rid" })
+    expect(grouped.map((m) => m.id)).toEqual(["base", "autre"])
+    /* Sans regroupement, les deux variantes occupent les deux premières places. */
+    expect(bestMatchesPacked([zeros], packed, 3).map((m) => m.id)).toEqual(["base", "etoile", "autre"])
+  })
+
+  it("tolère un index vide et une requête inexploitable", () => {
+    expect(bestMatchesPacked([zeros], packIndex([]), 3)).toEqual([])
+    expect(bestMatchesPacked(["00"], packIndex([{ id: "a", h: zeros }]), 3)).toEqual([])
+    expect(bestMatchesPacked([], packIndex([{ id: "a", h: zeros }]), 3)).toEqual([])
   })
 })

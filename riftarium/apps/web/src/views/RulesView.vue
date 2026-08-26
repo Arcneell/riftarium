@@ -22,15 +22,39 @@ let searchIndex = []
 let locate = new Map()
 let searchTimer = null
 
-/* --- sommaire repliable sur téléphone (aligné sur la media query CSS ≤760) --- */
+/* --- sommaire repliable (aligné sur la media query CSS ≤980, là où la grille
+   s'effondre et où le sommaire passe au-dessus du texte) --- */
 const mobileTocQuery =
-  typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 760px)") : null
+  typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 980px)") : null
 const isMobileToc = ref(Boolean(mobileTocQuery?.matches))
 const tocOpen = ref(!isMobileToc.value)
 function onMobileTocChange(event) {
   isMobileToc.value = event.matches
   /* Retour sur desktop : le sommaire redevient toujours visible. */
   if (!event.matches) tocOpen.value = true
+}
+
+/* --- retour au sommaire : la lecture d'une section fait défiler très loin et,
+   sur téléphone, le sommaire replié en haut de page n'est plus atteignable. --- */
+const BACK_TOP_FROM = 600 // px défilés avant d'afficher le raccourci
+const scrolledFar = ref(false)
+let scrollQueued = false
+let scrollFrame = 0
+
+function onScroll() {
+  /* Le scroll se déclenche à chaque pixel : on ne lit la position qu'une fois par
+     image. Le drapeau est posé avant l'appel, pas déduit de l'identifiant rendu. */
+  if (scrollQueued) return
+  scrollQueued = true
+  scrollFrame = requestAnimationFrame(() => {
+    scrollQueued = false
+    scrolledFar.value = window.scrollY > BACK_TOP_FROM
+  })
+}
+
+function backToToc() {
+  tocOpen.value = true
+  window.scrollTo({ top: 0, behavior: "smooth" })
 }
 
 /* --- utilitaires du lecteur de règles --- */
@@ -182,11 +206,14 @@ function toggleChapter(chapterId) {
 
 onBeforeUnmount(() => {
   clearTimeout(searchTimer)
+  cancelAnimationFrame(scrollFrame)
+  window.removeEventListener("scroll", onScroll)
   mobileTocQuery?.removeEventListener?.("change", onMobileTocChange)
 })
 
 onMounted(async () => {
   mobileTocQuery?.addEventListener?.("change", onMobileTocChange)
+  window.addEventListener("scroll", onScroll, { passive: true })
   try {
     const response = await fetch("/data/rules-fr.json")
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -236,6 +263,11 @@ onMounted(async () => {
           <Icon name="search" :size="18" />
           <input
             type="search"
+            inputmode="search"
+            enterkeyhint="search"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
             v-model="searchQuery"
             @input="onSearchInput"
             placeholder="Mot-clé ou numéro de règle…"
@@ -354,6 +386,9 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+    <!-- Raccourci flottant (CSS : téléphone seulement) : remonte ET redéplie le
+         sommaire, sinon changer de section demande de remonter à la main. -->
+    <button v-if="scrolledFar" type="button" class="rules-back-top" @click="backToToc">Sommaire ↑</button>
   </section>
   <section v-else>
     <div class="wrap">

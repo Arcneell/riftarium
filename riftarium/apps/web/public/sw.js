@@ -7,6 +7,8 @@
      même sans réseau — y compris sans avoir jamais ouvert la page.
    - /assets/*   : cache-first — les bundles Vite sont fingerprintés, donc
      immuables ; une fois en cache, plus besoin du réseau.
+   - /ocr/*      : cache-first — moteur OCR du scanner (worker, wasm, modèle),
+     chargé à la demande depuis la page Scan, jamais précaché (plusieurs Mo).
    - /data/rules-fr.json : stale-while-revalidate — on sert le cache tout de
      suite (rapide, fonctionne hors ligne) et on rafraîchit derrière.
    - Navigations : network-first — la version fraîche si possible, sinon le
@@ -17,7 +19,7 @@
    Incrémenter VERSION à chaque changement de stratégie ou de précache :
    l'activation supprime les caches des versions précédentes. */
 
-const VERSION = 1
+const VERSION = 2
 const CACHE = `riftarium-v${VERSION}`
 
 /* Rempli au build par le plugin `inject-sw-precache` (vite.config.js) avec la
@@ -125,7 +127,9 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  if (url.pathname.startsWith("/assets/")) {
+  /* /ocr/* : moteur OCR du scanner (worker, wasm, modèle — plusieurs Mo, non
+     précachés) : cache-first dès le premier scan, comme les bundles. */
+  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/ocr/")) {
     event.respondWith(cacheFirst(request))
     return
   }

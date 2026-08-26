@@ -284,6 +284,7 @@ function openVariant(id) {
             <div v-for="entry in entries" :key="entry.id" class="sheet-qty sheet-entry">
               <input
                 type="number"
+                inputmode="numeric"
                 min="0"
                 max="999"
                 v-model.number="entry.qty"
@@ -301,7 +302,14 @@ function openVariant(id) {
             <p v-if="!entries.length" class="muted">Aucun exemplaire pour l'instant.</p>
 
             <div class="sheet-qty sheet-entry sheet-add">
-              <input type="number" min="1" max="999" v-model.number="draft.qty" aria-label="Quantité à ajouter" />
+              <input
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="999"
+                v-model.number="draft.qty"
+                aria-label="Quantité à ajouter"
+              />
               <select v-model="draft.condition" aria-label="État du nouveau lot">
                 <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
               </select>

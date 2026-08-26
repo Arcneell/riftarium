@@ -128,7 +128,7 @@ const {
   onAdded: (card) => pulse(flashes, card.id)
 })
 
-const { curve, energyTotal, domainSpread } = useDeckStats(() => deck.value?.cards || [])
+const { curve, curveLabel, energyTotal, domainSpread } = useDeckStats(() => deck.value?.cards || [])
 
 const missingInDeck = computed(() =>
   (deck.value?.cards || []).reduce((total, entry) => total + Math.max(0, entry.qty - (entry.card.owned_qty ?? 0)), 0)
@@ -317,11 +317,6 @@ function onTileClick(card) {
   addCard(card)
 }
 
-/* Tactile : pas de survol pour lire une carte, un petit bouton ouvre sa fiche. */
-function openCardPage(card) {
-  router.push(`/cartes/${card.id}`)
-}
-
 /* ---------- Cartes manquantes ---------- */
 
 const showMissing = ref(false)
@@ -453,16 +448,18 @@ onBeforeUnmount(() => {
           :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
           @click="toggleLike"
         >
-          <Icon name="heart" :size="14" />
+          <Icon name="heart" :size="16" />
           {{ deck.likes }}
         </button>
         <span class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
-          <Icon name="eye" :size="14" />
+          <Icon name="eye" :size="16" />
           {{ deck.views ?? 0 }}
         </span>
       </div>
       <button type="button" class="btn btn-ghost btn-sm" @click="showExport = true">Exporter</button>
-      <span v-if="canEdit" class="dbuilder-save" :class="saveState">
+      <!-- `idle` : sous 1100 px le CSS transforme cette mention en toast fixe,
+           qui ne doit pas flotter à vide entre deux sauvegardes. -->
+      <span v-if="canEdit" class="dbuilder-save" :class="[saveState, { idle: !saveState }]">
         <template v-if="saveState === 'saving'">Enregistrement…</template>
         <template v-else-if="saveState === 'saved'">Enregistré ✓</template>
         <template v-else-if="saveState === 'error'">Erreur de sauvegarde</template>
@@ -481,6 +478,11 @@ onBeforeUnmount(() => {
             <Icon name="search" :size="18" />
             <input
               type="search"
+              inputmode="search"
+              enterkeyhint="search"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               v-model="gallery.q"
               placeholder="Jinx, ogn-202, reaction…"
               aria-label="Rechercher une carte"
@@ -538,42 +540,43 @@ onBeforeUnmount(() => {
         </p>
 
         <div ref="grid" class="dbuilder-grid" :style="{ '--tile-min': `${tileMin}px` }">
-          <button
-            v-for="card in result.items"
-            :key="card.id"
-            type="button"
-            class="gcard"
-            :class="{
-              unowned: !isOwned(card),
-              indeck: inDeckQty(card) > 0,
-              offdomain: deck.format === 'tournament' && offDomain(card),
-              landscape: card.orientation === 'landscape',
-              shake: shakes.has(card.id)
-            }"
-            :aria-label="`Ajouter ${card.name} au deck`"
-            @click="onTileClick(card)"
-            @pointerdown="onTilePointerDown(card, 'gallery', $event)"
-            @mouseenter="showPreview(card, $event)"
-            @mouseleave="hidePreview"
-            @focusin="showPreview(card, $event)"
-            @focusout="hidePreview"
-          >
-            <img :src="cardThumb(card.image_url, 320)" :alt="''" loading="lazy" decoding="async" draggable="false" />
-            <!-- Rien pour les cartes manquantes : la vignette grisée (.unowned) suffit. -->
-            <span v-if="session.token && card.owned_qty > 0" class="gcard-owned">×{{ card.owned_qty }}</span>
-            <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
-            <span v-if="formatEur(card.price_eur)" class="gcard-price">{{ formatEur(card.price_eur) }}</span>
-            <span class="gcard-add" aria-hidden="true">+</span>
-            <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans ajouter la carte -->
-            <span
-              class="gcard-info"
-              role="link"
-              :aria-label="`Voir la fiche de ${card.name}`"
-              @click.stop="openCardPage(card)"
-              @pointerdown.stop
-              >ℹ</span
+          <div v-for="card in result.items" :key="card.id" class="gcard-slot">
+            <button
+              type="button"
+              class="gcard"
+              :class="{
+                unowned: !isOwned(card),
+                indeck: inDeckQty(card) > 0,
+                offdomain: deck.format === 'tournament' && offDomain(card),
+                landscape: card.orientation === 'landscape',
+                shake: shakes.has(card.id)
+              }"
+              :aria-label="`Ajouter ${card.name} au deck`"
+              @click="onTileClick(card)"
+              @pointerdown="onTilePointerDown(card, 'gallery', $event)"
+              @mouseenter="showPreview(card, $event)"
+              @mouseleave="hidePreview"
+              @focusin="showPreview(card, $event)"
+              @focusout="hidePreview"
             >
-          </button>
+              <img :src="cardThumb(card.image_url, 320)" :alt="''" loading="lazy" decoding="async" draggable="false" />
+              <!-- Rien pour les cartes manquantes : la vignette grisée (.unowned) suffit. -->
+              <span v-if="session.token && card.owned_qty > 0" class="gcard-owned">×{{ card.owned_qty }}</span>
+              <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
+              <span v-if="formatEur(card.price_eur)" class="gcard-price">{{ formatEur(card.price_eur) }}</span>
+              <span class="gcard-add" aria-hidden="true">+</span>
+            </button>
+            <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans
+                 ajouter la carte. Sorti du bouton : un lien dans un bouton est du HTML
+                 invalide, et le <span role="link"> n'était pas atteignable au clavier. -->
+            <RouterLink
+              class="gcard-info"
+              :to="`/cartes/${card.id}`"
+              :aria-label="`Voir la fiche de ${card.name}`"
+              @pointerdown.stop
+              >ℹ</RouterLink
+            >
+          </div>
         </div>
         <p v-if="!loading && !result.items.length" class="muted" style="margin-top: 14px">
           Aucune carte ne correspond aux filtres.
@@ -687,11 +690,12 @@ onBeforeUnmount(() => {
                 <span class="row-cost" v-if="entry.card.energy != null">{{ entry.card.energy }}</span>
                 <span class="row-cost none" v-else></span>
                 <span class="row-name">{{ entry.card.name }}</span>
+                <!-- Texte plutôt qu'un « ! » : l'infobulle qui l'expliquait ne s'ouvre pas au doigt. -->
                 <span
                   v-if="session.token && (entry.card.owned_qty ?? 0) < entry.qty"
                   class="row-lack"
                   :title="`${entry.qty - (entry.card.owned_qty ?? 0)} exemplaire(s) manquant(s) dans votre collection`"
-                  >!</span
+                  >manque {{ entry.qty - (entry.card.owned_qty ?? 0) }}</span
                 >
                 <span class="row-qty">×{{ entry.qty }}</span>
                 <span class="row-actions" v-if="canEdit">
@@ -745,12 +749,15 @@ onBeforeUnmount(() => {
         <p v-if="deckValue" class="price-deck" :title="PRICE_NOTE">
           Valeur du deck : <b class="price-amount">{{ deckValue }}</b>
         </p>
-        <div class="curve" role="img" aria-label="Répartition des coûts en énergie du deck principal">
+        <div class="curve" role="group" aria-label="Répartition des coûts en énergie du deck principal">
           <div class="bar" v-for="bucket in curve" :key="bucket.cost">
             <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
+            <span class="sr-only">{{ bucket.count }} carte(s) à {{ bucket.cost }} d'énergie</span>
             <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
           </div>
         </div>
+        <!-- Doublon visuel des barres : aria-hidden, les .sr-only des barres le disent déjà. -->
+        <p v-if="curveLabel" class="curve-legend mono" aria-hidden="true">{{ curveLabel }}</p>
         <div class="deck-domains" v-if="domainSpread.length">
           <span class="chip chip-rune" v-for="[domain, count] in domainSpread" :key="domain">
             <img

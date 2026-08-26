@@ -16,7 +16,9 @@ defineProps({
     :style="{ width: `${size}px`, height: `${size}px`, fontSize: `${size}px` }"
     :title="handle"
   >
-    <img v-if="src" :src="cardThumb(src, Math.max(96, size * 3))" alt="" />
+    <!-- Chargement différé : la page profil aligne 50+ portraits dans un défileur,
+         inutile de les télécharger tous avant que le lecteur y arrive. -->
+    <img v-if="src" :src="cardThumb(src, Math.max(96, size * 3))" alt="" loading="lazy" decoding="async" />
     <span v-else class="avatar-fallback">{{ (handle || "?").slice(0, 1).toUpperCase() }}</span>
   </span>
 </template>

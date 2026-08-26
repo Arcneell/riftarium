@@ -1,3 +1,11 @@
+<script>
+/* Portée module, et non instance : tout le code d'un <script setup> vit dans
+   setup(), donc un compteur déclaré là serait remis à zéro par chaque modale.
+   Une modale peut en ouvrir une autre (deck builder → cartes manquantes) :
+   seule la dernière fermée doit rendre son défilement à la page. */
+let openCount = 0
+</script>
+
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue"
 
@@ -45,7 +53,11 @@ function onKeydown(event) {
 
 onMounted(async () => {
   document.addEventListener("keydown", onKeydown)
-  document.body.style.overflow = "hidden"
+  /* Même verrou que le tiroir de navigation : `overflow: hidden` posé en style
+     inline ne retient pas iOS Safari, la classe le fait (et reste stylée au même
+     endroit que le reste du blocage de défilement). */
+  openCount += 1
+  document.body.classList.add("nav-locked")
   opener = document.activeElement
   await nextTick()
   const target = focusables()[0] || modalEl.value
@@ -54,14 +66,17 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener("keydown", onKeydown)
-  document.body.style.overflow = ""
+  openCount = Math.max(0, openCount - 1)
+  if (!openCount) document.body.classList.remove("nav-locked")
   opener?.focus?.()
 })
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="modal-overlay" @pointerdown.self="emit('close')">
+    <!-- @click.self et non @pointerdown.self : au doigt, un début de glissement
+         sur le fond fermait la modale avant même le relâchement. -->
+    <div class="modal-overlay" @click.self="emit('close')">
       <div
         ref="modalEl"
         class="modal"

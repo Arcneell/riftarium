@@ -17,9 +17,11 @@ const shareable = computed(() => Boolean(props.deck.is_public && props.deck.mode
 function flash(message) {
   note.value = message
   clearTimeout(timer)
+  /* 5 s : au doigt, la confirmation apparaissait sous les boutons — donc souvent
+     sous le pouce — et disparaissait avant d'avoir été lue. */
   timer = window.setTimeout(() => {
     note.value = ""
-  }, 2400)
+  }, 5000)
 }
 
 /* Le composant peut disparaître avant l'échéance (navigation, fermeture du deck). */
@@ -53,12 +55,12 @@ async function copyLink() {
     <p class="muted mono dexport-hint">
       Collez la liste ou le code dans Rift Atlas, Piltover Archive, UVS Games ou un autre outil.
     </p>
+    <p v-if="note" class="dexport-note" role="status">{{ note }}</p>
     <div class="dexport-actions">
       <button type="button" class="btn btn-gold btn-sm" @click="copy('atlas')">Liste Rift Atlas</button>
       <button type="button" class="btn btn-ghost btn-sm" @click="copy('code')">Code de deck</button>
       <button type="button" class="btn btn-ghost btn-sm" @click="copy('names')">Liste texte</button>
       <button v-if="shareable" type="button" class="btn btn-ghost btn-sm" @click="copyLink">Lien de partage</button>
     </div>
-    <p v-if="note" class="dexport-note" role="status">{{ note }}</p>
   </div>
 </template>

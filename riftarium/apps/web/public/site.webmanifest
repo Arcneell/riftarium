@@ -1,19 +1,16 @@
 {
+  "id": "/",
   "name": "Riftarium",
   "short_name": "Riftarium",
   "description": "Cartothèque, deck builder, règles officielles et collection pour Riftbound.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "lang": "fr",
   "background_color": "#f5efe1",
   "theme_color": "#b08a3e",
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
@@ -37,6 +34,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cartothèque",
+      "short_name": "Cartes",
+      "url": "/cartes",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Scanner une carte",
+      "short_name": "Scanner",
+      "url": "/scan",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Mes decks",
+      "short_name": "Decks",
+      "url": "/decks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

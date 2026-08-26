@@ -103,7 +103,17 @@ onMounted(async () => {
       <div class="filter-board">
         <label class="search filter-search">
           <Icon name="search" :size="18" />
-          <input type="search" v-model="state.q" placeholder="Nom, auteur, légende…" aria-label="Rechercher un deck" />
+          <input
+            type="search"
+            inputmode="search"
+            enterkeyhint="search"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            v-model="state.q"
+            placeholder="Nom, auteur, légende…"
+            aria-label="Rechercher un deck"
+          />
         </label>
         <div class="owned-seg" role="group" aria-label="Trier les decks">
           <button

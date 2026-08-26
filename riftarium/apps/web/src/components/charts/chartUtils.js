@@ -47,7 +47,13 @@ export function useMeasuredWidth(elementRef, fallback = 640) {
   const width = ref(fallback)
   let observer = null
   onMounted(() => {
-    if (!elementRef.value || typeof ResizeObserver === "undefined") return
+    if (!elementRef.value) return
+    /* Mesure synchrone avant l'observateur : le ResizeObserver ne rappelle qu'au
+       tour suivant, et d'ici là un SVG calculé pour 640 px dans un conteneur de
+       328 px affiche un texte deux fois trop petit sur téléphone. */
+    const initial = elementRef.value.clientWidth
+    if (initial) width.value = initial
+    if (typeof ResizeObserver === "undefined") return
     observer = new ResizeObserver((entries) => {
       const measured = entries[0]?.contentRect?.width
       if (measured) width.value = measured

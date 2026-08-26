@@ -97,6 +97,7 @@ onMounted(refresh)
               </button>
               <input
                 type="number"
+                inputmode="numeric"
                 min="1"
                 max="99"
                 :value="item.qty"
@@ -112,7 +113,13 @@ onMounted(refresh)
                 +
               </button>
             </div>
-            <button type="button" class="wish-remove" :disabled="busyId === item.card.id" @click="removeItem(item)">
+            <button
+              type="button"
+              class="wish-remove"
+              :aria-label="`Retirer ${item.card.name} de ma liste de souhaits`"
+              :disabled="busyId === item.card.id"
+              @click="removeItem(item)"
+            >
               Retirer
             </button>
           </div>

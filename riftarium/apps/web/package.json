@@ -19,6 +19,9 @@
   },
   "dependencies": {
     "@piltoverarchive/riftbound-deck-codes": "^1.4.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "tesseract.js": "^7.0.0",
+    "tesseract.js-core": "^7.0.0",
     "vue": "^3.5.13",
     "vue-router": "^5.2.0"
   },

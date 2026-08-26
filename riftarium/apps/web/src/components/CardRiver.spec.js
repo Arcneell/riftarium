@@ -149,4 +149,35 @@ describe("CardRiver", () => {
     expect(wrapper.get(".river-track").attributes("style")).toBe(first)
     wrapper.unmount()
   })
+
+  it("au doigt, l'appui fige la rangée et la reprise est différée après le relâchement", async () => {
+    /* Sans survol, la carte visée glissait sous le pouce entre l'appui et le tap. */
+    vi.useFakeTimers()
+    matchMedia({ fine: false })
+    const CardRiver = await loadRiver()
+    const wrapper = mountRiver(CardRiver)
+    await flushPromises()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const observer = globalThis.__io.instances[0]
+    observer.callback([{ isIntersecting: true }])
+
+    const row = wrapper.get(".river-row")
+    /* Le survol seul ne fige rien : au doigt il est émis par erreur juste avant le tap. */
+    await row.trigger("mouseenter")
+    expect(wrapper.vm.rows[0].held).toBe(false)
+
+    await row.trigger("pointerdown")
+    expect(wrapper.vm.rows[0].held).toBe(true)
+
+    await row.trigger("pointerup")
+    expect(wrapper.vm.rows[0].held).toBe(true)
+    vi.advanceTimersByTime(1300)
+    await flushPromises()
+    expect(wrapper.vm.rows[0].held).toBe(false)
+
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
 })

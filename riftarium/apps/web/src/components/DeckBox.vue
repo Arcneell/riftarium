@@ -41,6 +41,8 @@ function missingNote(deck) {
           {{ legal.label }}
         </span>
       </div>
+      <!-- Au doigt l'infobulle ne s'ouvre jamais : la raison de l'illégalité se lit en clair. -->
+      <p v-if="!legal.ok" class="deck-legal-why">{{ legal.title }}</p>
 
       <p class="deck-box-legend mono" v-if="legend">{{ legend.name }}</p>
       <p class="deck-box-legend mono muted" v-else>Légende à choisir</p>
@@ -94,15 +96,15 @@ function missingNote(deck) {
             :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
             @click.stop="$emit('like', deck)"
           >
-            <Icon name="heart" :size="14" />
+            <Icon name="heart" :size="16" />
             {{ deck.likes }}
           </button>
           <span v-else class="deck-box-stat" :title="`${deck.likes} j'aime`">
-            <Icon name="heart" :size="14" />
+            <Icon name="heart" :size="16" />
             {{ deck.likes }}
           </span>
           <span v-if="community" class="deck-box-stat" :title="`${deck.views} vue(s)`">
-            <Icon name="eye" :size="14" />
+            <Icon name="eye" :size="16" />
             {{ deck.views }}
           </span>
         </span>
