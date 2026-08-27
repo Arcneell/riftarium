@@ -36,7 +36,8 @@ riftarium/
   ci.yml         api-test, web-check, compose-security : checks REQUIS de main,
                  réutilisé par deploy.yml (workflow_call). Ne pas y ajouter Flutter.
   deploy.yml     push sur main -> CI -> SSH VPS -> deploy.sh. Ignore apps/mobile et la doc agents.
-  mobile.yml     Flutter : format, analyze, test. Déclenché seulement si apps/mobile change.
+  mobile.yml     Flutter : format, analyze, test (pas de build APK : quota Actions).
+                 Déclenché seulement si apps/mobile change.
   dependabot-automerge.yml  auto-merge patch/minor pip et npm uniquement (pas pub).
 WORKFLOW.md      ce fichier
 CLAUDE.md        pointeur vers ce fichier pour Claude Code
@@ -86,8 +87,8 @@ Commandes mobile (depuis `riftarium/apps/mobile`) :
 flutter pub get
 flutter run                     # appareil ou émulateur branché ; -d <id> pour choisir
 flutter build apk --debug       # valide la config Gradle (Windows ou Mac)
-flutter build apk --release     # APK de test installable (signé debug), ~85 Mo toutes ABI
-                                # (store : `flutter build appbundle`, phase 8)
+scripts/apk.sh [--install]     # APK de test dans dist/ (release signé debug, toutes ABI),
+                                # installation adb en option ; jamais en CI (quota Actions)
 flutter build ipa               # Mac seulement, compte développeur Apple requis
 ```
 
@@ -265,8 +266,8 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
       un visuel plus grand avant publication), écrans de lancement parchemin,
       liens `riftarium.re/cartes/*` et `/decks/*` ouverts dans l'app (Android,
       sans autoVerify), profil : renvoi de vérification, changement de mot de
-      passe, export RGPD (partage), suppression de compte, liens légaux. CI :
-      job `mobile-apk` (APK release signé debug en artefact, 14 jours).
+      passe, export RGPD (partage), suppression de compte, liens légaux. APK de
+      test construit en local (`scripts/apk.sh`), jamais en CI (quota Actions).
 - [ ] **Phase 8 : publication.** Comptes développeur (Apple 99 $/an, Google 25 $),
       signature (keystore Android + `key.properties` hors git, certificats iOS),
       `ios/Podfile` : `platform :ios, '15.5'` (ML Kit), TestFlight et test interne

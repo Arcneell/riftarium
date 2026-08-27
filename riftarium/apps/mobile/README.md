@@ -30,16 +30,16 @@ flutter run --dart-define=API_BASE_URL=http://<IP-LAN-du-PC>:8889/api
 En debug, le HTTP en clair est autorisé (Android `usesCleartextTraffic`, iOS
 `NSAllowsLocalNetworking`) ; en release, seule l'API HTTPS de production répond.
 
-## Tester sur un téléphone Android sans câble
+## Construire l'APK de test
 
-Chaque exécution du workflow **Mobile** (PR ou push sur `main` touchant
-`apps/mobile`, ou lancement manuel) dépose un APK de test en artefact :
-GitHub → Actions → run « Mobile » → *Artifacts* → `riftarium-android-apk`.
-Télécharger sur le téléphone, ouvrir le fichier, autoriser l'installation depuis
-cette source. L'APK est signé avec la clé de debug : il s'installe hors Play Store
-et vise l'API de production.
+```bash
+scripts/apk.sh            # dist/riftarium-<version>-<sha>.apk (release, signé debug)
+scripts/apk.sh --install  # + installation sur le téléphone branché (adb)
+```
 
-En local : `flutter build apk --release`, puis `adb install -r build/app/outputs/flutter-apk/app-release.apk`.
+L'APK s'installe hors Play Store (autoriser la source) et vise l'API de
+production. Pas de build en CI : trop long pour le quota GitHub Actions ; le
+workflow « Mobile » ne fait que format, analyse et tests.
 
 ## iOS
 
