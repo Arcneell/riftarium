@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riftarium_mobile/features/rules/ui/advanced_help_screen.dart';
-import 'package:riftarium_mobile/features/rules/ui/beginner_guide_screen.dart';
 import 'package:riftarium_mobile/features/rules/ui/rules_screen.dart';
 
 import 'support/rules_app.dart';
 
 void main() {
-  testWidgets('le hub propose les trois paliers, guides en tête', (
+  testWidgets('le hub propose les deux paliers, aide avancée en tête', (
     tester,
   ) async {
     await tester.pumpWidget(rulesApp(tester: tester));
     await settle(tester);
 
     expect(find.byType(RulesScreen), findsOneWidget);
-    expect(find.text('Guide du débutant'), findsOneWidget);
     expect(find.text('Aide avancée'), findsOneWidget);
     expect(find.text('Règles officielles'), findsOneWidget);
 
     // Chaque palier annonce ce qu'il contient, compté sur les fichiers.
-    expect(find.text('3 étapes sur un plateau'), findsOneWidget);
     expect(find.text('3 mécaniques, des cas concrets'), findsOneWidget);
     expect(find.text('5 + 1 règles'), findsOneWidget);
   });
@@ -75,14 +72,6 @@ void main() {
   testWidgets('un palier mène à son écran', (tester) async {
     await tester.pumpWidget(rulesApp(tester: tester));
     await settle(tester);
-
-    await tester.tap(find.text('Guide du débutant'));
-    await settle(tester);
-    expect(find.byType(BeginnerGuideScreen), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Retour'));
-    await settle(tester);
-    expect(find.byType(RulesScreen), findsOneWidget);
 
     await tester.tap(find.text('Aide avancée'));
     await settle(tester);

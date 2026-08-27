@@ -17,7 +17,6 @@ import '../features/home/ui/home_screen.dart';
 import '../features/profile/ui/profile_screen.dart';
 import '../features/rules/ui/advanced_help_screen.dart';
 import '../features/rules/ui/advanced_topic_screen.dart';
-import '../features/rules/ui/beginner_guide_screen.dart';
 import '../features/rules/ui/official_rules_screen.dart';
 import '../features/rules/ui/rules_screen.dart';
 import '../features/scan/ui/scan_screen.dart';
@@ -39,7 +38,6 @@ abstract final class AppRoutes {
   static String deck(int id) => '/decks/$id';
   static const community = '/decks/communaute';
   static const rules = '/regles';
-  static const beginnerGuide = '/regles/debutant';
   static const advancedHelp = '/regles/avancee';
   static String advancedTopic(String slug) => '/regles/avancee/$slug';
   static const officialRules = '/regles/officielles';
@@ -192,10 +190,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.rules,
                 builder: (context, state) => const RulesScreen(),
                 routes: [
-                  GoRoute(
-                    path: 'debutant',
-                    builder: (context, state) => const BeginnerGuideScreen(),
-                  ),
                   GoRoute(
                     path: 'avancee',
                     builder: (context, state) => const AdvancedHelpScreen(),

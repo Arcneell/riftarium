@@ -45,8 +45,13 @@ class _TopicDemoViewState extends State<TopicDemoView> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(RiftRadius.md),
+          // Sur téléphone, la scène est plus haute (4/3) que sur le site
+          // (16/7) : les cartes gardent une taille lisible et tiennent dans
+          // les zones exprimées en pourcentage.
           child: AspectRatio(
-            aspectRatio: 16 / 7,
+            aspectRatio: MediaQuery.sizeOf(context).width < 600
+                ? 4 / 3
+                : 16 / 7,
             child: PageView.builder(
               controller: _controller,
               itemCount: frames.length,
@@ -102,7 +107,7 @@ class _DemoStage extends StatelessWidget {
         final width = constraints.maxWidth;
         final height = constraints.hasBoundedHeight
             ? constraints.maxHeight
-            : width * 7 / 16;
+            : width * 3 / 4;
         return DecoratedBox(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -168,14 +173,15 @@ class _DemoItemView extends StatelessWidget {
           border: Border.all(
             color: item.hot
                 ? RiftColors.fury
-                : RiftColors.goldSoft.withValues(alpha: 0.4),
+                : RiftColors.goldSoft.withValues(alpha: 0.6),
           ),
           borderRadius: BorderRadius.circular(RiftRadius.sm),
         ),
+        // Libellé en haut de la zone : le bas est occupé par les cartes.
         child: Align(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(top: 5),
             child: Text(item.label.toUpperCase(), style: label),
           ),
         ),
@@ -223,7 +229,7 @@ class _DemoItemView extends StatelessWidget {
   }
 
   Widget _card() {
-    final width = (stageWidth * 0.09).clamp(34.0, 52.0);
+    final width = (stageWidth * 0.13).clamp(40.0, 60.0);
     return Transform.rotate(
       angle: item.tapped ? 1.5708 : 0,
       child: Container(
@@ -255,7 +261,7 @@ class _DemoItemView extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontFamily: RiftFonts.mono,
-            fontSize: (stageWidth * 0.018).clamp(6.5, 10.0),
+            fontSize: (stageWidth * 0.024).clamp(7.5, 11.0),
             height: 1.25,
             color: RiftColors.inkStrong,
           ),

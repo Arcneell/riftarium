@@ -48,6 +48,8 @@ String cardThumb(String? url, {int width = 280}) {
   if (existing.hasMatch(url)) {
     return url.replaceFirstMapped(existing, (m) => '${m[1]}w=$width');
   }
+  // `fm=webp` : ~25 Ko au lieu de ~270 Ko en PNG pour une vignette de 360 px
+  // (le client natif n'envoie pas d'en-tête Accept, `auto=format` ne suffit pas).
   final separator = url.contains('?') ? '&' : '?';
-  return '$url${separator}auto=format&fit=max&w=$width';
+  return '$url${separator}fit=max&fm=webp&w=$width';
 }

@@ -83,11 +83,11 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 _QuickTile(
                   index: 2,
-                  icon: Icons.school_outlined,
-                  eyebrow: 'Apprendre',
-                  title: 'Guide du débutant',
+                  icon: Icons.menu_book_outlined,
+                  eyebrow: 'Texte officiel',
+                  title: 'Règles détaillées',
                   color: RiftColors.mind,
-                  onTap: () => context.go(AppRoutes.beginnerGuide),
+                  onTap: () => context.go(AppRoutes.officialRules),
                 ),
                 _QuickTile(
                   index: 3,

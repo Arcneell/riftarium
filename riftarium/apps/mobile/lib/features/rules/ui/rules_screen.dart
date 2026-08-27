@@ -112,7 +112,6 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
   // ---------------------------------------------------------------- paliers
 
   List<Widget> _tierSlivers(GuidesDocument? guides, RulesDocument? rules) {
-    final steps = guides?.steps.length ?? 0;
     final topics = guides?.topics.length ?? 0;
     final core = rules?.core?.ruleCount ?? 0;
     final tournament = rules?.tournament?.ruleCount ?? 0;
@@ -127,25 +126,8 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
               index: 0,
               child: _TierPanel(
                 step: 1,
-                accent: RiftColors.hex,
-                kicker: 'Commencer ici',
-                title: 'Guide du débutant',
-                text:
-                    'Le jeu montré pas à pas sur un plateau : poser ses '
-                    'cartes, jouer un tour, combattre, marquer.',
-                meta: steps == 0 ? null : '$steps étapes sur un plateau',
-                action: 'Apprendre à jouer',
-                big: true,
-                onTap: () => context.go(AppRoutes.beginnerGuide),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Reveal(
-              index: 1,
-              child: _TierPanel(
-                step: 2,
                 accent: RiftColors.gold,
-                kicker: 'En pleine partie',
+                kicker: 'Commencer ici',
                 title: 'Aide avancée',
                 text:
                     'Une fiche par mécanique : l’essentiel, une démo, des cas '
@@ -154,15 +136,19 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                     ? null
                     : '$topics mécaniques, des cas concrets',
                 action: 'Chercher une mécanique',
+                big: true,
                 onTap: () => context.go(AppRoutes.advancedHelp),
               ),
             ),
             const SizedBox(height: 12),
             Reveal(
-              index: 2,
+              index: 1,
               child: _TierPanel(
-                step: 3,
-                accent: RiftColors.ink,
+                step: 2,
+                // Encre sur parchemin, parchemin doré sur encre en mode sombre.
+                accent: Theme.of(context).brightness == Brightness.dark
+                    ? RiftColors.goldSoft
+                    : RiftColors.ink,
                 kicker: 'Dernier recours',
                 title: 'Règles officielles',
                 text:
