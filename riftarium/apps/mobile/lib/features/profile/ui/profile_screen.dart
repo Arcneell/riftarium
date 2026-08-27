@@ -1,17 +1,24 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/adaptive.dart';
+import '../../../app/design/banners.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/page_banner.dart';
+import '../../../app/design/reveal.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../core/api_exception.dart';
-import '../../../core/config.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
+import '../../auth/ui/login_screen.dart'
+    show AuthError, BannerBackButton, openWebPage;
 import 'account_dialogs.dart';
 
 /// Libellés des compteurs de `user_stats` (`app/profiles.py`). Une clé inconnue
@@ -77,18 +84,6 @@ class ProfileScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _open(BuildContext context, String path) async {
-    final uri = Uri.parse('${AppConfig.webBaseUrl}$path');
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      await showAdaptiveMessage(
-        context,
-        title: 'Ouverture impossible',
-        message: uri.toString(),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
@@ -100,121 +95,225 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
     final profile = auth.profile;
-    return AdaptiveScaffold(
-      title: 'Profil',
-      trailing: AdaptiveTextButton(
-        label: 'Déconnexion',
-        onPressed: () => _signOut(context, ref),
+    final refresh = ref.read(authControllerProvider.notifier).refreshProfile;
+    final banner = PageBanner(
+      title: profile?.handle ?? 'Profil',
+      eyebrow: 'Mon compte',
+      art: RiftBanners.home,
+      expandedHeight: 200,
+      focus: const Alignment(0.3, -0.2),
+      leading: context.canPop()
+          ? BannerBackButton(onPressed: context.pop)
+          : null,
+    );
+
+    if (profile == null) {
+      return Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            banner,
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: ErrorView(
+                message: auth.profileError ?? 'Profil indisponible.',
+                onRetry: refresh,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: RefreshIndicator.adaptive(
+        onRefresh: refresh,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            banner,
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
+              sliver: SliverToBoxAdapter(
+                child: Reveal(child: _Identity(profile: profile)),
+              ),
+            ),
+            if (!profile.emailVerified)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 2, 18, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _resendVerification(context, ref),
+                      icon: const Icon(
+                        Icons.mark_email_read_outlined,
+                        size: 18,
+                      ),
+                      label: const Text("Renvoyer l'e-mail de vérification"),
+                    ),
+                  ),
+                ),
+              ),
+            if (profile.stats.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: SectionTitle(
+                  eyebrow: 'En un coup d’œil',
+                  title: 'Statistiques',
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                sliver: SliverToBoxAdapter(child: _Stats(stats: profile.stats)),
+              ),
+            ],
+            if (auth.profileError != null)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+                sliver: SliverToBoxAdapter(
+                  child: AuthError(message: auth.profileError!),
+                ),
+              ),
+            const SliverToBoxAdapter(
+              child: SectionTitle(eyebrow: 'Réglages', title: 'Compte'),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              sliver: SliverToBoxAdapter(
+                child: _ActionPanel(
+                  actions: [
+                    _Action(
+                      icon: Icons.lock_reset_outlined,
+                      label: 'Changer le mot de passe',
+                      onTap: () => showChangePasswordDialog(context, ref),
+                    ),
+                    _Action(
+                      icon: Icons.download_outlined,
+                      label: 'Exporter mes données (RGPD)',
+                      onTap: () => _export(context, ref),
+                    ),
+                    _Action(
+                      icon: Icons.delete_forever_outlined,
+                      label: 'Supprimer mon compte',
+                      destructive: true,
+                      onTap: () =>
+                          showDeleteAccountDialog(context, ref, profile.handle),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: SectionTitle(eyebrow: 'Riftarium', title: 'À propos'),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              sliver: SliverToBoxAdapter(
+                child: _ActionPanel(
+                  actions: [
+                    _Action(
+                      icon: Icons.public,
+                      label: 'Ouvrir riftarium.re',
+                      onTap: () => openWebPage(context, '/'),
+                    ),
+                    _Action(
+                      icon: Icons.gavel_outlined,
+                      label: 'Mentions légales',
+                      onTap: () => openWebPage(context, '/mentions-legales'),
+                    ),
+                    _Action(
+                      icon: Icons.privacy_tip_outlined,
+                      label: 'Politique de confidentialité',
+                      onTap: () => openWebPage(context, '/confidentialite'),
+                    ),
+                    _Action(
+                      icon: Icons.description_outlined,
+                      label: "Conditions d'utilisation",
+                      onTap: () => openWebPage(context, '/cgu'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 28, 18, 8),
+              sliver: SliverToBoxAdapter(
+                child: GhostButton(
+                  label: 'Se déconnecter',
+                  icon: Icons.logout_outlined,
+                  onPressed: () => _signOut(context, ref),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  'Projet fan-made à but non lucratif, non affilié à Riot Games.',
+                  textAlign: TextAlign.center,
+                  style: riftText(context).small,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: profile == null
-          ? _ProfileUnavailable(
-              message: auth.profileError ?? 'Profil indisponible.',
-              onRetry: () =>
-                  ref.read(authControllerProvider.notifier).refreshProfile(),
-            )
-          : RefreshIndicator.adaptive(
-              onRefresh: () =>
-                  ref.read(authControllerProvider.notifier).refreshProfile(),
-              child: ListView(
-                padding: const EdgeInsets.all(24),
+    );
+  }
+}
+
+/// Médaillon, pseudo vérifié ou non, adresse et ancienneté : la carte
+/// d'identité du compte, posée sous la bannière.
+class _Identity extends StatelessWidget {
+  const _Identity({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Avatar(profile: profile),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ProfileHeader(profile: profile),
-                  const SizedBox(height: 24),
-                  _InfoTile(
-                    label: 'E-mail',
-                    value: profile.email,
-                    badge: profile.emailVerified ? 'vérifié' : 'non vérifié',
-                    badgeOk: profile.emailVerified,
+                  const SizedBox(height: 6),
+                  MonoBadge(
+                    label: profile.emailVerified ? 'vérifié' : 'non vérifié',
+                    color: profile.emailVerified
+                        ? RiftColors.hex
+                        : RiftColors.fury,
                   ),
-                  if (!profile.emailVerified)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: AdaptiveTextButton(
-                        label: "Renvoyer l'e-mail de vérification",
-                        onPressed: () => _resendVerification(context, ref),
-                      ),
-                    ),
+                  const SizedBox(height: 8),
+                  Text(profile.email, style: text.mono.copyWith(fontSize: 13)),
+                  const SizedBox(height: 4),
                   if (profile.createdAt != null)
-                    _InfoTile(
-                      label: 'Membre depuis',
-                      value: _formatDate(profile.createdAt!),
-                    ),
-                  if (profile.isAdmin)
-                    const _InfoTile(label: 'Rôle', value: 'Administration'),
-                  if (profile.stats.isNotEmpty) ...[
-                    const SizedBox(height: 24),
                     Text(
-                      'Statistiques',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      'Membre depuis ${_formatDate(profile.createdAt!)}',
+                      style: text.small,
                     ),
-                    const SizedBox(height: 8),
-                    _StatsGrid(stats: profile.stats),
+                  if (profile.isAdmin) ...[
+                    const SizedBox(height: 6),
+                    const MonoBadge(label: 'Administration'),
                   ],
-                  if (auth.profileError != null) ...[
-                    const SizedBox(height: 24),
-                    Text(
-                      auth.profileError!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  Text(
-                    'Compte',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  _ActionTile(
-                    icon: Icons.lock_reset_outlined,
-                    label: 'Changer le mot de passe',
-                    onTap: () => showChangePasswordDialog(context, ref),
-                  ),
-                  _ActionTile(
-                    icon: Icons.download_outlined,
-                    label: 'Exporter mes données (RGPD)',
-                    onTap: () => _export(context, ref),
-                  ),
-                  _ActionTile(
-                    icon: Icons.delete_forever_outlined,
-                    label: 'Supprimer mon compte',
-                    destructive: true,
-                    onTap: () =>
-                        showDeleteAccountDialog(context, ref, profile.handle),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'À propos',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  _ActionTile(
-                    icon: Icons.public,
-                    label: 'Ouvrir riftarium.re',
-                    onTap: () => _open(context, '/'),
-                  ),
-                  _ActionTile(
-                    icon: Icons.gavel_outlined,
-                    label: 'Mentions légales',
-                    onTap: () => _open(context, '/mentions-legales'),
-                  ),
-                  _ActionTile(
-                    icon: Icons.privacy_tip_outlined,
-                    label: 'Politique de confidentialité',
-                    onTap: () => _open(context, '/confidentialite'),
-                  ),
-                  _ActionTile(
-                    icon: Icons.description_outlined,
-                    label: "Conditions d'utilisation",
-                    onTap: () => _open(context, '/cgu'),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Projet fan-made à but non lucratif, non affilié à Riot Games.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
                 ],
               ),
             ),
+          ],
+        ),
+        if (profile.bio.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Text(profile.bio, style: text.body),
+        ],
+      ],
     );
   }
 
@@ -226,101 +325,109 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.profile});
+/// Avatar 72 px : visuel de carte choisi par le joueur, sinon l'initiale sur
+/// dégradé or. Anneau parchemin pour le détacher de la bannière.
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.profile});
 
   final Profile profile;
 
   @override
   Widget build(BuildContext context) {
-    final avatarUrl = profile.avatarUrl;
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 44,
-          backgroundColor: kRiftariumGold.withValues(alpha: 0.2),
-          foregroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
-          child: Text(
-            profile.handle.isEmpty ? '?' : profile.handle[0].toUpperCase(),
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: kRiftariumGold,
+    final avatar = profile.avatarUrl;
+    final initial = profile.handle.isEmpty
+        ? '?'
+        : profile.handle[0].toUpperCase();
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: avatar == null ? RiftColors.goldGradient : null,
+        color: avatar == null ? null : Theme.of(context).colorScheme.surface,
+        border: Border.all(color: RiftColors.goldSoft, width: 2),
+        boxShadow: RiftShadows.soft,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: avatar == null
+          ? Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  fontFamily: RiftFonts.display,
+                  fontSize: 30,
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : CachedNetworkImage(
+              imageUrl: avatar,
+              cacheManager: riftImageCache,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => const Center(
+                child: Icon(Icons.person_outline, color: RiftColors.gold),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          profile.handle,
-          style: Theme.of(context).textTheme.headlineSmall,
-          textAlign: TextAlign.center,
-        ),
-        if (profile.bio.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(profile.bio, textAlign: TextAlign.center),
-        ],
-      ],
     );
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.label,
-    required this.value,
-    this.badge,
-    this.badgeOk = true,
-  });
+/// Trois compteurs par rangée, chiffre en Marcellus or.
+class _Stats extends StatelessWidget {
+  const _Stats({required this.stats});
 
-  final String label;
-  final String value;
-  final String? badge;
-  final bool badgeOk;
+  final Map<String, int> stats;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.labelMedium),
-                const SizedBox(height: 2),
-                Text(value, style: Theme.of(context).textTheme.bodyLarge),
-              ],
-            ),
-          ),
-          if (badge != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeOk
-                    ? scheme.primaryContainer
-                    : scheme.errorContainer,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                badge!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: badgeOk
-                      ? scheme.onPrimaryContainer
-                      : scheme.onErrorContainer,
+    final text = riftText(context);
+    const gap = 12.0;
+    const perRow = 3;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - gap * (perRow - 1)) / perRow;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final (index, entry) in stats.entries.indexed)
+              SizedBox(
+                width: width,
+                child: Reveal(
+                  index: index,
+                  child: RiftPanel(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${entry.value}',
+                          style: text.displayMedium.copyWith(
+                            color: RiftColors.gold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _statLabels[entry.key] ?? entry.key,
+                          style: text.small.copyWith(fontSize: 12.5),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
+class _Action {
+  const _Action({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -331,69 +438,50 @@ class _ActionTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool destructive;
+}
+
+/// Une section d'actions : panneau parchemin, une ligne par action, filets or
+/// entre elles.
+class _ActionPanel extends StatelessWidget {
+  const _ActionPanel({required this.actions});
+
+  final List<_Action> actions;
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? Theme.of(context).colorScheme.error : null;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: color),
-      title: Text(label, style: TextStyle(color: color)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    final theme = Theme.of(context);
+    final text = riftText(context);
+    return RiftPanel(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          for (final (index, action) in actions.indexed) ...[
+            if (index > 0)
+              Divider(height: 1, indent: 52, color: theme.colorScheme.outline),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              minLeadingWidth: 24,
+              leading: Icon(
+                action.icon,
+                size: 22,
+                color: action.destructive ? RiftColors.fury : RiftColors.hex,
+              ),
+              title: Text(
+                action.label,
+                style: text.body.copyWith(
+                  color: action.destructive ? RiftColors.furyText : text.ink,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              onTap: action.onTap,
+            ),
+          ],
+        ],
+      ),
     );
   }
-}
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.stats});
-
-  final Map<String, int> stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final entry in stats.entries)
-          Container(
-            width: 150,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${entry.value}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: kRiftariumGold,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  _statLabels[entry.key] ?? entry.key,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _ProfileUnavailable extends StatelessWidget {
-  const _ProfileUnavailable({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) =>
-      ErrorView(message: message, onRetry: onRetry);
 }

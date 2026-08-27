@@ -91,10 +91,9 @@ void main() {
     expect(find.text('Deck légal'), findsOneWidget);
     expect(find.text('17'), findsOneWidget);
 
-    expect(find.text('Légende · 1/1'), findsOneWidget);
-
-    // Les zones suivantes sont plus bas : la liste est construite à la demande.
+    // Les zones sont plus bas : la liste est construite à la demande.
     for (final label in [
+      'Légende · 1/1',
       'Champs de bataille · 1/3',
       'Runes · 12/12',
       'Deck principal · 3/40+',
@@ -164,9 +163,12 @@ void main() {
     await tester.pumpWidget(app(server));
     await tester.pumpAndSettle();
 
-    expect(find.text('Éditer'), findsOneWidget);
+    expect(find.text('Modifier'), findsOneWidget);
     expect(find.text('Copier dans mes decks'), findsNothing);
 
+    // Le bloc « Cartes manquantes » ferme la liste des zones, tout en bas.
+    await tester.scrollUntilVisible(find.text('Cartes manquantes'), 300);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Cartes manquantes'));
     await tester.pumpAndSettle();
     expect(
@@ -178,7 +180,7 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Éditer'));
+    await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
     expect(find.byType(DeckEditorScreen), findsOneWidget);
     expect(find.text('Mon deck (4)'), findsOneWidget);
@@ -195,9 +197,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Copier dans mes decks'), findsOneWidget);
-    expect(find.text('Éditer'), findsNothing);
+    expect(find.text('Modifier'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.favorite_outline));
+    await tester.pumpAndSettle();
+    // Le rechargement de la fiche déclenché par le like doit être consommé.
     await tester.pumpAndSettle();
     expect(server.on('POST', '/decks/1/like'), hasLength(1));
   });

@@ -39,9 +39,16 @@ class GoldButton extends StatelessWidget {
         else if (icon != null)
           Icon(icon, size: 19, color: Colors.white),
         if (icon != null || loading) const SizedBox(width: 10),
-        Text(
-          label,
-          style: text.bodyStrong.copyWith(color: Colors.white, fontSize: 15.5),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.bodyStrong.copyWith(
+              color: Colors.white,
+              fontSize: 15.5,
+            ),
+          ),
         ),
       ],
     );

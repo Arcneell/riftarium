@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/adaptive.dart';
+import 'deck_widgets.dart';
 
 /// Boîtes de dialogue des decks : réglages d'un deck et import d'un code.
 
@@ -261,6 +262,7 @@ class FormatChoice extends StatelessWidget {
         Expanded(
           child: ChoicePill(
             label: 'Légal',
+            expand: true,
             selected: value == 'tournament',
             onTap: () => onChanged('tournament'),
           ),
@@ -269,6 +271,7 @@ class FormatChoice extends StatelessWidget {
         Expanded(
           child: ChoicePill(
             label: 'Illégal',
+            expand: true,
             selected: value == 'free',
             onTap: () => onChanged('free'),
           ),
@@ -292,57 +295,6 @@ class PublicSwitch extends StatelessWidget {
         const Expanded(child: Text('Rendre ce deck public')),
         Switch.adaptive(value: value, onChanged: onChanged),
       ],
-    );
-  }
-}
-
-/// Bouton d'un choix exclusif (filtres, format).
-///
-/// Sans `onTap`, la pastille n'est qu'un libellé : c'est le parent (menu
-/// déroulant) qui capte le geste.
-class ChoicePill extends StatelessWidget {
-  const ChoicePill({
-    super.key,
-    required this.label,
-    required this.selected,
-    this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? scheme.primary.withValues(alpha: 0.16) : null,
-        border: Border.all(
-          color: selected ? scheme.primary : scheme.outlineVariant,
-        ),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-          color: selected ? scheme.primary : scheme.onSurface,
-        ),
-      ),
-    );
-    if (onTap == null) return pill;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: pill,
-      ),
     );
   }
 }

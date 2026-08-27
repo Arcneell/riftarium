@@ -14,21 +14,35 @@ import 'support/collection_fixtures.dart';
 void main() {
   final jinx = cardJson(id: 'OGN-209', priceEur: 12.5);
 
+  /// La grille anime en continu (reflet foil des cartes possédées) : sans
+  /// réduction de mouvement, `pumpAndSettle` n'aurait jamais de fin. Les
+  /// briques de la charte respectent toutes ce réglage.
+  Widget reduceMotion(Widget child) => MediaQuery(
+    data: const MediaQueryData(disableAnimations: true),
+    child: child,
+  );
+
+  /// Le défilement de l'onglet : le champ de recherche contient lui aussi un
+  /// Scrollable, on vise donc explicitement celui de la page.
+  final page = find.byType(Scrollable).first;
+
   Widget app(FakeHttpAdapter adapter, {String? token = 'jwt'}) {
     final store = InMemoryTokenStore(token);
-    return ProviderScope(
-      overrides: [
-        tokenStoreProvider.overrideWithValue(store),
-        initialLocationProvider.overrideWithValue(AppRoutes.collection),
-        dioProvider.overrideWith(
-          (ref) => createApiClient(
-            readToken: store.read,
-            baseUrl: 'https://api.test/api',
-            adapter: adapter,
+    return reduceMotion(
+      ProviderScope(
+        overrides: [
+          tokenStoreProvider.overrideWithValue(store),
+          initialLocationProvider.overrideWithValue(AppRoutes.collection),
+          dioProvider.overrideWith(
+            (ref) => createApiClient(
+              readToken: store.read,
+              baseUrl: 'https://api.test/api',
+              adapter: adapter,
+            ),
           ),
-        ),
-      ],
-      child: const RiftariumApp(),
+        ],
+        child: const RiftariumApp(),
+      ),
     );
   }
 
@@ -62,7 +76,7 @@ void main() {
 
     expect(find.byType(CollectionScreen), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
-    expect(find.text('Cartes différentes'), findsNothing);
+    expect(find.text('CARTES DIFFÉRENTES'), findsNothing);
   });
 
   testWidgets('avec session : résumé, progression et cartes possédées', (
@@ -71,21 +85,29 @@ void main() {
     await tester.pumpWidget(app(FakeHttpAdapter(routes())));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cartes différentes'), findsOneWidget);
-    // Valeur totale en en-tête et valeur du lot sous la carte.
-    expect(find.text('25,00 €'), findsNWidgets(2));
-    // Le nom apparaît deux fois : sur le visuel de secours et sous la carte.
-    expect(find.text('Jinx, la Gâchette folle'), findsWidgets);
-    expect(find.text('OGN 209'), findsOneWidget);
-    expect(find.text('×2 · NM · EN'), findsOneWidget);
-    expect(find.textContaining('Progression par set'), findsOneWidget);
+    expect(find.text('CARTES DIFFÉRENTES'), findsOneWidget);
+    expect(find.text('Complétion par set'), findsOneWidget);
 
-    // La progression est repliée par défaut : le détail apparaît au clic.
+    // La complétion est repliée par défaut : le détail apparaît au clic.
     expect(find.text('Origines'), findsNothing);
-    await tester.tap(find.textContaining('Progression par set'));
+    await tester.tap(find.text('Complétion par set'));
     await tester.pumpAndSettle();
     expect(find.text('Origines'), findsOneWidget);
     expect(find.text('il manque 75 cartes (~210,50 €)'), findsWidgets);
+
+    // La grille est plus bas : on défile jusqu'à la carte possédée.
+    await tester.scrollUntilVisible(
+      find.text('OGN 209'),
+      220,
+      scrollable: page,
+    );
+    await tester.pumpAndSettle();
+    // Le nom apparaît deux fois : sur le visuel de secours et sous la carte.
+    expect(find.text('Jinx, la Gâchette folle'), findsWidgets);
+    // Quantité en pastille, lot en mono, valeur du lot (2 × 12,50 €).
+    expect(find.text('×2'), findsOneWidget);
+    expect(find.text('NM · EN'), findsOneWidget);
+    expect(find.text('25,00 €'), findsWidgets);
   });
 
   testWidgets('collection vide : message d’accueil', (tester) async {
@@ -96,7 +118,13 @@ void main() {
     await tester.pumpWidget(app(adapter));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Ta collection est vide'),
+      220,
+      scrollable: page,
+    );
     expect(find.text('Ta collection est vide'), findsOneWidget);
+    expect(find.text('Scanner une carte'), findsOneWidget);
   });
 
   testWidgets('erreur serveur : message et bouton Réessayer', (tester) async {
@@ -133,8 +161,12 @@ void main() {
     await tester.pumpWidget(app(adapter));
     await tester.pumpAndSettle();
 
-    // La grille passe sous la barre d'onglets : on la remonte avant l'appui.
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -250));
+    // La grille est sous la barre d'actions : on défile jusqu'à la carte.
+    await tester.scrollUntilVisible(
+      find.text('OGN 209'),
+      220,
+      scrollable: page,
+    );
     await tester.pumpAndSettle();
     await tester.longPress(find.text('OGN 209'));
     await tester.pumpAndSettle();
@@ -164,6 +196,11 @@ void main() {
     await tester.pumpWidget(app(adapter));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Wishlist'),
+      120,
+      scrollable: page,
+    );
     await tester.tap(find.text('Wishlist'));
     await tester.pumpAndSettle();
 

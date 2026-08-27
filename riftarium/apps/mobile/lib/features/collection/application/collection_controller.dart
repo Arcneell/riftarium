@@ -19,6 +19,7 @@ class CollectionState {
   const CollectionState({
     this.items = const [],
     this.query = '',
+    this.sort = '',
     this.totalCards = 0,
     this.uniqueCards = 0,
     this.valueEur,
@@ -29,6 +30,9 @@ class CollectionState {
 
   final List<CollectionItem> items;
   final String query;
+
+  /// Tri demandé à l'API : '' (ordre du set), `price_desc` ou `price_asc`.
+  final String sort;
 
   /// Exemplaires possédés, toutes cartes confondues.
   final int totalCards;
@@ -52,6 +56,7 @@ class CollectionState {
   CollectionState copyWith({
     List<CollectionItem>? items,
     String? query,
+    String? sort,
     int? totalCards,
     int? uniqueCards,
     double? valueEur,
@@ -62,6 +67,7 @@ class CollectionState {
   }) => CollectionState(
     items: items ?? this.items,
     query: query ?? this.query,
+    sort: sort ?? this.sort,
     totalCards: totalCards ?? this.totalCards,
     uniqueCards: uniqueCards ?? this.uniqueCards,
     valueEur: clearValue ? null : (valueEur ?? this.valueEur),
@@ -174,14 +180,19 @@ class CollectionController extends AsyncNotifier<CollectionState> {
       authControllerProvider.select((auth) => auth.isSignedIn),
     );
     if (!signedIn) return const CollectionState();
-    return _fetch('');
+    return _fetch('', '');
   }
 
-  Future<CollectionState> _fetch(String query) async {
-    final page = await _api.list(query: query, size: collectionPageSize);
+  Future<CollectionState> _fetch(String query, String sort) async {
+    final page = await _api.list(
+      query: query,
+      sort: sort,
+      size: collectionPageSize,
+    );
     return CollectionState(
       items: page.items,
       query: query,
+      sort: sort,
       totalCards: page.totalCards,
       uniqueCards: page.uniqueCards,
       valueEur: page.valueEur,
@@ -190,11 +201,13 @@ class CollectionController extends AsyncNotifier<CollectionState> {
     );
   }
 
-  /// Recharge la première page en gardant la recherche courante.
+  /// Recharge la première page en gardant la recherche et le tri courants.
   Future<void> refresh() async {
-    final query = state.valueOrNull?.query ?? '';
+    final current = state.valueOrNull;
+    final query = current?.query ?? '';
+    final sort = current?.sort ?? '';
     state = const AsyncLoading<CollectionState>().copyWithPrevious(state);
-    final next = await AsyncValue.guard(() => _fetch(query));
+    final next = await AsyncValue.guard(() => _fetch(query, sort));
     if (!_disposed) state = next;
   }
 
@@ -210,6 +223,15 @@ class CollectionController extends AsyncNotifier<CollectionState> {
     });
   }
 
+  /// Change le tri (puces sous la recherche) : rechargement immédiat.
+  void setSort(String sort) {
+    final current = state.valueOrNull ?? const CollectionState();
+    if (sort == current.sort) return;
+    state = AsyncData(current.copyWith(sort: sort));
+    _debounce?.cancel();
+    unawaited(refresh());
+  }
+
   /// Page suivante ajoutée à la suite de la liste.
   Future<void> loadMore() async {
     final current = state.valueOrNull;
@@ -218,6 +240,7 @@ class CollectionController extends AsyncNotifier<CollectionState> {
     try {
       final page = await _api.list(
         query: current.query,
+        sort: current.sort,
         page: current.page + 1,
         size: collectionPageSize,
       );

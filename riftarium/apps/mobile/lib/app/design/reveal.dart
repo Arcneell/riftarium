@@ -36,10 +36,24 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     curve: RiftMotion.ease,
   );
 
+  bool _scheduled = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_scheduled) return;
+    _scheduled = true;
+    // En mouvement réduit, rien n'est planifié : l'enfant s'affiche tel quel
+    // (et aucun minuteur ne reste en attente dans les tests).
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+      return;
+    }
     final rank = widget.index.clamp(0, widget.maxStaggered);
+    if (rank == 0) {
+      _controller.forward();
+      return;
+    }
     Future<void>.delayed(RiftMotion.stagger * rank, () {
       if (mounted) _controller.forward();
     });

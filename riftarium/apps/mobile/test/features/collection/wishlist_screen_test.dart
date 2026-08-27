@@ -14,21 +14,31 @@ import 'support/collection_fixtures.dart';
 void main() {
   final jinx = cardJson(id: 'OGN-209', priceEur: 12.5);
 
+  /// La grille anime en continu (reflet foil des cartes possédées) : sans
+  /// réduction de mouvement, `pumpAndSettle` n'aurait jamais de fin. Les
+  /// briques de la charte respectent toutes ce réglage.
+  Widget reduceMotion(Widget child) => MediaQuery(
+    data: const MediaQueryData(disableAnimations: true),
+    child: child,
+  );
+
   Widget app(FakeHttpAdapter adapter, {String? token = 'jwt'}) {
     final store = InMemoryTokenStore(token);
-    return ProviderScope(
-      overrides: [
-        tokenStoreProvider.overrideWithValue(store),
-        initialLocationProvider.overrideWithValue(AppRoutes.wishlist),
-        dioProvider.overrideWith(
-          (ref) => createApiClient(
-            readToken: store.read,
-            baseUrl: 'https://api.test/api',
-            adapter: adapter,
+    return reduceMotion(
+      ProviderScope(
+        overrides: [
+          tokenStoreProvider.overrideWithValue(store),
+          initialLocationProvider.overrideWithValue(AppRoutes.wishlist),
+          dioProvider.overrideWith(
+            (ref) => createApiClient(
+              readToken: store.read,
+              baseUrl: 'https://api.test/api',
+              adapter: adapter,
+            ),
           ),
-        ),
-      ],
-      child: const RiftariumApp(),
+        ],
+        child: const RiftariumApp(),
+      ),
     );
   }
 
@@ -57,11 +67,11 @@ void main() {
     await tester.pumpWidget(app(FakeHttpAdapter(routes())));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cartes souhaitées'), findsOneWidget);
+    expect(find.text('CARTES SOUHAITÉES'), findsOneWidget);
     expect(find.text('25,00 €'), findsOneWidget); // valeur totale estimée
     expect(find.text('OGN 209 · 25,00 €'), findsOneWidget); // 2 × 12,50 €
     expect(find.text('2'), findsOneWidget); // quantité du stepper
-    expect(find.text('Retirer'), findsOneWidget);
+    expect(find.byTooltip('Retirer'), findsOneWidget);
   });
 
   testWidgets('le stepper envoie la nouvelle quantité', (tester) async {
@@ -88,7 +98,7 @@ void main() {
     await tester.pumpWidget(app(adapter));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Retirer'));
+    await tester.tap(find.byTooltip('Retirer'));
     await tester.pumpAndSettle();
 
     expect(

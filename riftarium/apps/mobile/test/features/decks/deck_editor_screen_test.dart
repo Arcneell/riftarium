@@ -59,7 +59,7 @@ void main() {
   Future<void> openEditor(WidgetTester tester, DecksFakeApi api) async {
     await tester.pumpWidget(app(api));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Éditer'));
+    await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
     expect(find.byType(DeckEditorScreen), findsOneWidget);
   }
@@ -133,7 +133,7 @@ void main() {
     );
     await openEditor(tester, api);
 
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
 
     final body = api.on('PUT', '/decks/1').single.data! as Map;

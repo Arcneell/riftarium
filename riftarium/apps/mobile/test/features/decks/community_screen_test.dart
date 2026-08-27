@@ -7,6 +7,7 @@ import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
 import 'package:riftarium_mobile/features/decks/ui/community_screen.dart';
 import 'package:riftarium_mobile/features/decks/ui/deck_detail_screen.dart';
+import 'package:riftarium_mobile/features/decks/ui/deck_widgets.dart';
 import 'package:riftarium_mobile/main.dart';
 
 import '../../support/fakes.dart';
@@ -66,14 +67,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CommunityScreen), findsOneWidget);
-    expect(find.text('Decks partagés'), findsWidgets);
+    expect(find.text('Communauté'), findsWidgets);
+    // Le segment épinglé ramène à « Mes decks » sans quitter l'onglet.
+    expect(find.text('Mes decks'), findsOneWidget);
     expect(find.text('2 deck(s)'), findsOneWidget);
     expect(find.text('Fureur d’Ahri'), findsOneWidget);
-    expect(find.text('Bazar illégal'), findsOneWidget);
     expect(find.text('Ahri · par jinx'), findsOneWidget);
     expect(find.text('56 cartes'), findsOneWidget);
-    expect(find.text('✓ Légal'), findsOneWidget);
-    expect(find.text('✕ Illégal'), findsOneWidget);
+    expect(find.text('Légal'), findsOneWidget);
     expect(find.text('9'), findsOneWidget);
     expect(find.text('44'), findsOneWidget);
 
@@ -82,6 +83,16 @@ void main() {
     await tester.drag(find.byType(ListView).first, const Offset(-600, 0));
     await tester.pumpAndSettle();
     expect(find.text('Constructibles'), findsNothing);
+
+    // Le deuxième deck est plus bas : la liste se construit à la demande.
+    await tester.scrollUntilVisible(
+      find.text('Bazar illégal'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bazar illégal'), findsOneWidget);
+    expect(find.text('Illégal'), findsOneWidget);
   });
 
   testWidgets('la liste vide explique quoi faire', (tester) async {
@@ -161,7 +172,13 @@ void main() {
     await tester.pumpWidget(app(server));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.favorite_outline));
+    final heart = find.descendant(
+      of: find.byType(DeckBox),
+      matching: find.byIcon(Icons.favorite_outline),
+    );
+    await tester.ensureVisible(heart);
+    await tester.pumpAndSettle();
+    await tester.tap(heart);
     await tester.pumpAndSettle();
 
     expect(find.text('Connexion requise'), findsOneWidget);
@@ -184,7 +201,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Constructibles'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.favorite_outline));
+    final heart = find.descendant(
+      of: find.byType(DeckBox),
+      matching: find.byIcon(Icons.favorite_outline),
+    );
+    await tester.ensureVisible(heart);
+    await tester.pumpAndSettle();
+    await tester.tap(heart);
+    await tester.pumpAndSettle();
+    // Le rechargement de la page déclenché par le like doit être consommé.
     await tester.pumpAndSettle();
 
     expect(server.on('POST', '/decks/1/like'), hasLength(1));

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/adaptive.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/reveal.dart';
+import '../../../app/theme.dart';
 import '../domain/rules.dart';
 import 'rule_section_screen.dart';
 import 'rules_navigation.dart';
@@ -18,24 +21,18 @@ class RuleChapterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final text = riftText(context);
     return AdaptiveScaffold(
       title: chapter.title,
-      // `ListTile` a besoin d'un ancêtre Material, absent du scaffold iOS.
-      body: Material(
-        type: MaterialType.transparency,
-        child: ListView.separated(
-          itemCount: chapter.sections.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final section = chapter.sections[index];
-            return ListTile(
-              title: Text('${section.bareNumber} · ${section.title}'),
-              subtitle: Text(
-                '${section.entries.length} règles',
-                style: theme.textTheme.bodySmall,
-              ),
-              trailing: const Icon(Icons.chevron_right),
+      body: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+        itemCount: chapter.sections.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final section = chapter.sections[index];
+          return Reveal(
+            index: index,
+            child: RiftPanel(
               onTap: () => pushAdaptiveScreen(
                 context,
                 (_) => RuleSectionScreen(
@@ -44,9 +41,33 @@ class RuleChapterScreen extends StatelessWidget {
                   section: section,
                 ),
               ),
-            );
-          },
-        ),
+              child: Row(
+                children: [
+                  MonoBadge(label: section.bareNumber),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          section.title,
+                          style: text.displaySmall.copyWith(fontSize: 18),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${section.entries.length} '
+                          'règle${section.entries.length > 1 ? 's' : ''}',
+                          style: text.small,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

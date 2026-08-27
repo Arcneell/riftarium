@@ -49,18 +49,23 @@ void main() {
         ),
       ],
     );
-    return ProviderScope(
-      overrides: [
-        tokenStoreProvider.overrideWithValue(store),
-        dioProvider.overrideWith(
-          (ref) => createApiClient(
-            readToken: store.read,
-            baseUrl: 'https://api.test/api',
-            adapter: adapter,
+    return MediaQuery(
+      // Le cœur de la wishlist s'anime : sans réduction de mouvement,
+      // `pumpAndSettle` n'aurait jamais de fin.
+      data: const MediaQueryData(disableAnimations: true),
+      child: ProviderScope(
+        overrides: [
+          tokenStoreProvider.overrideWithValue(store),
+          dioProvider.overrideWith(
+            (ref) => createApiClient(
+              readToken: store.read,
+              baseUrl: 'https://api.test/api',
+              adapter: adapter,
+            ),
           ),
-        ),
-      ],
-      child: MaterialApp.router(routerConfig: router),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
     );
   }
 
@@ -116,11 +121,12 @@ void main() {
     await tester.pumpWidget(host(adapter));
     await settle(tester);
 
-    expect(find.text('Dans ma collection : 2'), findsOneWidget);
+    expect(find.text('2 exemplaires'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget); // le chiffre du stepper
 
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump(); // mise à jour optimiste, avant la réponse du serveur
-    expect(find.text('Dans ma collection : 3'), findsOneWidget);
+    expect(find.text('3 exemplaires'), findsOneWidget);
 
     await settle(tester);
     final put = adapter.requests.firstWhere((r) => r.method == 'PUT');
@@ -194,7 +200,9 @@ void main() {
     await tester.pumpWidget(host(adapter));
     await settle(tester);
 
-    expect(find.text('Dans ma collection : 3'), findsOneWidget);
-    expect(find.text('2 lots : 2× NM EN, 1× EX FR'), findsOneWidget);
+    expect(find.text('3 exemplaires'), findsOneWidget);
+    // Un badge mono par lot.
+    expect(find.text('2× NM EN'), findsOneWidget);
+    expect(find.text('1× EX FR'), findsOneWidget);
   });
 }

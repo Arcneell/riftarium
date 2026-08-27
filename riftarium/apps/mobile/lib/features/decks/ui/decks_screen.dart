@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/adaptive.dart';
+import '../../../app/design/banners.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/page_banner.dart';
+import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/profile_action.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/decks_controller.dart';
@@ -13,7 +18,8 @@ import '../domain/deck_code.dart';
 import 'deck_form_dialogs.dart';
 import 'deck_widgets.dart';
 
-/// Onglet « Decks » : mes decks, création, import d'un code, communauté.
+/// Onglet « Decks » : bannière, segment « Mes decks | Communauté », création,
+/// import d'un code, puis mes decks en boîtes.
 class DecksScreen extends ConsumerWidget {
   const DecksScreen({super.key});
 
@@ -22,71 +28,122 @@ class DecksScreen extends ConsumerWidget {
     final signedIn = ref.watch(
       authControllerProvider.select((state) => state.isSignedIn),
     );
-    if (!signedIn) return const _SignedOut();
 
-    final decks = ref.watch(myDecksProvider);
-    return AdaptiveScaffold(
-      title: 'Mes decks',
-      trailing: IconButton(
-        tooltip: 'Communauté',
-        icon: const Icon(Icons.groups_outlined),
-        onPressed: () => context.go(AppRoutes.community),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AdaptiveFilledButton(
-                    label: 'Nouveau deck',
-                    onPressed: () => _createDeck(context, ref),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: AdaptiveTextButton(
-                    label: 'Importer un code',
-                    onPressed: () => _importCode(context, ref),
-                  ),
-                ),
-              ],
-            ),
+    return Scaffold(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          PageBanner(
+            title: 'Decks',
+            art: RiftBanners.decks,
+            actions: const [ProfileAction()],
+            focus: const Alignment(0, -0.2),
           ),
-          Expanded(
-            child: decks.when(
-              loading: () => const LoadingView(),
-              error: (error, _) => ErrorView(
-                message: error is ApiException
-                    ? error.message
-                    : 'Impossible de charger tes decks.',
-                onRetry: () => ref.invalidate(myDecksProvider),
+          const DecksSegment(current: DecksTab.mine),
+          if (!signedIn)
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 32),
+              sliver: SliverToBoxAdapter(
+                child: SignInPanel(
+                  title: 'Tes decks t’attendent',
+                  message:
+                      'Connecte-toi pour créer tes decks, les partager et '
+                      'suivre ceux que tu aimes. La communauté, elle, reste '
+                      'ouverte à tous.',
+                  returnTo: AppRoutes.decks,
+                ),
               ),
-              data: (items) => items.isEmpty
-                  ? const EmptyView(
-                      title: 'Aucun deck pour l’instant',
-                      detail:
-                          'Crée ton premier deck, ou importe un code partagé.',
-                      icon: Icons.style_outlined,
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final deck = items[index];
-                        return MyDeckTile(
-                          deck: deck,
-                          onOpen: () => context.go(AppRoutes.deck(deck.id)),
-                          onDelete: () => _deleteDeck(context, ref, deck),
-                        );
-                      },
+            )
+          else ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GoldButton(
+                        label: 'Nouveau deck',
+                        icon: Icons.add,
+                        onPressed: () => _createDeck(context, ref),
+                      ),
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GhostButton(
+                        label: 'Importer un code',
+                        icon: Icons.qr_code_2_outlined,
+                        onPressed: () => _importCode(context, ref),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+            ..._decks(context, ref),
+          ],
         ],
       ),
     );
+  }
+
+  /// Slivers de la liste : chargement, erreur, invitation ou boîtes de deck.
+  List<Widget> _decks(BuildContext context, WidgetRef ref) {
+    final decks = ref.watch(myDecksProvider);
+    return [
+      decks.when(
+        loading: () => const SliverFillRemaining(
+          hasScrollBody: false,
+          child: LoadingView(),
+        ),
+        error: (error, _) => SliverFillRemaining(
+          hasScrollBody: false,
+          child: ErrorView(
+            message: error is ApiException
+                ? error.message
+                : 'Impossible de charger tes decks.',
+            onRetry: () => ref.invalidate(myDecksProvider),
+          ),
+        ),
+        data: (items) => items.isEmpty
+            ? SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
+                sliver: SliverToBoxAdapter(
+                  child: InvitePanel(
+                    icon: Icons.style_outlined,
+                    title: 'Construis ton premier deck',
+                    message:
+                        'Choisis une légende, elle fixe les domaines — le '
+                        'reste se joue dans l’éditeur. Un code partagé fait '
+                        'aussi l’affaire.',
+                    action: GhostButton(
+                      label: 'Importer un code',
+                      icon: Icons.qr_code_2_outlined,
+                      onPressed: () => _importCode(context, ref),
+                    ),
+                  ),
+                ),
+              )
+            : SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+                sliver: SliverList.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    final deck = items[index];
+                    return Reveal(
+                      index: index,
+                      child: DeckBox.mine(
+                        deck: deck,
+                        onOpen: () => context.go(AppRoutes.deck(deck.id)),
+                        onDelete: () => _deleteDeck(context, ref, deck),
+                      ),
+                    );
+                  },
+                ),
+              ),
+      ),
+    ];
   }
 
   Future<void> _createDeck(BuildContext context, WidgetRef ref) async {
@@ -184,36 +241,5 @@ class DecksScreen extends ConsumerWidget {
         message: error.message,
       );
     }
-  }
-}
-
-/// Sans session : l'invite de connexion, plus l'accès libre à la communauté.
-class _SignedOut extends StatelessWidget {
-  const _SignedOut();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Expanded(
-          child: SignInRequired(
-            title: 'Decks',
-            message:
-                'Connecte-toi pour créer tes decks, les partager et suivre '
-                'ceux que tu aimes.',
-          ),
-        ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: AdaptiveTextButton(
-              label: 'Voir la communauté',
-              onPressed: () => context.go(AppRoutes.community),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

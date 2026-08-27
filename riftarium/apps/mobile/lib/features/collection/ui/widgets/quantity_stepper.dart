@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Compteur « − n + » sans dépendance à Material : la fiche carte et la
-/// collection l'utilisent aussi bien sous Cupertino que sous Material.
+import '../../../../app/design/reveal.dart';
+import '../../../../app/theme.dart';
+
+/// Trois tailles : une ligne de liste, un lot, la fiche carte (où la quantité
+/// possédée est le chiffre principal du bloc).
+enum StepperSize { compact, normal, large }
+
+/// Compteur « − n + » : deux pastilles rondes (contour pour retirer, or pour
+/// ajouter) encadrent la quantité. Chaque pas donne un retour haptique.
+/// Sans dépendance à Material : la fiche carte, la collection et la wishlist
+/// l'utilisent aussi bien sous Cupertino que sous Material.
 class QuantityStepper extends StatelessWidget {
   const QuantityStepper({
     super.key,
@@ -12,6 +22,7 @@ class QuantityStepper extends StatelessWidget {
     this.enabled = true,
     this.semanticsLabel,
     this.canDecrease = true,
+    this.size = StepperSize.normal,
   });
 
   final int value;
@@ -24,76 +35,110 @@ class QuantityStepper extends StatelessWidget {
   /// Faux quand le lot à décrémenter n'est pas identifiable (plusieurs lots).
   final bool canDecrease;
 
+  final StepperSize size;
+
+  double get _diameter => switch (size) {
+    StepperSize.compact => 30,
+    StepperSize.normal => 36,
+    StepperSize.large => 44,
+  };
+
+  void _step(int next) {
+    HapticFeedback.selectionClick();
+    onChanged(next);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final text = riftText(context);
+    // La fiche carte affiche la quantité en grand, comme un chiffre de blason.
+    final valueStyle = size == StepperSize.large
+        ? text.displayMedium.copyWith(fontSize: 30, color: RiftColors.gold)
+        : text.monoStrong.copyWith(
+            fontSize: size == StepperSize.compact ? 14 : 16,
+          );
     return Semantics(
       label: semanticsLabel,
       value: '$value',
-      child: Container(
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _StepButton(
-              icon: Icons.remove,
-              tooltip: 'Un exemplaire de moins',
-              onPressed: enabled && canDecrease && value > min
-                  ? () => onChanged(value - 1)
-                  : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepButton(
+            icon: Icons.remove,
+            tooltip: 'Un exemplaire de moins',
+            diameter: _diameter,
+            onPressed: enabled && canDecrease && value > min
+                ? () => _step(value - 1)
+                : null,
+          ),
+          Container(
+            constraints: BoxConstraints(
+              minWidth: size == StepperSize.large ? 60 : 34,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                '$value',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            _StepButton(
-              icon: Icons.add,
-              tooltip: 'Un exemplaire de plus',
-              onPressed: enabled && value < max
-                  ? () => onChanged(value + 1)
-                  : null,
-            ),
-          ],
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            alignment: Alignment.center,
+            child: Text('$value', style: valueStyle),
+          ),
+          _StepButton(
+            icon: Icons.add,
+            tooltip: 'Un exemplaire de plus',
+            diameter: _diameter,
+            filled: true,
+            onPressed: enabled && value < max ? () => _step(value + 1) : null,
+          ),
+        ],
       ),
     );
   }
 }
 
+/// Pastille ronde : or plein pour ajouter, contour parchemin pour retirer.
 class _StepButton extends StatelessWidget {
   const _StepButton({
     required this.icon,
     required this.tooltip,
+    required this.diameter,
     required this.onPressed,
+    this.filled = false,
   });
 
   final IconData icon;
   final String tooltip;
+  final double diameter;
   final VoidCallback? onPressed;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final text = riftText(context);
+    final enabled = onPressed != null;
     return Semantics(
       button: true,
-      enabled: onPressed != null,
+      enabled: enabled,
       label: tooltip,
-      child: GestureDetector(
+      child: PressScale(
         onTap: onPressed,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(
-            icon,
-            size: 20,
-            color: onPressed == null ? scheme.outline : scheme.onSurface,
+        child: AnimatedOpacity(
+          duration: RiftMotion.quick,
+          opacity: enabled ? 1 : 0.4,
+          child: Container(
+            width: diameter,
+            height: diameter,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: filled ? RiftColors.goldGradient : null,
+              color: filled ? null : theme.colorScheme.surfaceContainerHighest,
+              border: filled
+                  ? null
+                  : Border.all(color: theme.colorScheme.outline),
+              boxShadow: filled && enabled ? RiftShadows.soft : null,
+            ),
+            child: Icon(
+              icon,
+              size: diameter * 0.5,
+              color: filled ? Colors.white : text.ink,
+            ),
           ),
         ),
       ),

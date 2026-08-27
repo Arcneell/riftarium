@@ -1,23 +1,30 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../app/adaptive.dart';
+import '../../../app/design/banners.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/page_banner.dart';
+import '../../../app/design/reveal.dart';
+import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/profile_action.dart';
+import '../application/guides_providers.dart';
 import '../application/rules_providers.dart';
+import '../domain/guides.dart';
 import '../domain/rules.dart';
-import 'rule_chapter_screen.dart';
 import 'rule_section_screen.dart';
 import 'rules_navigation.dart';
+import 'widgets/rules_search_field.dart';
 
-/// Onglet « Règles » : les deux documents officiels, consultables hors ligne.
+/// Hub des règles : trois paliers, du plus guidé au plus littéral.
 ///
-/// Une seule route go_router (`/regles`) : chapitres, sections et renvois
-/// s'empilent dans le Navigator de l'onglet.
+/// Ce qui compte d'abord, ce sont les guides — le pas à pas du débutant et
+/// les fiches de mécaniques avec leurs cas concrets. Le texte officiel reste
+/// accessible, en dernier recours.
 class RulesScreen extends ConsumerStatefulWidget {
   const RulesScreen({super.key});
 
@@ -28,11 +35,19 @@ class RulesScreen extends ConsumerStatefulWidget {
 class _RulesScreenState extends ConsumerState<RulesScreen> {
   static const Duration _debounceDelay = Duration(milliseconds: 250);
 
+  /// Sujets les plus consultés : les questions qui reviennent à chaque table.
+  static const List<String> _frequentSlugs = [
+    'deroulement-du-tour',
+    'etapes-du-combat',
+    'conquete-et-occupation',
+    'la-chaine',
+    'energie-et-essence',
+    'regle-d-or',
+  ];
+
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   String _query = '';
-  String _bookKey = 'core';
-  bool _refreshing = false;
 
   @override
   void initState() {
@@ -47,7 +62,6 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
     super.dispose();
   }
 
-  /// La recherche parcourt les 2 949 règles : on attend la fin de la frappe.
   void _onQueryChanged() {
     final value = _searchController.text.trim();
     if (value == _query) return;
@@ -58,326 +72,429 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
     });
   }
 
-  void _clearSearch() {
-    _debounce?.cancel();
-    _searchController.clear();
-    setState(() => _query = '');
-  }
-
-  Future<void> _refresh() async {
-    setState(() => _refreshing = true);
-    final outcome = await ref.read(rulesProvider.notifier).refresh();
-    if (!mounted) return;
-    setState(() => _refreshing = false);
-    await showAdaptiveMessage(
-      context,
-      title: 'Règles officielles',
-      message: outcome.message,
-    );
-  }
-
-  Future<void> _openSource(String url) async {
-    final uri = Uri.tryParse(url);
-    var opened = false;
-    if (uri != null) {
-      try {
-        opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } on Object {
-        opened = false;
-      }
-    }
-    if (opened || !mounted) return;
-    await showAdaptiveMessage(
-      context,
-      title: 'PDF officiel',
-      message: 'Impossible d’ouvrir le document dans le navigateur.',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final rules = ref.watch(rulesProvider);
-    return AdaptiveScaffold(
-      title: 'Règles',
-      body: rules.when(
-        loading: () => const LoadingView(),
-        error: (error, stack) => ErrorView(
-          message: 'Impossible de charger les règles officielles.',
-          onRetry: () => ref.invalidate(rulesProvider),
-        ),
-        data: (document) => _RulesBody(
-          document: document,
-          bookKey: _bookKey,
-          query: _query,
-          searchController: _searchController,
-          refreshing: _refreshing,
-          onBookChanged: (key) => setState(() => _bookKey = key),
-          onClearSearch: _clearSearch,
-          onRefresh: _refresh,
-          onOpenSource: _openSource,
-        ),
-      ),
-    );
-  }
-}
+    final guides = ref.watch(guidesProvider).valueOrNull;
+    final rules = ref.watch(rulesProvider).valueOrNull;
+    final searching = _query.length >= kGuideSearchMinLength;
 
-class _RulesBody extends ConsumerWidget {
-  const _RulesBody({
-    required this.document,
-    required this.bookKey,
-    required this.query,
-    required this.searchController,
-    required this.refreshing,
-    required this.onBookChanged,
-    required this.onClearSearch,
-    required this.onRefresh,
-    required this.onOpenSource,
-  });
-
-  final RulesDocument document;
-  final String bookKey;
-  final String query;
-  final TextEditingController searchController;
-  final bool refreshing;
-  final ValueChanged<String> onBookChanged;
-  final VoidCallback onClearSearch;
-  final Future<void> Function() onRefresh;
-  final Future<void> Function(String url) onOpenSource;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (document.books.isEmpty) {
-      return const EmptyView(
-        title: 'Règles indisponibles',
-        detail: 'Le document officiel n’a pas pu être lu.',
-      );
-    }
-    final book = document.bookByKey(bookKey) ?? document.books.first;
-    final searching = query.length >= kRuleSearchMinLength;
-    final hits = searching
-        ? ref.watch(ruleSearchProvider(query))
-        : const <RuleSearchHit>[];
-
-    return Material(
-      type: MaterialType.transparency,
-      child: CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: _Header(
-              document: document,
-              book: book,
-              searchController: searchController,
-              refreshing: refreshing,
-              onBookChanged: onBookChanged,
-              onRefresh: onRefresh,
-              onOpenSource: onOpenSource,
+          PageBanner(
+            title: 'La bonne réponse, au bon niveau',
+            eyebrow: 'Règles',
+            art: RiftBanners.rules,
+            actions: [ProfileAction()],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+            sliver: SliverToBoxAdapter(
+              child: RulesSearchField(
+                controller: _searchController,
+                label: 'Rechercher dans les règles',
+                hint: 'tank, conquête, réaction, 002…',
+                onClear: () => setState(() => _query = ''),
+              ),
             ),
           ),
           if (searching)
-            ..._searchSlivers(context, hits)
+            ..._searchSlivers()
           else
-            SliverList.separated(
-              itemCount: book.chapters.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final chapter = book.chapters[index];
-                return ListTile(
-                  title: Text(chapter.title),
-                  subtitle: Text(
-                    '${chapter.bareNumber} · ${chapter.sections.length} '
-                    'sections · ${chapter.ruleCount} règles',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => pushAdaptiveScreen(
-                    context,
-                    (_) => RuleChapterScreen(book: book, chapter: chapter),
-                  ),
-                );
-              },
-            ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ..._tierSlivers(guides, rules),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
   }
 
-  List<Widget> _searchSlivers(BuildContext context, List<RuleSearchHit> hits) {
-    if (hits.isEmpty) {
-      return [
+  // ---------------------------------------------------------------- paliers
+
+  List<Widget> _tierSlivers(GuidesDocument? guides, RulesDocument? rules) {
+    final steps = guides?.steps.length ?? 0;
+    final topics = guides?.topics.length ?? 0;
+    final core = rules?.core?.ruleCount ?? 0;
+    final tournament = rules?.tournament?.ruleCount ?? 0;
+    final frequent = _frequentTopics(guides);
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+        sliver: SliverList.list(
+          children: [
+            Reveal(
+              index: 0,
+              child: _TierPanel(
+                step: 1,
+                accent: RiftColors.hex,
+                kicker: 'Commencer ici',
+                title: 'Guide du débutant',
+                text:
+                    'Le jeu montré pas à pas sur un plateau : poser ses '
+                    'cartes, jouer un tour, combattre, marquer.',
+                meta: steps == 0 ? null : '$steps étapes sur un plateau',
+                action: 'Apprendre à jouer',
+                big: true,
+                onTap: () => context.go(AppRoutes.beginnerGuide),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Reveal(
+              index: 1,
+              child: _TierPanel(
+                step: 2,
+                accent: RiftColors.gold,
+                kicker: 'En pleine partie',
+                title: 'Aide avancée',
+                text:
+                    'Une fiche par mécanique : l’essentiel, une démo, des cas '
+                    'concrets, puis le texte officiel si le doute persiste.',
+                meta: topics == 0
+                    ? null
+                    : '$topics mécaniques, des cas concrets',
+                action: 'Chercher une mécanique',
+                onTap: () => context.go(AppRoutes.advancedHelp),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Reveal(
+              index: 2,
+              child: _TierPanel(
+                step: 3,
+                accent: RiftColors.ink,
+                kicker: 'Dernier recours',
+                title: 'Règles officielles',
+                text:
+                    'Le texte intégral qui fait foi, cherchable et disponible '
+                    'hors ligne.',
+                meta: core == 0
+                    ? null
+                    : '${formatRuleCount(core)} + '
+                          '${formatRuleCount(tournament)} règles',
+                action: 'Ouvrir le texte intégral',
+                onTap: () => context.go(AppRoutes.officialRules),
+              ),
+            ),
+          ],
+        ),
+      ),
+      if (frequent.isNotEmpty) ...[
         const SliverToBoxAdapter(
+          child: SectionTitle(
+            eyebrow: 'Au plus vite',
+            title: 'Sujets fréquents',
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          sliver: SliverToBoxAdapter(
+            child: Reveal(
+              index: 3,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final topic in frequent)
+                    _TopicPill(
+                      label: topic.title,
+                      onTap: () =>
+                          context.go(AppRoutes.advancedTopic(topic.slug)),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(18, 26, 18, 0),
+        sliver: SliverToBoxAdapter(
+          child: Reveal(index: 4, child: const _GoldenRule()),
+        ),
+      ),
+    ];
+  }
+
+  List<GuideTopic> _frequentTopics(GuidesDocument? guides) {
+    if (guides == null) return const [];
+    final picked = <GuideTopic>[
+      for (final slug in _frequentSlugs) ?guides.topicBySlug(slug),
+    ];
+    // Fichier plus court (ou renommé) : on complète avec le début de la liste.
+    for (final topic in guides.topics) {
+      if (picked.length >= 6) break;
+      if (!picked.contains(topic)) picked.add(topic);
+    }
+    return picked.take(6).toList(growable: false);
+  }
+
+  // -------------------------------------------------------------- recherche
+
+  List<Widget> _searchSlivers() {
+    final topics = ref.watch(guideSearchProvider(_query));
+    final hits = ref.watch(ruleSearchProvider(_query));
+    final shown = hits.take(6).toList(growable: false);
+
+    if (topics.isEmpty && hits.isEmpty) {
+      return [
+        SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: const EdgeInsets.fromLTRB(18, 36, 18, 0),
             child: EmptyView(
-              title: 'Aucune règle trouvée',
+              title: 'Rien pour « $_query »',
               detail:
-                  'Essaie un autre mot-clé, ou un numéro de règle comme 002.',
+                  'Essaie un autre mot, ou ouvre l’aide avancée pour '
+                  'parcourir les mécaniques.',
               icon: Icons.search_off_outlined,
+              action: GhostButton(
+                label: 'Ouvrir l’aide avancée',
+                onPressed: () => context.go(AppRoutes.advancedHelp),
+              ),
             ),
           ),
         ),
       ];
     }
-    final theme = Theme.of(context);
+
     return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 8, 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${hits.length} règle${hits.length > 1 ? 's' : ''} '
-                  'pour « $query »',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ),
-              AdaptiveTextButton(label: 'Effacer', onPressed: onClearSearch),
-            ],
+      if (topics.isNotEmpty) ...[
+        SliverToBoxAdapter(
+          child: SectionTitle(
+            eyebrow: 'D’abord',
+            title: 'Guides',
+            trailing: Text('${topics.length}', style: riftText(context).mono),
           ),
         ),
-      ),
-      SliverList.separated(
-        itemCount: hits.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) => _SearchHitTile(hit: hits[index]),
-      ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          sliver: SliverList.separated(
+            itemCount: topics.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final topic = topics[index];
+              return Reveal(
+                index: index,
+                child: _TopicResult(
+                  topic: topic,
+                  onTap: () => context.go(AppRoutes.advancedTopic(topic.slug)),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+      if (shown.isNotEmpty) ...[
+        SliverToBoxAdapter(
+          child: SectionTitle(
+            eyebrow: 'Si besoin',
+            title: 'Texte officiel',
+            trailing: Text('${hits.length}', style: riftText(context).mono),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          sliver: SliverList.separated(
+            itemCount: shown.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) => Reveal(
+              index: index,
+              child: _RuleResult(hit: shown[index]),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+          sliver: SliverToBoxAdapter(
+            child: GhostButton(
+              label: hits.length > shown.length
+                  ? 'Voir les ${hits.length} règles'
+                  : 'Ouvrir le texte officiel',
+              onPressed: () => context.go(AppRoutes.officialRules),
+            ),
+          ),
+        ),
+      ],
     ];
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.document,
-    required this.book,
-    required this.searchController,
-    required this.refreshing,
-    required this.onBookChanged,
-    required this.onRefresh,
-    required this.onOpenSource,
+/// Un palier du hub : numéro, sur-titre, titre Marcellus, promesse, chiffre.
+class _TierPanel extends StatelessWidget {
+  const _TierPanel({
+    required this.step,
+    required this.accent,
+    required this.kicker,
+    required this.title,
+    required this.text,
+    required this.action,
+    required this.onTap,
+    this.meta,
+    this.big = false,
   });
 
-  final RulesDocument document;
-  final RuleBook book;
-  final TextEditingController searchController;
-  final bool refreshing;
-  final ValueChanged<String> onBookChanged;
-  final Future<void> Function() onRefresh;
-  final Future<void> Function(String url) onOpenSource;
+  final int step;
+  final Color accent;
+  final String kicker;
+  final String title;
+  final String text;
+  final String action;
+  final VoidCallback onTap;
+  final String? meta;
+  final bool big;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
+    final styles = riftText(context);
+    return RiftPanel(
+      raised: true,
+      onTap: onTap,
+      padding: EdgeInsets.fromLTRB(16, big ? 20 : 16, 16, big ? 20 : 16),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (document.books.length > 1)
-            SizedBox(
-              width: double.infinity,
-              child: _BookSelector(
-                books: document.books,
-                selectedKey: book.key,
-                onChanged: onBookChanged,
-              ),
-            ),
-          const SizedBox(height: 12),
-          Text(book.subtitle, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 4),
-          Text(
-            'Mis à jour le ${book.updated} · ${book.ruleCount} règles',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+          Container(
+            width: 4,
+            height: big ? 96 : 76,
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Row(
-            children: [
-              AdaptiveTextButton(
-                label: 'PDF officiel ↗',
-                onPressed: book.source.isEmpty
-                    ? null
-                    : () => onOpenSource(book.source),
-              ),
-              if (refreshing)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-                  ),
-                )
-              else
-                AdaptiveTextButton(label: 'Actualiser', onPressed: onRefresh),
-            ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '$step',
+                      style: styles.mono.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(kicker.toUpperCase(), style: styles.eyebrow),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: big
+                      ? styles.displayMedium
+                      : styles.displayMedium.copyWith(fontSize: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(text, style: styles.small.copyWith(fontSize: 14)),
+                if (meta != null) ...[
+                  const SizedBox(height: 10),
+                  MonoBadge(label: meta!, color: accent),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      action,
+                      style: styles.bodyStrong.copyWith(
+                        fontSize: 14.5,
+                        color: RiftColors.calmText,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.arrow_forward,
+                      size: 15,
+                      color: RiftColors.calmText,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          AdaptiveTextField(
-            controller: searchController,
-            label: 'Rechercher dans les règles',
-            placeholder: 'Mot-clé ou numéro de règle…',
-            keyboardType: TextInputType.text,
-            textInputAction: TextInputAction.search,
-            autocorrect: false,
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-/// Bascule entre les deux documents.
-class _BookSelector extends StatelessWidget {
-  const _BookSelector({
-    required this.books,
-    required this.selectedKey,
-    required this.onChanged,
-  });
+/// Puce d'un sujet fréquent.
+class _TopicPill extends StatelessWidget {
+  const _TopicPill({required this.label, required this.onTap});
 
-  final List<RuleBook> books;
-  final String selectedKey;
-  final ValueChanged<String> onChanged;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (isCupertino(context)) {
-      return CupertinoSlidingSegmentedControl<String>(
-        groupValue: selectedKey,
-        onValueChanged: (value) {
-          if (value != null) onChanged(value);
-        },
-        children: {
-          for (final book in books)
-            book.key: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(book.title, textAlign: TextAlign.center),
-            ),
-        },
-      );
-    }
-    return SegmentedButton<String>(
-      showSelectedIcon: false,
-      segments: [
-        for (final book in books)
-          ButtonSegment<String>(value: book.key, label: Text(book.title)),
-      ],
-      selected: {selectedKey},
-      onSelectionChanged: (selection) => onChanged(selection.first),
+    final text = riftText(context);
+    return PressScale(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: RiftColors.hex.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(RiftRadius.full),
+          border: Border.all(color: RiftColors.hex.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          label,
+          style: text.bodyStrong.copyWith(fontSize: 14, color: text.ink),
+        ),
+      ),
     );
   }
 }
 
-class _SearchHitTile extends StatelessWidget {
-  const _SearchHitTile({required this.hit});
+/// Résultat « guide » : titre et résumé.
+class _TopicResult extends StatelessWidget {
+  const _TopicResult({required this.topic, required this.onTap});
+
+  final GuideTopic topic;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return RiftPanel(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(topic.title, style: text.displaySmall),
+                const SizedBox(height: 4),
+                Text(
+                  topic.summary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.small,
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+/// Résultat « texte officiel » : numéro et extrait.
+class _RuleResult extends StatelessWidget {
+  const _RuleResult({required this.hit});
 
   final RuleSearchHit hit;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
+    final text = riftText(context);
+    return RiftPanel(
       onTap: () => openRuleLocation(
         context,
         RuleLocation(
@@ -387,27 +504,59 @@ class _SearchHitTile extends StatelessWidget {
           entry: hit.entry,
         ),
       ),
-      title: Text(
-        hit.entry.number,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: kRiftariumGold,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            hit.breadcrumb,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
+          Row(
+            children: [
+              MonoBadge(label: hit.entry.number),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hit.section.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.small.copyWith(fontSize: 12),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(hit.snippet, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Text(
+            hit.snippet,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: text.body.copyWith(fontSize: 14.5),
+          ),
         ],
       ),
-      isThreeLine: true,
+    );
+  }
+}
+
+/// La règle d'or, rappelée sous les paliers : elle tranche la moitié des
+/// questions de table.
+class _GoldenRule extends StatelessWidget {
+  const _GoldenRule();
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return RiftPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('À retenir avant tout'.toUpperCase(), style: text.eyebrow),
+          const SizedBox(height: 8),
+          const GoldRule(),
+          const SizedBox(height: 10),
+          Text(
+            '« Ce qui est inscrit sur une carte a priorité sur ce qui est '
+            'inscrit dans les règles du jeu. »',
+            style: text.displaySmall.copyWith(height: 1.45),
+          ),
+        ],
+      ),
     );
   }
 }

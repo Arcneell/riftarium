@@ -30,6 +30,22 @@ final Map<String, dynamic> jinx = cardJson(
 );
 
 void main() {
+  /// Une carte possédée brille en continu (reflet foil) : sans réduction de
+  /// mouvement, `pumpAndSettle` n'aurait jamais de fin. Toutes les briques de
+  /// la charte respectent ce réglage système.
+  void reduceMotion(WidgetTester tester) {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
+
+  /// Les révélations en cascade (`Reveal`) posent un minuteur par bloc, même
+  /// en mouvement réduit : on les laisse s'écouler avant la fin du test.
+  Future<void> settle(WidgetTester tester) async {
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 700));
+  }
+
   Widget app(CardsFakeApi api, {String token = ''}) {
     final store = InMemoryTokenStore(token.isEmpty ? null : token);
     return ProviderScope(
@@ -62,36 +78,45 @@ void main() {
   };
 
   testWidgets('la fiche affiche les champs de la carte', (tester) async {
+    reduceMotion(tester);
     final api = CardsFakeApi(routes());
 
     await tester.pumpWidget(app(api));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     expect(find.byType(CardDetailScreen), findsOneWidget);
-    // Le nom apparaît dans la barre de navigation et dans le corps.
+    // Le nom apparaît sous le visuel et dans le substitut d'image (la fixture
+    // n'a pas d'`image_url`).
     expect(find.text('Jinx, la Gâchette folle'), findsWidgets);
     expect(find.text('OGN 209'), findsOneWidget);
-    expect(find.text('OGN · Épique'), findsOneWidget);
-    expect(find.text('Unité'), findsOneWidget);
+    expect(find.text('Unité · Épique · OGN'), findsOneWidget);
     expect(find.text('Champion'), findsOneWidget);
-    expect(find.text('Fureur / Chaos'), findsOneWidget);
+    // Un domaine, une pastille.
+    expect(find.text('Fureur'), findsOneWidget);
+    expect(find.text('Chaos'), findsOneWidget);
     expect(find.text('Zaun'), findsOneWidget);
-    expect(find.text('Quand Jinx arrive, infligez 2 dégâts.'), findsOneWidget);
+    // Le texte de règles est rendu en spans (mots-clés, glyphes).
+    expect(
+      find.text('Quand Jinx arrive, infligez 2 dégâts.', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.text('« Rien de personnel. »'), findsOneWidget);
     expect(find.text('Illustration : Riot Games'), findsOneWidget);
-    expect(find.text('Énergie'), findsOneWidget);
-    expect(find.text('Puissance'), findsOneWidget);
-    expect(find.text('Pouvoir'), findsOneWidget);
+    // Statistiques : libellés en sur-titre, donc en capitales.
+    expect(find.text('ÉNERGIE'), findsOneWidget);
+    expect(find.text('PUISSANCE'), findsOneWidget);
+    expect(find.text('POUVOIR'), findsOneWidget);
     expect(find.text('Ouvrir sur le site'), findsOneWidget);
   });
 
   testWidgets('le prix est en euros, avec la date de mise à jour', (
     tester,
   ) async {
+    reduceMotion(tester);
     final api = CardsFakeApi(routes());
 
     await tester.pumpWidget(app(api));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     // Espace insécable avant le symbole (voir formatEuro).
     expect(find.text('12,34\u00A0€'), findsOneWidget);
@@ -99,6 +124,7 @@ void main() {
   });
 
   testWidgets('les variantes sont proposées en carrousel', (tester) async {
+    reduceMotion(tester);
     final api = CardsFakeApi(
       routes(
         variants: [
@@ -115,7 +141,7 @@ void main() {
     );
 
     await tester.pumpWidget(app(api));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     expect(find.text('Variantes'), findsOneWidget);
     expect(find.text('Normale'), findsOneWidget);
@@ -125,10 +151,11 @@ void main() {
   testWidgets('sans variante supplémentaire, la section reste masquée', (
     tester,
   ) async {
+    reduceMotion(tester);
     final api = CardsFakeApi(routes(variants: [jinx]));
 
     await tester.pumpWidget(app(api));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     expect(find.text('Variantes'), findsNothing);
   });
@@ -136,13 +163,14 @@ void main() {
   testWidgets('carte introuvable : message d’erreur et nouvel essai', (
     tester,
   ) async {
+    reduceMotion(tester);
     final api = CardsFakeApi({
       'GET /cards': cardPageJson(total: 0, items: const []),
       'GET /sets': setsJson,
     });
 
     await tester.pumpWidget(app(api));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     expect(find.text('Carte introuvable'), findsOneWidget);
     expect(find.text('Réessayer'), findsOneWidget);
@@ -151,6 +179,7 @@ void main() {
   testWidgets('connecté : les quantités possédées apparaissent', (
     tester,
   ) async {
+    reduceMotion(tester);
     final api = CardsFakeApi({
       ...routes(
         card: cardJson(
@@ -165,11 +194,13 @@ void main() {
     });
 
     await tester.pumpWidget(app(api, token: 'jwt-de-test'));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
-    // Sans réponse de /collection/{id}, le widget retombe sur owned_qty et
-    // wished_qty de la carte.
-    expect(find.text('Dans ma collection : 3'), findsOneWidget);
+    // Sans réponse de /collection/{id}, le bloc de collection retombe sur
+    // owned_qty et wished_qty de la carte.
+    expect(find.text('3 exemplaires'), findsOneWidget);
     expect(find.text('Dans ma wishlist'), findsOneWidget);
+    // La quantité possédée se lit aussi sur la vignette de la grille.
+    expect(find.text('MA COLLECTION'), findsOneWidget);
   });
 }

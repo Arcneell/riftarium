@@ -43,7 +43,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('non vérifié'), findsOneWidget);
-    await tester.tap(find.text("Renvoyer l'e-mail de vérification"));
+    final resend = find.text("Renvoyer l'e-mail de vérification");
+    await tester.scrollUntilVisible(resend, 200);
+    await tester.ensureVisible(resend);
+    await tester.pumpAndSettle();
+    await tester.tap(resend);
     await tester.pumpAndSettle();
 
     expect(adapter.requests.last.path, '/auth/resend-verification');
@@ -61,11 +65,11 @@ void main() {
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('Changer le mot de passe'),
-        200,
-      );
-      await tester.tap(find.text('Changer le mot de passe'));
+      final entry = find.text('Changer le mot de passe');
+      await tester.scrollUntilVisible(entry, 200);
+      await tester.ensureVisible(entry);
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
       await tester.pumpAndSettle();
       final fields = find.byType(TextField);
       await tester.enterText(fields.at(0), 'ancien-12');
@@ -108,8 +112,11 @@ void main() {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Supprimer mon compte'), 200);
-    await tester.tap(find.text('Supprimer mon compte'));
+    final entry = find.text('Supprimer mon compte');
+    await tester.scrollUntilVisible(entry, 200);
+    await tester.ensureVisible(entry);
+    await tester.pumpAndSettle();
+    await tester.tap(entry);
     await tester.pumpAndSettle();
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'secret-12');

@@ -37,18 +37,28 @@ class _FoilOverlayState extends State<FoilOverlay>
     duration: RiftMotion.foil,
   );
 
+  bool _reduceMotion = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.enabled) _controller.repeat(reverse: true);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Le ticker ne tourne que si le reflet est réellement peint : sinon un
+    // pumpAndSettle (tests) ou un économiseur d'énergie n'en finirait jamais.
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _sync();
   }
 
   @override
   void didUpdateWidget(covariant FoilOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.enabled && !_controller.isAnimating) {
+    _sync();
+  }
+
+  void _sync() {
+    final shouldRun = widget.enabled && !_reduceMotion;
+    if (shouldRun && !_controller.isAnimating) {
       _controller.repeat(reverse: true);
-    } else if (!widget.enabled && _controller.isAnimating) {
+    } else if (!shouldRun && _controller.isAnimating) {
       _controller.stop();
     }
   }
@@ -61,8 +71,7 @@ class _FoilOverlayState extends State<FoilOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    if (!widget.enabled || reduceMotion) return widget.child;
+    if (!widget.enabled || _reduceMotion) return widget.child;
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
       child: Stack(

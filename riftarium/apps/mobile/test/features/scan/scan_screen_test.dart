@@ -50,25 +50,35 @@ void main() {
   late FakeHttpAdapter adapter;
   late InMemoryTokenStore store;
 
-  Widget app({List<Override> overrides = const []}) => ProviderScope(
-    overrides: [
-      tokenStoreProvider.overrideWithValue(store),
-      initialLocationProvider.overrideWithValue(AppRoutes.scan),
-      dioProvider.overrideWith(
-        (ref) => createApiClient(
-          readToken: store.read,
-          baseUrl: 'https://api.test/api',
-          adapter: adapter,
+  /// La scène de scan anime en continu (mire dorée, reflet foil de la carte
+  /// reconnue) : sans réduction de mouvement, `pumpAndSettle` n'aurait jamais
+  /// de fin. Les briques de la charte respectent toutes ce réglage.
+  Widget reduceMotion(Widget child) => MediaQuery(
+    data: const MediaQueryData(disableAnimations: true),
+    child: child,
+  );
+
+  Widget app({List<Override> overrides = const []}) => reduceMotion(
+    ProviderScope(
+      overrides: [
+        tokenStoreProvider.overrideWithValue(store),
+        initialLocationProvider.overrideWithValue(AppRoutes.scan),
+        dioProvider.overrideWith(
+          (ref) => createApiClient(
+            readToken: store.read,
+            baseUrl: 'https://api.test/api',
+            adapter: adapter,
+          ),
         ),
-      ),
-      // Aucune caméra par défaut : `availableCameras()` appelle un plugin natif
-      // absent de l'environnement de test.
-      camerasLookupProvider.overrideWithValue(
-        () async => <CameraDescription>[],
-      ),
-      ...overrides,
-    ],
-    child: const RiftariumApp(),
+        // Aucune caméra par défaut : `availableCameras()` appelle un plugin
+        // natif absent de l'environnement de test.
+        camerasLookupProvider.overrideWithValue(
+          () async => <CameraDescription>[],
+        ),
+        ...overrides,
+      ],
+      child: const RiftariumApp(),
+    ),
   );
 
   setUp(() {
@@ -230,10 +240,13 @@ void main() {
   });
 
   group('ScanResultSheet', () {
-    Widget sheet(Widget child) => MaterialApp(
-      theme: buildTheme(Brightness.light),
-      home: Scaffold(
-        body: Align(alignment: Alignment.bottomCenter, child: child),
+    Widget sheet(Widget child) => MediaQuery(
+      data: const MediaQueryData(disableAnimations: true),
+      child: MaterialApp(
+        theme: buildTheme(Brightness.light),
+        home: Scaffold(
+          body: Align(alignment: Alignment.bottomCenter, child: child),
+        ),
       ),
     );
 
@@ -252,6 +265,8 @@ void main() {
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       expect(find.text('Prix estimé indisponible'), findsOneWidget);
       expect(find.text('Pas encore dans ta collection'), findsOneWidget);
@@ -272,6 +287,8 @@ void main() {
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       expect(
         find.text('Pas de connexion. Vérifie ton réseau.'),
@@ -295,6 +312,8 @@ void main() {
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       expect(find.text('2 exemplaires ajoutés.'), findsOneWidget);
       await tester.tap(find.text('Fiche'));

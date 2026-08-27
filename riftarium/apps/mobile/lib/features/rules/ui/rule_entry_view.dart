@@ -2,11 +2,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../app/design/reveal.dart';
 import '../../../app/theme.dart';
 import '../domain/rules.dart';
+import 'rule_rich_text.dart';
 
-/// Rendu d'une règle : numéro doré, indentation selon `depth`, texte
-/// sélectionnable, exemples en encart et renvois cliquables.
+/// Rendu d'une règle : numéro doré, indentation selon `depth`, texte enrichi
+/// (glyphes et mots-clés comme sur les cartes), exemples en encart et renvois
+/// cliquables.
 class RuleEntryView extends StatelessWidget {
   const RuleEntryView({
     super.key,
@@ -24,39 +27,37 @@ class RuleEntryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final body = theme.textTheme.bodyMedium;
+    final text = riftText(context);
+    final indent = math.min(math.max(entry.depth, 0), 4) * 12.0;
     return Container(
-      margin: EdgeInsets.fromLTRB(
-        12 + math.min(math.max(entry.depth, 0), 4) * 14.0,
-        4,
-        12,
-        4,
-      ),
+      margin: EdgeInsets.fromLTRB(indent, 4, 0, 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: highlighted
           ? BoxDecoration(
-              color: kRiftariumGold.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kRiftariumGold.withValues(alpha: 0.5)),
+              color: RiftColors.gold.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(RiftRadius.sm),
+              border: Border.all(
+                color: RiftColors.gold.withValues(alpha: 0.55),
+              ),
             )
           : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableText.rich(
+          Text.rich(
             TextSpan(
               children: [
                 TextSpan(
                   text: '${entry.number} ',
-                  style: body?.copyWith(
-                    color: kRiftariumGold,
-                    fontWeight: FontWeight.w700,
+                  style: text.mono.copyWith(
+                    color: RiftColors.goldDeep,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextSpan(text: entry.text, style: body),
+                ...ruleTextSpans(context, entry.text, style: text.body),
               ],
             ),
+            style: text.body,
           ),
           for (final example in entry.examples) _ExampleBox(text: example.text),
           if (entry.refs.isNotEmpty)
@@ -82,6 +83,7 @@ class RuleEntryView extends StatelessWidget {
   }
 }
 
+/// Encart « Exemple » du document officiel : filet or à gauche.
 class _ExampleBox extends StatelessWidget {
   const _ExampleBox({required this.text});
 
@@ -89,38 +91,34 @@ class _ExampleBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final styles = riftText(context);
     return Container(
       margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      padding: const EdgeInsets.fromLTRB(12, 8, 10, 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        border: Border(
-          left: BorderSide(
-            color: kRiftariumGold.withValues(alpha: 0.7),
-            width: 3,
-          ),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        border: const Border(
+          left: BorderSide(color: RiftColors.gold, width: 3),
         ),
-        borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
+        borderRadius: const BorderRadius.horizontal(
+          right: Radius.circular(RiftRadius.sm),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Exemple',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: kRiftariumGold,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text('Exemple'.toUpperCase(), style: styles.eyebrow),
           const SizedBox(height: 4),
-          SelectableText(text, style: theme.textTheme.bodySmall),
+          RuleRichText(text, style: styles.small.copyWith(color: styles.ink)),
         ],
       ),
     );
   }
 }
 
+/// Renvoi vers une autre règle.
 class _ReferenceChip extends StatelessWidget {
   const _ReferenceChip({required this.reference, this.onTap});
 
@@ -129,18 +127,19 @@ class _ReferenceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
+    final text = riftText(context);
+    return PressScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: kRiftariumGold.withValues(alpha: 0.6)),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: RiftColors.hex.withValues(alpha: 0.5)),
+          color: RiftColors.hex.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(RiftRadius.full),
         ),
         child: Text(
           '→ ${reference.number} ${reference.label}',
-          style: theme.textTheme.labelMedium?.copyWith(color: kRiftariumGold),
+          style: text.mono.copyWith(color: RiftColors.calmText),
         ),
       ),
     );

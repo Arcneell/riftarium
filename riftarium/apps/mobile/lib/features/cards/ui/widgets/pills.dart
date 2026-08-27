@@ -1,59 +1,54 @@
 import 'package:flutter/material.dart';
 
-/// Petites pastilles arrondies, communes à la cartothèque et à la fiche.
-/// Volontairement neutres : ni `Chip` Material ni équivalent Cupertino, elles
-/// ont le même rendu sur les deux plateformes.
+import '../../../../app/theme.dart';
 
-/// Option sélectionnable dans la feuille de filtres.
-class ChoicePill extends StatelessWidget {
-  const ChoicePill({
+/// Petites pastilles de la cartothèque : choix dans la feuille de filtres,
+/// rappel d'un filtre actif. Elles suivent le `chipTheme` de l'application
+/// (contour or pâle, pilule, pas de coche) et marquent la sélection à l'or.
+
+/// Option d'une facette. Sélectionnée : fond et contour or, texte appuyé.
+class FilterPill extends StatelessWidget {
+  const FilterPill({
     super.key,
     required this.label,
     required this.selected,
     required this.onPressed,
+    this.avatar,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onPressed;
 
+  /// Pastille de tête (rune d'un domaine, chiffre d'énergie).
+  final Widget? avatar;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
+    final text = riftText(context);
+    return FilterChip(
+      avatar: avatar,
+      label: Text(label),
       selected: selected,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: BoxDecoration(
-            color: selected
-                ? scheme.primaryContainer
-                : scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? scheme.primary : scheme.outlineVariant,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected
-                  ? scheme.onPrimaryContainer
-                  : scheme.onSurfaceVariant,
-            ),
-          ),
-        ),
+      onSelected: (_) => onPressed(),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      labelStyle: text.small.copyWith(
+        fontSize: 13.5,
+        color: selected ? RiftColors.goldDeep : text.ink,
+        fontVariations: RiftFonts.weight(selected ? 600 : 400),
+      ),
+      side: BorderSide(
+        color: selected
+            ? RiftColors.gold
+            : Theme.of(context).colorScheme.outline,
+        width: selected ? 1.4 : 1,
       ),
     );
   }
 }
 
-/// Filtre actif, avec sa croix de suppression.
+/// Filtre actif, avec sa croix : toucher la puce retire le critère.
 class RemovablePill extends StatelessWidget {
   const RemovablePill({super.key, required this.label, required this.onRemove});
 
@@ -62,7 +57,7 @@ class RemovablePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final text = riftText(context);
     return Semantics(
       button: true,
       label: 'Retirer le filtre $label',
@@ -70,54 +65,27 @@ class RemovablePill extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onRemove,
         child: Container(
-          padding: const EdgeInsets.only(left: 12, right: 6, top: 6, bottom: 6),
+          padding: const EdgeInsets.only(left: 12, right: 7, top: 6, bottom: 6),
           decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(18),
+            color: RiftColors.gold.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(RiftRadius.full),
+            border: Border.all(color: RiftColors.gold.withValues(alpha: 0.45)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 label,
-                style: TextStyle(
+                style: text.small.copyWith(
                   fontSize: 13,
-                  color: scheme.onPrimaryContainer,
+                  color: text.ink,
+                  fontVariations: RiftFonts.weight(600),
                 ),
               ),
-              const SizedBox(width: 2),
-              Icon(Icons.close, size: 16, color: scheme.onPrimaryContainer),
+              const SizedBox(width: 4),
+              const Icon(Icons.close, size: 15, color: RiftColors.goldDeep),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Étiquette d'information (type, domaine, mot-clé) sur la fiche d'une carte.
-class InfoPill extends StatelessWidget {
-  const InfoPill({super.key, required this.label, this.muted = false});
-
-  final String label;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: muted
-            ? scheme.surfaceContainerHighest
-            : scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          color: muted ? scheme.onSurfaceVariant : scheme.onSecondaryContainer,
         ),
       ),
     );

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/adaptive.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/reveal.dart';
+import '../../../app/theme.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 
@@ -94,53 +97,36 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog.adaptive(
-      title: const Text('Changer le mot de passe'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AdaptiveTextField(
-              controller: _current,
-              label: 'Mot de passe actuel',
-              obscureText: true,
-              autocorrect: false,
-            ),
-            const SizedBox(height: 12),
-            AdaptiveTextField(
-              controller: _next,
-              label: 'Nouveau mot de passe',
-              placeholder: '8 caractères minimum',
-              obscureText: true,
-              autocorrect: false,
-            ),
-            const SizedBox(height: 12),
-            AdaptiveTextField(
-              controller: _confirm,
-              label: 'Confirmation',
-              obscureText: true,
-              autocorrect: false,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-          ],
-        ),
+    return _ParchmentDialog(
+      title: 'Changer le mot de passe',
+      error: _error,
+      confirm: GoldButton(
+        label: 'Changer',
+        loading: _busy,
+        onPressed: _busy ? null : _submit,
       ),
-      actions: [
-        adaptiveAction(
-          context,
-          label: 'Annuler',
-          onPressed: _busy ? () {} : () => Navigator.of(context).pop(),
+      onCancel: _busy ? null : () => Navigator.of(context).pop(),
+      children: [
+        AdaptiveTextField(
+          controller: _current,
+          label: 'Mot de passe actuel',
+          obscureText: true,
+          autocorrect: false,
         ),
-        adaptiveAction(
-          context,
-          label: _busy ? 'Enregistrement…' : 'Changer',
-          onPressed: _busy ? () {} : _submit,
+        const SizedBox(height: 12),
+        AdaptiveTextField(
+          controller: _next,
+          label: 'Nouveau mot de passe',
+          placeholder: '8 caractères minimum',
+          obscureText: true,
+          autocorrect: false,
+        ),
+        const SizedBox(height: 12),
+        AdaptiveTextField(
+          controller: _confirm,
+          label: 'Confirmation',
+          obscureText: true,
+          autocorrect: false,
         ),
       ],
     );
@@ -203,52 +189,174 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog.adaptive(
-      title: const Text('Supprimer mon compte'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Action définitive : collection, decks et wishlist seront '
-              'effacés. Saisis ton mot de passe et ton pseudo pour confirmer.',
-            ),
-            const SizedBox(height: 12),
-            AdaptiveTextField(
-              controller: _password,
-              label: 'Mot de passe',
-              obscureText: true,
-              autocorrect: false,
-            ),
-            const SizedBox(height: 12),
-            AdaptiveTextField(
-              controller: _handle,
-              label: 'Pseudo (${widget.handle})',
-              autocorrect: false,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-          ],
-        ),
+    final text = riftText(context);
+    return _ParchmentDialog(
+      title: 'Supprimer mon compte',
+      error: _error,
+      confirm: _DangerButton(
+        label: 'Supprimer',
+        loading: _busy,
+        onPressed: _busy ? null : _submit,
       ),
-      actions: [
-        adaptiveAction(
-          context,
-          label: 'Annuler',
-          onPressed: _busy ? () {} : () => Navigator.of(context).pop(),
+      onCancel: _busy ? null : () => Navigator.of(context).pop(),
+      children: [
+        Text(
+          'Action définitive : collection, decks et wishlist seront '
+          'effacés. Saisis ton mot de passe et ton pseudo pour confirmer.',
+          style: text.small,
         ),
-        adaptiveAction(
-          context,
-          label: _busy ? 'Suppression…' : 'Supprimer',
-          destructive: true,
-          onPressed: _busy ? () {} : _submit,
+        const SizedBox(height: 14),
+        AdaptiveTextField(
+          controller: _password,
+          label: 'Mot de passe',
+          obscureText: true,
+          autocorrect: false,
+        ),
+        const SizedBox(height: 12),
+        AdaptiveTextField(
+          controller: _handle,
+          label: 'Pseudo (${widget.handle})',
+          autocorrect: false,
         ),
       ],
+    );
+  }
+}
+
+/// Boîte de dialogue de la marque : panneau parchemin, titre Marcellus souligné
+/// d'un filet or, action principale à droite.
+class _ParchmentDialog extends StatelessWidget {
+  const _ParchmentDialog({
+    required this.title,
+    required this.children,
+    required this.confirm,
+    required this.onCancel,
+    this.error,
+  });
+
+  final String title;
+  final List<Widget> children;
+  final Widget confirm;
+  final VoidCallback? onCancel;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 40),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: RiftPanel(
+          raised: true,
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(title, style: text.displaySmall),
+                const SizedBox(height: 8),
+                const GoldRule(width: 40),
+                const SizedBox(height: 18),
+                ...children,
+                if (error != null) ...[
+                  const SizedBox(height: 14),
+                  _DialogError(message: error!),
+                ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GhostButton(label: 'Annuler', onPressed: onCancel),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: confirm),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogError extends StatelessWidget {
+  const _DialogError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: RiftColors.fury.withValues(alpha: dark ? 0.18 : 0.1),
+        borderRadius: BorderRadius.circular(RiftRadius.sm),
+        border: Border.all(color: RiftColors.fury.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        message,
+        style: text.small.copyWith(
+          color: dark ? RiftColors.fury : RiftColors.furyText,
+        ),
+      ),
+    );
+  }
+}
+
+/// Action destructive : même silhouette que `GoldButton`, teinte fureur.
+class _DangerButton extends StatelessWidget {
+  const _DangerButton({
+    required this.label,
+    required this.onPressed,
+    this.loading = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final enabled = onPressed != null && !loading;
+    return PressScale(
+      onTap: enabled ? onPressed : null,
+      child: AnimatedOpacity(
+        duration: RiftMotion.quick,
+        opacity: enabled ? 1 : 0.55,
+        child: Container(
+          height: 50,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: RiftColors.fury,
+            borderRadius: BorderRadius.circular(RiftRadius.full),
+          ),
+          child: loading
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: text.bodyStrong.copyWith(
+                    color: Colors.white,
+                    fontSize: 15.5,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }

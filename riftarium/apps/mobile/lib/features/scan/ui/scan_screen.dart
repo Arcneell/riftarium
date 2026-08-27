@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/adaptive.dart';
+import '../../../app/design/components.dart';
+import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
+import '../../../app/widgets/common.dart';
 import '../application/scan_controller.dart';
 import 'scan_result_sheet.dart';
 
@@ -24,15 +26,12 @@ class ScanScreen extends ConsumerWidget {
     final camera = controller.camera;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: RiftColors.inkStrong,
       body: Stack(
         fit: StackFit.expand,
         children: [
           _CameraLayer(camera: camera),
-          if (state.isLive)
-            const DecoratedBox(
-              decoration: BoxDecoration(color: Color(0x66000000)),
-            ),
+          const _Veil(),
           SafeArea(
             child: Column(
               children: [
@@ -84,7 +83,7 @@ class _CameraLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = camera;
     if (controller == null || !controller.value.isInitialized) {
-      return const ColoredBox(color: Colors.black);
+      return const ColoredBox(color: RiftColors.inkStrong);
     }
     final size = controller.value.previewSize;
     if (size == null) return CameraPreview(controller);
@@ -94,6 +93,33 @@ class _CameraLayer extends StatelessWidget {
         width: size.height,
         height: size.width,
         child: CameraPreview(controller),
+      ),
+    );
+  }
+}
+
+/// Voile encre haut et bas : la barre et la feuille de résultat restent
+/// lisibles quelle que soit la scène filmée, le centre reste clair.
+class _Veil extends StatelessWidget {
+  const _Veil();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              RiftColors.inkStrong.withValues(alpha: 0.82),
+              RiftColors.inkStrong.withValues(alpha: 0.22),
+              RiftColors.inkStrong.withValues(alpha: 0.28),
+              RiftColors.inkStrong.withValues(alpha: 0.86),
+            ],
+            stops: const [0, 0.26, 0.62, 1],
+          ),
+        ),
       ),
     );
   }
@@ -115,22 +141,26 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
+          _RoundButton(
+            icon: Icons.close,
+            label: 'Fermer le scanner',
             onPressed: onClose,
-            color: Colors.white,
-            tooltip: 'Fermer le scanner',
-            icon: const Icon(Icons.close),
           ),
-          IconButton(
+          Text(
+            'SCANNER',
+            style: riftText(
+              context,
+            ).eyebrow.copyWith(color: RiftColors.goldSoft, letterSpacing: 2.4),
+          ),
+          _RoundButton(
+            icon: torchOn ? Icons.flashlight_on : Icons.flashlight_off,
+            label: torchOn ? 'Éteindre la torche' : 'Allumer la torche',
+            active: torchOn,
             onPressed: torchEnabled ? onToggleTorch : null,
-            color: torchOn ? kRiftariumGold : Colors.white,
-            disabledColor: Colors.white38,
-            tooltip: torchOn ? 'Éteindre la torche' : 'Allumer la torche',
-            icon: Icon(torchOn ? Icons.flashlight_on : Icons.flashlight_off),
           ),
         ],
       ),
@@ -138,6 +168,62 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+/// Bouton rond translucide posé sur l'aperçu.
+class _RoundButton extends StatelessWidget {
+  const _RoundButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: label,
+        child: PressScale(
+          onTap: onPressed,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: RiftColors.inkStrong.withValues(alpha: 0.5),
+              border: Border.all(
+                color: active
+                    ? RiftColors.gold
+                    : Colors.white.withValues(alpha: 0.26),
+                width: active ? 1.6 : 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 21,
+              color: !enabled
+                  ? Colors.white38
+                  : active
+                  ? RiftColors.goldSoft
+                  : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Consigne courante, en grand format : une seule phrase à la fois, qui se
+/// remplace en fondu (MonoBadge agrandi, blanc sur encre).
 class _StatusBanner extends StatelessWidget {
   const _StatusBanner({required this.state});
 
@@ -145,6 +231,7 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = riftText(context);
     final error = state.message;
     final label =
         error ??
@@ -153,64 +240,161 @@ class _StatusBanner extends StatelessWidget {
           _ when state.reading => 'Lecture…',
           _ => 'Cadre le code de la carte',
         };
+    final tint = error != null ? RiftColors.fury : RiftColors.gold;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: error != null
-                ? Colors.redAccent
-                : kRiftariumGold.withValues(alpha: 0.7),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 2),
+      child: AnimatedSwitcher(
+        duration: RiftMotion.base,
+        switchInCurve: RiftMotion.ease,
+        child: Container(
+          key: ValueKey(label),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: RiftColors.inkStrong.withValues(alpha: 0.74),
+            borderRadius: BorderRadius.circular(RiftRadius.full),
+            border: Border.all(color: tint.withValues(alpha: 0.75), width: 1.3),
           ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: text.mono.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Cadre-guide : silhouette de carte, avec la bande du code mise en évidence.
-class _CodeGuide extends StatelessWidget {
+/// Cadre-guide : silhouette de carte, coins or qui respirent autour de la bande
+/// du code — c'est là que l'œil doit poser la carte.
+class _CodeGuide extends StatefulWidget {
   const _CodeGuide();
 
   @override
+  State<_CodeGuide> createState() => _CodeGuideState();
+}
+
+class _CodeGuideState extends State<_CodeGuide>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulse
+        ..stop()
+        ..value = 1;
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final text = riftText(context);
     return Center(
-      child: FractionallySizedBox(
-        widthFactor: 0.78,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 42, vertical: 10),
         child: AspectRatio(
           aspectRatio: CardImage.portraitRatio,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white54, width: 2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    border: Border.all(color: kRiftariumGold, width: 2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Code de la carte ici',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    borderRadius: BorderRadius.circular(RiftRadius.sm),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      width: 1.4,
+                    ),
                   ),
                 ),
-              ],
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                height: 54,
+                child: AnimatedBuilder(
+                  animation: _pulse,
+                  builder: (context, child) => Opacity(
+                    opacity:
+                        0.55 + 0.45 * Curves.easeInOut.transform(_pulse.value),
+                    child: child,
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: RiftColors.inkStrong.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(RiftRadius.sm),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          'Code de la carte ici',
+                          textAlign: TextAlign.center,
+                          style: text.mono.copyWith(
+                            fontSize: 11.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const _Corner(alignment: Alignment.topLeft),
+                      const _Corner(alignment: Alignment.topRight),
+                      const _Corner(alignment: Alignment.bottomLeft),
+                      const _Corner(alignment: Alignment.bottomRight),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Une équerre or de la mire.
+class _Corner extends StatelessWidget {
+  const _Corner({required this.alignment});
+
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    const side = BorderSide(color: RiftColors.gold, width: 2.5);
+    final top = alignment.y < 0;
+    final left = alignment.x < 0;
+    return Align(
+      alignment: alignment,
+      child: SizedBox(
+        width: 18,
+        height: 18,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: top ? side : BorderSide.none,
+              bottom: top ? BorderSide.none : side,
+              left: left ? side : BorderSide.none,
+              right: left ? BorderSide.none : side,
             ),
           ),
         ),
@@ -235,8 +419,12 @@ class _StageMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.stage == ScanStage.initializing) {
       return const Center(
-        child: CircularProgressIndicator.adaptive(
-          valueColor: AlwaysStoppedAnimation(Colors.white),
+        child: SizedBox.square(
+          dimension: 26,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            color: RiftColors.goldSoft,
+          ),
         ),
       );
     }
@@ -259,33 +447,27 @@ class _StageMessage extends StatelessWidget {
         state.message ?? 'Le scanner n’a pas pu démarrer.',
       ),
     };
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
+    // Le fond est encre : on force la palette sombre pour que les textes de
+    // l'état vide restent en parchemin clair.
+    return Theme(
+      data: buildTheme(Brightness.dark),
+      child: EmptyView(
+        icon: icon,
+        title: title,
+        detail: detail,
+        action: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: Colors.white70),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            if (state.stage == ScanStage.failed) ...[
+              GoldButton(
+                label: 'Réessayer',
+                icon: Icons.refresh,
+                expand: false,
+                onPressed: onRetry,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              detail,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-            if (state.stage == ScanStage.failed)
-              AdaptiveFilledButton(label: 'Réessayer', onPressed: onRetry),
-            AdaptiveTextButton(label: 'Fermer', onPressed: onClose),
+              const SizedBox(height: 6),
+            ],
+            TextButton(onPressed: onClose, child: const Text('Fermer')),
           ],
         ),
       ),
@@ -305,8 +487,13 @@ class _Result extends StatelessWidget {
     if (card == null) {
       return Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.surface,
-        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(RiftRadius.lg),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 30),
         child: const Center(child: CircularProgressIndicator.adaptive()),
       );
     }
@@ -332,19 +519,22 @@ class _History extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 82,
+      height: 84,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
         itemCount: state.history.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final entry = state.history[index];
-          return GestureDetector(
-            onTap: () => context.go(AppRoutes.card(entry.card.id)),
-            child: Tooltip(
-              message: '${entry.card.name} · ${entry.code}',
-              child: CardImage(card: entry.card, width: 46),
+          return Reveal(
+            index: index,
+            child: PressScale(
+              onTap: () => context.go(AppRoutes.card(entry.card.id)),
+              child: Tooltip(
+                message: '${entry.card.name} · ${entry.code}',
+                child: CardImage(card: entry.card, width: 44, shadow: true),
+              ),
             ),
           );
         },

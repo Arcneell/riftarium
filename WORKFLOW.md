@@ -186,13 +186,32 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
                           du client API avec mock ; pas de goldens au départ
 ```
 
-- **Paquets** (à ajouter phase par phase, pas d'un bloc) : `go_router`, `dio`,
-  `flutter_riverpod`, `flutter_secure_storage`, `cached_network_image`,
-  `google_mlkit_text_recognition` + `camera`, `image` (si dHash). Chaque ajout
-  de plugin natif = `flutter build apk --debug` avant push.
-- **Rendu** : widgets adaptatifs, navigation et composants Cupertino sur iOS,
-  Material 3 sur Android, pour respecter les conventions de chaque plateforme.
-  Charte : or `#B08A3E`, parchemin `#F5EFE1` (voir `apps/web/src/style.css`).
+- **Paquets** : `go_router`, `dio`, `flutter_riverpod` 2.x, `flutter_secure_storage`,
+  `cached_network_image` + `flutter_cache_manager`, `flutter_svg` (glyphes
+  officiels), `google_mlkit_text_recognition` + `camera`, `share_plus`,
+  `url_launcher`, `path_provider`. Chaque ajout de plugin natif = `flutter build
+  apk --debug` avant push.
+- **Rendu** : la charte du site (`apps/web/src/assets/main.css`) transposée dans
+  `lib/app/design/` (tokens, typographie Marcellus / Outfit / IBM Plex Mono
+  embarquées, thème clair et sombre, bannières d'illustration, reflet foil,
+  révélations en cascade, squelettes, boutons or, puces de domaine). **Lire
+  `lib/app/design/README.md` avant tout écran.** iOS garde ses gestes et
+  transitions ; l'habillage est celui de la marque sur les deux plateformes.
+- **Images** : jamais d'URL de carte brute. `CardImage` redimensionne via le CDN
+  (`w=`), met en cache 30 jours (`riftImageCache`) et `precacheCardThumbs`
+  précharge la page suivante d'une grille.
+- **Navigation** : onglets Accueil, Cartes, Collection, Decks (segment Mes decks |
+  Communauté), Règles (hub : guide du débutant, aide avancée, texte officiel) ;
+  profil derrière l'avatar en haut à droite ; scanner en plein écran.
+- **Guides de règles** : `assets/rules/guides-fr.json` est exporté depuis
+  `apps/web/src/rules/{topics,guide}.js` (depuis `apps/web`) :
+  `node --input-type=module -e "import {TOPICS,CATEGORIES} from './src/rules/topics.js'; import {STEPS,CARDS,SPOTS} from './src/rules/guide.js'; import {writeFileSync} from 'node:fs'; writeFileSync('../mobile/assets/rules/guides-fr.json', JSON.stringify({categories:CATEGORIES,topics:TOPICS,guide:{steps:STEPS,cards:CARDS,spots:SPOTS}}))"`.
+  À relancer quand les guides du site changent.
+- **Dette connue** : le rendu du texte enrichi existe deux fois
+  (`features/cards/domain/card_text.dart` + `ui/widgets/card_glyph.dart`, et
+  `features/rules/ui/rule_rich_text.dart`). À fusionner dans `lib/app/design/`
+  (garder le gras et les abréviations `[R] [1] [E]` de la version règles, le
+  cache mémoire des SVG de la version cartes).
 - **Conventions** : identifiants en anglais (convention Dart), textes d'interface,
   commentaires, commits et documentation en français ; `flutter_lints` +
   `dart format` par défaut (80 colonnes) ; pas de code Kotlin/Swift maison au-delà

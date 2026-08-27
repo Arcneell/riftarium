@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/adaptive.dart';
+import '../../../../app/design/components.dart';
+import '../../../../app/theme.dart';
 import '../../../../core/api_exception.dart';
 import '../../application/collection_controller.dart';
 import '../../domain/collection.dart';
@@ -25,7 +27,8 @@ Future<void> showCollectionEditor(BuildContext context, String cardId) {
   );
 }
 
-/// Édition des lots d'une carte : un lot par état et par langue.
+/// Édition des lots d'une carte : un lot par état et par langue, chacun dans
+/// son panneau parchemin.
 class CollectionEditSheet extends ConsumerStatefulWidget {
   const CollectionEditSheet({super.key, required this.cardId});
 
@@ -79,19 +82,20 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final text = riftText(context);
     final item = ref
         .watch(collectionControllerProvider)
         .valueOrNull
         ?.itemOf(widget.cardId);
     return Material(
-      color: theme.colorScheme.surface,
+      color: theme.scaffoldBackgroundColor,
       child: SafeArea(
         top: false,
         child: Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 12,
+            left: 18,
+            right: 18,
+            top: 8,
             bottom: 20 + MediaQuery.viewInsetsOf(context).bottom,
           ),
           child: item == null
@@ -101,14 +105,17 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(item.card.name, style: theme.textTheme.titleMedium),
+                      const GoldRule(),
+                      const SizedBox(height: 12),
+                      Text(item.card.name, style: text.displaySmall),
+                      const SizedBox(height: 4),
                       Text(
                         '${item.card.displayCode} · ${item.totalQty} exemplaire(s)',
-                        style: theme.textTheme.bodySmall,
+                        style: text.mono,
                       ),
                       const SizedBox(height: 16),
-                      for (final entry in item.entries)
-                        _EntryRow(
+                      for (final entry in item.entries) ...[
+                        _EntryPanel(
                           entry: entry,
                           busy: _busy,
                           onQty: (qty) => _run(
@@ -133,89 +140,116 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
                             ),
                           ),
                         ),
-                      const Divider(height: 28),
-                      Text('Ajouter un lot', style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          QuantityStepper(
-                            value: _newQty,
-                            min: 1,
-                            max: maxCollectionQty,
-                            enabled: !_busy,
-                            semanticsLabel: 'Quantité du nouveau lot',
-                            onChanged: (qty) => setState(() => _newQty = qty),
-                          ),
-                          _CodePill(
-                            label: conditionLabel(_newCondition),
-                            code: _newCondition,
-                            onTap: _busy
-                                ? null
-                                : () async {
-                                    final picked = await pickCode(
-                                      context,
-                                      title: 'État',
-                                      options: collectionConditions,
-                                      current: _newCondition,
-                                    );
-                                    if (picked != null && mounted) {
-                                      setState(() => _newCondition = picked);
-                                    }
-                                  },
-                          ),
-                          _CodePill(
-                            label: langLabel(_newLang),
-                            code: _newLang,
-                            onTap: _busy
-                                ? null
-                                : () async {
-                                    final picked = await pickCode(
-                                      context,
-                                      title: 'Langue',
-                                      options: collectionLangs,
-                                      current: _newLang,
-                                    );
-                                    if (picked != null && mounted) {
-                                      setState(() => _newLang = picked);
-                                    }
-                                  },
-                          ),
-                          AdaptiveTextButton(
-                            label: 'Ajouter',
-                            onPressed: _busy
-                                ? null
-                                : () => _run(
-                                    () => _collection.addEntry(
-                                      cardId: widget.cardId,
-                                      qty: _newQty,
-                                      condition: _newCondition,
-                                      lang: _newLang,
-                                    ),
+                        const SizedBox(height: 10),
+                      ],
+                      const SizedBox(height: 6),
+                      RiftPanel(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Ajouter un lot', style: text.eyebrow),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _CodeChip(
+                                        label: conditionLabel(_newCondition),
+                                        code: _newCondition,
+                                        onTap: _busy
+                                            ? null
+                                            : () async {
+                                                final picked = await pickCode(
+                                                  context,
+                                                  title: 'État',
+                                                  options: collectionConditions,
+                                                  current: _newCondition,
+                                                );
+                                                if (picked != null && mounted) {
+                                                  setState(
+                                                    () =>
+                                                        _newCondition = picked,
+                                                  );
+                                                }
+                                              },
+                                      ),
+                                      _CodeChip(
+                                        label: langLabel(_newLang),
+                                        code: _newLang,
+                                        onTap: _busy
+                                            ? null
+                                            : () async {
+                                                final picked = await pickCode(
+                                                  context,
+                                                  title: 'Langue',
+                                                  options: collectionLangs,
+                                                  current: _newLang,
+                                                );
+                                                if (picked != null && mounted) {
+                                                  setState(
+                                                    () => _newLang = picked,
+                                                  );
+                                                }
+                                              },
+                                      ),
+                                    ],
                                   ),
-                          ),
-                        ],
+                                ),
+                                const SizedBox(width: 8),
+                                QuantityStepper(
+                                  value: _newQty,
+                                  min: 1,
+                                  max: maxCollectionQty,
+                                  enabled: !_busy,
+                                  size: StepperSize.compact,
+                                  semanticsLabel: 'Quantité du nouveau lot',
+                                  onChanged: (qty) =>
+                                      setState(() => _newQty = qty),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            GoldButton(
+                              label: 'Ajouter',
+                              onPressed: _busy
+                                  ? null
+                                  : () => _run(
+                                      () => _collection.addEntry(
+                                        cardId: widget.cardId,
+                                        qty: _newQty,
+                                        condition: _newCondition,
+                                        lang: _newLang,
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
                       ),
                       if (_error != null) ...[
                         const SizedBox(height: 12),
                         Text(
                           _error!,
-                          style: TextStyle(color: theme.colorScheme.error),
+                          style: text.small.copyWith(color: RiftColors.fury),
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          AdaptiveTextButton(
-                            label: 'Retirer de la collection',
+                          TextButton(
                             onPressed: _busy ? null : () => _remove(item),
+                            style: TextButton.styleFrom(
+                              foregroundColor: RiftColors.fury,
+                            ),
+                            child: const Text('Retirer de la collection'),
                           ),
-                          AdaptiveTextButton(
-                            label: 'Fermer',
+                          TextButton(
                             onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Fermer'),
                           ),
                         ],
                       ),
@@ -234,18 +268,27 @@ class _Removed extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Text('Cette carte ne fait plus partie de ta collection.'),
-      AdaptiveTextButton(label: 'Fermer', onPressed: onClose),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          'Cette carte ne fait plus partie de ta collection.',
+          style: text.body,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onClose, child: const Text('Fermer')),
+      ],
+    );
+  }
 }
 
-/// Une ligne de lot : quantité, état et langue modifiables.
-class _EntryRow extends StatelessWidget {
-  const _EntryRow({
+/// Un lot : sa quantité, son état et sa langue, dans un panneau à part.
+class _EntryPanel extends StatelessWidget {
+  const _EntryPanel({
     required this.entry,
     required this.busy,
     required this.onQty,
@@ -261,55 +304,79 @@ class _EntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
+    final text = riftText(context);
+    return RiftPanel(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          QuantityStepper(
-            value: entry.qty,
-            max: maxCollectionQty,
-            enabled: !busy,
-            semanticsLabel: 'Quantité du lot ${entry.condition} ${entry.lang}',
-            onChanged: onQty,
+          Row(
+            children: [
+              Expanded(child: Text(entry.label, style: text.monoStrong)),
+              IconButton(
+                onPressed: busy ? null : () => onQty(0),
+                tooltip: 'Supprimer le lot',
+                color: RiftColors.fury,
+                icon: const Icon(Icons.delete_outline, size: 20),
+              ),
+            ],
           ),
-          _CodePill(
-            label: conditionLabel(entry.condition),
-            code: entry.condition,
-            onTap: busy
-                ? null
-                : () async {
-                    final picked = await pickCode(
-                      context,
-                      title: 'État',
-                      options: collectionConditions,
-                      current: entry.condition,
-                    );
-                    if (picked != null && picked != entry.condition) {
-                      onCondition(picked);
-                    }
-                  },
-          ),
-          _CodePill(
-            label: langLabel(entry.lang),
-            code: entry.lang,
-            onTap: busy
-                ? null
-                : () async {
-                    final picked = await pickCode(
-                      context,
-                      title: 'Langue',
-                      options: collectionLangs,
-                      current: entry.lang,
-                    );
-                    if (picked != null && picked != entry.lang) onLang(picked);
-                  },
-          ),
-          AdaptiveTextButton(
-            label: 'Supprimer',
-            onPressed: busy ? null : () => onQty(0),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _CodeChip(
+                      label: conditionLabel(entry.condition),
+                      code: entry.condition,
+                      onTap: busy
+                          ? null
+                          : () async {
+                              final picked = await pickCode(
+                                context,
+                                title: 'État',
+                                options: collectionConditions,
+                                current: entry.condition,
+                              );
+                              if (picked != null && picked != entry.condition) {
+                                onCondition(picked);
+                              }
+                            },
+                    ),
+                    _CodeChip(
+                      label: langLabel(entry.lang),
+                      code: entry.lang,
+                      onTap: busy
+                          ? null
+                          : () async {
+                              final picked = await pickCode(
+                                context,
+                                title: 'Langue',
+                                options: collectionLangs,
+                                current: entry.lang,
+                              );
+                              if (picked != null && picked != entry.lang) {
+                                onLang(picked);
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              QuantityStepper(
+                value: entry.qty,
+                max: maxCollectionQty,
+                enabled: !busy,
+                size: StepperSize.compact,
+                semanticsLabel:
+                    'Quantité du lot ${entry.condition} ${entry.lang}',
+                onChanged: onQty,
+              ),
+            ],
           ),
         ],
       ),
@@ -317,9 +384,9 @@ class _EntryRow extends StatelessWidget {
   }
 }
 
-/// Pastille « code · libellé » qui ouvre la liste des valeurs possibles.
-class _CodePill extends StatelessWidget {
-  const _CodePill({required this.label, required this.code, this.onTap});
+/// Pastille de valeur courante (état, langue) : ouvre la liste des choix.
+class _CodeChip extends StatelessWidget {
+  const _CodeChip({required this.label, required this.code, this.onTap});
 
   final String label;
   final String code;
@@ -327,24 +394,13 @@ class _CodePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
       label: '$code, $label',
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: scheme.outlineVariant),
-          ),
-          child: Text(
-            code,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
+      child: FilterChip(
+        label: Text(label),
+        selected: true,
+        onSelected: onTap == null ? null : (_) => onTap!(),
       ),
     );
   }

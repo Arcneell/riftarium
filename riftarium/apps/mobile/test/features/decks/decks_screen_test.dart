@@ -31,18 +31,21 @@ void main() {
     );
   }
 
-  testWidgets('sans session : invite à se connecter et lien communauté', (
+  testWidgets('sans session : invite à se connecter, segment toujours là', (
     tester,
   ) async {
     await tester.pumpWidget(app(DecksFakeApi(const {})));
     await tester.pumpAndSettle();
 
     expect(find.byType(DecksScreen), findsOneWidget);
+    expect(find.text('Tes decks t’attendent'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
-    expect(find.text('Voir la communauté'), findsOneWidget);
+    // Le segment reste visible : la communauté est à un tap.
+    expect(find.text('Mes decks'), findsOneWidget);
+    expect(find.text('Communauté'), findsOneWidget);
   });
 
-  testWidgets('sans session : le lien ouvre la communauté', (tester) async {
+  testWidgets('sans session : le segment ouvre la communauté', (tester) async {
     await tester.pumpWidget(
       app(
         DecksFakeApi({
@@ -53,7 +56,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Voir la communauté'));
+    await tester.tap(find.text('Communauté'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CommunityScreen), findsOneWidget);
@@ -74,9 +77,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mes decks'), findsWidgets);
-    expect(find.text('Aucun deck pour l’instant'), findsOneWidget);
+    expect(find.text('Construis ton premier deck'), findsOneWidget);
     expect(find.text('Nouveau deck'), findsOneWidget);
-    expect(find.text('Importer un code'), findsOneWidget);
+    // Barre d'actions + rappel dans l'invitation.
+    expect(find.text('Importer un code'), findsNWidgets(2));
   });
 
   testWidgets('avec session : mes decks s’affichent avec leur état', (
@@ -109,14 +113,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Fureur d’Ahri'), findsOneWidget);
-    expect(find.text('Brouillon'), findsOneWidget);
     // Le nom apparaît deux fois : substitut du visuel et ligne « légende ».
     expect(find.text('Ahri'), findsWidgets);
-    expect(find.text('Légende à choisir'), findsOneWidget);
-    expect(find.text('✓ Légal'), findsOneWidget);
-    expect(find.text('✕ Illégal'), findsOneWidget);
-    expect(find.textContaining('1 cartes · public'), findsOneWidget);
+    expect(find.text('Légal'), findsOneWidget);
+    expect(find.text('1 cartes'), findsOneWidget);
+    expect(find.text('public'), findsOneWidget);
     expect(find.text('4'), findsOneWidget);
+
+    // Le deuxième deck est plus bas : la liste se construit à la demande.
+    await tester.scrollUntilVisible(find.text('Brouillon'), 200);
+    await tester.pumpAndSettle();
+    expect(find.text('Brouillon'), findsOneWidget);
+    expect(find.text('Légende à choisir'), findsOneWidget);
+    expect(find.text('Sans légende'), findsOneWidget);
+    expect(find.text('Illégal'), findsOneWidget);
+    expect(find.text('privé'), findsOneWidget);
   });
 
   testWidgets('avec session : une erreur propose de réessayer', (tester) async {
@@ -211,7 +222,7 @@ void main() {
     await tester.pumpWidget(app(server, token: 'jwt'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Importer un code'));
+    await tester.tap(find.text('Importer un code').first);
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, code);

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/adaptive.dart';
+import '../../../app/design/components.dart';
+import '../../../app/theme.dart';
 import '../application/rules_providers.dart';
 import '../domain/rules.dart';
 import 'rule_entry_view.dart';
@@ -108,67 +110,76 @@ class _RuleSectionScreenState extends ConsumerState<RuleSectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final text = riftText(context);
     final section = widget.section;
     return AdaptiveScaffold(
       title: section.title,
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${widget.book.title} › ${widget.chapter.title}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.outline,
+      // Le texte officiel se cite : il doit rester copiable, même rendu en
+      // spans (glyphes et mots-clés).
+      body: SelectionArea(
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${widget.book.title} › ${widget.chapter.title}'
+                          .toUpperCase(),
+                      style: text.eyebrow,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(section.title, style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Section ${section.bareNumber} · '
-                    '${section.entries.length} règles · '
-                    'mise à jour du ${widget.book.updated}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                    const SizedBox(height: 6),
+                    Text(section.title, style: text.displayMedium),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        MonoBadge(label: 'Section ${section.bareNumber}'),
+                        MonoBadge(
+                          label:
+                              '${section.entries.length} '
+                              'règle${section.entries.length > 1 ? 's' : ''}',
+                          color: RiftColors.hex,
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverList.builder(
-            itemCount: section.entries.length,
-            itemBuilder: (context, index) {
-              final entry = section.entries[index];
-              final highlighted = entry.id == widget.highlightEntryId;
-              return RuleEntryView(
-                key: highlighted ? _highlightKey : null,
-                entry: entry,
-                highlighted: highlighted,
-                onFollowReference: _followReference,
-              );
-            },
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-              child: Text(
-                'Texte reproduit depuis « ${widget.book.title} » '
-                '(mise à jour du ${widget.book.updated}), publié par Riot '
-                'Games. En cas de divergence, le PDF officiel fait foi.',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.outline,
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              sliver: SliverList.builder(
+                itemCount: section.entries.length,
+                itemBuilder: (context, index) {
+                  final entry = section.entries[index];
+                  final highlighted = entry.id == widget.highlightEntryId;
+                  return RuleEntryView(
+                    key: highlighted ? _highlightKey : null,
+                    entry: entry,
+                    highlighted: highlighted,
+                    onFollowReference: _followReference,
+                  );
+                },
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
+                child: Text(
+                  'Texte reproduit depuis « ${widget.book.title} » '
+                  '(mise à jour du ${widget.book.updated}), publié par Riot '
+                  'Games. En cas de divergence, le PDF officiel fait foi.',
+                  style: text.mono.copyWith(fontSize: 11),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
