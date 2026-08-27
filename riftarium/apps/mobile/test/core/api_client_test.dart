@@ -23,6 +23,7 @@ void main() {
 
         final request = adapter.requests.single;
         expect(request.headers['X-Riftarium-Client'], 'mobile');
+        expect(request.headers['User-Agent'], 'Riftarium-Mobile/0.1.0');
         expect(request.headers['Authorization'], 'Bearer abc');
         expect(request.options.uri.toString(), 'https://api.test/api/auth/me');
       },

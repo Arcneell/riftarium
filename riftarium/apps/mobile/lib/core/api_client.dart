@@ -23,6 +23,7 @@ Dio createApiClient({
       receiveTimeout: const Duration(seconds: 20),
       headers: {
         'Accept': 'application/json',
+        'User-Agent': AppConfig.userAgent,
         AppConfig.clientHeader: AppConfig.clientHeaderValue,
       },
     ),

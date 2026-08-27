@@ -18,4 +18,12 @@ abstract final class AppConfig {
   /// porte alors le jeton dans son corps, avec une durée de vie longue.
   static const String clientHeader = 'X-Riftarium-Client';
   static const String clientHeaderValue = 'mobile';
+
+  /// Version affichée et envoyée dans le User-Agent. À aligner sur `pubspec.yaml`.
+  static const String appVersion = '0.1.0';
+
+  /// User-Agent explicite : le défaut de dart:io (`Dart/3.x (dart:io)`) est
+  /// générique ; BunkerWeb filtre les agents connus comme indésirables, un nom
+  /// identifiable évite toute ambiguïté et facilite la lecture des journaux.
+  static const String userAgent = 'Riftarium-Mobile/$appVersion';
 }
