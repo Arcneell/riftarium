@@ -1,6 +1,16 @@
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, EmailStr, Field, field_validator, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    EmailStr,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 HANDLE_PATTERN = r"^[A-Za-z0-9_\-]+$"
 
@@ -138,13 +148,26 @@ class LoginIn(BaseModel):
 
 
 class SessionOut(BaseModel):
-    """Réponse d'authentification : le jeton circule uniquement via le cookie HttpOnly."""
+    """Réponse d'authentification : le jeton circule via le cookie HttpOnly pour le web,
+    et en plus dans le corps (champ `token`) pour le client mobile natif."""
 
     handle: str
     avatar_url: str | None = None
     # Permet au front d'afficher l'entrée Administration dès la connexion (le
     # serveur reste seul juge : toutes les routes admin revérifient la session).
     is_admin: bool = False
+    # Présent uniquement pour le client mobile (en-tête « X-Riftarium-Client: mobile »),
+    # qui ne peut pas s'appuyer sur le cookie ; absent de la réponse sinon.
+    token: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _hide_absent_token(self, handler: SerializerFunctionWrapHandler) -> dict:
+        """Retire complètement la clé `token` quand il n'y en a pas : la réponse servie
+        au web reste identique à l'existant (pas même un `token: null`)."""
+        data = handler(self)
+        if self.token is None:
+            data.pop("token", None)
+        return data
 
 
 class ProfilePatch(BaseModel):

@@ -208,6 +208,13 @@ visuels, calculées automatiquement en arrière-plan (au démarrage de l'API et 
 chaque sync). Rien à lancer ; `POST /api/admin/cards/hashes` (`X-Admin-Token`)
 reste disponible en secours manuel.
 
+## Application mobile
+
+Une application native iOS et Android en Flutter est en cours dans
+`apps/mobile` ; elle consomme la même API que le site. Organisation, toolchain,
+contrat d'API et feuille de route : [`WORKFLOW.md`](../WORKFLOW.md) à la racine
+du dépôt. La PWA et le scan web restent en place tant qu'elle n'est pas publiée.
+
 ## Aperçu de partage
 
 Le site est une application monopage : les robots d'aperçu de lien (Discord, Slack,

@@ -6,8 +6,9 @@
 *.env
 !*.env.example
 
-# API inutile au build du front.
+# API et application mobile (Flutter) inutiles au build du front.
 apps/api
+apps/mobile
 scripts
 
 # Dumps PostgreSQL du VPS (pg_dump gzip). Jamais dans un contexte de build.
