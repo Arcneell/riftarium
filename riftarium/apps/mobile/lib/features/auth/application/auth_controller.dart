@@ -116,6 +116,34 @@ class AuthController extends Notifier<AuthState> {
   /// Recharge `/auth/me` (après une erreur réseau ou une modification).
   Future<void> refreshProfile() => _loadProfile();
 
+  /// Change le mot de passe puis ferme la session locale : le jeton de
+  /// l'appareil est révoqué par l'API (`token_version`), il faut se reconnecter.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _api.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    await _store.clear();
+    state = const AuthState.signedOut();
+  }
+
+  /// Supprime le compte puis ferme la session locale.
+  Future<void> deleteAccount({
+    required String password,
+    required String handle,
+  }) async {
+    await _api.deleteAccount(password: password, handle: handle);
+    await _store.clear();
+    state = const AuthState.signedOut();
+  }
+
+  Future<void> resendVerification() => _api.resendVerification();
+
+  Future<Map<String, dynamic>> exportAccount() => _api.exportAccount();
+
   Future<void> _loadProfile() async {
     try {
       final profile = await _api.me();

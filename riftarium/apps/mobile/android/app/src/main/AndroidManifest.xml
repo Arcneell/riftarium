@@ -1,6 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Accès réseau : l’application est cliente de l’API https://riftarium.re. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- La permission CAMERA et la fonctionnalité « camera.any » sont déjà
+         déclarées par le plugin camera_android_camerax : elles ne sont pas
+         répétées ici. On ajoute seulement le capteur arrière en NON requis,
+         pour que le scanner n’exclue pas du Play Store les appareils qui en
+         sont dépourvus (l’écran /scan affiche alors « Aucune caméra »). -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <!-- Le plugin camera déclare camera.any sans required : on le rend optionnel
+         pour ne pas exclure les appareils sans caméra (le scan est facultatif). -->
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" tools:replace="android:required" />
     <application
         android:label="Riftarium"
         android:name="${applicationName}"
@@ -22,6 +32,17 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Liens du site ouverts dans l’application (sans autoVerify : la
+                 vérification App Links exige assetlinks.json + empreinte de la clé
+                 de signature, à faire à la publication — voir WORKFLOW.md). -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="true" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/cartes" />
+                <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/decks" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

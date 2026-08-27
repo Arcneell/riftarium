@@ -1,11 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/adaptive.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/common.dart';
+import '../../../core/api_exception.dart';
+import '../../../core/config.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
+import 'account_dialogs.dart';
 
 /// Libellés des compteurs de `user_stats` (`app/profiles.py`). Une clé inconnue
 /// est affichée telle quelle : l'API peut en ajouter sans casser l'écran.
@@ -30,6 +37,56 @@ class ProfileScreen extends ConsumerWidget {
       destructive: true,
     );
     if (confirmed) await ref.read(authControllerProvider.notifier).signOut();
+  }
+
+  Future<void> _resendVerification(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(authControllerProvider.notifier).resendVerification();
+      if (!context.mounted) return;
+      await showAdaptiveMessage(
+        context,
+        title: 'E-mail envoyé',
+        message: 'Regarde ta boîte de réception (et les indésirables).',
+      );
+    } on ApiException catch (error) {
+      if (!context.mounted) return;
+      await showAdaptiveMessage(
+        context,
+        title: 'Envoi impossible',
+        message: error.message,
+      );
+    }
+  }
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    try {
+      final data = await ref
+          .read(authControllerProvider.notifier)
+          .exportAccount();
+      final json = const JsonEncoder.withIndent('  ').convert(data);
+      await SharePlus.instance.share(
+        ShareParams(text: json, subject: 'Export Riftarium (RGPD)'),
+      );
+    } on ApiException catch (error) {
+      if (!context.mounted) return;
+      await showAdaptiveMessage(
+        context,
+        title: 'Export impossible',
+        message: error.message,
+      );
+    }
+  }
+
+  Future<void> _open(BuildContext context, String path) async {
+    final uri = Uri.parse('${AppConfig.webBaseUrl}$path');
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      await showAdaptiveMessage(
+        context,
+        title: 'Ouverture impossible',
+        message: uri.toString(),
+      );
+    }
   }
 
   @override
@@ -69,6 +126,14 @@ class ProfileScreen extends ConsumerWidget {
                     badge: profile.emailVerified ? 'vérifié' : 'non vérifié',
                     badgeOk: profile.emailVerified,
                   ),
+                  if (!profile.emailVerified)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: AdaptiveTextButton(
+                        label: "Renvoyer l'e-mail de vérification",
+                        onPressed: () => _resendVerification(context, ref),
+                      ),
+                    ),
                   if (profile.createdAt != null)
                     _InfoTile(
                       label: 'Membre depuis',
@@ -94,6 +159,59 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 32),
+                  Text(
+                    'Compte',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  _ActionTile(
+                    icon: Icons.lock_reset_outlined,
+                    label: 'Changer le mot de passe',
+                    onTap: () => showChangePasswordDialog(context, ref),
+                  ),
+                  _ActionTile(
+                    icon: Icons.download_outlined,
+                    label: 'Exporter mes données (RGPD)',
+                    onTap: () => _export(context, ref),
+                  ),
+                  _ActionTile(
+                    icon: Icons.delete_forever_outlined,
+                    label: 'Supprimer mon compte',
+                    destructive: true,
+                    onTap: () =>
+                        showDeleteAccountDialog(context, ref, profile.handle),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'À propos',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  _ActionTile(
+                    icon: Icons.public,
+                    label: 'Ouvrir riftarium.re',
+                    onTap: () => _open(context, '/'),
+                  ),
+                  _ActionTile(
+                    icon: Icons.gavel_outlined,
+                    label: 'Mentions légales',
+                    onTap: () => _open(context, '/mentions-legales'),
+                  ),
+                  _ActionTile(
+                    icon: Icons.privacy_tip_outlined,
+                    label: 'Politique de confidentialité',
+                    onTap: () => _open(context, '/confidentialite'),
+                  ),
+                  _ActionTile(
+                    icon: Icons.description_outlined,
+                    label: "Conditions d'utilisation",
+                    onTap: () => _open(context, '/cgu'),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Projet fan-made à but non lucratif, non affilié à Riot Games.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
@@ -201,6 +319,32 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive ? Theme.of(context).colorScheme.error : null;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: color),
+      title: Text(label, style: TextStyle(color: color)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
 class _StatsGrid extends StatelessWidget {
   const _StatsGrid({required this.stats});
 
@@ -250,21 +394,6 @@ class _ProfileUnavailable extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 48),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            AdaptiveFilledButton(label: 'Réessayer', onPressed: onRetry),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      ErrorView(message: message, onRetry: onRetry);
 }

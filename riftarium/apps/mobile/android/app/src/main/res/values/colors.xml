@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Parchemin Riftarium (charte web). -->
+    <color name="ic_launcher_background">#F5EFE1</color>
+    <color name="launch_background">#F5EFE1</color>
+</resources>

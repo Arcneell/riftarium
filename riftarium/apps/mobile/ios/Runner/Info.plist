@@ -10,6 +10,9 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Scanner de cartes (écran /scan) : lecture du code collector imprimé. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Riftarium utilise l’appareil photo pour reconnaître tes cartes et les ajouter à ta collection.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

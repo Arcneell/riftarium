@@ -8,10 +8,12 @@
 #   une PR web/API ne lance jamais Flutter, une PR mobile ne déploie jamais
 #   (voir paths-ignore dans deploy.yml).
 #
-# Pas de build APK/IPA ici pour l'instant : analyse + tests suffisent au
-# squelette. À activer (setup-java + `flutter build apk --debug`) quand
-# l'app embarque des plugins natifs (caméra, ML Kit) susceptibles de casser
-# la configuration Gradle.
+# Deux jobs :
+# - mobile-check : format, analyse statique, tests (rapide).
+# - mobile-apk : APK Android de test (release, signé avec la clé de debug),
+#   déposé en artefact du run pour l'installer directement sur un téléphone
+#   (Actions → run → Artifacts → riftarium-android-apk). Pas de build iOS :
+#   il exige un runner macOS et une signature Apple (phase 8).
 name: Mobile
 
 on:
@@ -24,6 +26,7 @@ on:
     paths:
       - "riftarium/apps/mobile/**"
       - ".github/workflows/mobile.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -53,3 +56,32 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze --fatal-infos
       - run: flutter test
+
+  apk:
+    name: mobile-apk
+    needs: flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: riftarium/apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.2"
+          cache: true
+      - run: flutter pub get
+      # Release = performances réelles ; signature de debug = installable
+      # en dehors du Play Store (sources inconnues), pas de secret requis.
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: riftarium-android-apk
+          path: riftarium/apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14

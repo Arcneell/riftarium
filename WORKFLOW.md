@@ -86,6 +86,8 @@ Commandes mobile (depuis `riftarium/apps/mobile`) :
 flutter pub get
 flutter run                     # appareil ou émulateur branché ; -d <id> pour choisir
 flutter build apk --debug       # valide la config Gradle (Windows ou Mac)
+flutter build apk --release     # APK de test installable (signé debug), ~85 Mo toutes ABI
+                                # (store : `flutter build appbundle`, phase 8)
 flutter build ipa               # Mac seulement, compte développeur Apple requis
 ```
 
@@ -210,21 +212,43 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
       Cupertino / Material), session persistée en stockage sécurisé, profil
       minimal (e-mail, statistiques), déconnexion. Reste pour plus tard : lien
       « mot de passe oublié » vers le site (url_launcher, phase 7).
-- [ ] **Phase 2 : cartothèque.** Liste paginée, recherche, filtres (domaine, type,
-      rareté, set), fiche carte, variantes, prix.
-- [ ] **Phase 3 : collection et wishlist.** Quantités, état, langue ; ajout depuis
-      la fiche carte.
-- [ ] **Phase 4 : decks.** Mes decks, communauté (likes, filtres), deck builder avec
-      validation tournoi, codes de deck (portage Dart).
-- [ ] **Phase 5 : règles.** `rules-fr.json` en asset, recherche, consultation hors ligne.
-- [ ] **Phase 6 : scan.** Caméra + ML Kit, lecture du code collector, ajout à la
-      collection en un geste, prix affiché.
-- [ ] **Phase 7 : finitions.** Icônes et écrans de lancement, liens profonds
-      (`riftarium.re/cartes/:id`, `/decks/:id`), export RGPD, mentions légales,
-      accessibilité (tailles de police dynamiques).
+- [x] **Phase 2 : cartothèque.** Grille paginée, recherche, filtres (set, type,
+      domaine, rareté, énergie, tri, possédées/manquantes), fiche carte (zoom,
+      prix + métadonnées, variantes, lien site). Un seul choix par facette pour
+      l'instant (l'API accepte le CSV : évolution possible dans `CardFilters`).
+- [x] **Phase 3 : collection et wishlist.** Résumé, complétion par set, recherche
+      API, lots (qty / état / langue), feuille d'édition, wishlist ;
+      `CardCollectionActions` dans la fiche carte (stepper + wishlist).
+- [x] **Phase 4 : decks.** Mes decks, détail (checks API, cartes par zone,
+      manquantes, like, partage), éditeur avec règles en direct
+      (`deck_rules.dart`, portage de `validation.py`), communauté (légendes,
+      filtres, pagination), codes de deck portés en Dart (`deck_code.dart`,
+      formats 1.1 → 1.5, 13 codes croisés avec la bibliothèque JS), import par code.
+- [x] **Phase 5 : règles.** Asset embarqué + rafraîchissement en ligne mis en cache
+      (dossier documents), recherche accent-insensible, chapitres / sections /
+      règles, exemples, renvois. Recopier l'asset quand `data/rules-fr.json` change.
+- [x] **Phase 6 : scan.** Caméra + ML Kit (latin), lecture du code collector ligne
+      par ligne, stabilisation, résolution via `GET /api/cards/hashes` (index
+      `rid` → id, chargé une fois), fiche + prix, « +1 » par
+      `POST /collection/{id}/entries`, historique de session. Pas de dHash.
+      Android : `proguard-rules.pro` (`-dontwarn` sur les scripts ML Kit non
+      embarqués, sinon R8 échoue en release), caméra déclarée optionnelle.
+      À valider sur appareil réel (cadrage, luminosité, vitesse).
+- [x] **Phase 7 : finitions.** Icônes (Android adaptatif + iOS, générées depuis
+      `apps/web/public/icon-512.png`, 1024 px suréchantillonné : à régénérer depuis
+      un visuel plus grand avant publication), écrans de lancement parchemin,
+      liens `riftarium.re/cartes/*` et `/decks/*` ouverts dans l'app (Android,
+      sans autoVerify), profil : renvoi de vérification, changement de mot de
+      passe, export RGPD (partage), suppression de compte, liens légaux. CI :
+      job `mobile-apk` (APK release signé debug en artefact, 14 jours).
 - [ ] **Phase 8 : publication.** Comptes développeur (Apple 99 $/an, Google 25 $),
-      signature (keystore Android, certificats iOS hors git), TestFlight et test
-      interne Play, build APK/IPA en CI (`setup-java`, runner macOS), fiches store.
+      signature (keystore Android + `key.properties` hors git, certificats iOS),
+      `ios/Podfile` : `platform :ios, '15.5'` (ML Kit), TestFlight et test interne
+      Play, build IPA sur runner macOS, fiches store. Liens profonds vérifiés :
+      publier `/.well-known/assetlinks.json` (empreinte SHA-256 de la clé de
+      signature) côté site et passer l'intent-filter en `autoVerify` ; iOS :
+      entitlement Associated Domains + `apple-app-site-association` (Team ID).
+      Régénérer les icônes depuis un visuel ≥ 1024 px.
 - [ ] **Phase 9 : après publication.** Décider du retrait du service worker, du
       manifest PWA et du scanner web (15 Mo d'OCR). Décision à reprendre, pas acquise.
 

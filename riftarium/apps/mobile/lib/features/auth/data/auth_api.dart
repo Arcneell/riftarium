@@ -66,4 +66,57 @@ class AuthApi {
       throw toApiException(error);
     }
   }
+
+  /// Change le mot de passe. L'API incrémente `token_version` : tous les jetons
+  /// (dont celui de l'appareil) sont révoqués, il faut se reconnecter.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.post<void>(
+        '/auth/password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
+  /// Renvoie l'e-mail de vérification d'adresse.
+  Future<void> resendVerification() async {
+    try {
+      await _dio.post<void>('/auth/resend-verification');
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
+  /// Export RGPD : toutes les données du compte, en JSON.
+  Future<Map<String, dynamic>> exportAccount() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/auth/export');
+      return response.data ?? const {};
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
+  /// Suppression définitive du compte : mot de passe et pseudo exigés.
+  Future<void> deleteAccount({
+    required String password,
+    required String handle,
+  }) async {
+    try {
+      await _dio.delete<void>(
+        '/auth/me',
+        data: {'password': password, 'handle': handle},
+      );
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
 }
