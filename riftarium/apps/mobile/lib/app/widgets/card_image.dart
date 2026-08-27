@@ -128,12 +128,7 @@ class CardImage extends StatelessWidget {
     }
 
     if (heroTag != null) {
-      image = Hero(
-        tag: heroTag!,
-        flightShuttleBuilder: (context, animation, direction, from, to) =>
-            direction == HeroFlightDirection.push ? to.widget : from.widget,
-        child: image,
-      );
+      image = Hero(tag: heroTag!, child: image);
     }
 
     return width == null ? image : SizedBox(width: width, child: image);

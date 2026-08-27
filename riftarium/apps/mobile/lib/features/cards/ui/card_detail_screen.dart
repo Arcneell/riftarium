@@ -48,25 +48,34 @@ class CardDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      // `expand` : sans lui, le Stack prendrait la hauteur de la rangée
+      // d'actions (seul enfant non positionné) et rognerait la fiche.
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Positioned.fill(child: body),
           // Retour et profil en surimpression : rien ne coupe le visuel.
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 6, 4, 0),
-              child: Row(
-                children: [
-                  _OverlayAction(
-                    icon: Icons.arrow_back,
-                    label: 'Revenir à la cartothèque',
-                    onTap: () => context.canPop()
-                        ? context.pop()
-                        : context.go(AppRoutes.cards),
-                  ),
-                  const Spacer(),
-                  const ProfileAction(),
-                ],
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 4, 0),
+                child: Row(
+                  children: [
+                    _OverlayAction(
+                      icon: Icons.arrow_back,
+                      label: 'Revenir à la cartothèque',
+                      onTap: () => context.canPop()
+                          ? context.pop()
+                          : context.go(AppRoutes.cards),
+                    ),
+                    const Spacer(),
+                    const ProfileAction(),
+                  ],
+                ),
               ),
             ),
           ),
