@@ -122,22 +122,30 @@ docker compose -f compose.yaml config --quiet && python scripts/check_compose_se
   depuis l'émulateur Android, `http://localhost:8889/api` depuis le simulateur iOS.
   L'URL est une constante de build (`--dart-define=API_BASE_URL=...`), jamais
   codée en dur dans un écran.
-- **Authentification aujourd'hui** : cookie HttpOnly `riftarium_session` (JWT
-  HS256, TTL `jwt_ttl_hours` = 24 h). `current_user` (`app/auth.py`) accepte
-  déjà `Authorization: Bearer <jwt>`, mais `POST /api/auth/login` et `/register`
-  renvoient `SessionOut {handle, avatar_url, is_admin}` **sans le jeton**.
+- **Authentification web** : cookie HttpOnly `riftarium_session` (JWT HS256,
+  TTL `jwt_ttl_hours` = 24 h). `current_user` (`app/auth.py`) accepte aussi
+  `Authorization: Bearer <jwt>` (le Bearer prime sur le cookie) ; sans en-tête
+  mobile, `POST /api/auth/login` et `/register` renvoient
+  `SessionOut {handle, avatar_url, is_admin}` **sans le jeton**.
   `enforce_same_origin` laisse passer les requêtes sans en-tête `Origin`
   (client natif) : rien à changer côté anti-CSRF.
 - **Choix pour le mobile : Bearer**, jeton en stockage sécurisé
-  (Keychain / Keystore). Travail API de la phase 1, rétrocompatible avec le web :
-  1. si l'en-tête `X-Riftarium-Client: mobile` est présent, `SessionOut` porte en
-     plus `token` ; le cookie est toujours posé (le web ne voit aucune différence) ;
-  2. TTL long pour ce client (proposition : 30 jours, réglage `jwt_ttl_hours_mobile`) ;
-     la révocation globale existante (`token_version`, changement de mot de passe)
-     s'applique telle quelle ;
-  3. `POST /api/auth/logout` : côté mobile, oublier le jeton suffit.
+  (Keychain / Keystore). Contrat livré en phase 1, rétrocompatible avec le web :
+  1. si l'en-tête `X-Riftarium-Client: mobile` est présent (casse ignorée),
+     `POST /api/auth/login` et `/register` renvoient `SessionOut` avec `token` ;
+     sans l'en-tête, la clé `token` est absente (sérialiseur du modèle, pas de
+     `null`) et le cookie reste posé dans les deux cas ;
+  2. TTL du jeton mobile : `jwt_ttl_hours_mobile` = 720 h (30 jours). La révocation
+     globale (`token_version`, changement de mot de passe) s'applique telle quelle :
+     après `POST /api/auth/password`, l'app doit se reconnecter (cette route ne
+     renvoie pas de jeton mobile) ;
+  3. `POST /api/auth/logout` : côté mobile, l'oubli du jeton suffit ; l'appel est
+     fait quand même, sans bloquer la déconnexion locale s'il échoue ;
+  4. côté Flutter : `core/api_client.dart` (en-tête + Bearer), `core/token_store.dart`
+     (flutter_secure_storage), `features/auth/application/auth_controller.dart`
+     (restauration au démarrage, connexion, inscription, déconnexion).
   Les limites `limit_auth` / `limit_auth_account` s'appliquent : pas de retry
-  automatique sur les endpoints d'authentification.
+  automatique sur les endpoints d'authentification. Tests : `tests/test_mobile_auth.py`.
 - **Endpoints réutilisés tels quels** : `GET /api/cards` (recherche, filtres,
   pagination), `GET /api/cards/{id}`, `GET /api/cards/{id}/variants`,
   `GET /api/sets`, `GET /api/prices/meta`, `GET /api/cards/hashes` (index du
@@ -197,9 +205,11 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
 - [x] **Phase 0 : squelette.** `apps/mobile` créé, identifiants `re.riftarium.app`,
       `mobile.yml`, `paths-ignore` dans `deploy.yml`, Dependabot `pub`,
       `.dockerignore`, ce document.
-- [ ] **Phase 1 : authentification.** API (`token` dans `SessionOut` pour le client
-      mobile, TTL long), écran de connexion / inscription, session persistée,
-      écran profil minimal, déconnexion.
+- [x] **Phase 1 : authentification.** API (`token` dans `SessionOut` pour le client
+      mobile, TTL 30 jours), écrans connexion / inscription (widgets adaptatifs
+      Cupertino / Material), session persistée en stockage sécurisé, profil
+      minimal (e-mail, statistiques), déconnexion. Reste pour plus tard : lien
+      « mot de passe oublié » vers le site (url_launcher, phase 7).
 - [ ] **Phase 2 : cartothèque.** Liste paginée, recherche, filtres (domaine, type,
       rareté, set), fiche carte, variantes, prix.
 - [ ] **Phase 3 : collection et wishlist.** Quantités, état, langue ; ajout depuis

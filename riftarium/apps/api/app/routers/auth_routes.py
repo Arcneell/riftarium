@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from ..auth import (
     set_session_cookie,
     verify_password,
 )
+from ..config import settings
 from ..db import get_db
 from ..models import User, utcnow
 from ..moderation import review
@@ -36,13 +37,27 @@ from ..security import enforce_same_origin, limit_auth, limit_auth_account, limi
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# En-tête envoyé par l'application mobile native : elle n'a pas de cookie et récupère
+# donc le jeton dans le corps de la réponse. Absent = navigateur, comportement inchangé.
+MOBILE_CLIENT_HEADER = "X-Riftarium-Client"
+MOBILE_CLIENT_VALUE = "mobile"
 
-def _session(db: Session, user: User, response: Response) -> SessionOut:
-    set_session_cookie(response, make_token(user))
+
+def is_mobile_client(request: Request) -> bool:
+    """Vrai si l'appel vient du client mobile natif (en-tête dédié, casse ignorée)."""
+    return request.headers.get(MOBILE_CLIENT_HEADER, "").strip().lower() == MOBILE_CLIENT_VALUE
+
+
+def _session(db: Session, user: User, response: Response, *, mobile: bool) -> SessionOut:
+    # Jeton longue durée pour le client natif (stockage sécurisé de l'appareil) ; le
+    # cookie reste posé dans les deux cas, il est sans effet pour un client non-navigateur.
+    token = make_token(user, ttl_hours=settings.jwt_ttl_hours_mobile) if mobile else make_token(user)
+    set_session_cookie(response, token)
     return SessionOut(
         handle=user.handle,
         avatar_url=avatar_urls(db, [user]).get(user.id),
         is_admin=bool(user.is_admin),
+        token=token if mobile else None,
     )
 
 
@@ -58,6 +73,7 @@ def _account_conflict(db: Session, handle: str, email: str) -> bool:
 @router.post("/register", response_model=SessionOut, status_code=201)
 def register(
     payload: RegisterIn,
+    request: Request,
     response: Response,
     background: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -85,12 +101,13 @@ def register(
     token = issue_auth_token(db, user, "verify")
     db.commit()
     background.add_task(mailer.send_verification_email, user.email, token)
-    return _session(db, user, response)
+    return _session(db, user, response, mobile=is_mobile_client(request))
 
 
 @router.post("/login", response_model=SessionOut)
 def login(
     payload: LoginIn,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db),
     _: None = Depends(limit_auth),
@@ -107,7 +124,7 @@ def login(
     if needs_rehash(user.password_hash):  # renforcement transparent des anciens hashes
         user.password_hash = hash_password(payload.password)
         db.commit()
-    return _session(db, user, response)
+    return _session(db, user, response, mobile=is_mobile_client(request))
 
 
 @router.post("/logout", status_code=204)
@@ -170,7 +187,7 @@ def change_password(
     user.token_version += 1
     db.commit()
     db.refresh(user)
-    return _session(db, user, response)
+    return _session(db, user, response, mobile=False)
 
 
 @router.post("/forgot-password", status_code=204)

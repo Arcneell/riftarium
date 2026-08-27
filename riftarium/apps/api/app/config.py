@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./riftarium.db"
     jwt_secret: str = "dev-secret-change-me"
     jwt_ttl_hours: int = 24
+    # Client natif (application mobile) : le jeton est renvoyé dans le corps et conservé
+    # en stockage sécurisé de l'appareil, d'où une durée de vie longue (30 jours). La
+    # révocation globale reste le token_version (changement de mot de passe), inchangée.
+    jwt_ttl_hours_mobile: int = 720
     admin_token: str = ""
     # Adresses e-mail des administrateurs, séparées par des virgules (insensible à la casse).
     # Source de vérité unique du drapeau users.is_admin, appliquée au démarrage.

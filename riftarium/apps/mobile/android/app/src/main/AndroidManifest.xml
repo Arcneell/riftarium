@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Accès réseau : l’application est cliente de l’API https://riftarium.re. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Riftarium"
         android:name="${applicationName}"

@@ -136,12 +136,14 @@ def consume_auth_token(db: Session, raw: str, purpose: str) -> User | None:
     return db.get(User, row.user_id)
 
 
-def make_token(user: User) -> str:
+def make_token(user: User, *, ttl_hours: int | None = None) -> str:
+    """Jeton de session. ttl_hours=None : durée de vie web (settings.jwt_ttl_hours)."""
+    ttl = settings.jwt_ttl_hours if ttl_hours is None else ttl_hours
     payload = {
         "sub": str(user.id),
         "handle": user.handle,
         "ver": user.token_version,
-        "exp": datetime.now(UTC) + timedelta(hours=settings.jwt_ttl_hours),
+        "exp": datetime.now(UTC) + timedelta(hours=ttl),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 

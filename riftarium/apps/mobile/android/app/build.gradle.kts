@@ -7,7 +7,9 @@ plugins {
 
 android {
     namespace = "re.riftarium.app"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 compile contre le SDK 37 (rétrocompatible) ;
+    // Flutter 3.41 propose encore 36 par défaut.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
