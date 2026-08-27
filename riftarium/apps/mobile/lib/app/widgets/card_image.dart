@@ -1,17 +1,68 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../../features/cards/domain/card.dart';
+import '../design/banners.dart';
+import '../design/foil.dart';
+import '../design/shimmer.dart';
+import '../theme.dart';
 
-/// Visuel d'une carte, mis en cache sur l'appareil. Ratio 5/7 en portrait,
-/// 7/5 pour les champs de bataille (orientation paysage).
+/// Cache disque des visuels : 30 jours, 4 000 fichiers. Les URL sont
+/// redimensionnées côté CDN (`w=`) : une vignette pèse ~20 Ko au lieu du PNG
+/// complet, et l'image plein format n'est demandée que sur la fiche.
+final riftImageCache = CacheManager(
+  Config(
+    'riftarium-images',
+    stalePeriod: const Duration(days: 30),
+    maxNrOfCacheObjects: 4000,
+  ),
+);
+
+/// Largeurs demandées au CDN selon l'usage.
+abstract final class CardArtSize {
+  static const tile = 360;
+  static const detail = 860;
+  static const zoom = 1200;
+}
+
+/// Précharge les vignettes d'une liste (page suivante d'une grille) : le
+/// défilement ne montre alors jamais de squelette.
+Future<void> precacheCardThumbs(
+  BuildContext context,
+  Iterable<RiftCard> cards, {
+  int width = CardArtSize.tile,
+}) async {
+  for (final card in cards) {
+    final url = card.imageUrl;
+    if (url == null || url.isEmpty) continue;
+    if (!context.mounted) return;
+    await precacheImage(
+      CachedNetworkImageProvider(
+        cardThumb(url, width: width),
+        cacheManager: riftImageCache,
+      ),
+      context,
+      onError: (_, _) {},
+    );
+  }
+}
+
+/// Visuel d'une carte. Ratio 5/7 (7/5 pour les champs de bataille), coins
+/// arrondis, squelette pendant le chargement, fondu à l'arrivée, reflet foil
+/// optionnel, `heroTag` pour la transition grille → fiche.
 class CardImage extends StatelessWidget {
   const CardImage({
     super.key,
     required this.card,
     this.width,
-    this.borderRadius = 10,
+    this.borderRadius = RiftRadius.card,
     this.fit = BoxFit.cover,
+    this.thumbWidth = CardArtSize.tile,
+    this.foil = false,
+    this.foilIntensity = 1,
+    this.heroTag,
+    this.shadow = false,
   });
 
   final RiftCard card;
@@ -19,53 +70,104 @@ class CardImage extends StatelessWidget {
   final double borderRadius;
   final BoxFit fit;
 
+  /// Largeur demandée au CDN (pixels).
+  final int thumbWidth;
+
+  /// Reflet animé (carte possédée, variante foil).
+  final bool foil;
+  final double foilIntensity;
+
+  /// Même tag dans la grille et la fiche → transition partagée.
+  final Object? heroTag;
+  final bool shadow;
+
   static const portraitRatio = 5 / 7;
 
   @override
   Widget build(BuildContext context) {
     final url = card.imageUrl;
     final ratio = card.isLandscape ? 1 / portraitRatio : portraitRatio;
-    Widget child = url == null || url.isEmpty
+    final radius = BorderRadius.circular(borderRadius);
+
+    Widget image = url == null || url.isEmpty
         ? _Placeholder(card: card)
         : CachedNetworkImage(
-            imageUrl: url,
+            imageUrl: cardThumb(url, width: thumbWidth),
+            cacheManager: riftImageCache,
             fit: fit,
-            placeholder: (context, url) => _Placeholder(card: card, dim: true),
+            fadeInDuration: RiftMotion.base,
+            fadeOutDuration: RiftMotion.quick,
+            // Décodage à la taille utile : mémoire et défilement plus légers.
+            memCacheWidth: thumbWidth,
+            placeholder: (context, url) => Shimmer(borderRadius: borderRadius),
             errorWidget: (context, url, error) => _Placeholder(card: card),
           );
-    child = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: AspectRatio(aspectRatio: ratio, child: child),
+
+    image = ClipRRect(
+      borderRadius: radius,
+      child: AspectRatio(aspectRatio: ratio, child: image),
     );
-    return width == null ? child : SizedBox(width: width, child: child);
+
+    if (foil) {
+      image = FoilOverlay(
+        intensity: foilIntensity,
+        rainbow: card.foil,
+        borderRadius: borderRadius,
+        child: image,
+      );
+    }
+
+    if (shadow) {
+      image = DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: RiftShadows.soft,
+        ),
+        child: image,
+      );
+    }
+
+    if (heroTag != null) {
+      image = Hero(
+        tag: heroTag!,
+        flightShuttleBuilder: (context, animation, direction, from, to) =>
+            direction == HeroFlightDirection.push ? to.widget : from.widget,
+        child: image,
+      );
+    }
+
+    return width == null ? image : SizedBox(width: width, child: image);
   }
 }
 
 class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.card, this.dim = false});
+  const _Placeholder({required this.card});
 
   final RiftCard card;
-  final bool dim;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final text = riftText(context);
     return Container(
-      color: scheme.surfaceContainerHighest,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.surfaceContainerHighest,
+            RiftColors.goldSoft.withValues(alpha: 0.35),
+          ],
+        ),
+      ),
       alignment: Alignment.center,
-      padding: const EdgeInsets.all(8),
-      child: dim
-          ? const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-            )
-          : Text(
-              card.name,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-            ),
+      padding: const EdgeInsets.all(10),
+      child: Text(
+        card.name,
+        textAlign: TextAlign.center,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: text.displaySmall.copyWith(fontSize: 13),
+      ),
     );
   }
 }

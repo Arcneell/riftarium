@@ -5,7 +5,7 @@ import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
 import 'package:riftarium_mobile/features/auth/ui/splash_screen.dart';
-import 'package:riftarium_mobile/features/cards/ui/cards_screen.dart';
+import 'package:riftarium_mobile/features/home/ui/home_screen.dart';
 import 'package:riftarium_mobile/features/profile/ui/profile_screen.dart';
 import 'package:riftarium_mobile/main.dart';
 
@@ -32,7 +32,7 @@ void main() {
     child: const RiftariumApp(),
   );
 
-  testWidgets('avec une session : écran d’attente puis onglet Cartes', (
+  testWidgets('avec une session : écran d’attente puis accueil', (
     tester,
   ) async {
     final store = InMemoryTokenStore('jwt');
@@ -44,16 +44,16 @@ void main() {
     expect(find.byType(SplashScreen), findsOneWidget);
 
     await tester.pumpAndSettle();
-    expect(find.byType(CardsScreen), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('sans session : la cartothèque reste accessible', (tester) async {
+  testWidgets('sans session : l’accueil reste accessible', (tester) async {
     await tester.pumpWidget(
       app(store: InMemoryTokenStore(), adapter: FakeHttpAdapter({})),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(CardsScreen), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
   });
 
   testWidgets('sans session : l’onglet Profil invite à se connecter', (

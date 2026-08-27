@@ -13,18 +13,24 @@ import '../features/collection/ui/wishlist_screen.dart';
 import '../features/decks/ui/community_screen.dart';
 import '../features/decks/ui/deck_detail_screen.dart';
 import '../features/decks/ui/decks_screen.dart';
+import '../features/home/ui/home_screen.dart';
 import '../features/profile/ui/profile_screen.dart';
+import '../features/rules/ui/advanced_help_screen.dart';
+import '../features/rules/ui/advanced_topic_screen.dart';
+import '../features/rules/ui/beginner_guide_screen.dart';
+import '../features/rules/ui/official_rules_screen.dart';
 import '../features/rules/ui/rules_screen.dart';
 import '../features/scan/ui/scan_screen.dart';
 import 'shell.dart';
 
 /// Chemins de l'application. Alignés sur le site quand un équivalent existe
-/// (liens profonds `riftarium.re/cartes/:id`, `/decks/:id`).
+/// (liens profonds `riftarium.re/cartes/:id`, `/decks/:id`, `/regles/...`).
 abstract final class AppRoutes {
-  static const splash = '/';
+  static const splash = '/demarrage';
   static const login = '/connexion';
   static const register = '/inscription';
 
+  static const home = '/';
   static const cards = '/cartes';
   static String card(String id) => '/cartes/$id';
   static const collection = '/collection';
@@ -33,6 +39,10 @@ abstract final class AppRoutes {
   static String deck(int id) => '/decks/$id';
   static const community = '/decks/communaute';
   static const rules = '/regles';
+  static const beginnerGuide = '/regles/debutant';
+  static const advancedHelp = '/regles/avancee';
+  static String advancedTopic(String slug) => '/regles/avancee/$slug';
+  static const officialRules = '/regles/officielles';
   static const profile = '/profil';
   static const scan = '/scan';
 
@@ -81,7 +91,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             queryParameters: {'from': state.uri.toString()},
           ).toString();
         case AuthStatus.signedOut:
-          if (location == AppRoutes.splash) return from ?? AppRoutes.cards;
+          if (location == AppRoutes.splash) return from ?? AppRoutes.home;
           // Les onglets réservés affichent eux-mêmes l'invite de connexion ;
           // seul le scanner (plein écran) renvoie vers la connexion.
           if (location == AppRoutes.scan) {
@@ -90,7 +100,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return null;
         case AuthStatus.signedIn:
           if (!AppRoutes._entry.contains(location)) return null;
-          return from ?? AppRoutes.cards;
+          return from ?? AppRoutes.home;
       }
     },
     routes: [
@@ -110,10 +120,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.scan,
         builder: (context, state) => const ScanScreen(),
       ),
+      // Le profil se pousse par-dessus les onglets (avatar en haut à droite).
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
         branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -168,14 +191,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.rules,
                 builder: (context, state) => const RulesScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.profile,
-                builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'debutant',
+                    builder: (context, state) => const BeginnerGuideScreen(),
+                  ),
+                  GoRoute(
+                    path: 'avancee',
+                    builder: (context, state) => const AdvancedHelpScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':slug',
+                        builder: (context, state) => AdvancedTopicScreen(
+                          slug: state.pathParameters['slug']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'officielles',
+                    builder: (context, state) => const OfficialRulesScreen(),
+                  ),
+                ],
               ),
             ],
           ),

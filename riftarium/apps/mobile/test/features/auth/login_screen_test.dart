@@ -7,7 +7,7 @@ import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
 import 'package:riftarium_mobile/features/auth/ui/login_screen.dart';
-import 'package:riftarium_mobile/features/cards/ui/cards_screen.dart';
+import 'package:riftarium_mobile/features/home/ui/home_screen.dart';
 import 'package:riftarium_mobile/main.dart';
 
 import '../../support/fakes.dart';
@@ -72,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsNothing);
-    expect(find.byType(CardsScreen), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
     expect(await store.read(), 'jwt-de-test');
   });
 

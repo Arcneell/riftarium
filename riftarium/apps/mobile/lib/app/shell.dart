@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'adaptive.dart';
+import 'theme.dart';
 
 /// Onglets de l'application, dans l'ordre des branches du StatefulShellRoute
 /// (voir router.dart). Un onglet = une pile de navigation indépendante.
@@ -22,6 +23,13 @@ class AppTab {
   final IconData cupertinoActiveIcon;
 
   static const values = [
+    AppTab(
+      label: 'Accueil',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      cupertinoIcon: CupertinoIcons.house,
+      cupertinoActiveIcon: CupertinoIcons.house_fill,
+    ),
     AppTab(
       label: 'Cartes',
       icon: Icons.style_outlined,
@@ -50,17 +58,11 @@ class AppTab {
       cupertinoIcon: CupertinoIcons.book,
       cupertinoActiveIcon: CupertinoIcons.book_fill,
     ),
-    AppTab(
-      label: 'Profil',
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      cupertinoIcon: CupertinoIcons.person,
-      cupertinoActiveIcon: CupertinoIcons.person_fill,
-    ),
   ];
 }
 
-/// Coque à onglets : barre Cupertino sur iOS, NavigationBar Material ailleurs.
+/// Coque à onglets : barre translucide parchemin, filet or sur l'onglet actif.
+/// Cupertino sur iOS, NavigationBar Material ailleurs.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -75,22 +77,38 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final index = navigationShell.currentIndex;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final barColor = (dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2))
+        .withValues(alpha: 0.94);
+
     if (isCupertino(context)) {
       return CupertinoPageScaffold(
         child: Column(
           children: [
             Expanded(child: navigationShell),
-            CupertinoTabBar(
-              currentIndex: index,
-              onTap: _select,
-              items: [
-                for (final tab in AppTab.values)
-                  BottomNavigationBarItem(
-                    icon: Icon(tab.cupertinoIcon),
-                    activeIcon: Icon(tab.cupertinoActiveIcon),
-                    label: tab.label,
-                  ),
-              ],
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outline),
+                ),
+              ),
+              child: CupertinoTabBar(
+                currentIndex: index,
+                onTap: _select,
+                backgroundColor: barColor,
+                activeColor: RiftColors.goldDeep,
+                inactiveColor: theme.colorScheme.onSurfaceVariant,
+                border: null,
+                items: [
+                  for (final tab in AppTab.values)
+                    BottomNavigationBarItem(
+                      icon: Icon(tab.cupertinoIcon),
+                      activeIcon: Icon(tab.cupertinoActiveIcon),
+                      label: tab.label,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -98,17 +116,23 @@ class AppShell extends StatelessWidget {
     }
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: _select,
-        destinations: [
-          for (final tab in AppTab.values)
-            NavigationDestination(
-              icon: Icon(tab.icon),
-              selectedIcon: Icon(tab.activeIcon),
-              label: tab.label,
-            ),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: theme.colorScheme.outline)),
+        ),
+        child: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: _select,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            for (final tab in AppTab.values)
+              NavigationDestination(
+                icon: Icon(tab.icon),
+                selectedIcon: Icon(tab.activeIcon),
+                label: tab.label,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -94,11 +94,15 @@ void main() {
     expect(find.text('Légende · 1/1'), findsOneWidget);
 
     // Les zones suivantes sont plus bas : la liste est construite à la demande.
-    await tester.drag(find.byType(ListView), const Offset(0, -600));
-    await tester.pumpAndSettle();
-    expect(find.text('Champs de bataille · 1/3'), findsOneWidget);
-    expect(find.text('Runes · 12/12'), findsOneWidget);
-    expect(find.text('Deck principal · 3/40+'), findsOneWidget);
+    for (final label in [
+      'Champs de bataille · 1/3',
+      'Runes · 12/12',
+      'Deck principal · 3/40+',
+    ]) {
+      await tester.scrollUntilVisible(find.text(label), 200);
+      await tester.pumpAndSettle();
+      expect(find.text(label), findsOneWidget);
+    }
     expect(find.text('×12'), findsOneWidget);
     expect(find.text('×3'), findsOneWidget);
   });
