@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riftarium_mobile/app/router.dart';
 import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
 import 'package:riftarium_mobile/features/auth/ui/login_screen.dart';
+import 'package:riftarium_mobile/features/cards/ui/cards_screen.dart';
 import 'package:riftarium_mobile/main.dart';
 
 import '../../support/fakes.dart';
@@ -18,6 +20,7 @@ void main() {
     return ProviderScope(
       overrides: [
         tokenStoreProvider.overrideWithValue(store),
+        initialLocationProvider.overrideWithValue(AppRoutes.login),
         dioProvider.overrideWith(
           (ref) => createApiClient(
             readToken: store.read,
@@ -34,9 +37,7 @@ void main() {
     store = InMemoryTokenStore();
   });
 
-  testWidgets('sans session, l’application s’ouvre sur la connexion', (
-    tester,
-  ) async {
+  testWidgets('sans session, l’écran de connexion s’affiche', (tester) async {
     adapter = FakeHttpAdapter({});
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
@@ -71,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsNothing);
-    expect(find.text('ezreal'), findsWidgets);
+    expect(find.byType(CardsScreen), findsOneWidget);
     expect(await store.read(), 'jwt-de-test');
   });
 

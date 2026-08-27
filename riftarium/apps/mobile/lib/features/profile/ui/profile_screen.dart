@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/adaptive.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/common.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
 
@@ -34,6 +35,13 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
+    if (!auth.isSignedIn) {
+      return const SignInRequired(
+        title: 'Profil',
+        message:
+            'Connecte-toi pour retrouver ton compte, ta collection et tes decks.',
+      );
+    }
     final profile = auth.profile;
     return AdaptiveScaffold(
       title: 'Profil',
