@@ -46,14 +46,6 @@ String typeLabel(String value) => kTypeLabels[value] ?? value;
 
 String rarityLabel(String value) => kRarityLabels[value] ?? value;
 
-/// « Showcase » n'est pas une cinquième rareté fonctionnelle : c'est la famille
-/// des impressions spéciales, que l'API reconstruit à partir des drapeaux
-/// (alternate_art, overnumbered, signature) quand les données source ne la
-/// codent pas.
-const String kShowcaseHint =
-    'Showcase regroupe les impressions spéciales : alt-arts, overnumbered '
-    '(n° au-delà du set) et signatures d’artiste.';
-
 String energyLabel(String value) => value == '7+' ? '7 et plus' : value;
 
 /// « Fureur / Ordre », ou `null` si la carte n'a aucun domaine.
