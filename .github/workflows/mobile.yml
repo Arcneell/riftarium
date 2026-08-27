@@ -1,0 +1,55 @@
+# Vérifications de l'application mobile Flutter (riftarium/apps/mobile).
+#
+# Workflow séparé de ci.yml, volontairement :
+# - ci.yml porte les checks requis de main (api-test, web-check,
+#   compose-security) et est réutilisé par deploy.yml via workflow_call ;
+#   y ajouter Flutter allongerait chaque PR web/API et chaque déploiement.
+# - Ici, déclenchement uniquement quand apps/mobile (ou ce fichier) change :
+#   une PR web/API ne lance jamais Flutter, une PR mobile ne déploie jamais
+#   (voir paths-ignore dans deploy.yml).
+#
+# Pas de build APK/IPA ici pour l'instant : analyse + tests suffisent au
+# squelette. À activer (setup-java + `flutter build apk --debug`) quand
+# l'app embarque des plugins natifs (caméra, ML Kit) susceptibles de casser
+# la configuration Gradle.
+name: Mobile
+
+on:
+  pull_request:
+    paths:
+      - "riftarium/apps/mobile/**"
+      - ".github/workflows/mobile.yml"
+  push:
+    branches: [main]
+    paths:
+      - "riftarium/apps/mobile/**"
+      - ".github/workflows/mobile.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: mobile-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: riftarium/apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Alignée sur la toolchain locale (voir WORKFLOW.md). Monter les deux ensemble.
+          flutter-version: "3.41.2"
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze --fatal-infos
+      - run: flutter test

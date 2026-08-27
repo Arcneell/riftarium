@@ -3,6 +3,15 @@ name: Déploiement production
 on:
   push:
     branches: [main]
+    # L'application mobile (Flutter) et la documentation des agents ne font pas
+    # partie des images Docker : leurs commits ne redéploient pas le VPS. Le
+    # déclenchement manuel et le cron hebdomadaire ne sont pas filtrés.
+    paths-ignore:
+      - "riftarium/apps/mobile/**"
+      - ".github/workflows/mobile.yml"
+      - "WORKFLOW.md"
+      - "CLAUDE.md"
+      - ".cursor/**"
   workflow_dispatch:
   # Filet pour les merges Dependabot : un merge effectué via GITHUB_TOKEN ne
   # déclenche pas les workflows push (anti-récursion GitHub). Ce déploiement

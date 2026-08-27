@@ -40,6 +40,22 @@ updates:
     commit-message:
       prefix: "deps(web)"
 
+  # Application mobile Flutter. Pas d'auto-merge (dependabot-automerge.yml ne
+  # couvre que pip et npm) : un bump de plugin natif (caméra, ML Kit) se
+  # valide à la main avec un build sur appareil.
+  - package-ecosystem: "pub"
+    directory: "/riftarium/apps/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Indian/Reunion"
+    groups:
+      pub-mineures:
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "deps(mobile)"
+
   - package-ecosystem: "docker"
     directories:
       - "/riftarium/apps/api"
