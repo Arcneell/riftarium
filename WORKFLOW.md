@@ -155,6 +155,13 @@ docker compose -f compose.yaml config --quiet && python scripts/check_compose_se
   `/api/auth/*` (mot de passe oublié, vérification e-mail, export RGPD),
   `/api/metrics` (pages : ajouter une valeur `mobile` si l'on trace l'app).
   Référence : `apps/api/app/routers/*.py` et `apps/api/app/schemas.py`.
+- **Raretés** : quatre raretés fonctionnelles (Common, Uncommon, Rare, Epic).
+  « Showcase » = famille des impressions spéciales : alt-arts (gemme
+  hexagonale), overnumbered (n° ≥ taille du set), signatures (overnumber signé,
+  `*` dans l'identifiant). Les données source ne la codent pas de façon
+  homogène (rareté « Showcase » sur les alt-arts d'OGN et SFD seulement) :
+  `rarity=Showcase` côté API inclut `alternate_art | overnumbered | signature`
+  (`apply_filters`, tests `test_showcase_filter.py`).
 - **Images de cartes** : hôtes autorisés par `allowed_image_hosts()`
   (`app/security.py`) ; mise en cache côté app (`cached_network_image`).
 - **Codes de deck** : le web utilise la bibliothèque JS

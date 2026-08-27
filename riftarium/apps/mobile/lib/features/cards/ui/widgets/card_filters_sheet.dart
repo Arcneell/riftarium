@@ -109,13 +109,26 @@ class CardFiltersSheet extends ConsumerWidget {
                 ),
                 _Facet(
                   title: 'Rareté',
-                  child: _Options(
-                    selected: filters.rarity,
-                    options: [
-                      for (final entry in kRarityLabels.entries)
-                        (entry.key, entry.value),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _Options(
+                        selected: filters.rarity,
+                        options: [
+                          for (final entry in kRarityLabels.entries)
+                            (entry.key, entry.value),
+                        ],
+                        onSelected: controller.setRarity,
+                      ),
+                      if (filters.rarity == 'Showcase')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            kShowcaseHint,
+                            style: riftText(context).small,
+                          ),
+                        ),
                     ],
-                    onSelected: controller.setRarity,
                   ),
                 ),
                 _Facet(
