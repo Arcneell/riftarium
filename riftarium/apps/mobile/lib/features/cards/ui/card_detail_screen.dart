@@ -288,10 +288,9 @@ class _CardStage extends StatelessWidget {
   }
 
   Widget _stage(BuildContext context, Color paper, Color glow, double width) {
-    // Le reflet foil tourne en boucle : pas de reflet du tout quand le système
-    // demande moins d'animations.
-    final shine =
-        (card.foil || card.isOwned) && !MediaQuery.disableAnimationsOf(context);
+    // Seules les impressions foil reflètent ; pas de reflet du tout quand le
+    // système demande moins d'animations.
+    final shine = card.foil && !MediaQuery.disableAnimationsOf(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(

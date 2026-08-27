@@ -180,7 +180,13 @@ def apply_filters(query, *, q, set_id, type_, domain, rarity, energy):
         query = query.where(Card.type.in_(types))
     rarities = csv_parts(rarity)
     if rarities:
-        query = query.where(Card.rarity.in_(rarities))
+        # Les données source ne sont pas homogènes : les alt-arts d'OGN et SFD portent la
+        # rareté « Showcase », ceux d'UNL et VEN gardent leur rareté de base (Rare, Epic).
+        # Le filtre Showcase désigne donc aussi toute impression alternative.
+        condition = Card.rarity.in_(rarities)
+        if "Showcase" in rarities:
+            condition = or_(condition, Card.alternate_art.is_(True))
+        query = query.where(condition)
     domains = csv_parts(domain)
     if domains:
         query = query.where(

@@ -293,8 +293,7 @@ class _RandomCard extends ConsumerWidget {
                 CardImage(
                   card: card,
                   width: 112,
-                  foil: true,
-                  foilIntensity: 0.8,
+                  foil: card.foil,
                   heroTag: 'card-${card.id}',
                   shadow: true,
                 ),

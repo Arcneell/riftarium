@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'tokens.dart';
 
-/// Reflet « foil » : une bande claire qui balaie la carte en 7 s, fondue en
-/// mode écran, comme `.card-foil` sur le site. Signature visuelle de la
-/// collection : une carte que l'on possède brille. Désactivé quand le système
-/// demande moins d'animations.
+/// Reflet « foil » : une bande claire oblique qui balaie la carte en 7 s,
+/// fondue en mode écran, comme `.card-foil` sur le site. Signature visuelle de
+/// la collection : une carte que l'on possède brille. Désactivé quand le
+/// système demande moins d'animations.
 class FoilOverlay extends StatefulWidget {
   const FoilOverlay({
     super.key,
@@ -80,35 +80,56 @@ class _FoilOverlayState extends State<FoilOverlay>
           widget.child,
           Positioned.fill(
             child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) {
-                  final t = Curves.easeInOut.transform(_controller.value);
-                  // -0.34 → +0.34 de la largeur, comme @keyframes foil.
-                  final shift = -0.34 + 0.68 * t;
-                  return FractionalTranslation(
-                    translation: Offset(shift, 0),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: const Alignment(-1, -0.6),
-                          end: const Alignment(1, 0.6),
-                          colors: [
-                            Colors.transparent,
-                            Colors.white.withValues(
-                              alpha: 0.38 * widget.intensity,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final height = constraints.maxHeight;
+                  // La nappe fait 2,4 fois la largeur de la carte : ses bords
+                  // ne passent jamais dans le cadre, seule la bande claire
+                  // du milieu traverse (comme `inset: 0 -40%` sur le site).
+                  final sheetWidth = width * 2.4;
+                  return AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, _) {
+                      final t = Curves.easeInOut.transform(_controller.value);
+                      // La bande part hors cadre à gauche et sort à droite.
+                      final shift = (-0.7 + 1.4 * t) * width;
+                      return OverflowBox(
+                        alignment: Alignment.center,
+                        minWidth: sheetWidth,
+                        maxWidth: sheetWidth,
+                        minHeight: height,
+                        maxHeight: height,
+                        child: Transform.translate(
+                          offset: Offset(shift, 0),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: const Alignment(-1, -0.35),
+                                end: const Alignment(1, 0.35),
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.transparent,
+                                  Colors.white.withValues(
+                                    alpha: 0.30 * widget.intensity,
+                                  ),
+                                  (widget.rainbow
+                                          ? RiftColors.hexSoft
+                                          : const Color(0xFFD7F2EF))
+                                      .withValues(
+                                        alpha: 0.22 * widget.intensity,
+                                      ),
+                                  Colors.transparent,
+                                  Colors.transparent,
+                                ],
+                                stops: const [0, 0.42, 0.48, 0.52, 0.58, 1],
+                              ),
+                              backgroundBlendMode: BlendMode.screen,
                             ),
-                            (widget.rainbow
-                                    ? RiftColors.hexSoft
-                                    : const Color(0xFFD7F2EF))
-                                .withValues(alpha: 0.26 * widget.intensity),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.38, 0.47, 0.53, 0.62],
+                          ),
                         ),
-                        backgroundBlendMode: BlendMode.screen,
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -118,7 +139,7 @@ class _FoilOverlayState extends State<FoilOverlay>
             Positioned.fill(
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: 0.16 * widget.intensity,
+                  opacity: 0.14 * widget.intensity,
                   child: const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
