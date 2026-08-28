@@ -13,6 +13,7 @@ import '../features/collection/ui/wishlist_screen.dart';
 import '../features/decks/ui/community_screen.dart';
 import '../features/decks/ui/deck_detail_screen.dart';
 import '../features/decks/ui/decks_screen.dart';
+import '../features/game/ui/game_screen.dart';
 import '../features/home/ui/home_screen.dart';
 import '../features/profile/ui/profile_screen.dart';
 import '../features/rules/ui/advanced_help_screen.dart';
@@ -43,6 +44,7 @@ abstract final class AppRoutes {
   static const officialRules = '/regles/officielles';
   static const profile = '/profil';
   static const scan = '/scan';
+  static const game = '/partie';
 
   /// Connexion avec retour vers `from` une fois la session ouverte.
   static String loginFrom(String from) =>
@@ -117,6 +119,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.scan,
         builder: (context, state) => const ScanScreen(),
+      ),
+      // Compteur de partie : plein écran, utilisable sans compte.
+      GoRoute(
+        path: AppRoutes.game,
+        builder: (context, state) => const GameScreen(),
       ),
       // Le profil se pousse par-dessus les onglets (avatar en haut à droite).
       GoRoute(

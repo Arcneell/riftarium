@@ -83,11 +83,11 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 _QuickTile(
                   index: 2,
-                  icon: Icons.menu_book_outlined,
-                  eyebrow: 'Texte officiel',
-                  title: 'Règles détaillées',
+                  icon: Icons.sports_esports_outlined,
+                  eyebrow: 'À la table',
+                  title: 'Compteur de partie',
                   color: RiftColors.mind,
-                  onTap: () => context.go(AppRoutes.officialRules),
+                  onTap: () => context.push(AppRoutes.game),
                 ),
                 _QuickTile(
                   index: 3,

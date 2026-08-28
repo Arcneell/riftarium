@@ -1,0 +1,181 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
+import '../../cards/data/cards_api.dart';
+import '../../cards/domain/card.dart';
+import '../data/game_store.dart';
+import '../data/legends_repository.dart';
+import '../domain/game_engine.dart';
+import '../domain/game_mode.dart';
+import '../domain/game_state.dart';
+import '../domain/player.dart';
+
+/// Maintien de l'écran allumé pendant une partie. Passe par une interface :
+/// le plugin natif n'existe pas sous `flutter test`, où l'on injecte
+/// [NoScreenAwake].
+abstract class ScreenAwake {
+  Future<void> enable();
+  Future<void> disable();
+}
+
+class WakelockScreenAwake implements ScreenAwake {
+  const WakelockScreenAwake();
+
+  @override
+  Future<void> enable() async {
+    try {
+      await WakelockPlus.enable();
+    } on Object {
+      // Plateforme sans veille pilotable : la partie continue sans.
+    }
+  }
+
+  @override
+  Future<void> disable() async {
+    try {
+      await WakelockPlus.disable();
+    } on Object {
+      // Idem.
+    }
+  }
+}
+
+/// Ne touche à rien : tests et plateformes sans plugin.
+class NoScreenAwake implements ScreenAwake {
+  const NoScreenAwake();
+
+  @override
+  Future<void> enable() async {}
+
+  @override
+  Future<void> disable() async {}
+}
+
+final screenAwakeProvider = Provider<ScreenAwake>(
+  (ref) => const WakelockScreenAwake(),
+);
+
+final gameStoreProvider = Provider<GameStore>((ref) => const FileGameStore());
+
+final legendsCacheProvider = Provider<LegendsCacheStore>(
+  (ref) => const FileLegendsCacheStore(),
+);
+
+final legendsRepositoryProvider = Provider<LegendsRepository>(
+  (ref) => LegendsRepository(
+    api: ref.watch(cardsApiProvider),
+    cache: ref.watch(legendsCacheProvider),
+  ),
+);
+
+/// Légendes groupées, chargées à l'ouverture du sélecteur seulement : la table
+/// de jeu ne dépend jamais d'une requête réseau.
+final legendsProvider = FutureProvider<List<LegendGroup>>(
+  (ref) => ref.watch(legendsRepositoryProvider).load(),
+);
+
+/// Partie sauvegardée trouvée au démarrage de l'écran (panneau « Reprendre »).
+final savedGameProvider = FutureProvider<GameState?>(
+  (ref) => ref.watch(gameStoreProvider).read(),
+);
+
+final gameControllerProvider = NotifierProvider<GameController, GameState?>(
+  GameController.new,
+);
+
+/// Pilote la partie : applique le moteur puis sauvegarde. `null` = personne
+/// n'est à table, l'écran affiche la configuration.
+class GameController extends Notifier<GameState?> {
+  @override
+  GameState? build() => null;
+
+  GameStore get _store => ref.read(gameStoreProvider);
+
+  void start({
+    required GameMode mode,
+    required List<Player> players,
+    String? firstPlayerId,
+  }) => _apply(
+    GameEngine.start(
+      mode: mode,
+      players: players,
+      firstPlayerId: firstPlayerId,
+    ),
+  );
+
+  /// Reprend une partie relue depuis la sauvegarde.
+  void resume(GameState saved) => _apply(saved);
+
+  void addPoint(String playerId) =>
+      _mutate((state) => GameEngine.addPoint(state, playerId: playerId));
+
+  void removePoint(String playerId) =>
+      _mutate((state) => GameEngine.removePoint(state, playerId: playerId));
+
+  void exhaustion({required String fromPlayerId, required String toPlayerId}) =>
+      _mutate(
+        (state) => GameEngine.exhaustion(
+          state,
+          fromPlayerId: fromPlayerId,
+          toPlayerId: toPlayerId,
+        ),
+      );
+
+  void addXp(String playerId, [int amount = 1]) => _mutate(
+    (state) => GameEngine.addXp(state, playerId: playerId, amount: amount),
+  );
+
+  void spendXp(String playerId, [int amount = 1]) => _mutate(
+    (state) => GameEngine.spendXp(state, playerId: playerId, amount: amount),
+  );
+
+  void setXp(String playerId, int value) => _mutate(
+    (state) => GameEngine.setXp(state, playerId: playerId, value: value),
+  );
+
+  void nextTurn() => _mutate(GameEngine.nextTurn);
+
+  void undo() => _mutate(GameEngine.undo);
+
+  void newRound() => _mutate(GameEngine.newRound);
+
+  void reset() => _mutate((state) => GameEngine.reset(state));
+
+  void renamePlayer(String playerId, String name) => _mutate(
+    (state) => GameEngine.updatePlayer(state, playerId: playerId, name: name),
+  );
+
+  void setLegend(String playerId, RiftCard? legend) => _mutate(
+    (state) => GameEngine.updatePlayer(
+      state,
+      playerId: playerId,
+      legend: legend,
+      clearLegend: legend == null,
+    ),
+  );
+
+  /// Le rappel des ajustements du premier tour a été vu : il ne revient pas.
+  void markHintSeen() => _mutate(
+    (state) => state.hintSeen ? state : state.copyWith(hintSeen: true),
+  );
+
+  /// Quitte la table et efface la sauvegarde.
+  void quit() {
+    state = null;
+    unawaited(_store.clear());
+    ref.invalidate(savedGameProvider);
+  }
+
+  void _mutate(GameState Function(GameState state) change) {
+    final current = state;
+    if (current == null) return;
+    _apply(change(current));
+  }
+
+  void _apply(GameState next) {
+    state = next;
+    unawaited(_store.write(next));
+  }
+}
