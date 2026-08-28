@@ -131,30 +131,46 @@ class _HistoryTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              PlayAvatar(user: item.opponent, size: 40),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.opponent?.displayName ?? 'Joueur retiré',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.title,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        item.modeLabel,
-                        if (item.playedAt != null) _date(item.playedAt!),
-                        if (item.status == 'abandoned') 'abandon',
-                      ].join(' · '),
-                      style: text.small.copyWith(fontSize: 12),
-                    ),
-                  ],
+                // Le pseudo de l'adversaire mène à son profil public.
+                child: PressScale(
+                  onTap: (item.opponent?.handle ?? '').isEmpty
+                      ? null
+                      : () => context.push(
+                          AppRoutes.player(item.opponent!.handle),
+                        ),
+                  child: Row(
+                    children: [
+                      PlayAvatar(user: item.opponent, size: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.opponent?.displayName ?? 'Joueur retiré',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.title,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                item.modeLabel,
+                                if (item.playedAt != null)
+                                  _date(item.playedAt!),
+                                if (item.status == 'abandoned') 'abandon',
+                              ].join(' · '),
+                              style: text.small.copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

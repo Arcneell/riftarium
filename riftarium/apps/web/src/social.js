@@ -121,6 +121,9 @@ export function familyLabel(family) {
    son composant Icon.vue ne couvre que la navigation : on rend un glyphe sobre,
    la médaille colorée par le palier portant l'essentiel de l'information. */
 const GLYPHS = {
+  directions_run: "🏃",
+  hexagon: "⬡",
+  inventory_2: "🗃️",
   emoji_events: "🏆",
   military_tech: "🎖",
   workspace_premium: "🏅",

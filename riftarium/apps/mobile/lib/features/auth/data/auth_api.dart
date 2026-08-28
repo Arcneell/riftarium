@@ -57,6 +57,48 @@ class AuthApi {
     }
   }
 
+  /// Légendes proposées comme avatar (sélecteur de l'écran « Modifier »).
+  Future<List<AvatarOption>> avatars() async {
+    try {
+      final response = await _dio.get<dynamic>('/auth/avatars');
+      return AvatarOption.listFrom(response.data);
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
+  /// Modifie le profil. Seuls les champs fournis partent : l'API refuse un
+  /// corps vide, et exige le mot de passe courant pour changer le pseudo.
+  Future<Profile> updateMe({
+    String? handle,
+    String? bio,
+    String? avatarCardId,
+    bool? showStats,
+    bool? showCollection,
+    bool? showDecks,
+    bool? showAchievements,
+    String? currentPassword,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/auth/me',
+        data: {
+          'handle': ?handle,
+          'bio': ?bio,
+          'avatar_card_id': ?avatarCardId,
+          'show_stats': ?showStats,
+          'show_collection': ?showCollection,
+          'show_decks': ?showDecks,
+          'show_achievements': ?showAchievements,
+          'current_password': ?currentPassword,
+        },
+      );
+      return Profile.fromJson(response.data ?? const {});
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
   /// Côté serveur, ne fait qu'effacer le cookie : pour le mobile, l'oubli du
   /// jeton suffit. Appelé quand même pour garder la trace de la déconnexion.
   Future<void> logout() async {

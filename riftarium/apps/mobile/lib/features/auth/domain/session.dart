@@ -47,6 +47,10 @@ class Profile {
     this.avatarUrl,
     this.createdAt,
     this.stats = const {},
+    this.showStats = false,
+    this.showCollection = false,
+    this.showDecks = true,
+    this.showAchievements = true,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -68,6 +72,12 @@ class Profile {
               (key, value) => MapEntry(key.toString(), _asInt(value)),
             )
           : const {},
+      // Réglages de confidentialité : fermés par défaut pour les stats et la
+      // collection, ouverts pour les decks et les hauts faits (contrat).
+      showStats: json['show_stats'] == true,
+      showCollection: json['show_collection'] == true,
+      showDecks: json['show_decks'] != false,
+      showAchievements: json['show_achievements'] != false,
     );
   }
 
@@ -82,6 +92,43 @@ class Profile {
   final DateTime? createdAt;
   final Map<String, int> stats;
 
+  /// Ce que les autres joueurs voient sur mon profil public.
+  final bool showStats;
+  final bool showCollection;
+  final bool showDecks;
+  final bool showAchievements;
+
   static int _asInt(Object? value) =>
       value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+}
+
+/// Une légende proposée comme avatar (`GET /api/auth/avatars`).
+class AvatarOption {
+  const AvatarOption({
+    required this.id,
+    required this.name,
+    this.imageUrl,
+    this.domains = const [],
+  });
+
+  factory AvatarOption.fromJson(Map<String, dynamic> json) => AvatarOption(
+    id: (json['id'] as String?) ?? '',
+    name: (json['name'] as String?) ?? '',
+    imageUrl: json['image_url'] as String?,
+    domains: (json['domains'] as List? ?? const [])
+        .map((item) => item.toString())
+        .toList(),
+  );
+
+  static List<AvatarOption> listFrom(Object? source) =>
+      (source as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => AvatarOption.fromJson(item.cast<String, dynamic>()))
+          .toList();
+
+  /// Identifiant de carte : c'est lui que porte `avatar_card_id`.
+  final String id;
+  final String name;
+  final String? imageUrl;
+  final List<String> domains;
 }

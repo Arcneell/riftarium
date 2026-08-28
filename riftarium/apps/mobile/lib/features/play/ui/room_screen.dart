@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/design/components.dart';
+import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
@@ -555,23 +556,37 @@ class _SeatCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              PlayAvatar(user: person.user, size: 44),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(role.toUpperCase(), style: text.eyebrow),
-                    const SizedBox(height: 2),
-                    Text(
-                      person.user.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.title,
-                    ),
-                  ],
+                // Le pseudo mène au profil public de l'adversaire.
+                child: PressScale(
+                  onTap: person.user.handle.isEmpty
+                      ? null
+                      : () =>
+                            context.push(AppRoutes.player(person.user.handle)),
+                  child: Row(
+                    children: [
+                      PlayAvatar(user: person.user, size: 44),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(role.toUpperCase(), style: text.eyebrow),
+                            const SizedBox(height: 2),
+                            Text(
+                              person.user.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.title,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 10),
               MonoBadge(
                 label: person.ready ? 'Prêt' : 'Pas prêt',
                 color: person.ready ? RiftColors.calm : RiftColors.muted,

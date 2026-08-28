@@ -138,6 +138,34 @@ Map<String, dynamic> playDeckJson({
   String format = 'tournament',
 }) => {'id': id, 'name': name, 'format': format};
 
+/// Deck complet (`GET /api/decks/{id}`). Sa légende y figure telle qu'elle est
+/// jouée : c'est cette carte-là (variante comprise) que le salon reprend.
+Map<String, dynamic> deckJson({
+  int id = 3,
+  String name = 'Ahri contrôle',
+  String format = 'tournament',
+  Map<String, dynamic>? legend,
+}) => {
+  'id': id,
+  'name': name,
+  'description': null,
+  'format': format,
+  'is_public': false,
+  'moderation_status': 'published',
+  'likes': 0,
+  'liked_by_me': false,
+  'views': 0,
+  'owner': 'ezreal',
+  'owner_avatar': null,
+  'card_count': 40,
+  'cards': [
+    {'card': legend ?? legendJson(id: 'OGN-001-alt'), 'qty': 1},
+  ],
+  'checks': const <Map<String, dynamic>>[],
+  'prices': const <String, dynamic>{},
+  'updated_at': null,
+};
+
 Map<String, dynamic> roomPlayerJson({
   int userId = 7,
   String handle = 'ezreal',

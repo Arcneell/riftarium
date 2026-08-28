@@ -20,12 +20,16 @@ import '../features/play/ui/room_screen.dart';
 import '../features/play/ui/stats_screen.dart';
 import '../features/play/ui/tracked_match_screen.dart';
 import '../features/play/ui/tracked_play_screen.dart';
+import '../features/profile/ui/edit_profile_screen.dart';
 import '../features/profile/ui/profile_screen.dart';
 import '../features/rules/ui/advanced_help_screen.dart';
 import '../features/rules/ui/advanced_topic_screen.dart';
 import '../features/rules/ui/official_rules_screen.dart';
 import '../features/rules/ui/rules_screen.dart';
 import '../features/scan/ui/scan_screen.dart';
+import '../features/social/ui/achievements_screen.dart';
+import '../features/social/ui/friends_screen.dart';
+import '../features/social/ui/public_profile_screen.dart';
 import 'shell.dart';
 
 /// Chemins de l'application. Alignés sur le site quand un équivalent existe
@@ -52,6 +56,14 @@ abstract final class AppRoutes {
   /// Mes parties suivies : historique et statistiques.
   static const history = '/profil/historique';
   static const playStats = '/profil/statistiques';
+
+  /// Mon profil : édition, amis, hauts faits.
+  static const editProfile = '/profil/modifier';
+  static const friends = '/profil/amis';
+  static const achievements = '/profil/hauts-faits';
+
+  /// Profil public d'un joueur, lisible sans compte.
+  static String player(String handle) => '/joueur/$handle';
 
   static const scan = '/scan';
   static const game = '/partie';
@@ -162,6 +174,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // Profil public : atteignable depuis un salon, l'historique ou la
+      // recherche, avec ou sans compte.
+      GoRoute(
+        path: '/joueur/:handle',
+        builder: (context, state) =>
+            PublicProfileScreen(handle: state.pathParameters['handle']!),
+      ),
       // Salon d'attente : le code arrive par saisie ou par lien partagé.
       GoRoute(
         path: '/salon/:code',
@@ -269,6 +288,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'statistiques',
                     builder: (context, state) => const PlayStatsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'modifier',
+                    builder: (context, state) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'amis',
+                    builder: (context, state) => const FriendsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'hauts-faits',
+                    builder: (context, state) => const AchievementsScreen(),
                   ),
                 ],
               ),

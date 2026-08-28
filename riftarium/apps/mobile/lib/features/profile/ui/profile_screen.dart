@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/adaptive.dart';
 import '../../../app/design/banners.dart';
 import '../../../app/design/components.dart';
-import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
@@ -19,6 +19,9 @@ import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
 import '../../auth/ui/login_screen.dart'
     show AuthError, BannerBackButton, openWebPage;
+import '../../play/application/play_providers.dart';
+import '../../social/application/social_providers.dart';
+import '../../social/ui/widgets/achievement_widgets.dart';
 import 'account_dialogs.dart';
 
 /// Libellés des compteurs de `user_stats` (`app/profiles.py`). Une clé inconnue
@@ -30,6 +33,9 @@ const _statLabels = {
   'public_decks': 'Decks publics',
   'likes_received': 'Likes reçus',
 };
+
+/// Nombre de médaillons montrés sur le profil avant le « +n ».
+const _achievementPreview = 6;
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -96,16 +102,7 @@ class ProfileScreen extends ConsumerWidget {
     }
     final profile = auth.profile;
     final refresh = ref.read(authControllerProvider.notifier).refreshProfile;
-    final banner = PageBanner(
-      title: profile?.handle ?? 'Profil',
-      eyebrow: 'Mon compte',
-      art: RiftBanners.home,
-      expandedHeight: 200,
-      focus: const Alignment(0.3, -0.2),
-      leading: context.canPop()
-          ? BannerBackButton(onPressed: context.pop)
-          : null,
-    );
+    final banner = _ProfileBanner(profile: profile);
 
     if (profile == null) {
       return Scaffold(
@@ -126,7 +123,12 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       body: RefreshIndicator.adaptive(
-        onRefresh: refresh,
+        onRefresh: () async {
+          ref.invalidate(myAchievementsProvider);
+          ref.invalidate(followsProvider);
+          ref.invalidate(playStatsProvider);
+          await refresh();
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -134,7 +136,7 @@ class ProfileScreen extends ConsumerWidget {
           slivers: [
             banner,
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 0),
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
               sliver: SliverToBoxAdapter(
                 child: Reveal(child: _Identity(profile: profile)),
               ),
@@ -156,25 +158,18 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-            if (profile.stats.isNotEmpty) ...[
-              const SliverToBoxAdapter(
-                child: SectionTitle(
-                  eyebrow: 'En un coup d’œil',
-                  title: 'Statistiques',
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
+              sliver: SliverToBoxAdapter(
+                child: GoldButton(
+                  label: 'Modifier le profil',
+                  icon: Icons.edit_outlined,
+                  onPressed: () => context.push(AppRoutes.editProfile),
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                sliver: SliverToBoxAdapter(child: _Stats(stats: profile.stats)),
-              ),
-            ],
-            if (auth.profileError != null)
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
-                sliver: SliverToBoxAdapter(
-                  child: AuthError(message: auth.profileError!),
-                ),
-              ),
+            ),
+            const SliverToBoxAdapter(child: _AchievementsPreview()),
+            const SliverToBoxAdapter(child: _DuelStats()),
             const SliverToBoxAdapter(
               child: SectionTitle(
                 eyebrow: 'Parties suivies',
@@ -200,6 +195,26 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            const SliverToBoxAdapter(child: _FriendsPanel()),
+            if (profile.stats.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: SectionTitle(
+                  eyebrow: 'En un coup d’œil',
+                  title: 'Statistiques',
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                sliver: SliverToBoxAdapter(child: _Stats(stats: profile.stats)),
+              ),
+            ],
+            if (auth.profileError != null)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+                sliver: SliverToBoxAdapter(
+                  child: AuthError(message: auth.profileError!),
+                ),
+              ),
             const SliverToBoxAdapter(
               child: SectionTitle(eyebrow: 'Réglages', title: 'Compte'),
             ),
@@ -288,8 +303,117 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Médaillon, pseudo vérifié ou non, adresse et ancienneté : la carte
-/// d'identité du compte, posée sous la bannière.
+/// Bannière du profil : l'illustration de lancement, le médaillon de 84 px
+/// posé à cheval sur le fondu, et le pseudo en Marcellus juste à côté.
+class _ProfileBanner extends StatelessWidget {
+  const _ProfileBanner({required this.profile});
+
+  final Profile? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final paper = Theme.of(context).scaffoldBackgroundColor;
+    final handle = profile?.handle ?? 'Profil';
+    return SliverAppBar(
+      pinned: true,
+      stretch: true,
+      expandedHeight: 216,
+      backgroundColor: paper,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: IconThemeData(color: text.ink),
+      leading: context.canPop()
+          ? BannerBackButton(onPressed: context.pop)
+          : null,
+      automaticallyImplyLeading: false,
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final settings = context
+              .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+          final collapsed =
+              settings != null &&
+              settings.currentExtent <= settings.minExtent + 12;
+          return AnimatedOpacity(
+            duration: RiftMotion.quick,
+            opacity: collapsed ? 1 : 0,
+            child: Text(handle, style: text.displaySmall),
+          );
+        },
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        stretchModes: const [StretchMode.zoomBackground],
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(
+              imageUrl: RiftBanners.home,
+              fit: BoxFit.cover,
+              alignment: const Alignment(0.3, -0.2),
+              fadeInDuration: RiftMotion.slow,
+              placeholder: (context, url) =>
+                  Container(color: RiftColors.inkStrong),
+              errorWidget: (context, url, error) =>
+                  Container(color: RiftColors.inkStrong),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    RiftColors.inkStrong.withValues(alpha: 0.35),
+                    RiftColors.inkStrong.withValues(alpha: 0.05),
+                    paper.withValues(alpha: 0),
+                    paper,
+                  ],
+                  stops: const [0, 0.35, 0.6, 1],
+                ),
+              ),
+            ),
+            Positioned(
+              left: RiftSpace.page.left,
+              right: RiftSpace.page.right,
+              bottom: 8,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  RiftAvatar(
+                    url: profile?.avatarUrl,
+                    initial: handle,
+                    size: 84,
+                    borderColor: RiftColors.goldSoft,
+                    shadow: true,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('MON COMPTE', style: text.eyebrow),
+                        const SizedBox(height: 4),
+                        Text(
+                          handle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: text.displayLarge.copyWith(fontSize: 28),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Adresse, vérification, ancienneté et biographie : la carte d'identité du
+/// compte, posée sous la bannière.
 class _Identity extends StatelessWidget {
   const _Identity({required this.profile});
 
@@ -301,70 +425,199 @@ class _Identity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _Avatar(profile: profile),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 6),
-                  MonoBadge(
-                    label: profile.emailVerified ? 'vérifié' : 'non vérifié',
-                    color: profile.emailVerified
-                        ? RiftColors.hex
-                        : RiftColors.fury,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(profile.email, style: text.mono.copyWith(fontSize: 13)),
-                  const SizedBox(height: 4),
-                  if (profile.createdAt != null)
-                    Text(
-                      'Membre depuis ${_formatDate(profile.createdAt!)}',
-                      style: text.small,
-                    ),
-                  if (profile.isAdmin) ...[
-                    const SizedBox(height: 6),
-                    const MonoBadge(label: 'Administration'),
-                  ],
-                ],
-              ),
+            MonoBadge(
+              label: profile.emailVerified ? 'vérifié' : 'non vérifié',
+              color: profile.emailVerified ? RiftColors.hex : RiftColors.fury,
             ),
+            if (profile.isAdmin) const MonoBadge(label: 'Administration'),
+            Text(profile.email, style: text.mono.copyWith(fontSize: 13)),
           ],
         ),
+        if (profile.createdAt != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Membre depuis le ${formatSocialDate(profile.createdAt!)}',
+            style: text.small,
+          ),
+        ],
         if (profile.bio.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(profile.bio, style: text.body),
         ],
       ],
     );
   }
+}
 
-  static String _formatDate(DateTime date) {
-    final local = date.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    return '$day/$month/${local.year}';
+/// Les hauts faits débloqués, en médaillons. La section disparaît tant que
+/// l'API n'a rien à en dire (hors ligne, catalogue vide).
+class _AchievementsPreview extends ConsumerWidget {
+  const _AchievementsPreview();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final text = riftText(context);
+    final items = ref.watch(myAchievementsProvider).valueOrNull;
+    if (items == null || items.isEmpty) return const SizedBox.shrink();
+    final unlocked = items.where((item) => item.isUnlocked).toList();
+    final shown = unlocked.take(_achievementPreview).toList();
+    final rest = unlocked.length - shown.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionTitle(
+          eyebrow: 'Palmarès',
+          title: 'Hauts faits',
+          trailing: Text(
+            '${unlocked.length} / ${items.length}',
+            style: text.monoStrong,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: RiftPanel(
+            raised: true,
+            onTap: () => context.push(AppRoutes.achievements),
+            child: unlocked.isEmpty
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Aucun haut fait débloqué. Ouvre la liste : elle dit '
+                          'ce qui reste à faire.',
+                          style: text.small,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: RiftColors.gold,
+                      ),
+                    ],
+                  )
+                : Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final achievement in shown)
+                        AchievementMedallion(
+                          achievement: achievement,
+                          size: 44,
+                        ),
+                      if (rest > 0) Text('+$rest', style: text.monoStrong),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
-/// Avatar 72 px : visuel de carte choisi par le joueur, sinon l'initiale sur
-/// dégradé or. Anneau parchemin pour le détacher de la bannière.
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.profile});
-
-  final Profile profile;
+/// Bilan des parties suivies : quatre chiffres, et rien de plus (le détail
+/// vit dans « Statistiques de jeu »).
+class _DuelStats extends ConsumerWidget {
+  const _DuelStats();
 
   @override
-  Widget build(BuildContext context) => RiftAvatar(
-    url: profile.avatarUrl,
-    initial: profile.handle,
-    size: 72,
-    borderColor: RiftColors.goldSoft,
-    shadow: true,
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final text = riftText(context);
+    final stats = ref.watch(playStatsProvider).valueOrNull;
+    if (stats == null || stats.isEmpty) return const SizedBox.shrink();
+    final totals = stats.totals;
+    final cells = <(String, String)>[
+      ('${totals.played}', 'parties'),
+      ('${totals.won}', 'victoires'),
+      (totals.winRateLabel, 'de réussite'),
+      ('${totals.bestStreak}', 'série'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionTitle(eyebrow: 'Parties suivies', title: 'Duels'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: RiftPanel(
+            child: Row(
+              children: [
+                for (final (index, cell) in cells.indexed) ...[
+                  if (index > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          cell.$1,
+                          maxLines: 1,
+                          style: text.displaySmall.copyWith(
+                            color: RiftColors.gold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          cell.$2,
+                          maxLines: 1,
+                          style: text.small.copyWith(fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Mes amis : deux compteurs et l'entrée vers la liste.
+class _FriendsPanel extends ConsumerWidget {
+  const _FriendsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final text = riftText(context);
+    final follows = ref.watch(followsProvider).valueOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionTitle(eyebrow: 'Mon cercle', title: 'Amis'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: RiftPanel(
+            raised: true,
+            onTap: () => context.push(AppRoutes.friends),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    follows == null
+                        ? 'Suis tes adversaires pour les retrouver et les '
+                              'inviter dans un salon.'
+                        : '${follows.following.length} suivis · '
+                              '${follows.followers.length} abonnés',
+                    style: follows == null ? text.small : text.bodyStrong,
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: RiftColors.gold,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Trois compteurs par rangée, chiffre en Marcellus or.
