@@ -224,7 +224,7 @@ class _Filters extends ConsumerWidget {
           ),
         ),
         SizedBox(
-          height: 44,
+          height: 46,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -269,7 +269,7 @@ class _Filters extends ConsumerWidget {
           ),
         ),
         SizedBox(
-          height: 44,
+          height: 46,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(18, 6, 18, 6),
@@ -444,7 +444,6 @@ class _FormatPill extends ConsumerWidget {
     final controller = ref.read(communityQueryProvider.notifier);
     final current = filters.formats.isEmpty ? null : filters.formats.first;
     return PopupMenuButton<String>(
-      tooltip: 'Format',
       onSelected: (value) => controller.setFormat(value == '' ? null : value),
       itemBuilder: (context) => const [
         PopupMenuItem(value: '', child: Text('Tous les formats')),
@@ -476,10 +475,10 @@ class _Pager extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (pageCount <= 1) return const SizedBox(height: 24);
+    if (pageCount <= 1) return const SizedBox(height: 32);
     final text = riftText(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
+      padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -487,7 +486,14 @@ class _Pager extends StatelessWidget {
             onPressed: page <= 1 ? null : () => onChanged(page - 1),
             child: const Text('← Précédent'),
           ),
-          Text('page $page / $pageCount', style: text.mono),
+          Flexible(
+            child: Text(
+              'page $page / $pageCount',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.mono,
+            ),
+          ),
           TextButton(
             onPressed: page >= pageCount ? null : () => onChanged(page + 1),
             child: const Text('Suivant →'),

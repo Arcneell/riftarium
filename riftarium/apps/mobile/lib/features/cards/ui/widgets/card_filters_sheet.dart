@@ -50,11 +50,7 @@ class CardFiltersSheet extends ConsumerWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Affiner'.toUpperCase(), style: text.eyebrow),
-                      const SizedBox(height: 4),
-                      Text('Filtres', style: text.displayMedium),
-                    ],
+                    children: [Text('Filtres', style: text.displayMedium)],
                   ),
                 ),
                 const GoldRule(width: 40),
@@ -158,15 +154,14 @@ class CardFiltersSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
             child: Row(
               children: [
-                Expanded(
-                  child: GhostButton(
-                    label: 'Réinitialiser',
-                    onPressed: filters.isEmpty ? null : controller.clearFacets,
-                  ),
+                // Largeur naturelle : dans une colonne étroite, le libellé
+                // se coupait sur trois lignes.
+                TextButton(
+                  onPressed: filters.isEmpty ? null : controller.clearFacets,
+                  child: const Text('Réinitialiser'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  flex: 3,
                   child: GoldButton(
                     label: total == null
                         ? 'Voir les cartes'

@@ -28,21 +28,13 @@ class PricesMeta {
   final String? source;
   final String? currencyNote;
 
-  /// Repli quand la méta n'a pas (encore) été chargée.
-  static const String fallbackNote =
-      'Prix du marché US (TCGplayer), convertis en € (taux BCE).';
-
-  /// Note affichée sous le prix : origine des données puis fraîcheur.
+  /// Note affichée sous le prix, en une ligne : source, conversion, fraîcheur.
+  /// Le libellé « Prix indicatif » de la fiche dit déjà le reste.
   String get note {
-    final buffer = StringBuffer(
-      (currencyNote != null && currencyNote!.isNotEmpty)
-          ? currencyNote!
-          : fallbackNote,
-    );
+    final buffer = StringBuffer('Marché US (TCGplayer) · taux BCE');
     if (updatedDay != null && updatedDay!.isNotEmpty) {
-      buffer.write(' Mise à jour : ${_frenchDay(updatedDay!)}.');
+      buffer.write(' · ${_frenchDay(updatedDay!)}');
     }
-    buffer.write(' Ni cote officielle ni offre d’achat.');
     return buffer.toString();
   }
 

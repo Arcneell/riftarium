@@ -78,7 +78,27 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   ? BannerBackButton(onPressed: context.pop)
                   : null,
               automaticallyImplyLeading: false,
-              title: Text(widget.handle, style: riftText(context).displaySmall),
+              // Le pseudo n'apparaît dans la barre qu'une fois la bannière
+              // repliée : l'identité le redit déjà juste en dessous.
+              title: LayoutBuilder(
+                builder: (context, constraints) {
+                  final settings = context
+                      .dependOnInheritedWidgetOfExactType<
+                        FlexibleSpaceBarSettings
+                      >();
+                  final collapsed =
+                      settings != null &&
+                      settings.currentExtent <= settings.minExtent + 12;
+                  return AnimatedOpacity(
+                    duration: RiftMotion.quick,
+                    opacity: collapsed ? 1 : 0,
+                    child: Text(
+                      widget.handle,
+                      style: riftText(context).displaySmall,
+                    ),
+                  );
+                },
+              ),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,
                 background: _Banner(profile: profile.valueOrNull),
@@ -115,7 +135,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final decks = profile.decks;
     return [
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
         sliver: SliverToBoxAdapter(
           child: Reveal(
             child: _Identity(
@@ -256,18 +276,25 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
         _CardsGrid(items: page.items),
         if (page.hasMore)
           SliverToBoxAdapter(
-            child: Center(
-              child: SizedBox(
-                width: 240,
-                child: GhostButton(
-                  label: page.loadingMore ? 'Chargement…' : 'Charger la suite',
-                  onPressed: page.loadingMore
-                      ? null
-                      : () => ref
-                            .read(
-                              profileCollectionProvider(widget.handle).notifier,
-                            )
-                            .loadMore(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 240,
+                  child: GhostButton(
+                    label: page.loadingMore
+                        ? 'Chargement…'
+                        : 'Charger la suite',
+                    onPressed: page.loadingMore
+                        ? null
+                        : () => ref
+                              .read(
+                                profileCollectionProvider(
+                                  widget.handle,
+                                ).notifier,
+                              )
+                              .loadMore(),
+                  ),
                 ),
               ),
             ),
@@ -807,6 +834,7 @@ class _HistoryRow extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

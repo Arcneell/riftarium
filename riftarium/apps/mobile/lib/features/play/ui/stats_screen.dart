@@ -72,9 +72,7 @@ class PlayStatsScreen extends ConsumerWidget {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Rien à compter pour l’instant',
-            detail:
-                'Joue une partie suivie et fais confirmer le résultat : tes '
-                'statistiques se rempliront toutes seules.',
+            detail: 'Aucune partie suivie confirmée.',
             icon: Icons.insights_outlined,
             action: GoldButton(
               label: 'Jouer une partie suivie',
@@ -213,11 +211,13 @@ class _Totals extends StatelessWidget {
           Row(
             children: [
               _Tile(value: '${totals.played}', label: 'Joués'),
+              const SizedBox(width: 8),
               _Tile(
                 value: '${totals.won}',
                 label: 'Gagnés',
                 color: RiftColors.calm,
               ),
+              const SizedBox(width: 8),
               _Tile(
                 value: '${totals.lost}',
                 label: 'Perdus',

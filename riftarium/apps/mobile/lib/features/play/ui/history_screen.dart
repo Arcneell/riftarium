@@ -72,9 +72,7 @@ class HistoryScreen extends ConsumerWidget {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Aucune partie suivie',
-            detail:
-                'Lance une partie suivie : le score, les decks et le résultat '
-                'seront gardés ici.',
+            detail: 'Aucune partie suivie terminée.',
             icon: Icons.history_rounded,
             action: GoldButton(
               label: 'Jouer une partie suivie',
@@ -200,8 +198,10 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                Text('vs', style: text.mono),
-                const SizedBox(width: 8),
+                if (item.myLegend != null || item.opponentLegend != null) ...[
+                  Text('vs', style: text.mono),
+                  const SizedBox(width: 8),
+                ],
                 if (item.opponentLegend != null) ...[
                   SizedBox(
                     width: 26,

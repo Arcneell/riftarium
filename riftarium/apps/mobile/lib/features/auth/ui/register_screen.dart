@@ -101,17 +101,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = riftText(context);
     return AuthScaffold(
       title: 'Créer un compte',
       onBack: _back,
       children: [
-        Text(
-          'Un compte pour ta collection, tes decks et ta wishlist.',
-          style: text.small,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
         AutofillGroup(
           child: Column(
             children: [
@@ -201,7 +194,7 @@ class _Consents extends StatelessWidget {
         borderRadius: BorderRadius.circular(RiftRadius.sm),
         border: Border.all(color: theme.colorScheme.outline),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -224,6 +217,7 @@ class _Consents extends StatelessWidget {
               style: style,
             ),
           ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(

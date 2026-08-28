@@ -41,7 +41,7 @@ class _DeckPickerSheet extends ConsumerWidget {
     final text = riftText(context);
     final decks = ref.watch(myDecksProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -85,8 +85,7 @@ class _DeckPickerSheet extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 24),
                       child: Text(
-                        'Tu n’as pas encore de deck. La partie se suit très '
-                        'bien sans : tu pourras en créer un plus tard.',
+                        'Tu n’as pas encore de deck.',
                         style: text.small,
                       ),
                     ),

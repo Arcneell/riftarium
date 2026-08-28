@@ -48,31 +48,33 @@ class CardGridTile extends StatelessWidget {
             children: [
               SizedBox(
                 height: imageHeight,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: CardImage(
+                child: Center(
+                  // Les pastilles se posent sur le visuel lui-même : un champ
+                  // de bataille est plus court que le créneau de la grille.
+                  child: Stack(
+                    children: [
+                      CardImage(
                         card: card,
                         heroTag: 'card-${card.id}',
                         thumbWidth: CardArtSize.tile,
                         foil: shine,
                         foilIntensity: card.foil ? 1 : 0.6,
                       ),
-                    ),
-                    // Pastille pleine : le code doit rester lisible quelle que
-                    // soit l'illustration derrière.
-                    Positioned(
-                      left: 5,
-                      bottom: 5,
-                      child: MonoBadge(label: card.displayCode, filled: true),
-                    ),
-                    if (owned > 0)
+                      // Pastille pleine : le code doit rester lisible quelle
+                      // que soit l'illustration derrière.
                       Positioned(
-                        right: 5,
-                        top: 5,
-                        child: _OwnedBadge(quantity: owned),
+                        left: 5,
+                        bottom: 5,
+                        child: MonoBadge(label: card.displayCode, filled: true),
                       ),
-                  ],
+                      if (owned > 0)
+                        Positioned(
+                          right: 5,
+                          top: 5,
+                          child: _OwnedBadge(quantity: owned),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 6),

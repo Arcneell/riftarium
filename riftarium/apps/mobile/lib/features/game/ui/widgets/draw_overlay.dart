@@ -62,49 +62,62 @@ class DrawOverlay extends StatelessWidget {
                 final position = progress * steps;
                 final settled = animation.value >= 1;
                 final winner = players[target % players.length];
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('PREMIER JOUEUR', style: text.eyebrow),
-                    const SizedBox(height: 26),
-                    SizedBox(
-                      height: _rowHeight,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => _wheel(
-                          width: constraints.maxWidth,
-                          position: position,
-                          settled: settled,
-                        ),
+                // Écran court et note longue (chambre magmatique) : le
+                // contenu défile au lieu de déborder.
+                return LayoutBuilder(
+                  builder: (context, viewport) => SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: viewport.maxHeight,
                       ),
-                    ),
-                    const SizedBox(height: 30),
-                    AnimatedOpacity(
-                      duration: RiftMotion.base,
-                      opacity: settled ? 1 : 0,
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            '${nameOf(winner)} commence.',
-                            textAlign: TextAlign.center,
-                            style: text.displayLarge.copyWith(
-                              color: RiftColors.goldSoft,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              note,
-                              textAlign: TextAlign.center,
-                              style: text.small,
-                            ),
-                          ),
+                          Text('PREMIER JOUEUR', style: text.eyebrow),
                           const SizedBox(height: 26),
-                          Text('Toucher pour continuer', style: text.mono),
+                          SizedBox(
+                            height: _rowHeight,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) => _wheel(
+                                width: constraints.maxWidth,
+                                position: position,
+                                settled: settled,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          AnimatedOpacity(
+                            duration: RiftMotion.base,
+                            opacity: settled ? 1 : 0,
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${nameOf(winner)} commence.',
+                                  textAlign: TextAlign.center,
+                                  style: text.displayLarge.copyWith(
+                                    color: RiftColors.goldSoft,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                  ),
+                                  child: Text(
+                                    note,
+                                    textAlign: TextAlign.center,
+                                    style: text.small,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 );
               },
             ),

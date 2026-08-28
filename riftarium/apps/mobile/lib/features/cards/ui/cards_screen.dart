@@ -14,6 +14,7 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
+import '../../../app/widgets/search_field.dart';
 import '../../../core/api_exception.dart';
 import '../application/cards_controller.dart';
 import '../data/cards_api.dart';
@@ -127,8 +128,9 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
 
   /// « 1 248 cartes · 6 sets » : ce que contient la cartothèque, sous le titre.
   String _eyebrow(int? total, int sets) {
-    final cards = total == null ? 'Chargement…' : cardCountLabel(total);
+    final cards = total == null ? '' : cardCountLabel(total);
     if (sets == 0) return cards;
+    if (cards.isEmpty) return '$sets ${sets == 1 ? 'set' : 'sets'}';
     return '$cards · $sets ${sets == 1 ? 'set' : 'sets'}';
   }
 
@@ -154,7 +156,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Aucune carte',
-            detail: 'Change la recherche ou retire des filtres.',
             icon: Icons.search_off_outlined,
             action: filters.isEmpty
                 ? GhostButton(
@@ -195,13 +196,13 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
           final imageHeight = tileWidth / CardImage.portraitRatio;
 
           return SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 40),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
                 crossAxisSpacing: _gap,
                 mainAxisSpacing: 16,
-                mainAxisExtent: imageHeight + 28,
+                mainAxisExtent: imageHeight + 34,
               ),
               delegate: SliverChildBuilderDelegate((context, index) {
                 final card = data.items[index];
@@ -248,7 +249,7 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
     required this.dark,
   });
 
-  static const double _height = 72;
+  static const double _height = 80;
 
   final TextEditingController controller;
   final int filterCount;
@@ -263,11 +264,12 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
     final theme = Theme.of(context);
-    final paper = dark ? RiftColors.darkPaper : RiftColors.paper;
+    // Opaque et de la couleur du fond : translucide, les cartes qui défilent
+    // dessous restaient lisibles à travers la barre.
     return Container(
       height: _height,
       decoration: BoxDecoration(
-        color: paper.withValues(alpha: 0.94),
+        color: theme.scaffoldBackgroundColor,
         border: Border(
           bottom: BorderSide(
             color: overlaps || shrinkOffset > 0
@@ -279,7 +281,7 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       child: Row(
         children: [
-          Expanded(child: _SearchField(controller: controller)),
+          Expanded(child: RiftSearchField(controller: controller)),
           const SizedBox(width: 10),
           _FiltersButton(count: filterCount),
         ],
@@ -292,50 +294,6 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
       oldDelegate.filterCount != filterCount ||
       oldDelegate.dark != dark ||
       oldDelegate.controller != controller;
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = riftText(context);
-    final theme = Theme.of(context);
-    final round = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(RiftRadius.full),
-      borderSide: BorderSide(color: theme.colorScheme.outline),
-    );
-
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, _) => TextField(
-        controller: controller,
-        style: text.body,
-        autocorrect: false,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Jinx, ogn-202, réaction…',
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 13),
-          prefixIcon: Icon(Icons.search, size: 20, color: text.muted),
-          suffixIcon: value.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Effacer la recherche',
-                  icon: Icon(Icons.close, size: 18, color: text.muted),
-                  onPressed: controller.clear,
-                ),
-          border: round,
-          enabledBorder: round,
-          focusedBorder: round.copyWith(
-            borderSide: const BorderSide(color: RiftColors.hex, width: 1.6),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Bouton d'ouverture de la feuille de filtres, pastille or sur le compteur.
@@ -469,7 +427,8 @@ class _ActiveFilters extends ConsumerWidget {
 
     return SliverToBoxAdapter(
       child: SizedBox(
-        height: 46,
+        // Les puces mesurent 32 px : de la marge pour l'échelle de texte.
+        height: 52,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),

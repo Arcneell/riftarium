@@ -204,8 +204,7 @@ class _ImportCodeDialogState extends State<_ImportCodeDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Colle un code de deck Riftbound (Rift Atlas, Piltover Archive…). '
-              'Les cartes sont retrouvées dans la cartothèque.',
+              'Colle un code de deck Riftbound (Rift Atlas, Piltover Archive…).',
             ),
             const SizedBox(height: 12),
             AdaptiveTextField(
@@ -218,6 +217,7 @@ class _ImportCodeDialogState extends State<_ImportCodeDialog> {
               alignment: Alignment.centerRight,
               child: AdaptiveTextButton(label: 'Coller', onPressed: _paste),
             ),
+            const SizedBox(height: 12),
             AdaptiveTextField(
               controller: _name,
               label: 'Nom du deck',

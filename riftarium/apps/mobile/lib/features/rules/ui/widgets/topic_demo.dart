@@ -139,13 +139,14 @@ class _DemoStage extends StatelessWidget {
         child: child,
       );
     }
-    // Les autres éléments se dimensionnent d'eux-mêmes : on les centre sur
-    // leur point d'ancrage avec une translation.
-    return Positioned(
-      left: width * item.x / 100,
-      top: height * item.y / 100,
-      child: FractionalTranslation(
-        translation: const Offset(-0.5, -0.5),
+    // Les autres éléments se dimensionnent d'eux-mêmes : on les aligne sur
+    // leur point d'ancrage dans toute la scène. `Align` les garde dans le
+    // cadre : un libellé large collé au bord droit (« Arrière-ligne », à
+    // x = 86) n'aurait sinon que quelques pixels et se replierait sur
+    // trois lignes.
+    return Positioned.fill(
+      child: Align(
+        alignment: Alignment(item.x / 50 - 1, item.y / 50 - 1),
         child: child,
       ),
     );
@@ -308,6 +309,8 @@ class _DemoItemView extends StatelessWidget {
       ),
       child: Text(
         item.label.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontFamily: RiftFonts.mono,
           fontSize: size,

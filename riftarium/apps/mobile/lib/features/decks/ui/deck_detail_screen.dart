@@ -108,7 +108,6 @@ class _DeckView extends StatelessWidget {
                   title:
                       '${zone.label} · ${zoneCount(groups, zone.key)}'
                       '/${zone.target}${zone.key == 'main' ? '+' : ''}',
-                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 10),
                 ),
               ),
               _ZoneGrid(
@@ -130,8 +129,8 @@ class _DeckView extends StatelessWidget {
                   icon: Icons.style_outlined,
                   title: 'Deck vide',
                   message:
-                      'Ouvre l’éditeur : commence par la légende, elle fixe '
-                      'les domaines du deck.',
+                      'Commence par la légende : elle fixe les domaines du '
+                      'deck.',
                 ),
               ),
             ),
@@ -386,7 +385,6 @@ class _Validation extends StatelessWidget {
           icon: Icons.verified_outlined,
           color: RiftColors.calm,
           title: 'Deck légal',
-          detail: 'Toutes les règles officielles de construction sont tenues.',
         ),
       );
     }
@@ -398,7 +396,6 @@ class _Validation extends StatelessWidget {
             icon: Icons.error_outline,
             color: RiftColors.fury,
             title: 'À corriger',
-            detail: '${problems.length} règle(s) de construction à revoir.',
           ),
           const SizedBox(height: 10),
           for (final check in problems)
@@ -433,13 +430,13 @@ class _Line extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.title,
-    required this.detail,
+    this.detail,
   });
 
   final IconData icon;
   final Color color;
   final String title;
-  final String detail;
+  final String? detail;
 
   @override
   Widget build(BuildContext context) {
@@ -454,8 +451,10 @@ class _Line extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: text.bodyStrong),
-              const SizedBox(height: 2),
-              Text(detail, style: text.small),
+              if (detail case final detail?) ...[
+                const SizedBox(height: 2),
+                Text(detail, style: text.small),
+              ],
             ],
           ),
         ),
@@ -574,12 +573,6 @@ class _MissingPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Ce qu’il te manque', style: text.displaySmall),
-          const SizedBox(height: 6),
-          Text(
-            'Compare ce deck à ta collection : les exemplaires à trouver et '
-            'ce qu’ils coûtent.',
-            style: text.small,
-          ),
           const SizedBox(height: 14),
           GhostButton(
             label: 'Cartes manquantes',

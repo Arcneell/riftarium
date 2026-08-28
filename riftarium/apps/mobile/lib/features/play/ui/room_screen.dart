@@ -651,6 +651,7 @@ class _SeatCard extends StatelessWidget {
                     label: const Text('Ma légende'),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextButton.icon(
                     onPressed: onDeck,
@@ -660,15 +661,13 @@ class _SeatCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 4),
+            const Divider(height: 1),
             SwitchListTile.adaptive(
               value: person.ready,
               onChanged: onReady,
               contentPadding: EdgeInsets.zero,
               title: Text('Prêt', style: text.bodyStrong),
-              subtitle: Text(
-                'À décocher si tu veux changer de légende ou de deck.',
-                style: text.small.copyWith(fontSize: 12),
-              ),
             ),
           ],
         ],

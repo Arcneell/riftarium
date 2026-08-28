@@ -24,47 +24,45 @@ class ProfileAction extends StatelessWidget {
         final initial = (profile?.handle ?? '').isEmpty
             ? null
             : profile!.handle[0].toUpperCase();
-        return Padding(
-          padding: const EdgeInsets.only(right: 6),
-          child: PressScale(
-            onTap: () => auth.isSignedIn
-                ? context.go(AppRoutes.profile)
-                : context.push(
-                    AppRoutes.loginFrom(
-                      GoRouterState.of(context).matchedLocation,
+        // La bannière ajoute déjà 6 px après ses actions : pas de marge ici.
+        return PressScale(
+          onTap: () => auth.isSignedIn
+              ? context.go(AppRoutes.profile)
+              : context.push(
+                  AppRoutes.loginFrom(
+                    GoRouterState.of(context).matchedLocation,
+                  ),
+                ),
+          child: Semantics(
+            button: true,
+            label: auth.isSignedIn ? 'Mon profil' : 'Se connecter',
+            child: auth.isSignedIn
+                ? RiftAvatar(
+                    url: avatar,
+                    initial: initial ?? '?',
+                    size: 36,
+                    borderColor: Colors.white.withValues(alpha: 0.7),
+                    borderWidth: 1.5,
+                    shadow: true,
+                  )
+                : Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RiftColors.goldGradient,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        width: 1.5,
+                      ),
+                      boxShadow: RiftShadows.soft,
+                    ),
+                    child: const Icon(
+                      Icons.person_outline,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
-            child: Semantics(
-              button: true,
-              label: auth.isSignedIn ? 'Mon profil' : 'Se connecter',
-              child: auth.isSignedIn
-                  ? RiftAvatar(
-                      url: avatar,
-                      initial: initial ?? '?',
-                      size: 36,
-                      borderColor: Colors.white.withValues(alpha: 0.7),
-                      borderWidth: 1.5,
-                      shadow: true,
-                    )
-                  : Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RiftColors.goldGradient,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          width: 1.5,
-                        ),
-                        boxShadow: RiftShadows.soft,
-                      ),
-                      child: const Icon(
-                        Icons.person_outline,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-            ),
           ),
         );
       },

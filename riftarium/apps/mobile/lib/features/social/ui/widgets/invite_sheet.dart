@@ -47,7 +47,7 @@ class _InviteSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = riftText(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,11 +63,7 @@ class _InviteSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            'Envoie-lui ce code : il rejoindra ton salon depuis « Partie '
-            'suivie », sur le site comme sur l’application.',
-            style: text.small,
-          ),
+          Text('Envoie-lui ce code.', style: text.small),
           const SizedBox(height: 16),
           Row(
             children: [

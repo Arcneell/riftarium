@@ -70,9 +70,7 @@ class AchievementsScreen extends ConsumerWidget {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Rien à décrocher pour l’instant',
-            detail:
-                'Joue une partie suivie, complète un set, publie un deck : les '
-                'hauts faits se débloquent tout seuls.',
+            detail: 'Joue une partie suivie pour débloquer les premiers.',
             icon: Icons.military_tech,
           ),
         ),

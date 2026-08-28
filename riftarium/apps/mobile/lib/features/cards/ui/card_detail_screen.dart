@@ -48,33 +48,83 @@ class CardDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      body: _DetailChrome(
+        body: body,
+        onBack: () =>
+            context.canPop() ? context.pop() : context.go(AppRoutes.cards),
+      ),
+    );
+  }
+}
+
+/// Retour et profil posés sur le visuel. Tant que le visuel est à l'écran,
+/// rien ne le coupe ; dès qu'il a défilé, le bandeau devient opaque pour ne
+/// plus flotter sur le titre et les caractéristiques.
+class _DetailChrome extends StatefulWidget {
+  const _DetailChrome({required this.body, required this.onBack});
+
+  final Widget body;
+  final VoidCallback onBack;
+
+  @override
+  State<_DetailChrome> createState() => _DetailChromeState();
+}
+
+class _DetailChromeState extends State<_DetailChrome> {
+  bool _scrolled = false;
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    final scrolled = notification.metrics.pixels > 56;
+    if (scrolled != _scrolled) setState(() => _scrolled = scrolled);
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final paper = theme.scaffoldBackgroundColor;
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScroll,
       // `expand` : sans lui, le Stack prendrait la hauteur de la rangée
       // d'actions (seul enfant non positionné) et rognerait la fiche.
-      body: Stack(
+      child: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(child: body),
-          // Retour et profil en surimpression : rien ne coupe le visuel.
+          Positioned.fill(child: widget.body),
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 6, 4, 0),
-                child: Row(
-                  children: [
-                    _OverlayAction(
-                      icon: Icons.arrow_back,
-                      label: 'Revenir à la cartothèque',
-                      onTap: () => context.canPop()
-                          ? context.pop()
-                          : context.go(AppRoutes.cards),
-                    ),
-                    const Spacer(),
-                    const ProfileAction(),
-                  ],
+            child: AnimatedContainer(
+              duration: RiftMotion.quick,
+              decoration: BoxDecoration(
+                color: _scrolled
+                    ? paper.withValues(alpha: 0.96)
+                    : Colors.transparent,
+                border: Border(
+                  bottom: BorderSide(
+                    color: _scrolled
+                        ? theme.colorScheme.outline
+                        : Colors.transparent,
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+                  child: Row(
+                    children: [
+                      _OverlayAction(
+                        icon: Icons.arrow_back,
+                        label: 'Revenir à la cartothèque',
+                        onTap: widget.onBack,
+                      ),
+                      const Spacer(),
+                      const ProfileAction(),
+                    ],
+                  ),
                 ),
               ),
             ),

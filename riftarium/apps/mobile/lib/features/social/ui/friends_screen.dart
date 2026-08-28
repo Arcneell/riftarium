@@ -136,7 +136,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   : null,
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               sliver: SliverToBoxAdapter(
                 child: TextField(
                   controller: _search,
@@ -192,8 +192,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
                   sliver: SliverToBoxAdapter(
                     child: Text(
-                      'Aucun joueur ne porte ce pseudo. Vérifie l’orthographe : '
-                      'la recherche part du début du pseudo.',
+                      'Aucun joueur ne porte ce pseudo.',
                       style: riftText(context).small,
                     ),
                   ),
@@ -320,16 +319,10 @@ class _UserList extends StatelessWidget {
               onOpen: () => onOpen(user.handle),
               trailing: invite == null
                   ? null
-                  : Tooltip(
-                      message: 'Inviter dans un salon',
-                      child: TextButton.icon(
-                        onPressed: inviting ? null : () => invite(user),
-                        icon: const Icon(
-                          Icons.wifi_tethering_rounded,
-                          size: 17,
-                        ),
-                        label: const Text('Inviter'),
-                      ),
+                  : TextButton.icon(
+                      onPressed: inviting ? null : () => invite(user),
+                      icon: const Icon(Icons.wifi_tethering_rounded, size: 17),
+                      label: const Text('Inviter'),
                     ),
             ),
           );

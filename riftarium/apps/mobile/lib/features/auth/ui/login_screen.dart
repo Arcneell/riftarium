@@ -64,17 +64,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = riftText(context);
     return AuthScaffold(
       title: 'Connexion',
       onBack: context.canPop() ? context.pop : null,
       children: [
-        Text(
-          'Cartothèque, collection et decks Riftbound.',
-          style: text.small,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
         AutofillGroup(
           child: Column(
             children: [
@@ -163,7 +156,7 @@ class AuthScaffold extends StatelessWidget {
                 : BannerBackButton(onPressed: onBack!),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 6, 18, 36),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
             sliver: SliverToBoxAdapter(
               child: Center(
                 child: ConstrainedBox(

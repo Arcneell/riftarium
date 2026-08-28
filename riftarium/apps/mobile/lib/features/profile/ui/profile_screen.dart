@@ -136,14 +136,14 @@ class ProfileScreen extends ConsumerWidget {
           slivers: [
             banner,
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               sliver: SliverToBoxAdapter(
                 child: Reveal(child: _Identity(profile: profile)),
               ),
             ),
             if (!profile.emailVerified)
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 2, 18, 0),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                 sliver: SliverToBoxAdapter(
                   child: Align(
                     alignment: Alignment.centerLeft,
@@ -169,13 +169,8 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
             const SliverToBoxAdapter(child: _AchievementsPreview()),
+            const SliverToBoxAdapter(child: SectionTitle(title: 'Mes parties')),
             const SliverToBoxAdapter(child: _DuelStats()),
-            const SliverToBoxAdapter(
-              child: SectionTitle(
-                eyebrow: 'Parties suivies',
-                title: 'Mes parties',
-              ),
-            ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 18),
               sliver: SliverToBoxAdapter(
@@ -198,10 +193,7 @@ class ProfileScreen extends ConsumerWidget {
             const SliverToBoxAdapter(child: _FriendsPanel()),
             if (profile.stats.isNotEmpty) ...[
               const SliverToBoxAdapter(
-                child: SectionTitle(
-                  eyebrow: 'En un coup d’œil',
-                  title: 'Statistiques',
-                ),
+                child: SectionTitle(title: 'Statistiques'),
               ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -488,8 +480,7 @@ class _AchievementsPreview extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Aucun haut fait débloqué. Ouvre la liste : elle dit '
-                          'ce qui reste à faire.',
+                          'Aucun haut fait débloqué.',
                           style: text.small,
                         ),
                       ),
@@ -537,42 +528,36 @@ class _DuelStats extends ConsumerWidget {
       (totals.winRateLabel, 'de réussite'),
       ('${totals.bestStreak}', 'série'),
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SectionTitle(eyebrow: 'Parties suivies', title: 'Duels'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          child: RiftPanel(
-            child: Row(
-              children: [
-                for (final (index, cell) in cells.indexed) ...[
-                  if (index > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          cell.$1,
-                          maxLines: 1,
-                          style: text.displaySmall.copyWith(
-                            color: RiftColors.gold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          cell.$2,
-                          maxLines: 1,
-                          style: text.small.copyWith(fontSize: 11.5),
-                        ),
-                      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+      child: RiftPanel(
+        child: Row(
+          children: [
+            for (final (index, cell) in cells.indexed) ...[
+              if (index > 0) const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      cell.$1,
+                      maxLines: 1,
+                      style: text.displaySmall.copyWith(color: RiftColors.gold),
                     ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+                    const SizedBox(height: 2),
+                    Text(
+                      cell.$2,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.small.copyWith(fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -599,8 +584,7 @@ class _FriendsPanel extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     follows == null
-                        ? 'Suis tes adversaires pour les retrouver et les '
-                              'inviter dans un salon.'
+                        ? 'Suivis, abonnés, invitations.'
                         : '${follows.following.length} suivis · '
                               '${follows.followers.length} abonnés',
                     style: follows == null ? text.small : text.bodyStrong,
@@ -620,56 +604,79 @@ class _FriendsPanel extends ConsumerWidget {
   }
 }
 
-/// Trois compteurs par rangée, chiffre en Marcellus or.
+/// Trois compteurs par rangée, chiffre en Marcellus or. Les tuiles d'une même
+/// rangée partagent leur hauteur : pas de marche d'escalier quand un libellé
+/// passe sur deux lignes, et la dernière rangée se répartit la largeur.
 class _Stats extends StatelessWidget {
   const _Stats({required this.stats});
 
   final Map<String, int> stats;
 
+  static const _gap = 12.0;
+  static const _perRow = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = stats.entries.toList();
+    final rows = <List<int>>[];
+    for (var start = 0; start < entries.length; start += _perRow) {
+      final end = (start + _perRow).clamp(0, entries.length);
+      rows.add([for (var index = start; index < end; index++) index]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (rowIndex, row) in rows.indexed) ...[
+          if (rowIndex > 0) const SizedBox(height: _gap),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (cell, index) in row.indexed) ...[
+                  if (cell > 0) const SizedBox(width: _gap),
+                  Expanded(
+                    child: Reveal(
+                      index: index,
+                      child: _StatTile(entry: entries[index]),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Une tuile de compteur : le chiffre en or, le libellé sur deux lignes au plus.
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.entry});
+
+  final MapEntry<String, int> entry;
+
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    const gap = 12.0;
-    const perRow = 3;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = (constraints.maxWidth - gap * (perRow - 1)) / perRow;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final (index, entry) in stats.entries.indexed)
-              SizedBox(
-                width: width,
-                child: Reveal(
-                  index: index,
-                  child: RiftPanel(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 14,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${entry.value}',
-                          style: text.displayMedium.copyWith(
-                            color: RiftColors.gold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _statLabels[entry.key] ?? entry.key,
-                          style: text.small.copyWith(fontSize: 12.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+    return RiftPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${entry.value}',
+            style: text.displayMedium.copyWith(color: RiftColors.gold),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _statLabels[entry.key] ?? entry.key,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: text.small.copyWith(fontSize: 12.5),
+          ),
+        ],
+      ),
     );
   }
 }

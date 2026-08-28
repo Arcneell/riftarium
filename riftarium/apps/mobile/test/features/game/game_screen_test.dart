@@ -73,8 +73,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    // La fermeture de la roue lance la partie sans second geste.
-    await tester.tap(find.text('Toucher pour continuer'));
+    // La fermeture de la roue lance la partie sans second geste : un tap
+    // n'importe où sur l'écran suffit.
+    await tester.tap(find.text('PREMIER JOUEUR'));
     await tester.pumpAndSettle();
     expect(find.byType(DrawOverlay), findsNothing);
 

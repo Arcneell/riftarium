@@ -103,7 +103,7 @@ class _OfficialRulesScreenState extends ConsumerState<OfficialRulesScreen> {
             title: 'Règles officielles',
             eyebrow: 'Dernier recours',
             art: RiftBanners.rules,
-            expandedHeight: 160,
+            expandedHeight: 200,
             leading: RulesBackButton(),
             actions: [ProfileAction()],
           ),
@@ -191,7 +191,7 @@ class _OfficialRulesScreenState extends ConsumerState<OfficialRulesScreen> {
             },
           ),
         ),
-      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+      const SliverToBoxAdapter(child: SizedBox(height: 32)),
     ];
   }
 
@@ -218,7 +218,6 @@ class _OfficialRulesScreenState extends ConsumerState<OfficialRulesScreen> {
           title:
               '${hits.length} règle${hits.length > 1 ? 's' : ''} '
               'pour « $_query »',
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
         ),
       ),
       SliverPadding(
@@ -312,6 +311,7 @@ class _BookMeta extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
         Row(
           children: [
             AdaptiveTextButton(

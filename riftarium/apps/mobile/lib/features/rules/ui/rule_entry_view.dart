@@ -137,9 +137,16 @@ class _ReferenceChip extends StatelessWidget {
           color: RiftColors.hex.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(RiftRadius.full),
         ),
-        child: Text(
-          '→ ${reference.number} ${reference.label}',
-          style: text.mono.copyWith(color: RiftColors.calmText),
+        // Le renvoi tient sur une ligne : dans un `Wrap`, un libellé long
+        // pousserait la puce au-delà de la largeur de l'écran.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260),
+          child: Text(
+            '→ ${reference.number} ${reference.label}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.mono.copyWith(color: RiftColors.calmText),
+          ),
         ),
       ),
     );

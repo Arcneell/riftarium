@@ -192,7 +192,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     _load(profile);
 
-    final text = riftText(context);
     final handleChanged = _handle.text.trim() != profile.handle;
     return Scaffold(
       body: CustomScrollView(
@@ -213,11 +212,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       controller: _handle,
                       autocorrect: false,
                       onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        labelText: 'Pseudo',
-                        helperText:
-                            'Visible de tous : c’est le nom de ton profil.',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Pseudo'),
                     ),
                     if (handleChanged) ...[
                       const SizedBox(height: 12),
@@ -226,9 +221,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         obscureText: true,
                         decoration: const InputDecoration(
                           labelText: 'Mot de passe actuel',
-                          helperText:
-                              'Demandé pour changer de pseudo, comme sur le '
-                              'site.',
                         ),
                       ),
                     ],
@@ -241,7 +233,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Biographie',
                         alignLabelWithHint: true,
-                        helperText: 'Deux lignes sur toi, ton style de jeu…',
                       ),
                     ),
                   ],
@@ -273,7 +264,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: RiftPanel(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 4,
+                  vertical: 10,
                 ),
                 child: Column(
                   children: [
@@ -323,24 +314,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               sliver: SliverToBoxAdapter(child: AuthError(message: _error!)),
             ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 24, 18, 12),
+            padding: const EdgeInsets.fromLTRB(18, 24, 18, 36),
             sliver: SliverToBoxAdapter(
               child: GoldButton(
                 label: 'Enregistrer',
                 icon: Icons.check_rounded,
                 loading: _saving,
                 onPressed: _saving ? null : () => _save(profile),
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 36),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Ton adresse e-mail et ton mot de passe se changent depuis '
-                '« Compte », sur ton profil.',
-                textAlign: TextAlign.center,
-                style: text.small,
               ),
             ),
           ),
@@ -367,11 +347,8 @@ class _AvatarPicker extends ConsumerWidget {
           padding: EdgeInsets.symmetric(vertical: 24),
           child: LoadingView(),
         ),
-        error: (error, _) => Text(
-          'Les légendes n’ont pas pu être chargées. Ton portrait actuel reste '
-          'en place.',
-          style: text.small,
-        ),
+        error: (error, _) =>
+            Text('Les légendes n’ont pas pu être chargées.', style: text.small),
         data: (options) => options.isEmpty
             ? Text(
                 'Aucune légende disponible pour le moment.',

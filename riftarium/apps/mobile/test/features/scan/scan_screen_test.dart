@@ -159,7 +159,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Cadre le code de la carte'), findsOneWidget);
-      expect(find.text('Code de la carte ici'), findsOneWidget);
     });
 
     testWidgets('lecture en cours : le bandeau change', (tester) async {

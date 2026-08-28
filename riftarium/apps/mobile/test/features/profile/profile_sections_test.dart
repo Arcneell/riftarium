@@ -31,7 +31,8 @@ void main() {
     expect(find.text('Hauts faits'), findsOneWidget);
     expect(find.text('2 / 3'), findsOneWidget);
     expect(find.byType(AchievementMedallion), findsNWidgets(2));
-    expect(find.text('Duels'), findsOneWidget);
+    expect(find.text('Mes parties'), findsOneWidget);
+    expect(find.text('de réussite'), findsOneWidget);
     expect(find.text('60 %'), findsOneWidget);
     expect(find.text('Historique des parties'), findsOneWidget);
     expect(find.text('Amis'), findsOneWidget);
@@ -67,7 +68,7 @@ void main() {
     await open(tester, PlayFakeApi());
 
     expect(find.text('Hauts faits'), findsNothing);
-    expect(find.text('Duels'), findsNothing);
+    expect(find.text('de réussite'), findsNothing);
     expect(find.text('Compte'), findsOneWidget);
     expect(find.text('Modifier le profil'), findsOneWidget);
   });

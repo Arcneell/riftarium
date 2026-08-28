@@ -55,11 +55,6 @@ class CollectionSignIn extends StatelessWidget {
                     children: [
                       const GoldRule(),
                       const SizedBox(height: 14),
-                      Text(
-                        'Ta collection te suit partout',
-                        style: text.displaySmall,
-                      ),
-                      const SizedBox(height: 8),
                       Text(message, style: text.small),
                       const SizedBox(height: 18),
                       GoldButton(
