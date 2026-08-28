@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riftarium_mobile/features/game/data/game_store.dart';
 import 'package:riftarium_mobile/features/game/domain/game_engine.dart';
 import 'package:riftarium_mobile/features/game/domain/game_mode.dart';
+import 'package:riftarium_mobile/features/game/ui/widgets/confetti.dart';
+import 'package:riftarium_mobile/features/game/ui/widgets/draw_overlay.dart';
 import 'package:riftarium_mobile/features/game/ui/widgets/player_panel.dart';
 
 import 'support/game_app.dart';
@@ -14,6 +16,11 @@ void main() {
   /// autour de la table, pas un rang dans l'arbre de widgets.
   Finder panelOf(String name) =>
       find.ancestor(of: find.text(name), matching: find.byType(PlayerPanel));
+
+  /// Confettis effectivement peints à l'écran.
+  Iterable<CustomPaint> confettiPainters(WidgetTester tester) => tester
+      .widgetList<CustomPaint>(find.byType(CustomPaint))
+      .where((paint) => paint.painter is ConfettiPainter);
 
   /// Un repère de niveau allumé se lit « sélectionné » dans l'arbre
   /// d'accessibilité.
@@ -54,7 +61,24 @@ void main() {
     expect(find.text('Chambre magmatique'), findsOneWidget);
     expect(find.text('Victoire 11'), findsOneWidget);
 
-    await startGame(tester);
+    // Le tirage occupe tout l'écran et annonce qui commence.
+    await tester.tap(find.text('Tirer le premier joueur'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DrawOverlay), findsOneWidget);
+    expect(find.text('PREMIER JOUEUR'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DrawOverlay),
+        matching: find.textContaining('commence.'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Toucher pour continuer'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DrawOverlay), findsNothing);
+
+    await tester.tap(find.text('Commencer la partie'));
+    await tester.pumpAndSettle();
 
     final game = gameOf(tester);
     expect(game, isNotNull);
@@ -122,6 +146,9 @@ void main() {
     expect(find.text('Score 8'), findsOneWidget);
     expect(find.text('Nouvelle partie'), findsOneWidget);
     expect(find.text('Terminer'), findsOneWidget);
+    // Mouvement réduit : pas de confettis, et l'écran se stabilise.
+    expect(confettiPainters(tester), isEmpty);
+    expect(find.text('Encore !'), findsNothing);
   });
 
   testWidgets('l’XP gagnée allume le repère de niveau', (tester) async {

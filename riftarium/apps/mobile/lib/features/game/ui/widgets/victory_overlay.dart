@@ -7,10 +7,11 @@ import '../../../../app/design/foil.dart';
 import '../../../../app/theme.dart';
 import '../../../../app/widgets/card_image.dart';
 import '../../domain/game_state.dart';
+import 'confetti.dart';
 
 /// Troisième étape : l'écran de victoire. Le visuel du vainqueur balayé d'un
 /// reflet or, le mot en Marcellus, le score final, et la suite à donner.
-class VictoryOverlay extends StatelessWidget {
+class VictoryOverlay extends StatefulWidget {
   const VictoryOverlay({
     super.key,
     required this.state,
@@ -25,7 +26,18 @@ class VictoryOverlay extends StatelessWidget {
   final VoidCallback onFinish;
 
   @override
+  State<VictoryOverlay> createState() => _VictoryOverlayState();
+}
+
+class _VictoryOverlayState extends State<VictoryOverlay> {
+  /// Chaque incrément relance une pluie de confettis.
+  int _burst = 0;
+
+  void _replay() => setState(() => _burst++);
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final text = riftText(context);
     final team = state.winnerTeam;
     if (team == null) return const SizedBox.shrink();
@@ -41,107 +53,136 @@ class VictoryOverlay extends StatelessWidget {
     return Positioned.fill(
       child: _FadeIn(
         enabled: !reduceMotion,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: ColoredBox(
-            color: RiftColors.inkStrong.withValues(alpha: 0.9),
-            child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 24,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (legend != null)
-                        SizedBox(
-                          width: 168,
-                          child: FoilOverlay(
-                            rainbow: true,
-                            child: CardImage(
-                              card: legend,
-                              thumbWidth: CardArtSize.detail,
-                              shadow: true,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              // Un tap n'importe où sur le fond relance la fête.
+              onTap: reduceMotion ? null : _replay,
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: ColoredBox(
+                  color: RiftColors.inkStrong.withValues(alpha: 0.9),
+                  child: SafeArea(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 24,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (legend != null)
+                              SizedBox(
+                                width: 168,
+                                child: FoilOverlay(
+                                  rainbow: true,
+                                  child: CardImage(
+                                    card: legend,
+                                    thumbWidth: CardArtSize.detail,
+                                    shadow: true,
+                                  ),
+                                ),
+                              )
+                            else
+                              const _GoldEmblem(),
+                            const SizedBox(height: 22),
+                            Text(
+                              'Victoire',
+                              style: text.displayLarge.copyWith(
+                                fontSize: 46,
+                                color: RiftColors.goldSoft,
+                              ),
                             ),
-                          ),
-                        )
-                      else
-                        const _GoldEmblem(),
-                      const SizedBox(height: 22),
-                      Text(
-                        'Victoire',
-                        style: text.displayLarge.copyWith(
-                          fontSize: 46,
-                          color: RiftColors.goldSoft,
+                            const SizedBox(height: 6),
+                            const Center(child: GoldRule(width: 72)),
+                            const SizedBox(height: 14),
+                            Text(
+                              state.teamName(team),
+                              textAlign: TextAlign.center,
+                              style: text.displaySmall.copyWith(fontSize: 22),
+                            ),
+                            if (state.mode.isTeamPlay) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                winners
+                                    .map((player) => player.name)
+                                    .join(' et '),
+                                textAlign: TextAlign.center,
+                                style: text.small,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                MonoBadge(
+                                  label: 'Score ${state.scoreOfTeam(team)}',
+                                  filled: true,
+                                ),
+                                for (final other in others)
+                                  MonoBadge(
+                                    label:
+                                        '${state.teamName(other)} '
+                                        '${state.scoreOfTeam(other)}',
+                                  ),
+                                if (state.mode.roundsToWin > 1)
+                                  MonoBadge(
+                                    label:
+                                        'Manches ${state.roundsWonBy(team)} – '
+                                        '${others.map(state.roundsWonBy).join(' – ')}',
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 26),
+                            if (hasNextRound)
+                              GoldButton(
+                                label: 'Manche suivante',
+                                icon: Icons.play_arrow_rounded,
+                                onPressed: widget.onNewRound,
+                              )
+                            else
+                              GoldButton(
+                                label: 'Nouvelle partie',
+                                icon: Icons.refresh_rounded,
+                                onPressed: widget.onNewGame,
+                              ),
+                            const SizedBox(height: 8),
+                            GhostButton(
+                              label: 'Terminer',
+                              icon: Icons.check_rounded,
+                              onPressed: widget.onFinish,
+                            ),
+                            if (!reduceMotion)
+                              TextButton.icon(
+                                onPressed: _replay,
+                                icon: const Icon(
+                                  Icons.celebration_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('Encore !'),
+                              ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Center(child: GoldRule(width: 72)),
-                      const SizedBox(height: 14),
-                      Text(
-                        state.teamName(team),
-                        textAlign: TextAlign.center,
-                        style: text.displaySmall.copyWith(fontSize: 22),
-                      ),
-                      if (state.mode.isTeamPlay) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          winners.map((player) => player.name).join(' et '),
-                          textAlign: TextAlign.center,
-                          style: text.small,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          MonoBadge(
-                            label: 'Score ${state.scoreOfTeam(team)}',
-                            filled: true,
-                          ),
-                          for (final other in others)
-                            MonoBadge(
-                              label:
-                                  '${state.teamName(other)} '
-                                  '${state.scoreOfTeam(other)}',
-                            ),
-                          if (state.mode.roundsToWin > 1)
-                            MonoBadge(
-                              label:
-                                  'Manches ${state.roundsWonBy(team)} – '
-                                  '${others.map(state.roundsWonBy).join(' – ')}',
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 26),
-                      if (hasNextRound)
-                        GoldButton(
-                          label: 'Manche suivante',
-                          icon: Icons.play_arrow_rounded,
-                          onPressed: onNewRound,
-                        )
-                      else
-                        GoldButton(
-                          label: 'Nouvelle partie',
-                          icon: Icons.refresh_rounded,
-                          onPressed: onNewGame,
-                        ),
-                      const SizedBox(height: 8),
-                      GhostButton(
-                        label: 'Terminer',
-                        icon: Icons.check_rounded,
-                        onPressed: onFinish,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            ConfettiOverlay(
+              colors: confettiPalette(
+                winners.expand(
+                  (player) => player.legend?.domains ?? const <String>[],
+                ),
+              ),
+              burst: _burst,
+            ),
+          ],
         ),
       ),
     );

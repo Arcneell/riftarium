@@ -1,11 +1,14 @@
 import 'dart:ui' as ui;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../app/design/banners.dart';
 import '../../../../app/design/components.dart';
 import '../../../../app/theme.dart';
 import '../../../../app/widgets/card_image.dart';
+import '../../../cards/domain/card.dart';
 import '../../domain/game_engine.dart';
 import '../../domain/game_mode.dart';
 import '../../domain/game_state.dart';
@@ -85,9 +88,11 @@ class PlayerPanel extends StatelessWidget {
                     if (showScore)
                       Expanded(
                         child: Center(
-                          child: BigScore(
-                            value: state.scoreOf(player),
-                            color: color,
+                          child: ScoreHalo(
+                            child: BigScore(
+                              value: state.scoreOf(player),
+                              color: color,
+                            ),
                           ),
                         ),
                       )
@@ -122,8 +127,11 @@ class PlayerPanel extends StatelessWidget {
   }
 }
 
-/// Visuel de la légende, flouté et assombri, sinon un dégradé à la couleur du
-/// joueur : un panneau reste lisible même sans légende choisie.
+/// Fond d'un panneau : l'art de la légende, à peine flouté et cadré haut pour
+/// qu'on reconnaisse le champion du premier coup d'œil. Le voile encre reste
+/// léger — c'est le halo local derrière le chiffre (voir [PlayerPanel]) qui
+/// garantit la lecture du score, pas un assombrissement général qui noierait
+/// l'illustration.
 class _Backdrop extends StatelessWidget {
   const _Backdrop({required this.player, required this.color});
 
@@ -136,14 +144,16 @@ class _Backdrop extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Sans légende, le panneau garde sa couleur : un dégradé radial à la
+        // teinte du joueur, assez marqué pour qu'on repère sa place.
         DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.45),
+              radius: 1.1,
               colors: [
-                color.withValues(alpha: 0.30),
-                RiftColors.inkStrong.withValues(alpha: 0.95),
+                color.withValues(alpha: legend == null ? 0.42 : 0.24),
+                RiftColors.inkStrong.withValues(alpha: 0.96),
               ],
             ),
           ),
@@ -151,16 +161,8 @@ class _Backdrop extends StatelessWidget {
         if (legend != null)
           Positioned.fill(
             child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: Opacity(
-                opacity: 0.42,
-                child: CardImage(
-                  card: legend,
-                  thumbWidth: CardArtSize.tile,
-                  fit: BoxFit.cover,
-                  borderRadius: 0,
-                ),
-              ),
+              imageFilter: ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+              child: LegendArt(card: legend),
             ),
           ),
         Positioned.fill(
@@ -170,14 +172,43 @@ class _Backdrop extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  RiftColors.inkStrong.withValues(alpha: 0.55),
-                  RiftColors.inkStrong.withValues(alpha: 0.82),
+                  RiftColors.inkStrong.withValues(alpha: 0.25),
+                  RiftColors.inkStrong.withValues(alpha: 0.35),
                 ],
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Illustration d'une légende recadrée pour un panneau : `cover` aligné haut
+/// (le visage plutôt que le texte de la carte), en résolution `detail` pour
+/// que le flou ne fasse pas ressortir les pixels.
+///
+/// `CardImage` impose le ratio 5/7 d'une carte et un squelette animé : ni l'un
+/// ni l'autre ne conviennent à un fond plein cadre.
+class LegendArt extends StatelessWidget {
+  const LegendArt({super.key, required this.card});
+
+  final RiftCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = card.imageUrl;
+    if (url == null || url.isEmpty) return const SizedBox.shrink();
+    return CachedNetworkImage(
+      imageUrl: cardThumb(url, width: CardArtSize.zoom),
+      cacheManager: riftImageCache,
+      fit: BoxFit.cover,
+      // Le visage du champion occupe le tiers supérieur de la carte.
+      alignment: const Alignment(0, -0.72),
+      memCacheWidth: CardArtSize.zoom,
+      fadeInDuration: RiftMotion.base,
+      placeholder: (context, url) => const SizedBox.shrink(),
+      errorWidget: (context, url, error) => const SizedBox.shrink(),
     );
   }
 }
@@ -209,14 +240,24 @@ class _Identity extends StatelessWidget {
                 player.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: text.bodyStrong.copyWith(fontSize: 14),
+                style: text.bodyStrong.copyWith(
+                  fontSize: 14,
+                  shadows: const [
+                    Shadow(color: RiftColors.inkStrong, blurRadius: 8),
+                  ],
+                ),
               ),
               if (legend != null)
                 Text(
                   legend.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: text.mono.copyWith(fontSize: 10),
+                  style: text.mono.copyWith(
+                    fontSize: 10,
+                    shadows: const [
+                      Shadow(color: RiftColors.inkStrong, blurRadius: 8),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -259,12 +300,46 @@ class BigScore extends StatelessWidget {
           height: 1,
           color: RiftColors.darkInk,
           shadows: [
-            Shadow(color: color.withValues(alpha: 0.65), blurRadius: 26),
+            // Un halo à la couleur du joueur, doublé d'une ombre encre : le
+            // chiffre tient même posé sur la partie claire d'une illustration.
+            Shadow(color: color.withValues(alpha: 0.55), blurRadius: 28),
+            const Shadow(
+              color: RiftColors.inkStrong,
+              blurRadius: 14,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+/// Voile radial local posé derrière le chiffre : l'illustration reste visible
+/// partout ailleurs, le score reste lisible au centre.
+class ScoreHalo extends StatelessWidget {
+  const ScoreHalo({super.key, required this.child, this.diameter = 176});
+
+  final Widget child;
+  final double diameter;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: diameter,
+    height: diameter,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        colors: [
+          RiftColors.inkStrong.withValues(alpha: 0.55),
+          RiftColors.inkStrong.withValues(alpha: 0),
+        ],
+        stops: const [0.35, 1],
+      ),
+    ),
+    child: child,
+  );
 }
 
 /// Réserve d'XP (729) : le chiffre, six repères de niveau (824) et deux

@@ -248,7 +248,10 @@ class _TeamScore extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text('ÉQUIPE', style: text.eyebrow.copyWith(fontSize: 9)),
-                BigScore(value: score, color: color, size: 66),
+                ScoreHalo(
+                  diameter: 132,
+                  child: BigScore(value: score, color: color, size: 66),
+                ),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -335,7 +338,7 @@ class _ControlBar extends StatelessWidget {
                 children: [
                   Text(
                     state.mode.roundsToWin > 1
-                        ? 'MANCHE ${state.round} · TOUR ${state.turnNumber}'
+                        ? 'M${state.round} · TOUR ${state.turnNumber}'
                         : 'TOUR ${state.turnNumber}',
                     style: text.eyebrow.copyWith(fontSize: 9.5),
                   ),

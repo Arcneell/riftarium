@@ -58,9 +58,12 @@ GameState? gameOf(WidgetTester tester) {
   return ProviderScope.containerOf(element).read(gameControllerProvider);
 }
 
-/// Passe la configuration : tirage du premier joueur puis départ.
+/// Passe la configuration : tirage du premier joueur, fermeture de la roue,
+/// puis départ. En mouvement réduit la roue s'affiche déjà arrêtée.
 Future<void> startGame(WidgetTester tester) async {
   await tester.tap(find.text('Tirer le premier joueur'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Toucher pour continuer'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Commencer la partie'));
   await tester.pumpAndSettle();

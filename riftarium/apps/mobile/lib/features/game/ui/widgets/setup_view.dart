@@ -14,6 +14,7 @@ import '../../domain/game_engine.dart';
 import '../../domain/game_mode.dart';
 import '../../domain/game_state.dart';
 import '../../domain/player.dart';
+import 'draw_overlay.dart';
 import 'game_theme.dart';
 import 'legend_picker_sheet.dart';
 
@@ -43,7 +44,9 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   late List<Player> _players = GameEngine.defaultPlayers(_mode);
   String? _firstPlayerId;
   int? _spotlight;
+  int _drawTarget = 0;
   int _spinSteps = 0;
+  bool _drawing = false;
   bool _spinning = false;
   bool _resumeDismissed = false;
 
@@ -56,8 +59,8 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
     ];
     _spin = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..addListener(_onSpin);
+      duration: const Duration(milliseconds: 2000),
+    );
   }
 
   @override
@@ -69,19 +72,12 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
     super.dispose();
   }
 
-  void _onSpin() {
-    final count = _players.length;
-    if (count == 0) return;
-    final progress = Curves.easeOutCubic.transform(_spin.value);
-    final step = (progress * _spinSteps).floor() % count;
-    if (step != _spotlight) setState(() => _spotlight = step);
-  }
-
   void _selectMode(GameMode mode) {
     if (mode == _mode) return;
     final previous = {for (final player in _players) player.seat: player};
     setState(() {
       _mode = mode;
+      _drawing = false;
       _players = [
         for (var seat = 0; seat < mode.playerCount; seat++)
           Player(
@@ -110,29 +106,36 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   Future<void> _draw() async {
     final count = _players.length;
     final target = _random.nextInt(count);
-    if (MediaQuery.disableAnimationsOf(context)) {
-      setState(() {
-        _spotlight = target;
-        _firstPlayerId = _players[target].id;
-      });
-      return;
-    }
     setState(() {
+      _drawTarget = target;
+      _drawing = true;
       _spinning = true;
       _firstPlayerId = null;
+      _spotlight = null;
       // Trois tours complets avant de s'arrêter sur le siège tiré.
       _spinSteps = count * 3 + target;
     });
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _settleDraw();
+      return;
+    }
     await _spin.forward(from: 0);
     if (!mounted) return;
     await HapticFeedback.mediumImpact();
     if (!mounted) return;
-    setState(() {
-      _spinning = false;
-      _spotlight = target;
-      _firstPlayerId = _players[target].id;
-    });
+    _settleDraw();
+    // Le temps de lire le nom, puis la roue s'efface d'elle-même.
+    await Future<void>.delayed(const Duration(milliseconds: 1800));
+    if (mounted && _drawing) _closeDraw();
   }
+
+  void _settleDraw() => setState(() {
+    _spinning = false;
+    _spotlight = _drawTarget;
+    _firstPlayerId = _players[_drawTarget].id;
+  });
+
+  void _closeDraw() => setState(() => _drawing = false);
 
   void _startGame() {
     ref
@@ -170,7 +173,8 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
     final text = riftText(context);
     final saved = ref.watch(savedGameProvider).valueOrNull;
     final drawn = _firstPlayerId;
-    return Column(
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(onClose: widget.onClose),
@@ -263,6 +267,23 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
             ],
           ),
         ),
+      ],
+    );
+
+    return Stack(
+      children: [
+        body,
+        if (_drawing)
+          DrawOverlay(
+            players: _players,
+            nameOf: (player) => _nameOf(player.seat),
+            // En mouvement réduit, la roue est déjà arrêtée sur le résultat.
+            animation: reduceMotion ? kAlwaysCompleteAnimation : _spin,
+            steps: _spinSteps,
+            target: _drawTarget,
+            note: _mode.firstTurnNotes.join(' '),
+            onDismiss: _closeDraw,
+          ),
       ],
     );
   }
