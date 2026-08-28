@@ -14,7 +14,14 @@ const HOST = { id: 12, handle: "nyra", avatar_url: null }
 const GUEST = { id: 27, handle: "nova", avatar_url: "https://cdn.example/nova.png" }
 const JINX = { id: "leg-1", name: "Jinx", image_url: "https://cdn.example/jinx.png" }
 
-const seat = (user, over = {}) => ({ user, seat: user === HOST ? 0 : 1, legend: null, deck: null, ready: false, ...over })
+const seat = (user, over = {}) => ({
+  user,
+  seat: user === HOST ? 0 : 1,
+  legend: null,
+  deck: null,
+  ready: false,
+  ...over
+})
 
 function makeRoom(over = {}) {
   return {
@@ -32,9 +39,11 @@ function makeRoom(over = {}) {
   }
 }
 
-/* Le dernier appel réseau ayant ce chemin, avec ses options (méthode, corps). */
-function lastCall(path) {
-  const call = [...api.mock.calls].reverse().find(([called]) => called === path)
+/* Le dernier appel réseau ayant ce chemin (et cette méthode), options comprises. */
+function lastCall(path, method) {
+  const call = [...api.mock.calls]
+    .reverse()
+    .find(([called, options]) => called === path && (!method || options?.method === method))
   return call ? { path: call[0], ...(call[1] || {}) } : null
 }
 
@@ -128,7 +137,9 @@ describe("RoomView", () => {
 
   it("choisit une légende par la recherche et un deck, puis se déclare prêt", async () => {
     setupApi({
-      room: makeRoom({ players: [seat(HOST, { legend: JINX, deck: { id: 7, name: "Fureur", format: "tournament" } })] }),
+      room: makeRoom({
+        players: [seat(HOST, { legend: JINX, deck: { id: 7, name: "Fureur", format: "tournament" } })]
+      }),
       decks: [{ id: 7, name: "Fureur" }]
     })
     const { wrapper } = await mountView()
@@ -184,7 +195,7 @@ describe("RoomView", () => {
     const { wrapper } = await mountView()
     await buttonWith(wrapper, "Annuler le salon").trigger("click")
     await flushPromises()
-    expect(lastCall("/api/play/rooms/ABC234")).toMatchObject({ method: "DELETE" })
+    expect(lastCall("/api/play/rooms/ABC234", "DELETE")).toMatchObject({ method: "DELETE" })
     wrapper.unmount()
   })
 

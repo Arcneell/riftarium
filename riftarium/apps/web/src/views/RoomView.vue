@@ -50,7 +50,10 @@ let legendTimer = null
 const players = computed(() => [...(room.value?.players || [])].sort((a, b) => (a.seat ?? 0) - (b.seat ?? 0)))
 const myPlayer = computed(() => players.value.find((player) => player.user?.id === me.value?.id) || null)
 const isHost = computed(() => Boolean(room.value && me.value && room.value.host_id === me.value.id))
-const canJoin = computed(() => Boolean(room.value && !myPlayer.value && room.value.status === "open"))
+/* Deux sièges seulement en v1 : un salon plein ne se rejoint pas. */
+const canJoin = computed(() =>
+  Boolean(room.value && !myPlayer.value && room.value.status === "open" && players.value.length < 2)
+)
 const bothReady = computed(() => players.value.length === 2 && players.value.every((player) => player.ready))
 const seatLabel = (player) => (room.value && player.user?.id === room.value.host_id ? "Hôte" : "Invité")
 
@@ -93,14 +96,21 @@ async function loadRoom({ silent = false } = {}) {
   }
 }
 
-/* Toute action rejoue une lecture du salon : le serveur reste seul juge de l'état. */
+/* Le serveur reste seul juge de l'état : join / leave / cancel / me renvoient le
+   RoomOut à jour, on le prend tel quel ; sinon (confirm, dispute) on relit. */
 async function run(action) {
   if (busy.value) return
   busy.value = true
   error.value = ""
   try {
-    await action()
-    await loadRoom({ silent: true })
+    const result = await action()
+    if (result?.code) {
+      room.value = result
+      if (result.match_id) await loadMatch(result.match_id)
+      else match.value = null
+    } else {
+      await loadRoom({ silent: true })
+    }
   } catch (e) {
     error.value = e.message
   } finally {

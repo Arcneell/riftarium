@@ -21,11 +21,11 @@ async function load() {
   loading.value = true
   error.value = ""
   try {
+    /* Enveloppe du contrat : { total, page, size, items: [HistoryItem] }. */
     const payload = await getHistory(page.value, SIZE)
-    /* Le contrat ne fige pas l'enveloppe : liste nue ou { items, total } paginé. */
-    const list = Array.isArray(payload) ? payload : payload?.items || []
+    const list = payload?.items || []
     items.value = list
-    total.value = Array.isArray(payload) ? list.length : (payload?.total ?? list.length)
+    total.value = payload?.total ?? list.length
   } catch (e) {
     error.value = e.message
     items.value = []

@@ -61,8 +61,11 @@ export function abandonMatch(id) {
 
 /* ---------- Historique, statistiques, reprise ---------- */
 
+/* Renvoie { total, page, size, items: [HistoryItem] }. L'API plafonne la taille
+   de page à 50 : on borne ici plutôt que de laisser passer un 422. */
 export function getHistory(page = 1, size = 20) {
-  return api(`/api/play/history?page=${page}&size=${size}`)
+  const perPage = Math.min(50, Math.max(1, Number(size) || 20))
+  return api(`/api/play/history?page=${Math.max(1, Number(page) || 1)}&size=${perPage}`)
 }
 
 export function getStats() {

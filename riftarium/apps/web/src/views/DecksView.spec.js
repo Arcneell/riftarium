@@ -3,6 +3,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import DecksView from "./DecksView.vue"
 import { api } from "../api.js"
+import { resetPlayStats } from "../composables/usePlayStats.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -29,6 +30,8 @@ async function mountView() {
 
 describe("DecksView", () => {
   beforeEach(() => {
+    /* Le bilan des parties est mis en cache au niveau du module : on repart à zéro. */
+    resetPlayStats()
     api.mockReset()
     api.mockImplementation((path, options = {}) => {
       if (path === "/api/decks/mine") return Promise.resolve([])
@@ -86,6 +89,48 @@ describe("DecksView", () => {
     await flushPromises()
     expect(document.body.querySelector(".modal")).toBeNull()
     expect(api.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("affiche le bilan W/L du deck quand /api/play/stats le renseigne", async () => {
+    const deck = {
+      id: 4,
+      name: "Jinx — prêt à jouer",
+      format: "tournament",
+      is_public: false,
+      likes: 0,
+      card_count: 56,
+      checks: [{ ok: true }],
+      cards: []
+    }
+    api.mockImplementation((path) => {
+      if (path === "/api/decks/mine") return Promise.resolve([deck])
+      if (path === "/api/play/stats") {
+        return Promise.resolve({
+          by_deck: [{ deck_id: 4, name: deck.name, format: "tournament", played: 4, won: 3, lost: 1, win_rate: 0.75 }]
+        })
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    const badge = wrapper.get(".deck-record")
+    expect(badge.text()).toBe("3 V · 1 D")
+    expect(badge.attributes("title")).toContain("3 victoire(s), 1 défaite(s)")
+    wrapper.unmount()
+  })
+
+  it("n'affiche pas de bilan pour un deck sans partie suivie", async () => {
+    api.mockImplementation((path) => {
+      if (path === "/api/decks/mine") {
+        return Promise.resolve([
+          { id: 4, name: "Sans partie", format: "tournament", likes: 0, card_count: 1, cards: [] }
+        ])
+      }
+      if (path === "/api/play/stats") return Promise.resolve({ by_deck: [] })
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".deck-record").exists()).toBe(false)
     wrapper.unmount()
   })
 

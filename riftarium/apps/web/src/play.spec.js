@@ -110,6 +110,11 @@ describe("play — historique, statistiques, reprise", () => {
     expect(sent(1).path).toBe("/api/play/history?page=3&size=50")
   })
 
+  it("borne la taille de page au plafond de l'API (50)", async () => {
+    await getHistory(0, 500)
+    expect(sent(0).path).toBe("/api/play/history?page=1&size=50")
+  })
+
   it("lit les statistiques et la partie en cours", async () => {
     await getStats()
     await getCurrent()
