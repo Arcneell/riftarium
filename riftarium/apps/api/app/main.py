@@ -16,7 +16,7 @@ from .demo import seed_community
 from .imagehash import dhash_hex
 from .models import Card
 from .prices import PriceRefreshBusy, run_price_refresh, start_price_watch
-from .routers import admin, auth_routes, cards, collection, decks, metrics, play, share, wishlist
+from .routers import admin, auth_routes, cards, collection, decks, metrics, play, share, users, wishlist
 from .routers.admin import sync_admin_flags
 from .security import require_admin_token, sanitize_image_url
 from .sync import HEADERS as SYNC_HEADERS
@@ -78,6 +78,7 @@ app.include_router(decks.router)
 app.include_router(metrics.router)
 app.include_router(play.router)
 app.include_router(share.router)
+app.include_router(users.router)
 app.include_router(wishlist.router)
 
 

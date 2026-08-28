@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from .models import (
+    Achievement,
     AuthToken,
     Card,
     CollectionItem,
@@ -14,6 +15,7 @@ from .models import (
     DeckCard,
     DeckLike,
     DeckView,
+    Follow,
     Match,
     MatchPlayer,
     Room,
@@ -76,6 +78,12 @@ def user_out(db: Session, user: User, *, include_email: bool = False, include_st
         "avatar_card_id": user.avatar_card_id,
         "avatar_url": avatar_urls(db, [user]).get(user.id),
         "created_at": user.created_at.isoformat() if user.created_at else None,
+        # Confidentialité du profil public : renvoyée à tous les appelants de
+        # user_out, le propriétaire comme les écrans de réglages.
+        "show_stats": bool(user.show_stats),
+        "show_collection": bool(user.show_collection),
+        "show_decks": bool(user.show_decks),
+        "show_achievements": bool(user.show_achievements),
     }
     if include_email:
         payload["email"] = user.email
@@ -135,6 +143,9 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
             user.avatar_card_id = card_id
     if "notify_moderation" in data:
         user.notify_moderation = bool(data["notify_moderation"])
+    for setting in ("show_stats", "show_collection", "show_decks", "show_achievements"):
+        if setting in data:
+            setattr(user, setting, bool(data[setting]))
     if "handle" in data and data["handle"] != user.handle:
         if review(data["handle"]) != "published":
             raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")
@@ -163,6 +174,10 @@ def export_account(db: Session, user: User) -> dict:
     decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
     # Participations aux matchs suivis : supprimées à la clôture du compte, donc exportables.
     plays = db.scalars(select(MatchPlayer).where(MatchPlayer.user_id == user.id).order_by(MatchPlayer.match_id)).all()
+    badges = db.scalars(
+        select(Achievement).where(Achievement.user_id == user.id).order_by(Achievement.unlocked_at, Achievement.id)
+    ).all()
+    following, followers = _follow_handles(db, user)
     return {
         "handle": user.handle,
         "email": user.email,
@@ -202,7 +217,37 @@ def export_account(db: Session, user: User) -> dict:
             }
             for play in plays
         ],
+        "achievements": [
+            {
+                "key": badge.key,
+                "unlocked_at": badge.unlocked_at.isoformat() if badge.unlocked_at else None,
+                "progress": badge.progress,
+            }
+            for badge in badges
+        ],
+        "follows": {"following": following, "followers": followers},
     }
+
+
+def _follow_handles(db: Session, user: User) -> tuple[list[str], list[str]]:
+    """Pseudos suivis et pseudos abonnés (export RGPD : ce sont mes relations)."""
+    following = list(
+        db.scalars(
+            select(User.handle)
+            .join(Follow, Follow.followed_id == User.id)
+            .where(Follow.follower_id == user.id)
+            .order_by(User.handle)
+        ).all()
+    )
+    followers = list(
+        db.scalars(
+            select(User.handle)
+            .join(Follow, Follow.follower_id == User.id)
+            .where(Follow.followed_id == user.id)
+            .order_by(User.handle)
+        ).all()
+    )
+    return following, followers
 
 
 def delete_user_account(db: Session, user: User) -> None:
@@ -220,6 +265,10 @@ def delete_user_account(db: Session, user: User) -> None:
     db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
     db.execute(delete(WishlistItem).where(WishlistItem.user_id == user.id))
     db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))
+    # Hauts faits et suivis : purement rattachés au compte, ils partent avec lui
+    # (dans les deux sens pour follows : mes suivis et mes abonnés).
+    db.execute(delete(Achievement).where(Achievement.user_id == user.id))
+    db.execute(delete(Follow).where((Follow.follower_id == user.id) | (Follow.followed_id == user.id)))
     owned_ids = list(db.scalars(select(Deck.id).where(Deck.owner_id == user.id)).all())
     if owned_ids:
         db.execute(delete(DeckLike).where(DeckLike.deck_id.in_(owned_ids)))

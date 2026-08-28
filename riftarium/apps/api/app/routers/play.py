@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session, aliased
 
+from ..achievements import evaluate_achievements
 from ..auth import current_user
 from ..db import get_db
 from ..models import Card, Deck, Match, MatchPlayer, Room, RoomPlayer, User
@@ -506,6 +507,7 @@ def confirm_match(match_id: int, user: User = Depends(current_user), db: Session
         match.status = "confirmed"
     match.version += 1
     db.commit()
+    evaluate_achievements(db, user)  # coût constant : agrégats, pas de parcours de l'historique
     return match_out(db, match, seats)
 
 
@@ -538,6 +540,7 @@ def abandon_match(match_id: int, user: User = Depends(current_user), db: Session
     apply_result(seats, result)
     close_room(db, match)
     db.commit()
+    evaluate_achievements(db, user)  # coût constant : agrégats, pas de parcours de l'historique
     return match_out(db, match, seats)
 
 
