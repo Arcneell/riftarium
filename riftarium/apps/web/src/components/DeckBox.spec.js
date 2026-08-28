@@ -20,7 +20,10 @@ function fakeDeck(extras = {}) {
 function mountBox(deck, props = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: "/decks/:id", component: { template: "<div />" } }]
+    routes: [
+      { path: "/decks/:id", component: { template: "<div />" } },
+      { path: "/u/:handle", component: { template: "<div />" } }
+    ]
   })
   return mount(DeckBox, {
     props: { deck, to: "/decks/1", ...props },
@@ -102,5 +105,19 @@ describe("DeckBox", () => {
       expect(wrapper.text()).toContain("56 cartes")
       wrapper.unmount()
     }
+  })
+  it("communauté : le pseudo de l'auteur mène à son profil public", () => {
+    const wrapper = mountBox(fakeDeck({ owner: "nova", owner_avatar: null }), { community: true })
+    expect(wrapper.get(".deck-box-owner a").attributes("href")).toBe("/u/nova")
+    wrapper.unmount()
+  })
+
+  it("lecture seule (profil public) : ni suppression, ni mention public/privé", () => {
+    const wrapper = mountBox(fakeDeck({ card_count: undefined }), { readonly: true })
+    expect(wrapper.findAll("button").some((button) => button.text().includes("Supprimer"))).toBe(false)
+    expect(wrapper.get(".deck-box-meta").text()).not.toContain("public")
+    /* Le résumé du profil n'envoie pas le décompte de cartes : pas de « undefined cartes ». */
+    expect(wrapper.text()).not.toContain("undefined")
+    wrapper.unmount()
   })
 })

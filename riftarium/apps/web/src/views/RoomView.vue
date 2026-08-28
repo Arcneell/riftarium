@@ -5,6 +5,8 @@ import { api, cardThumb } from "../api.js"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
+import { legendOf } from "../deckDisplay.js"
+import { profilePath } from "../social.js"
 import {
   cancelRoom,
   confirmMatch,
@@ -134,15 +136,28 @@ function pickLegend(card) {
   })
 }
 
+/* Choisir un deck, c'est choisir sa légende : on lit le deck pour reprendre la
+   carte de zone Légende telle qu'elle y est rangée — même `id`, donc la même
+   impression (alt-art, overnumbered, signature) que sur la table. Elle part dans
+   le même PUT que le deck, et reste modifiable à la main ensuite. */
+async function legendIdOfDeck(deckId) {
+  try {
+    const deck = await api(`/api/decks/${encodeURIComponent(deckId)}`)
+    return legendOf(deck)?.id ?? null
+  } catch {
+    /* Deck illisible : on garde la légende déjà choisie plutôt que de l'effacer. */
+    return null
+  }
+}
+
 function pickDeck(event) {
   const value = event.target.value
-  return run(() =>
-    updateMe(code.value, {
-      legend_card_id: myPlayer.value?.legend?.id ?? null,
-      deck_id: value ? Number(value) : null,
-      ready: false
-    })
-  )
+  return run(async () => {
+    const deckId = value ? Number(value) : null
+    const current = myPlayer.value?.legend?.id ?? null
+    const legendId = deckId ? ((await legendIdOfDeck(deckId)) ?? current) : current
+    await updateMe(code.value, { legend_card_id: legendId, deck_id: deckId, ready: false })
+  })
 }
 
 function toggleReady() {
@@ -268,7 +283,11 @@ onBeforeUnmount(() => {
             <li v-for="player in players" :key="player.seat" class="panel play-seat" :class="{ ready: player.ready }">
               <p class="play-seat-who">
                 <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="32" />
-                <span>{{ player.user?.handle || "Compte supprimé" }}</span>
+                <!-- Le pseudo mène au profil public : de quoi jauger un adversaire inconnu. -->
+                <RouterLink v-if="player.user?.handle" :to="profilePath(player.user.handle)">
+                  {{ player.user.handle }}
+                </RouterLink>
+                <span v-else>Compte supprimé</span>
                 <span class="chip play-seat-role">{{ seatLabel(player) }}</span>
               </p>
               <div class="play-side-legend">
@@ -386,7 +405,10 @@ onBeforeUnmount(() => {
               <li v-for="player in match.players" :key="player.seat">
                 <span class="play-match-name">
                   <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="24" />
-                  {{ player.user?.handle || "Compte supprimé" }}
+                  <RouterLink v-if="player.user?.handle" :to="profilePath(player.user.handle)">
+                    {{ player.user.handle }}
+                  </RouterLink>
+                  <span v-else>Compte supprimé</span>
                 </span>
                 <b class="play-match-score">{{ player.score }}</b>
                 <span v-if="match.mode === 'match'" class="mono muted">{{ player.rounds_won }} manche(s)</span>

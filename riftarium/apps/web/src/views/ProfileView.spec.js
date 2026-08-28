@@ -18,8 +18,48 @@ const profile = {
   avatar_card_id: null,
   avatar_url: null,
   created_at: "2026-01-15T10:00:00+00:00",
+  show_stats: false,
+  show_collection: false,
+  show_decks: true,
+  show_achievements: true,
   stats: { unique_cards: 12, total_cards: 40, decks: 2, public_decks: 1, likes_received: 7 }
 }
+
+const achievements = [
+  {
+    key: "first_blood",
+    family: "duels",
+    title: "Premier sang",
+    description: "Remporter un duel suivi.",
+    icon: "emoji_events",
+    tier: "bronze",
+    threshold: 1,
+    current: 1,
+    unlocked_at: "2026-08-01T10:00:00Z"
+  },
+  {
+    key: "veteran_10",
+    family: "duels",
+    title: "Vétéran",
+    description: "Jouer 10 duels suivis.",
+    icon: "military_tech",
+    tier: "silver",
+    threshold: 10,
+    current: 4,
+    unlocked_at: null
+  },
+  {
+    key: "architect_1",
+    family: "decks",
+    title: "Architecte",
+    description: "Créer un deck.",
+    icon: "architecture",
+    tier: "bronze",
+    threshold: 1,
+    current: 1,
+    unlocked_at: "2026-07-02T10:00:00Z"
+  }
+]
 
 const faces = [
   {
@@ -36,7 +76,9 @@ async function mountView() {
     routes: [
       { path: "/", component: { template: "<div />" } },
       { path: "/profil", component: ProfileView },
-      { path: "/confidentialite", component: { template: "<div />" } }
+      { path: "/confidentialite", component: { template: "<div />" } },
+      { path: "/u/:handle", component: { template: "<div />" } },
+      { path: "/amis", component: { template: "<div />" } }
     ]
   })
   router.push("/profil")
@@ -59,6 +101,7 @@ describe("ProfileView", () => {
     api.mockImplementation((path, options = {}) => {
       if (path === "/api/auth/me" && !options.method) return Promise.resolve({ ...profile })
       if (path === "/api/auth/avatars") return Promise.resolve(faces)
+      if (path === "/api/me/achievements") return Promise.resolve(achievements)
       if (path === "/api/auth/me" && options.method === "PATCH") {
         return Promise.resolve({
           ...profile,
@@ -191,6 +234,64 @@ describe("ProfileView", () => {
     expect(call[1].body).toEqual({ password: "motdepasse123", handle: "testeur" })
     expect(session.token).toBeNull()
     expect(router.currentRoute.value.path).toBe("/")
+    wrapper.unmount()
+  })
+  it("groupe les hauts faits par famille, débloqués en tête et progression chiffrée", async () => {
+    const { wrapper } = await mountView()
+    expect(api).toHaveBeenCalledWith("/api/me/achievements")
+
+    const families = wrapper.findAll(".medal-family-head").map((node) => node.text())
+    expect(families[0]).toContain("Duels")
+    expect(families[1]).toContain("Decks")
+    expect(wrapper.get(".profile-section h3").text()).toContain("2 / 3")
+
+    const medals = wrapper.findAll(".medal-family")[0].findAll(".medal")
+    expect(medals[0].text()).toContain("Premier sang")
+    expect(medals[0].classes()).not.toContain("locked")
+    /* Verrouillé : grisé, avec la progression vers le seuil. */
+    expect(medals[1].classes()).toContain("locked")
+    expect(medals[1].text()).toContain("4 / 10")
+    wrapper.unmount()
+  })
+
+  it("bascule un réglage de confidentialité et l'enregistre aussitôt", async () => {
+    const { wrapper } = await mountView()
+    const boxes = wrapper.findAll(".privacy-list input")
+    expect(boxes).toHaveLength(4)
+    /* L'état vient du compte : hauts faits et decks visibles, stats et collection non. */
+    expect(boxes.map((box) => box.element.checked)).toEqual([true, false, false, true])
+
+    await boxes[1].trigger("change")
+    await flushPromises()
+    const call = api.mock.calls.find(
+      ([path, options]) => path === "/api/auth/me" && options?.method === "PATCH" && "show_stats" in options.body
+    )
+    expect(call[1].body).toEqual({ show_stats: true })
+    expect(wrapper.get(".profile-privacy .success").text()).toBe("Réglage enregistré")
+    expect(wrapper.findAll(".privacy-list input")[1].element.checked).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("remet l'interrupteur en place si l'API refuse", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/auth/me" && !options.method) return Promise.resolve({ ...profile })
+      if (path === "/api/auth/avatars") return Promise.resolve(faces)
+      if (path === "/api/me/achievements") return Promise.resolve(achievements)
+      if (path === "/api/auth/me" && options.method === "PATCH") return Promise.reject(new Error("Requête invalide"))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.findAll(".privacy-list input")[1].trigger("change")
+    await flushPromises()
+    expect(wrapper.get(".profile-privacy .error").text()).toBe("Requête invalide")
+    expect(wrapper.findAll(".privacy-list input")[1].element.checked).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("mène au profil public et aux amis", async () => {
+    const { wrapper } = await mountView()
+    const links = wrapper.findAll(".profile-hero-actions a").map((link) => link.attributes("href"))
+    expect(links).toEqual(["/u/testeur", "/amis"])
     wrapper.unmount()
   })
 })

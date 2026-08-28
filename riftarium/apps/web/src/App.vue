@@ -140,6 +140,7 @@ async function logout() {
           <template v-if="session.token && drawerMode">
             <RouterLink to="/historique">Historique</RouterLink>
             <RouterLink to="/statistiques">Statistiques</RouterLink>
+            <RouterLink to="/amis">Amis</RouterLink>
             <RouterLink to="/wishlist">Wishlist</RouterLink>
             <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
             <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
@@ -169,6 +170,7 @@ async function logout() {
                 <RouterLink role="menuitem" to="/profil">Profil</RouterLink>
                 <RouterLink role="menuitem" to="/historique">Historique</RouterLink>
                 <RouterLink role="menuitem" to="/statistiques">Statistiques</RouterLink>
+                <RouterLink role="menuitem" to="/amis">Amis</RouterLink>
                 <RouterLink role="menuitem" to="/wishlist">Wishlist</RouterLink>
                 <RouterLink v-if="session.isAdmin" role="menuitem" class="nav-admin" to="/admin"
                   >Administration</RouterLink
@@ -227,6 +229,7 @@ async function logout() {
             <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/historique">Mes parties suivies</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/statistiques">Mes statistiques</RouterLink></li>
+            <li v-if="session.token"><RouterLink to="/amis">Mes amis</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
           </ul>

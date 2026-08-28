@@ -2,12 +2,16 @@
 import { computed } from "vue"
 import { deckIdentity, legalState, legendOf, runesOf } from "../deckDisplay.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
+import { profilePath } from "../social.js"
 import UserAvatar from "./UserAvatar.vue"
 
 const props = defineProps({
   deck: { type: Object, required: true },
   to: { type: String, required: true },
   community: { type: Boolean, default: false },
+  /* Boîte en lecture seule (profil public d'un joueur) : ni suppression, ni
+     mention public/privé — le visiteur n'est pas chez lui. */
+  readonly: { type: Boolean, default: false },
   /* Bilan des parties suivies de ce deck ({played, won, lost}), fourni par la vue
      qui liste les decks du propriétaire connecté. Jamais sur la communauté. */
   record: { type: Object, default: null }
@@ -52,19 +56,22 @@ function missingNote(deck) {
       <p class="deck-box-legend mono muted" v-else>Légende à choisir</p>
 
       <p class="deck-box-meta mono">
-        <template v-if="community">
+        <template v-if="community && deck.owner">
           <span class="deck-box-owner">
             <UserAvatar :src="deck.owner_avatar" :handle="deck.owner" :size="18" />
-            {{ deck.owner }}
+            <!-- Le pseudo de l'auteur mène à son profil public. -->
+            <RouterLink :to="profilePath(deck.owner)">{{ deck.owner }}</RouterLink>
           </span>
           ·
         </template>
         <!-- Le format n'est plus écrit ici : la pastille Légal / Illégal le porte. -->
-        {{ deck.card_count }} cartes
+        <template v-if="deck.card_count !== undefined && deck.card_count !== null">
+          {{ deck.card_count }} cartes
+        </template>
         <template v-if="formatEur(deck.prices?.total_eur)">
           · <span class="price-tag" :title="PRICE_NOTE">{{ formatEur(deck.prices.total_eur) }}</span>
         </template>
-        <template v-if="!community">
+        <template v-if="!community && !readonly">
           · {{ deck.is_public ? "public" : "privé" }}
           <span v-if="deck.moderation_status === 'pending'" class="deck-box-pending"> · en modération</span>
         </template>
@@ -121,7 +128,9 @@ function missingNote(deck) {
         </span>
         <div class="deck-box-buttons">
           <RouterLink class="btn btn-gold btn-sm" :to="to">Ouvrir</RouterLink>
-          <button v-if="!community" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">Supprimer</button>
+          <button v-if="!community && !readonly" class="btn btn-ghost btn-sm" @click="$emit('remove', deck)">
+            Supprimer
+          </button>
         </div>
       </div>
     </div>
