@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'adaptive.dart';
+import 'design/reveal.dart';
+import 'router.dart';
 import 'theme.dart';
 
 /// Onglets de l'application, dans l'ordre des branches du StatefulShellRoute
@@ -59,10 +61,15 @@ class AppTab {
       cupertinoActiveIcon: CupertinoIcons.book_fill,
     ),
   ];
+
+  /// Position du bouton « Jouer » dans la barre : au centre, entre Cartes et
+  /// Collection. Ce n'est pas un onglet (le compteur s'ouvre en plein écran).
+  static const playSlot = 2;
 }
 
-/// Coque à onglets : barre translucide parchemin, filet or sur l'onglet actif.
-/// Cupertino sur iOS, NavigationBar Material ailleurs.
+/// Coque à onglets : barre translucide parchemin, cinq onglets et, au centre,
+/// le bouton « Jouer » surélevé (dégradé or, liseré parchemin) qui ouvre le
+/// compteur de partie. Icônes Cupertino sur iOS, Material ailleurs.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -76,62 +83,204 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final index = navigationShell.currentIndex;
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final barColor = (dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2))
-        .withValues(alpha: 0.94);
-
+    final bar = _RiftBottomBar(
+      currentIndex: navigationShell.currentIndex,
+      onSelect: _select,
+      onPlay: () => context.push(AppRoutes.game),
+      cupertino: isCupertino(context),
+    );
     if (isCupertino(context)) {
       return CupertinoPageScaffold(
         child: Column(
           children: [
             Expanded(child: navigationShell),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outline),
-                ),
-              ),
-              child: CupertinoTabBar(
-                currentIndex: index,
-                onTap: _select,
-                backgroundColor: barColor,
-                activeColor: RiftColors.goldDeep,
-                inactiveColor: theme.colorScheme.onSurfaceVariant,
-                border: null,
-                items: [
-                  for (final tab in AppTab.values)
-                    BottomNavigationBarItem(
-                      icon: Icon(tab.cupertinoIcon),
-                      activeIcon: Icon(tab.cupertinoActiveIcon),
-                      label: tab.label,
-                    ),
-                ],
-              ),
-            ),
+            bar,
           ],
         ),
       );
     }
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: theme.colorScheme.outline)),
+    return Scaffold(body: navigationShell, bottomNavigationBar: bar);
+  }
+}
+
+class _RiftBottomBar extends StatelessWidget {
+  const _RiftBottomBar({
+    required this.currentIndex,
+    required this.onSelect,
+    required this.onPlay,
+    required this.cupertino,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onPlay;
+  final bool cupertino;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final barColor = (dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2))
+        .withValues(alpha: 0.96);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    final slots = <Widget>[];
+    for (var i = 0; i < AppTab.values.length; i++) {
+      if (i == AppTab.playSlot) {
+        slots.add(Expanded(child: _PlayButton(onTap: onPlay)));
+      }
+      final tab = AppTab.values[i];
+      slots.add(
+        Expanded(
+          child: _TabItem(
+            tab: tab,
+            selected: i == currentIndex,
+            cupertino: cupertino,
+            onTap: () => onSelect(i),
+          ),
         ),
-        child: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: _select,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
-            for (final tab in AppTab.values)
-              NavigationDestination(
-                icon: Icon(tab.icon),
-                selectedIcon: Icon(tab.activeIcon),
-                label: tab.label,
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      decoration: BoxDecoration(
+        color: barColor,
+        border: Border(top: BorderSide(color: theme.colorScheme.outline)),
+      ),
+      child: SizedBox(
+        height: 64,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: slots),
+      ),
+    );
+  }
+}
+
+class _TabItem extends StatelessWidget {
+  const _TabItem({
+    required this.tab,
+    required this.selected,
+    required this.cupertino,
+    required this.onTap,
+  });
+
+  final AppTab tab;
+  final bool selected;
+  final bool cupertino;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final color = selected ? RiftColors.goldDeep : text.muted;
+    final icon = cupertino
+        ? (selected ? tab.cupertinoActiveIcon : tab.cupertinoIcon)
+        : (selected ? tab.activeIcon : tab.icon);
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: tab.label,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 36,
+        highlightColor: RiftColors.gold.withValues(alpha: 0.08),
+        child: SizedBox(
+          height: 64,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: RiftMotion.quick,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? RiftColors.gold.withValues(alpha: 0.16)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(RiftRadius.full),
+                ),
+                child: Icon(icon, size: 23, color: color),
               ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                tab.label,
+                style: text.small.copyWith(
+                  fontSize: 11,
+                  color: color,
+                  fontVariations: RiftFonts.weight(selected ? 600 : 500),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bouton central « Jouer » : médaillon or surélevé, liseré parchemin,
+/// ombre dorée. Se distingue des onglets sans casser leur rythme.
+class _PlayButton extends StatelessWidget {
+  const _PlayButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      label: 'Jouer : compteur de partie',
+      child: PressScale(
+        onTap: onTap,
+        child: SizedBox(
+          height: 64,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Le médaillon fait 54 px mais n'occupe que 40 px de hauteur :
+              // il déborde au-dessus de la barre sans faire déborder la colonne.
+              SizedBox(
+                height: 40,
+                child: OverflowBox(
+                  alignment: Alignment.bottomCenter,
+                  minHeight: 54,
+                  maxHeight: 54,
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RiftColors.goldGradient,
+                      border: Border.all(
+                        color: dark ? RiftColors.darkPaper2 : RiftColors.paper,
+                        width: 3,
+                      ),
+                      boxShadow: RiftShadows.glowGold,
+                    ),
+                    child: const Icon(
+                      Icons.sports_esports_outlined,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Jouer',
+                style: text.small.copyWith(
+                  fontSize: 11,
+                  color: RiftColors.goldDeep,
+                  fontVariations: RiftFonts.weight(600),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
         ),
       ),
     );
