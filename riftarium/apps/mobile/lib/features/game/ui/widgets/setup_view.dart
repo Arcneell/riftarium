@@ -124,7 +124,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
     await HapticFeedback.mediumImpact();
     if (!mounted) return;
     _settleDraw();
-    // Le temps de lire le nom, puis la roue s'efface d'elle-même.
+    // Le temps de lire le nom, puis la partie démarre d'elle-même.
     await Future<void>.delayed(const Duration(milliseconds: 1800));
     if (mounted && _drawing) _closeDraw();
   }
@@ -135,7 +135,12 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
     _firstPlayerId = _players[_drawTarget].id;
   });
 
-  void _closeDraw() => setState(() => _drawing = false);
+  /// La roue se referme et la partie démarre aussitôt : pas de second geste.
+  void _closeDraw() {
+    if (!_drawing) return;
+    setState(() => _drawing = false);
+    _startGame();
+  }
 
   void _startGame() {
     ref

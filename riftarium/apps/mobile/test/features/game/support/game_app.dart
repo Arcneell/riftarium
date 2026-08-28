@@ -65,6 +65,4 @@ Future<void> startGame(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Toucher pour continuer'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Commencer la partie'));
-  await tester.pumpAndSettle();
 }
