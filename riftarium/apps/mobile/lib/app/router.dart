@@ -168,21 +168,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             RoomScreen(code: state.pathParameters['code']!.toUpperCase()),
       ),
-      // Le profil se pousse par-dessus les onglets (avatar en haut à droite).
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
-        routes: [
-          GoRoute(
-            path: 'historique',
-            builder: (context, state) => const HistoryScreen(),
-          ),
-          GoRoute(
-            path: 'statistiques',
-            builder: (context, state) => const PlayStatsScreen(),
-          ),
-        ],
-      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
@@ -265,6 +250,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'officielles',
                     builder: (context, state) => const OfficialRulesScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Profil : onglet (avatar en haut à droite des bannières = même cible).
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'historique',
+                    builder: (context, state) => const HistoryScreen(),
+                  ),
+                  GoRoute(
+                    path: 'statistiques',
+                    builder: (context, state) => const PlayStatsScreen(),
                   ),
                 ],
               ),

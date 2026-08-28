@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,8 +12,8 @@ import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
-import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/rift_avatar.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
@@ -359,43 +358,13 @@ class _Avatar extends StatelessWidget {
   final Profile profile;
 
   @override
-  Widget build(BuildContext context) {
-    final avatar = profile.avatarUrl;
-    final initial = profile.handle.isEmpty
-        ? '?'
-        : profile.handle[0].toUpperCase();
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: avatar == null ? RiftColors.goldGradient : null,
-        color: avatar == null ? null : Theme.of(context).colorScheme.surface,
-        border: Border.all(color: RiftColors.goldSoft, width: 2),
-        boxShadow: RiftShadows.soft,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: avatar == null
-          ? Center(
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontFamily: RiftFonts.display,
-                  fontSize: 30,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : CachedNetworkImage(
-              imageUrl: avatar,
-              cacheManager: riftImageCache,
-              fit: BoxFit.cover,
-              errorWidget: (context, url, error) => const Center(
-                child: Icon(Icons.person_outline, color: RiftColors.gold),
-              ),
-            ),
-    );
-  }
+  Widget build(BuildContext context) => RiftAvatar(
+    url: profile.avatarUrl,
+    initial: profile.handle,
+    size: 72,
+    borderColor: RiftColors.goldSoft,
+    shadow: true,
+  );
 }
 
 /// Trois compteurs par rangée, chiffre en Marcellus or.

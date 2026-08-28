@@ -62,14 +62,28 @@ class AppTab {
     ),
   ];
 
-  /// Position du bouton « Jouer » dans la barre : au centre, entre Cartes et
-  /// Collection. Ce n'est pas un onglet (le compteur s'ouvre en plein écran).
-  static const playSlot = 2;
+  /// Onglet Profil (branche 5 du routeur).
+  static const AppTab profile = AppTab(
+    label: 'Profil',
+    icon: Icons.person_outline,
+    activeIcon: Icons.person,
+    cupertinoIcon: CupertinoIcons.person,
+    cupertinoActiveIcon: CupertinoIcons.person_fill,
+  );
+
+  /// Barre : deux onglets, « Jouer » au centre, deux onglets. Collection (2) et
+  /// Decks (3) restent des branches (tuiles de l'accueil, liens), sans onglet :
+  /// le téléphone sert d'abord à jouer, le site à construire.
+  static const barSlots = <int?>[0, 1, null, 4, 5];
 }
 
-/// Coque à onglets : barre translucide parchemin, cinq onglets et, au centre,
-/// le bouton « Jouer » surélevé (dégradé or, liseré parchemin) qui ouvre le
-/// compteur de partie. Icônes Cupertino sur iOS, Material ailleurs.
+/// Tous les onglets indexés comme les branches du routeur.
+List<AppTab> get _allTabs => [...AppTab.values, AppTab.profile];
+
+/// Coque à onglets : barre translucide parchemin, quatre onglets (Accueil,
+/// Cartes · Règles, Profil) et, exactement au centre, le bouton « Jouer »
+/// surélevé (dégradé or, liseré parchemin) qui ouvre le compteur de partie.
+/// Icônes Cupertino sur iOS, Material ailleurs.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -124,23 +138,20 @@ class _RiftBottomBar extends StatelessWidget {
         .withValues(alpha: 0.96);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final slots = <Widget>[];
-    for (var i = 0; i < AppTab.values.length; i++) {
-      if (i == AppTab.playSlot) {
-        slots.add(Expanded(child: _PlayButton(onTap: onPlay)));
-      }
-      final tab = AppTab.values[i];
-      slots.add(
+    final tabs = _allTabs;
+    final slots = <Widget>[
+      for (final index in AppTab.barSlots)
         Expanded(
-          child: _TabItem(
-            tab: tab,
-            selected: i == currentIndex,
-            cupertino: cupertino,
-            onTap: () => onSelect(i),
-          ),
+          child: index == null
+              ? _PlayButton(onTap: onPlay)
+              : _TabItem(
+                  tab: tabs[index],
+                  selected: index == currentIndex,
+                  cupertino: cupertino,
+                  onTap: () => onSelect(index),
+                ),
         ),
-      );
-    }
+    ];
 
     return Container(
       padding: EdgeInsets.only(bottom: bottomInset),
