@@ -40,9 +40,12 @@ updates:
     commit-message:
       prefix: "deps(web)"
 
-  # Application mobile Flutter. Pas d'auto-merge (dependabot-automerge.yml ne
-  # couvre que pip et npm) : un bump de plugin natif (caméra, ML Kit) se
-  # valide à la main avec un build sur appareil.
+  # Application mobile Flutter. Dépendances directes seulement : les transitives
+  # sont figées par le SDK Flutter (flutter_test → matcher, test_api…) et un bump
+  # du seul pubspec.lock casse `flutter pub get`. `increase` relève aussi la
+  # contrainte `^x.y.z` de pubspec.yaml, sinon le lock devient incohérent.
+  # Auto-merge patch/minor comme pip et npm, conditionné au check mobile
+  # (dependabot-automerge.yml attend mobile-check, non requis sur main).
   - package-ecosystem: "pub"
     directory: "/riftarium/apps/mobile"
     schedule:
@@ -50,6 +53,18 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Indian/Reunion"
+    cooldown:
+      default-days: 7
+    versioning-strategy: increase
+    allow:
+      - dependency-type: "direct"
+    ignore:
+      # 0.17 exige Dart ≥ 3.12 (Flutter > 3.41). À lever avec la montée de Flutter
+      # (mobile.yml, WORKFLOW.md §4).
+      - dependency-name: "google_mlkit_text_recognition"
+        versions: [">=0.17.0"]
+      - dependency-name: "google_mlkit_commons"
+        versions: [">=0.13.0"]
     groups:
       pub-mineures:
         update-types: ["minor", "patch"]

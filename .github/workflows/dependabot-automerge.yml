@@ -1,4 +1,4 @@
-# Auto-merge des PR Dependabot patch/minor (pip et npm).
+# Auto-merge des PR Dependabot patch/minor (pip, npm et pub).
 # Le merge est mis en file d'attente ("--auto") : il ne s'exécute que si les
 # checks requis de la branche main (api-test, web-check, compose-security)
 # passent. Les mises à jour majeures et les images Docker/actions restent
@@ -10,12 +10,13 @@ on: pull_request
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   automerge:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - name: Métadonnées de la PR
         id: meta
@@ -28,8 +29,33 @@ jobs:
           (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
            steps.meta.outputs.update-type == 'version-update:semver-minor') &&
           (steps.meta.outputs.package-ecosystem == 'pip' ||
-           steps.meta.outputs.package-ecosystem == 'npm_and_yarn')
-        run: gh pr merge --auto --squash "$PR_URL"
+           steps.meta.outputs.package-ecosystem == 'npm_and_yarn' ||
+           steps.meta.outputs.package-ecosystem == 'pub')
+        # pub : mobile-check n'est pas un check requis de main (il ne tourne pas
+        # sur les PR web/API). On attend donc son verdict avant d'armer le merge
+        # (pas `gh pr checks --watch` : ce job est lui-même un check de la PR et
+        # s'attendrait indéfiniment).
+        run: |
+          set -euo pipefail
+          if [ "$ECOSYSTEM" = "pub" ]; then
+            state=""
+            for _ in $(seq 1 60); do
+              state=$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs"                 -q '.check_runs[] | select(.name == "mobile-check") | "\(.status) \(.conclusion)"' | head -1)
+              case "$state" in
+                "completed success") break ;;
+                completed*) echo "mobile-check : $state" >&2; exit 1 ;;
+              esac
+              sleep 20
+            done
+            if [ "$state" != "completed success" ]; then
+              echo "mobile-check absent ou trop long : $state" >&2
+              exit 1
+            fi
+          fi
+          gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+          ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
