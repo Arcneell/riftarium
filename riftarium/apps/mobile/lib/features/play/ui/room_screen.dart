@@ -13,6 +13,7 @@ import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../core/api_exception.dart';
 import '../../../core/config.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../game/domain/player.dart';
 import '../../game/ui/widgets/draw_overlay.dart';
 import '../../game/ui/widgets/game_theme.dart';
@@ -44,10 +45,9 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
     with SingleTickerProviderStateMixin {
   final _random = Random();
 
-  late final AnimationController _spin = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2000),
-  );
+  /// Créé d'emblée (et non paresseusement) : `dispose` ne doit jamais avoir à
+  /// fabriquer un contrôleur alors que l'arbre est déjà démonté.
+  late final AnimationController _spin;
 
   List<Player> _drawPlayers = const [];
   int _drawTarget = 0;
@@ -57,6 +57,15 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
   bool _leaving = false;
   bool _navigated = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _spin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+  }
 
   @override
   void dispose() {
@@ -93,9 +102,9 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
   Future<void> _copy(Room room) async {
     await Clipboard.setData(ClipboardData(text: room.code));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Code copié.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Code copié.')));
   }
 
   Future<void> _share(Room room) async {
@@ -327,7 +336,9 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                   label: 'Lancer la partie',
                   icon: Icons.play_arrow_rounded,
                   loading: _busy,
-                  onPressed: room.bothReady && !_busy ? () => _draw(room) : null,
+                  onPressed: room.bothReady && !_busy
+                      ? () => _draw(room)
+                      : null,
                 ),
                 if (!room.bothReady) ...[
                   const SizedBox(height: 8),
@@ -526,10 +537,7 @@ class _SeatCard extends StatelessWidget {
                   children: [
                     Text(role.toUpperCase(), style: text.eyebrow),
                     const SizedBox(height: 4),
-                    Text(
-                      'En attente de l’adversaire…',
-                      style: text.bodyStrong,
-                    ),
+                    Text('En attente de l’adversaire…', style: text.bodyStrong),
                   ],
                 ),
               ),
@@ -678,7 +686,11 @@ class _Closed extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(title, textAlign: TextAlign.center, style: text.displaySmall),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: text.displaySmall,
+              ),
               const SizedBox(height: 8),
               Text(detail, textAlign: TextAlign.center, style: text.small),
               const SizedBox(height: 18),

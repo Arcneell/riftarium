@@ -24,19 +24,18 @@ class PlayApi {
 
   /// Crée un salon. 409 si un salon actif existe déjà.
   Future<Room> createRoom({required String mode}) async {
-    return _room(() => _dio.post<Map<String, dynamic>>(
-      '/play/rooms',
-      data: {'mode': mode},
-    ));
+    return _room(
+      () =>
+          _dio.post<Map<String, dynamic>>('/play/rooms', data: {'mode': mode}),
+    );
   }
 
   Future<Room> room(String code) =>
       _room(() => _dio.get<Map<String, dynamic>>('/play/rooms/$code'));
 
   /// Rejoint le siège 1. 409 si plein, fermé, expiré, ou si j'ai déjà un salon.
-  Future<Room> joinRoom(String code) => _room(
-    () => _dio.post<Map<String, dynamic>>('/play/rooms/$code/join'),
-  );
+  Future<Room> joinRoom(String code) =>
+      _room(() => _dio.post<Map<String, dynamic>>('/play/rooms/$code/join'));
 
   /// Mon choix dans le salon. Les trois champs partent toujours : une valeur
   /// nulle explicite est le seul moyen de retirer une légende ou un deck.
@@ -71,10 +70,11 @@ class PlayApi {
     }
   }
 
-  /// L'hôte annule le salon.
-  Future<void> cancelRoom(String code) async {
+  /// L'hôte annule le salon ; l'API renvoie le salon à jour (`cancelled`).
+  Future<Room?> cancelRoom(String code) async {
     try {
-      await _dio.delete<void>('/play/rooms/$code');
+      final response = await _dio.delete<dynamic>('/play/rooms/$code');
+      return _maybeRoom(response.data);
     } on DioException catch (error) {
       throw toApiException(error);
     }

@@ -127,16 +127,14 @@ class TrackedMatchController
       _play((board) => GameEngine.removePoint(board, playerId: playerId));
 
   @override
-  void exhaustion({
-    required String fromPlayerId,
-    required String toPlayerId,
-  }) => _play(
-    (board) => GameEngine.exhaustion(
-      board,
-      fromPlayerId: fromPlayerId,
-      toPlayerId: toPlayerId,
-    ),
-  );
+  void exhaustion({required String fromPlayerId, required String toPlayerId}) =>
+      _play(
+        (board) => GameEngine.exhaustion(
+          board,
+          fromPlayerId: fromPlayerId,
+          toPlayerId: toPlayerId,
+        ),
+      );
 
   @override
   void addXp(String playerId, [int amount = 1]) => _play(
@@ -149,8 +147,9 @@ class TrackedMatchController
   );
 
   @override
-  void setXp(String playerId, int value) =>
-      _play((board) => GameEngine.setXp(board, playerId: playerId, value: value));
+  void setXp(String playerId, int value) => _play(
+    (board) => GameEngine.setXp(board, playerId: playerId, value: value),
+  );
 
   @override
   void nextTurn() => _play(GameEngine.nextTurn);

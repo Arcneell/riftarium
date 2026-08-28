@@ -14,9 +14,8 @@ class PlayUser {
   );
 
   /// Adversaire anonymisé (compte supprimé) : `opponent` vaut null.
-  static PlayUser? maybe(Object? json) => json is Map
-      ? PlayUser.fromJson(json.cast<String, dynamic>())
-      : null;
+  static PlayUser? maybe(Object? json) =>
+      json is Map ? PlayUser.fromJson(json.cast<String, dynamic>()) : null;
 
   final int id;
   final String handle;
@@ -56,11 +55,7 @@ class PlayDeck {
 
   String get formatLabel => format == 'free' ? 'Libre' : 'Tournoi';
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'format': format,
-  };
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'format': format};
 }
 
 /// Un siège du salon (`RoomPlayerOut`).

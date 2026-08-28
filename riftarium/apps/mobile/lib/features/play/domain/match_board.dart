@@ -31,7 +31,10 @@ GameState boardOfMatch(Match match, {DateTime? now}) {
   if (players.isEmpty) {
     // Match sans joueur lisible : la table repart des valeurs par défaut
     // plutôt que de lever (l'écran affichera l'erreur du chargement).
-    return GameEngine.start(mode: mode, players: GameEngine.defaultPlayers(mode));
+    return GameEngine.start(
+      mode: mode,
+      players: GameEngine.defaultPlayers(mode),
+    );
   }
 
   final order = [for (final player in players) player.id];
@@ -106,20 +109,7 @@ int? winnerUserIdOf(GameState board, Match match) {
   return null;
 }
 
-/// Corps `result` de `POST /matches/{id}/finish` : scores et manches finaux.
-Map<String, dynamic> resultOfBoard(GameState board, Match match) {
-  final snapshot = stateOfBoard(board, match);
-  return {
-    'scores': {
-      for (final entry in snapshot.scores.entries) '${entry.key}': entry.value,
-    },
-    'rounds_won': {
-      for (final entry in snapshot.roundsWon.entries)
-        '${entry.key}': entry.value,
-    },
-  };
-}
-
-/// La rencontre est jouée : score de victoire atteint et, en mode `match`, le
-/// nombre de manches gagnantes aussi.
-bool isMatchDecided(GameState board) => board.isMatchOver;
+/// Corps `result` de `POST /matches/{id}/finish` : le contrat lui donne
+/// exactement la forme de `state` (tous les champs obligatoires).
+Map<String, dynamic> resultOfBoard(GameState board, Match match) =>
+    stateOfBoard(board, match).toJson();

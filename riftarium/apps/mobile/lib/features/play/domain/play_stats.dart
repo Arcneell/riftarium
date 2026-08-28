@@ -187,11 +187,7 @@ class DayStat {
 
   DateTime? get date => DateTime.tryParse(day);
 
-  Map<String, dynamic> toJson() => {
-    'day': day,
-    'played': played,
-    'won': won,
-  };
+  Map<String, dynamic> toJson() => {'day': day, 'played': played, 'won': won};
 }
 
 /// Statistiques de mes parties suivies (`GET /api/play/stats`).

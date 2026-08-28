@@ -99,8 +99,8 @@ class HistoryItem {
   };
 }
 
-/// Page d'historique. Le contrat ne fige pas l'enveloppe : une liste nue est
-/// acceptée aussi bien qu'un objet paginé (`total`, `page`, `size`, `items`).
+/// Page d'historique : `{total, page, size, items}` (`size` ≤ 50). Une liste
+/// nue est acceptée par tolérance, mais l'API renvoie bien l'objet paginé.
 class HistoryPage {
   const HistoryPage({
     required this.items,

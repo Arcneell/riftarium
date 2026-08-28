@@ -38,9 +38,7 @@ class PlayResumePanel extends ConsumerWidget {
       title = 'Salon ouvert';
       destination = AppRoutes.room(room!.code);
       badges.addAll([room.code, room.modeLabel]);
-      badges.add(
-        room.guest == null ? 'En attente' : 'Adversaire présent',
-      );
+      badges.add(room.guest == null ? 'En attente' : 'Adversaire présent');
     }
 
     return RiftPanel(

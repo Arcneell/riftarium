@@ -16,7 +16,8 @@ final playPollIntervalProvider = Provider<Duration>(
 
 /// Mon identifiant de compte, ou null hors session.
 final myUserIdProvider = Provider<int?>(
-  (ref) => ref.watch(authControllerProvider.select((state) => state.profile?.id)),
+  (ref) =>
+      ref.watch(authControllerProvider.select((state) => state.profile?.id)),
 );
 
 /// Mon salon actif et/ou mon match en cours. Vide et sans appel hors session.

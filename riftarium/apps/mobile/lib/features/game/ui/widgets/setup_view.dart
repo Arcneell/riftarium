@@ -204,88 +204,88 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
               if (_tracked)
                 const TrackedStartPanel()
               else ...[
-              if (saved != null && !_resumeDismissed) ...[
-                _ResumePanel(
-                  saved: saved,
-                  onResume: () =>
-                      ref.read(gameControllerProvider.notifier).resume(saved),
-                  onDismiss: () async {
-                    setState(() => _resumeDismissed = true);
-                    await ref.read(gameStoreProvider).clear();
-                    if (mounted) ref.invalidate(savedGameProvider);
-                  },
-                ),
-                const SizedBox(height: 22),
-              ],
-              Text('FORMAT', style: text.eyebrow),
-              const SizedBox(height: 10),
-              for (var index = 0; index < GameMode.values.length; index++)
-                Reveal(
-                  index: index,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _ModeCard(
-                      mode: GameMode.values[index],
-                      selected: GameMode.values[index] == _mode,
-                      onTap: () => _selectMode(GameMode.values[index]),
-                    ),
+                if (saved != null && !_resumeDismissed) ...[
+                  _ResumePanel(
+                    saved: saved,
+                    onResume: () =>
+                        ref.read(gameControllerProvider.notifier).resume(saved),
+                    onDismiss: () async {
+                      setState(() => _resumeDismissed = true);
+                      await ref.read(gameStoreProvider).clear();
+                      if (mounted) ref.invalidate(savedGameProvider);
+                    },
                   ),
-                ),
-              const SizedBox(height: 18),
-              Text('JOUEURS', style: text.eyebrow),
-              const SizedBox(height: 10),
-              for (final player in _players)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _PlayerRow(
-                    player: player,
-                    name: _names[player.seat],
-                    teamPlay: _mode.isTeamPlay,
-                    highlighted: _spotlight == player.seat,
-                    onPickLegend: () => _pickLegend(player),
-                    onClearLegend: () => setState(() {
-                      _players = [
-                        for (final item in _players)
-                          item.id == player.id
-                              ? item.copyWith(clearLegend: true)
-                              : item,
-                      ];
-                    }),
-                    onTeam: (team) => _setTeam(player, team),
-                  ),
-                ),
-              const SizedBox(height: 20),
-              if (drawn != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Center(
-                    child: Text(
-                      '${_nameOf(_players.firstWhere((p) => p.id == drawn).seat)} commence.',
-                      style: text.bodyStrong.copyWith(
-                        color: RiftColors.goldSoft,
+                  const SizedBox(height: 22),
+                ],
+                Text('FORMAT', style: text.eyebrow),
+                const SizedBox(height: 10),
+                for (var index = 0; index < GameMode.values.length; index++)
+                  Reveal(
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ModeCard(
+                        mode: GameMode.values[index],
+                        selected: GameMode.values[index] == _mode,
+                        onTap: () => _selectMode(GameMode.values[index]),
                       ),
                     ),
                   ),
-                ),
-              GoldButton(
-                label: drawn == null
-                    ? 'Tirer le premier joueur'
-                    : 'Commencer la partie',
-                icon: drawn == null
-                    ? Icons.casino_outlined
-                    : Icons.play_arrow_rounded,
-                onPressed: _spinning
-                    ? null
-                    : (drawn == null ? _draw : _startGame),
-              ),
-              if (drawn != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: TextButton(
-                    onPressed: _spinning ? null : _draw,
-                    child: const Text('Retirer au sort'),
+                const SizedBox(height: 18),
+                Text('JOUEURS', style: text.eyebrow),
+                const SizedBox(height: 10),
+                for (final player in _players)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _PlayerRow(
+                      player: player,
+                      name: _names[player.seat],
+                      teamPlay: _mode.isTeamPlay,
+                      highlighted: _spotlight == player.seat,
+                      onPickLegend: () => _pickLegend(player),
+                      onClearLegend: () => setState(() {
+                        _players = [
+                          for (final item in _players)
+                            item.id == player.id
+                                ? item.copyWith(clearLegend: true)
+                                : item,
+                        ];
+                      }),
+                      onTeam: (team) => _setTeam(player, team),
+                    ),
                   ),
+                const SizedBox(height: 20),
+                if (drawn != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Center(
+                      child: Text(
+                        '${_nameOf(_players.firstWhere((p) => p.id == drawn).seat)} commence.',
+                        style: text.bodyStrong.copyWith(
+                          color: RiftColors.goldSoft,
+                        ),
+                      ),
+                    ),
+                  ),
+                GoldButton(
+                  label: drawn == null
+                      ? 'Tirer le premier joueur'
+                      : 'Commencer la partie',
+                  icon: drawn == null
+                      ? Icons.casino_outlined
+                      : Icons.play_arrow_rounded,
+                  onPressed: _spinning
+                      ? null
+                      : (drawn == null ? _draw : _startGame),
                 ),
+                if (drawn != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: TextButton(
+                      onPressed: _spinning ? null : _draw,
+                      child: const Text('Retirer au sort'),
+                    ),
+                  ),
               ],
             ],
           ),
@@ -622,29 +622,33 @@ class _PlayChoice extends StatelessWidget {
   final void Function(bool tracked) onSelect;
 
   @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Expanded(
-        child: _ChoiceCard(
-          title: 'Partie libre',
-          detail: 'Le compteur, sans compte.',
-          icon: Icons.sports_esports_outlined,
-          selected: !tracked,
-          onTap: () => onSelect(false),
+  Widget build(BuildContext context) => IntrinsicHeight(
+    // Dans une liste, la hauteur n'est pas bornée : `stretch` a besoin qu'on
+    // lui donne la hauteur du plus grand des deux choix.
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _ChoiceCard(
+            title: 'Partie libre',
+            detail: 'Le compteur, sans compte.',
+            icon: Icons.sports_esports_outlined,
+            selected: !tracked,
+            onTap: () => onSelect(false),
+          ),
         ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _ChoiceCard(
-          title: 'Partie suivie',
-          detail: 'À deux comptes, résultat gardé.',
-          icon: Icons.wifi_tethering_rounded,
-          selected: tracked,
-          onTap: () => onSelect(true),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ChoiceCard(
+            title: 'Partie suivie',
+            detail: 'À deux comptes, résultat gardé.',
+            icon: Icons.wifi_tethering_rounded,
+            selected: tracked,
+            onTap: () => onSelect(true),
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 }
 
