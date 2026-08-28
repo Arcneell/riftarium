@@ -158,10 +158,25 @@ class _Grid extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: CardImage(
-                    card: group.base,
-                    thumbWidth: CardArtSize.tile,
-                    shadow: true,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CardImage(
+                          card: group.base,
+                          thumbWidth: CardArtSize.tile,
+                          shadow: true,
+                        ),
+                      ),
+                      if (group.variants.length > 1)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: MonoBadge(
+                            label: '${group.variants.length} versions',
+                            filled: true,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 6),

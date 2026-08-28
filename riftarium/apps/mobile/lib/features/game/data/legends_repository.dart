@@ -7,6 +7,7 @@ import '../../cards/data/cards_api.dart';
 import '../../cards/domain/card.dart';
 import '../domain/card_codec.dart';
 import 'game_store.dart';
+import '../../decks/domain/deck_rules.dart';
 
 /// Fichier de cache des légendes, dans le dossier documents.
 const String kLegendsCacheFileName = 'legends.json';
@@ -14,7 +15,8 @@ const String kLegendsCacheFileName = 'legends.json';
 /// Au-delà, on retente le réseau ; en dessous, le cache répond seul.
 const Duration kLegendsCacheMaxAge = Duration(days: 7);
 
-/// Une légende et ses variantes (même `riftbound_id`).
+/// Une légende et ses variantes (même nom canonique : normale, alt-art,
+/// overnumbered, signature).
 class LegendGroup {
   LegendGroup({required this.riftboundId, required List<RiftCard> variants})
     : variants = List.unmodifiable(variants);
@@ -158,9 +160,14 @@ class LegendsRepository {
 
 /// Regroupe les cartes par `riftbound_id` et trie les groupes par nom.
 List<LegendGroup> groupLegends(List<RiftCard> cards) {
+  // Regroupement par nom canonique (sans « (Alternate Art) », « (Overnumbered) »,
+  // « (Signature) ») : les overnumbered et signatures portent un riftbound_id
+  // différent de la version normale, le nom est le seul lien fiable.
   final byId = <String, List<RiftCard>>{};
   for (final card in cards) {
-    final key = card.riftboundId.isEmpty ? card.id : card.riftboundId;
+    final key = canonicalName(card.name).isEmpty
+        ? (card.riftboundId.isEmpty ? card.id : card.riftboundId)
+        : canonicalName(card.name).toLowerCase();
     byId.putIfAbsent(key, () => []).add(card);
   }
   final groups = <LegendGroup>[];
