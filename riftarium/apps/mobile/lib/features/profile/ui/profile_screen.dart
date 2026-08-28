@@ -11,6 +11,7 @@ import '../../../app/design/banners.dart';
 import '../../../app/design/components.dart';
 import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
@@ -175,6 +176,31 @@ class ProfileScreen extends ConsumerWidget {
                   child: AuthError(message: auth.profileError!),
                 ),
               ),
+            const SliverToBoxAdapter(
+              child: SectionTitle(
+                eyebrow: 'Parties suivies',
+                title: 'Mes parties',
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              sliver: SliverToBoxAdapter(
+                child: _ActionPanel(
+                  actions: [
+                    _Action(
+                      icon: Icons.history_rounded,
+                      label: 'Historique des parties',
+                      onTap: () => context.push(AppRoutes.history),
+                    ),
+                    _Action(
+                      icon: Icons.insights_outlined,
+                      label: 'Statistiques de jeu',
+                      onTap: () => context.push(AppRoutes.playStats),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SliverToBoxAdapter(
               child: SectionTitle(eyebrow: 'Réglages', title: 'Compte'),
             ),

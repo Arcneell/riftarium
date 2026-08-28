@@ -215,6 +215,10 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   `apps/web/src/rules/{topics,guide}.js` (depuis `apps/web`) :
   `node --input-type=module -e "import {TOPICS,CATEGORIES} from './src/rules/topics.js'; import {STEPS,CARDS,SPOTS} from './src/rules/guide.js'; import {writeFileSync} from 'node:fs'; writeFileSync('../mobile/assets/rules/guides-fr.json', JSON.stringify({categories:CATEGORIES,topics:TOPICS,guide:{steps:STEPS,cards:CARDS,spots:SPOTS}}))"`.
   À relancer quand les guides du site changent.
+- **Suivi des matchs** (`/api/play`, salons, matchs confirmés, historique,
+  statistiques) : contrat dans `riftarium/docs/suivi-des-matchs.md`, source de
+  vérité pour l'API, le mobile et le site. Toute évolution passe d'abord par ce
+  fichier.
 - **Dette connue** : le rendu du texte enrichi existe deux fois
   (`features/cards/domain/card_text.dart` + `ui/widgets/card_glyph.dart`, et
   `features/rules/ui/rule_rich_text.dart`). À fusionner dans `lib/app/design/`

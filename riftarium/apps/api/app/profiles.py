@@ -6,7 +6,21 @@ from fastapi import HTTPException
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from .models import AuthToken, Card, CollectionItem, Deck, DeckCard, DeckLike, DeckView, User, WishlistItem
+from .models import (
+    AuthToken,
+    Card,
+    CollectionItem,
+    Deck,
+    DeckCard,
+    DeckLike,
+    DeckView,
+    Match,
+    MatchPlayer,
+    Room,
+    RoomPlayer,
+    User,
+    WishlistItem,
+)
 from .moderation import review
 from .security import sanitize_image_url
 
@@ -147,6 +161,8 @@ def export_account(db: Session, user: User) -> dict:
         select(WishlistItem).where(WishlistItem.user_id == user.id).order_by(WishlistItem.created_at)
     ).all()
     decks = db.scalars(select(Deck).where(Deck.owner_id == user.id).order_by(Deck.updated_at.desc())).all()
+    # Participations aux matchs suivis : supprimées à la clôture du compte, donc exportables.
+    plays = db.scalars(select(MatchPlayer).where(MatchPlayer.user_id == user.id).order_by(MatchPlayer.match_id)).all()
     return {
         "handle": user.handle,
         "email": user.email,
@@ -174,6 +190,18 @@ def export_account(db: Session, user: User) -> dict:
             }
             for deck in decks
         ],
+        "matches": [
+            {
+                "match_id": play.match_id,
+                "seat": play.seat,
+                "legend_card_id": play.legend_card_id,
+                "deck_id": play.deck_id,
+                "score": play.score,
+                "rounds_won": play.rounds_won,
+                "confirmed_at": play.confirmed_at.isoformat() if play.confirmed_at else None,
+            }
+            for play in plays
+        ],
     }
 
 
@@ -198,4 +226,28 @@ def delete_user_account(db: Session, user: User) -> None:
         db.execute(delete(DeckView).where(DeckView.deck_id.in_(owned_ids)))
         db.execute(delete(DeckCard).where(DeckCard.deck_id.in_(owned_ids)))
         db.execute(delete(Deck).where(Deck.id.in_(owned_ids)))
+    _forget_play_history(db, user)
     db.delete(user)
+
+
+def _forget_play_history(db: Session, user: User) -> None:
+    """Suivi des matchs : les lignes du compte partent, les matchs restent anonymisés.
+
+    L'adversaire garde son historique et ses statistiques : il y voit seulement
+    un `opponent: null`. Le gagnant supprimé devient inconnu (NULL) et les
+    salons qu'il hébergeait sont annulés — plus personne ne peut les rejoindre.
+    """
+    db.execute(delete(RoomPlayer).where(RoomPlayer.user_id == user.id))
+    db.execute(delete(MatchPlayer).where(MatchPlayer.user_id == user.id))
+    db.execute(
+        update(Match)
+        .where(Match.winner_user_id == user.id)
+        .values(winner_user_id=None)
+        .execution_options(synchronize_session=False)
+    )
+    db.execute(
+        update(Room)
+        .where(Room.host_id == user.id, Room.status.in_(("open", "playing")))
+        .values(status="cancelled")
+        .execution_options(synchronize_session=False)
+    )

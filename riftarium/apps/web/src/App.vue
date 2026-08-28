@@ -138,6 +138,8 @@ async function logout() {
           <RouterLink to="/communaute">Communauté</RouterLink>
           <!-- Tiroir mobile : entrées de compte à plat (la place ne manque pas). -->
           <template v-if="session.token && drawerMode">
+            <RouterLink to="/historique">Historique</RouterLink>
+            <RouterLink to="/statistiques">Statistiques</RouterLink>
             <RouterLink to="/wishlist">Wishlist</RouterLink>
             <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
             <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
@@ -165,6 +167,8 @@ async function logout() {
             <Transition name="account">
               <div v-if="accountOpen" id="menu-compte" class="account-menu" role="menu" aria-label="Mon compte">
                 <RouterLink role="menuitem" to="/profil">Profil</RouterLink>
+                <RouterLink role="menuitem" to="/historique">Historique</RouterLink>
+                <RouterLink role="menuitem" to="/statistiques">Statistiques</RouterLink>
                 <RouterLink role="menuitem" to="/wishlist">Wishlist</RouterLink>
                 <RouterLink v-if="session.isAdmin" role="menuitem" class="nav-admin" to="/admin"
                   >Administration</RouterLink
@@ -221,6 +225,8 @@ async function logout() {
             <li><RouterLink to="/decks">Deck builder</RouterLink></li>
             <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
             <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
+            <li v-if="session.token"><RouterLink to="/historique">Mes parties suivies</RouterLink></li>
+            <li v-if="session.token"><RouterLink to="/statistiques">Mes statistiques</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
             <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
           </ul>

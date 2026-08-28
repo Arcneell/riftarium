@@ -156,6 +156,38 @@ export const router = createRouter({
       }
     },
     {
+      path: "/historique",
+      component: () => import("./views/HistoryView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Historique des parties",
+        description: "Mes parties Riftbound suivies : adversaire, légendes, decks et score."
+      }
+    },
+    {
+      path: "/statistiques",
+      component: () => import("./views/StatsView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Mes statistiques",
+        description: "Bilan de mes parties Riftbound suivies : taux de victoire, decks et légendes."
+      }
+    },
+    {
+      /* Cible du lien partagé « riftarium.re/salon/CODE ». Sans code, la page
+         propose la saisie manuelle : un joueur peut recevoir le code sans le lien. */
+      path: "/salon/:code?",
+      component: () => import("./views/RoomView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Salon de jeu",
+        description: "Salon d'une partie Riftbound suivie : légendes, decks et score en direct."
+      }
+    },
+    {
       path: "/profil",
       component: () => import("./views/ProfileView.vue"),
       meta: { auth: true, noindex: true, title: "Mon profil", description: "Compte Riftarium." }
@@ -251,6 +283,9 @@ function sectionOf(path) {
   if (path.startsWith("/collection")) return "collection"
   if (path.startsWith("/scan")) return "scan"
   if (path.startsWith("/profil")) return "profil"
+  if (path.startsWith("/historique")) return "historique"
+  if (path.startsWith("/statistiques")) return "statistiques"
+  if (path.startsWith("/salon")) return "salon"
   return "autre"
 }
 

@@ -297,3 +297,64 @@ class SuspendIn(BaseModel):
         if not value:
             raise ValueError("Le motif de suspension est obligatoire.")
         return value
+
+
+class RoomCreate(BaseModel):
+    """Création d'un salon de partie suivie (v1 : formats à deux joueurs)."""
+
+    mode: Literal["duel", "match"] = "duel"
+
+
+class RoomPlayerIn(BaseModel):
+    """Choix personnels dans le salon : légende, deck et « prêt » (PUT = remplacement)."""
+
+    legend_card_id: str | None = Field(default=None, max_length=32)
+    deck_id: int | None = Field(default=None, ge=1)
+    ready: bool = False
+
+
+class RoomStartIn(BaseModel):
+    """Lancement du match : le tirage au sort se fait côté client, on transmet le résultat."""
+
+    first_player_id: int = Field(ge=1)
+
+
+# Bornes larges : le compteur est un pense-bête, le serveur n'arbitre pas les
+# règles — il refuse seulement l'absurde (négatifs, valeurs hors d'échelle).
+CounterValue = Annotated[int, Field(ge=0, le=999)]
+
+
+class MatchState(BaseModel):
+    """Instantané du compteur. Les clés des dictionnaires sont des `user_id` en chaîne."""
+
+    round: int = Field(ge=1, le=99)
+    turn: int = Field(ge=1, le=999)
+    active_user_id: int = Field(ge=1)
+    scores: dict[str, CounterValue]
+    xp: dict[str, CounterValue]
+    rounds_won: dict[str, CounterValue]
+
+    @model_validator(mode="after")
+    def coherent_players(self):
+        keys = set(self.scores)
+        if not keys or set(self.xp) != keys or set(self.rounds_won) != keys:
+            raise ValueError("scores, xp et rounds_won doivent porter sur les mêmes joueurs.")
+        if any(not key.isdigit() for key in keys):
+            raise ValueError("Les clés du compteur sont des identifiants de joueur (user_id en chaîne).")
+        if str(self.active_user_id) not in keys:
+            raise ValueError("active_user_id doit désigner l'un des joueurs du compteur.")
+        return self
+
+
+class MatchStateIn(BaseModel):
+    """Mise à jour du compteur avec contrôle de version optimiste (`version` = version lue)."""
+
+    version: int = Field(ge=1)
+    state: MatchState
+
+
+class MatchFinishIn(BaseModel):
+    """Fin de match déclarée par l'hôte : gagnant et scores finaux (même forme que `state`)."""
+
+    winner_user_id: int = Field(ge=1)
+    result: MatchState

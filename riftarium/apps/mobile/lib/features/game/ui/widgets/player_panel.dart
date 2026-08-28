@@ -38,7 +38,7 @@ class PlayerPanel extends StatelessWidget {
   final Player player;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
-  final VoidCallback onSheet;
+  final VoidCallback? onSheet;
   final VoidCallback onAddXp;
   final VoidCallback onSpendXp;
 
@@ -549,7 +549,9 @@ class _TapZone extends StatelessWidget {
   final IconData icon;
   final Alignment align;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+
+  /// Null en partie suivie : les noms et les légendes viennent des comptes.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {

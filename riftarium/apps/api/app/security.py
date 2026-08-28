@@ -116,6 +116,19 @@ def limit_auth(request: Request) -> None:
         raise HTTPException(status_code=429, detail="Trop de tentatives — réessayez dans une minute")
 
 
+PLAY_RATE_LIMIT = 20  # créations/jointures de salon par minute et par IP
+
+
+def limit_play(request: Request) -> None:
+    """Rate limit du suivi des matchs (création de salon et join), même mécanique que limit_auth.
+
+    Le compteur du salon lui-même (PUT state) n'est pas limité : les clients
+    le sollicitent toutes les 2 s par conception.
+    """
+    if not allow_rate(f"play:{client_ip(request)}", PLAY_RATE_LIMIT):
+        raise HTTPException(status_code=429, detail="Trop de demandes de salon — réessayez dans une minute")
+
+
 def limit_auth_account(email: str) -> None:
     """Rate limit par compte (indépendant de l'IP) : freine le credential stuffing distribué."""
     key = f"auth:acct:{(email or '').strip().lower()}"

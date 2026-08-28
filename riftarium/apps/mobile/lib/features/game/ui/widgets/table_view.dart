@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/design/components.dart';
 import '../../../../app/theme.dart';
 import '../../application/game_providers.dart';
+import '../../domain/game_actions.dart';
 import '../../domain/game_state.dart';
 import '../../domain/player.dart';
 import 'game_theme.dart';
@@ -15,11 +16,43 @@ import 'player_sheet.dart';
 
 /// Deuxième étape : la table. Les panneaux occupent tout l'écran, orientés
 /// vers chaque joueur, la barre de commande reste au milieu, à l'endroit.
+///
+/// La même table sert au compteur hors ligne et au match suivi : [actions]
+/// choisit le moteur branché derrière les gestes, [readOnly] la fige pour
+/// l'invité qui regarde l'hôte compter.
 class GameTableView extends ConsumerStatefulWidget {
-  const GameTableView({super.key, required this.state, this.onQuit});
+  const GameTableView({
+    super.key,
+    required this.state,
+    this.onQuit,
+    this.actions,
+    this.readOnly = false,
+    this.notice,
+    this.quitLabel = 'Quitter',
+    this.allowRestart = true,
+    this.confirmQuit,
+  });
 
   final GameState state;
   final VoidCallback? onQuit;
+
+  /// Moteur branché sur les gestes. Null = la partie libre (`GameController`).
+  final GameActions? actions;
+
+  /// Table figée : aucun geste ne compte (l'hôte tient le compte).
+  final bool readOnly;
+
+  /// Bandeau discret au-dessus de la barre (synchronisation, lecture seule).
+  final Widget? notice;
+
+  /// Libellé de la sortie de table (« Quitter », « Abandonner »).
+  final String quitLabel;
+
+  /// Faux en partie suivie : ni remise à zéro ni nouvelle manche au menu.
+  final bool allowRestart;
+
+  /// Confirmation sur mesure avant de quitter ; sinon la boîte par défaut.
+  final Future<bool> Function()? confirmQuit;
 
   @override
   ConsumerState<GameTableView> createState() => _GameTableViewState();
@@ -50,9 +83,17 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
     super.dispose();
   }
 
-  GameController get _game => ref.read(gameControllerProvider.notifier);
+  GameActions get _game =>
+      widget.actions ?? ref.read(gameControllerProvider.notifier);
 
-  Widget _panel(Player player, {bool showScore = true}) => PlayerPanel(
+  Widget _panel(Player player, {bool showScore = true}) {
+    final panel = _livePanel(player, showScore: showScore);
+    // Lecture seule : le panneau reste lisible et animé, mais aucun toucher
+    // ne compte. La barre de commande, elle, reste active (quitter, abandon).
+    return widget.readOnly ? AbsorbPointer(child: panel) : panel;
+  }
+
+  Widget _livePanel(Player player, {bool showScore = true}) => PlayerPanel(
     state: widget.state,
     player: player,
     showScore: showScore,
@@ -60,7 +101,11 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
     onRemove: () => _game.removePoint(player.id),
     onAddXp: () => _game.addXp(player.id),
     onSpendXp: () => _game.spendXp(player.id),
-    onSheet: () => showPlayerSheet(context, player: player),
+    // La feuille sert à renommer et à changer de légende : en partie suivie,
+    // les deux viennent des comptes et du salon.
+    onSheet: widget.actions == null
+        ? () => showPlayerSheet(context, player: player)
+        : null,
   );
 
   Widget _rotated(Widget child) => RotatedBox(quarterTurns: 2, child: child);
@@ -155,6 +200,10 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
 
   Widget _bar() => _ControlBar(
     state: widget.state,
+    readOnly: widget.readOnly,
+    notice: widget.notice,
+    quitLabel: widget.quitLabel,
+    allowRestart: widget.allowRestart,
     onNextTurn: () {
       HapticFeedback.selectionClick();
       _game.nextTurn();
@@ -167,6 +216,13 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
   );
 
   Future<void> _confirmQuit() async {
+    final custom = widget.confirmQuit;
+    if (custom != null) {
+      if (!await custom()) return;
+      _game.quit();
+      widget.onQuit?.call();
+      return;
+    }
     final leave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -276,6 +332,10 @@ class _TeamScore extends StatelessWidget {
 class _ControlBar extends StatelessWidget {
   const _ControlBar({
     required this.state,
+    required this.readOnly,
+    required this.notice,
+    required this.quitLabel,
+    required this.allowRestart,
     required this.onNextTurn,
     required this.onUndo,
     required this.onNewRound,
@@ -285,6 +345,10 @@ class _ControlBar extends StatelessWidget {
   });
 
   final GameState state;
+  final bool readOnly;
+  final Widget? notice;
+  final String quitLabel;
+  final bool allowRestart;
   final VoidCallback onNextTurn;
   final VoidCallback? onUndo;
   final VoidCallback onNewRound;
@@ -302,6 +366,8 @@ class _ControlBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (notice != null)
+            Padding(padding: const EdgeInsets.only(bottom: 8), child: notice!),
           if (showHint)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -350,19 +416,22 @@ class _ControlBar extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 10),
-              IconButton(
-                onPressed: onUndo,
-                icon: const Icon(Icons.undo),
-                tooltip: 'Annuler',
-              ),
+              if (!readOnly)
+                IconButton(
+                  onPressed: onUndo,
+                  icon: const Icon(Icons.undo),
+                  tooltip: 'Annuler',
+                ),
               Expanded(
                 child: Center(
-                  child: GoldButton(
-                    label: 'Tour suivant',
-                    icon: Icons.skip_next_rounded,
-                    expand: false,
-                    onPressed: onNextTurn,
-                  ),
+                  child: readOnly
+                      ? const SizedBox.shrink()
+                      : GoldButton(
+                          label: 'Tour suivant',
+                          icon: Icons.skip_next_rounded,
+                          expand: false,
+                          onPressed: onNextTurn,
+                        ),
                 ),
               ),
               PopupMenuButton<String>(
@@ -373,13 +442,18 @@ class _ControlBar extends StatelessWidget {
                   'reset' => onReset(),
                   _ => onQuit(),
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'round', child: Text('Nouvelle manche')),
-                  PopupMenuItem(
-                    value: 'reset',
-                    child: Text('Réinitialiser les scores'),
-                  ),
-                  PopupMenuItem(value: 'quit', child: Text('Quitter')),
+                itemBuilder: (context) => [
+                  if (allowRestart && !readOnly) ...const [
+                    PopupMenuItem(
+                      value: 'round',
+                      child: Text('Nouvelle manche'),
+                    ),
+                    PopupMenuItem(
+                      value: 'reset',
+                      child: Text('Réinitialiser les scores'),
+                    ),
+                  ],
+                  PopupMenuItem(value: 'quit', child: Text(quitLabel)),
                 ],
               ),
             ],
