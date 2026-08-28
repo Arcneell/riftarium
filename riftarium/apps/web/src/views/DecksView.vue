@@ -6,8 +6,11 @@ import { BANNERS } from "../banners.js"
 import DeckBox from "../components/DeckBox.vue"
 import ModalDialog from "../components/ModalDialog.vue"
 import PageBanner from "../components/PageBanner.vue"
+import { usePlayStats } from "../composables/usePlayStats.js"
 
 const router = useRouter()
+/* Un seul GET /api/play/stats pour toute la session : chaque boîte y lit son W/L. */
+const playStats = usePlayStats()
 const decks = ref([])
 const error = ref("")
 
@@ -114,6 +117,7 @@ onMounted(load)
           :key="deck.id"
           v-reveal="i"
           :deck="deck"
+          :record="playStats.byDeck[deck.id] || null"
           :to="`/decks/${deck.id}`"
           @remove="askRemove"
         />

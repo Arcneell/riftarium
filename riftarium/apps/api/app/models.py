@@ -234,3 +234,94 @@ class DeckView(Base):
     deck_id: Mapped[int] = mapped_column(ForeignKey("decks.id"), index=True)
     visitor_key: Mapped[str] = mapped_column(String(40), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Room(Base):
+    """Salon de partie suivie : un code à 6 caractères, deux sièges, 2 h de validité.
+
+    `match_id` n'est volontairement pas une clé étrangère : `matches.room_id`
+    pointe déjà sur `rooms`, et le cycle empêcherait la création du schéma
+    (SQLAlchemy ne sait pas ordonner deux tables mutuellement liées).
+    `host_id` n'en est pas une non plus : les salons et les matchs survivent à
+    la suppression d'un compte, ils sont seulement anonymisés (cf. profiles.py).
+    """
+
+    __tablename__ = "rooms"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(8), unique=True, index=True)
+    host_id: Mapped[int] = mapped_column(Integer, index=True)
+    mode: Mapped[str] = mapped_column(String(8), default="duel")  # duel | match
+    status: Mapped[str] = mapped_column(String(16), default="open")  # open | playing | finished | cancelled
+    match_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class RoomPlayer(Base):
+    """Un siège du salon : 0 pour l'hôte, 1 pour l'invité.
+
+    `deck_id` n'est pas une clé étrangère : la suppression d'un deck ne doit ni
+    échouer ni effacer la partie — le deck est alors simplement inconnu (null).
+    """
+
+    __tablename__ = "room_players"
+    __table_args__ = (
+        UniqueConstraint("room_id", "user_id", name="uq_room_player"),
+        UniqueConstraint("room_id", "seat", name="uq_room_seat"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    seat: Mapped[int] = mapped_column(Integer, default=0)
+    legend_card_id: Mapped[str | None] = mapped_column(ForeignKey("cards.id"), nullable=True)
+    deck_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ready: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Match(Base):
+    """Match suivi : le serveur ne résout aucune règle, il transporte l'instantané saisi.
+
+    `state` est le compteur courant, `result` le score final. `version` s'incrémente
+    à chaque modification et sert au contrôle de concurrence (polling des clients).
+    """
+
+    __tablename__ = "matches"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int | None] = mapped_column(ForeignKey("rooms.id"), nullable=True, index=True)
+    mode: Mapped[str] = mapped_column(String(8), default="duel")
+    # live | awaiting_confirmation | confirmed | disputed | abandoned
+    status: Mapped[str] = mapped_column(String(24), default="live", index=True)
+    host_id: Mapped[int] = mapped_column(Integer, index=True)
+    first_player_id: Mapped[int] = mapped_column(Integer)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # NULL quand le gagnant a supprimé son compte (le match reste, anonymisé).
+    winner_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    state: Mapped[dict] = mapped_column(JSON, default=dict)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+class MatchPlayer(Base):
+    """Participation d'un joueur à un match : légende, deck et score figés à la fin.
+
+    Ces lignes sont supprimées avec le compte : le match subsiste, l'adversaire
+    y voit alors `opponent: null`.
+    """
+
+    __tablename__ = "match_players"
+    __table_args__ = (UniqueConstraint("match_id", "user_id", name="uq_match_player"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    seat: Mapped[int] = mapped_column(Integer, default=0)
+    legend_card_id: Mapped[str | None] = mapped_column(ForeignKey("cards.id"), nullable=True)
+    deck_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    rounds_won: Mapped[int] = mapped_column(Integer, default=0)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

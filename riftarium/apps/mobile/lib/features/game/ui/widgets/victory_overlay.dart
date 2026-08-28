@@ -18,12 +18,22 @@ class VictoryOverlay extends StatefulWidget {
     required this.onNewRound,
     required this.onNewGame,
     required this.onFinish,
+    this.finishLabel = 'Terminer',
+    this.allowNewGame = true,
   });
 
   final GameState state;
   final VoidCallback onNewRound;
   final VoidCallback onNewGame;
   final VoidCallback onFinish;
+
+  /// Libellé de l'action qui clôt la rencontre (« Envoyer le résultat » en
+  /// partie suivie).
+  final String finishLabel;
+
+  /// Faux en partie suivie : une rencontre enregistrée ne se rejoue pas d'un
+  /// bouton, elle se termine.
+  final bool allowNewGame;
 
   @override
   State<VictoryOverlay> createState() => _VictoryOverlayState();
@@ -145,18 +155,26 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 icon: Icons.play_arrow_rounded,
                                 onPressed: widget.onNewRound,
                               )
-                            else
+                            else if (widget.allowNewGame)
                               GoldButton(
                                 label: 'Nouvelle partie',
                                 icon: Icons.refresh_rounded,
                                 onPressed: widget.onNewGame,
+                              )
+                            else
+                              GoldButton(
+                                label: widget.finishLabel,
+                                icon: Icons.check_rounded,
+                                onPressed: widget.onFinish,
                               ),
-                            const SizedBox(height: 8),
-                            GhostButton(
-                              label: 'Terminer',
-                              icon: Icons.check_rounded,
-                              onPressed: widget.onFinish,
-                            ),
+                            if (hasNextRound || widget.allowNewGame) ...[
+                              const SizedBox(height: 8),
+                              GhostButton(
+                                label: widget.finishLabel,
+                                icon: Icons.check_rounded,
+                                onPressed: widget.onFinish,
+                              ),
+                            ],
                             if (!reduceMotion)
                               TextButton.icon(
                                 onPressed: _replay,

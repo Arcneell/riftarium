@@ -14,12 +14,17 @@ import '../../domain/game_engine.dart';
 import '../../domain/game_mode.dart';
 import '../../domain/game_state.dart';
 import '../../domain/player.dart';
+import '../../../play/ui/widgets/play_resume_panel.dart';
+import '../../../play/ui/widgets/tracked_start_panel.dart';
 import 'draw_overlay.dart';
 import 'game_theme.dart';
 import 'legend_picker_sheet.dart';
 
-/// Première étape : choisir le format, nommer les joueurs, leur donner une
-/// légende, puis tirer au sort qui commence.
+/// Première étape : choisir sa façon de jouer, puis le format, nommer les
+/// joueurs, leur donner une légende, et tirer au sort qui commence.
+///
+/// Deux entrées en tête : la **partie libre** (ce compteur, hors ligne et sans
+/// compte) et la **partie suivie** (deux comptes, résultat enregistré).
 class GameSetupView extends ConsumerStatefulWidget {
   const GameSetupView({super.key, this.onClose});
 
@@ -49,6 +54,9 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   bool _drawing = false;
   bool _spinning = false;
   bool _resumeDismissed = false;
+
+  /// Faux : le compteur libre. Vrai : le salon d'une partie suivie.
+  bool _tracked = false;
 
   @override
   void initState() {
@@ -187,6 +195,15 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
             children: [
+              const PlayResumePanel(),
+              _PlayChoice(
+                tracked: _tracked,
+                onSelect: (tracked) => setState(() => _tracked = tracked),
+              ),
+              const SizedBox(height: 22),
+              if (_tracked)
+                const TrackedStartPanel()
+              else ...[
               if (saved != null && !_resumeDismissed) ...[
                 _ResumePanel(
                   saved: saved,
@@ -269,6 +286,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
                     child: const Text('Retirer au sort'),
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -589,6 +607,84 @@ class _TeamChip extends StatelessWidget {
           style: riftText(
             context,
           ).monoStrong.copyWith(color: selected ? color : null),
+        ),
+      ),
+    );
+  }
+}
+
+/// Les deux façons de jouer, côte à côte en tête de l'écran. La partie libre
+/// est retenue par défaut : elle ne demande rien, ni compte ni réseau.
+class _PlayChoice extends StatelessWidget {
+  const _PlayChoice({required this.tracked, required this.onSelect});
+
+  final bool tracked;
+  final void Function(bool tracked) onSelect;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        child: _ChoiceCard(
+          title: 'Partie libre',
+          detail: 'Le compteur, sans compte.',
+          icon: Icons.sports_esports_outlined,
+          selected: !tracked,
+          onTap: () => onSelect(false),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _ChoiceCard(
+          title: 'Partie suivie',
+          detail: 'À deux comptes, résultat gardé.',
+          icon: Icons.wifi_tethering_rounded,
+          selected: tracked,
+          onTap: () => onSelect(true),
+        ),
+      ),
+    ],
+  );
+}
+
+class _ChoiceCard extends StatelessWidget {
+  const _ChoiceCard({
+    required this.title,
+    required this.detail,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String detail;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return ActiveGlow(
+      active: selected,
+      child: RiftPanel(
+        onTap: onTap,
+        raised: selected,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: selected ? RiftColors.gold : text.muted,
+            ),
+            const SizedBox(height: 10),
+            Text(title, style: text.title),
+            const SizedBox(height: 4),
+            Text(detail, style: text.small.copyWith(fontSize: 12)),
+          ],
         ),
       ),
     );

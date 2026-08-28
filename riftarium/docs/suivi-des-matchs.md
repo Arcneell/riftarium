@@ -40,6 +40,13 @@ match_players  id, match_id, user_id, seat, legend_card_id (nullable),
 Un utilisateur ne peut avoir qu'**un seul salon `open`/`playing`** à la fois.
 Les salons `open` dont `expires_at` est dépassé sont lus comme `cancelled`.
 
+Pas de clé étrangère sur `rooms.match_id`, `*.host_id`, `first_player_id`,
+`winner_user_id` ni `*.deck_id` : matchs et salons doivent survivre à la
+suppression d'un compte ou d'un deck (le deck devient `null`, l'adversaire
+`null`). `by_deck` ignore les decks supprimés. Code de salon normalisé en
+majuscules à la lecture. `current_streak` = victoires consécutives se terminant
+au dernier match compté ; `best_streak` = plus longue série.
+
 ## Instantané du compteur (`matches.state`)
 
 ```json
@@ -60,20 +67,20 @@ match) et rejette une version stale (409). Le résultat final (`result`) reprend
 
 | Méthode | Chemin | Rôle | Effet |
 | --- | --- | --- | --- |
-| POST | `/api/play/rooms` `{mode}` | tout compte | crée un salon, renvoie `RoomOut` (avec `code`). 409 si un salon actif existe déjà. |
+| POST | `/api/play/rooms` `{mode}` | tout compte | **201**, crée un salon, renvoie `RoomOut` (avec `code`). 409 si un salon actif existe déjà. |
 | GET | `/api/play/rooms/{code}` | tout compte | `RoomOut` (le code vaut secret). 404 si inconnu. |
-| POST | `/api/play/rooms/{code}/join` | tout compte ≠ hôte | rejoint le siège 1. 409 si plein / pas `open` / expiré / déjà un salon actif. |
-| PUT | `/api/play/rooms/{code}/me` `{legend_card_id?, deck_id?, ready}` | participant | choix perso. 422 si la carte n'est pas une Legend ou si le deck n'appartient pas au joueur. |
-| POST | `/api/play/rooms/{code}/leave` | invité | quitte ; salon redevient `open` avec l'hôte seul. |
-| DELETE | `/api/play/rooms/{code}` | hôte | `cancelled`. |
-| POST | `/api/play/rooms/{code}/start` `{first_player_id}` | hôte | 409 si les deux ne sont pas `ready`. Crée le match (`live`), copie légendes/decks, salon → `playing`. Renvoie `MatchOut`. |
+| POST | `/api/play/rooms/{code}/join` | tout compte ≠ hôte | rejoint le siège 1. 409 si plein / pas `open` / expiré / déjà un salon actif / hôte ; déjà assis → 200 sans effet. |
+| PUT | `/api/play/rooms/{code}/me` `{legend_card_id?, deck_id?, ready}` | participant | choix perso. 422 si la carte n'est pas une Legend (variantes alt-art/signature acceptées) ou si le deck n'appartient pas au joueur ; 409 si le salon n'est plus `open`. |
+| POST | `/api/play/rooms/{code}/leave` | invité | **200** + `RoomOut` ; salon redevient `open` avec l'hôte seul ; 409 si le salon n'est plus `open`. |
+| DELETE | `/api/play/rooms/{code}` | hôte | **200** + `RoomOut` (`cancelled`). |
+| POST | `/api/play/rooms/{code}/start` `{first_player_id}` | hôte | **201**. 409 si les deux ne sont pas `ready`. Crée le match (`live`), copie légendes/decks, salon → `playing`. Renvoie `MatchOut`. |
 | GET | `/api/play/matches/{id}` | participant | `MatchOut` (joueurs, `state`, `version`, statut). |
 | PUT | `/api/play/matches/{id}/state` `{version, state}` | hôte, match `live` | remplace l'instantané ; 409 si `version` ≠ version courante ; renvoie `MatchOut` (version + 1). |
-| POST | `/api/play/matches/{id}/finish` `{winner_user_id, result}` | hôte, match `live` | → `awaiting_confirmation`, l'hôte est confirmé d'office, `ended_at` posé, salon → `finished`. |
+| POST | `/api/play/matches/{id}/finish` `{winner_user_id, result}` | hôte, match `live` | `result` a exactement la forme de `state` (tous les champs obligatoires) et est stocké à part de `state`. → `awaiting_confirmation`, l'hôte est confirmé d'office, `ended_at` posé, salon → `finished`. |
 | POST | `/api/play/matches/{id}/confirm` | participant | confirme ; les deux confirmés → `confirmed`. |
-| POST | `/api/play/matches/{id}/dispute` | participant | → `disputed` (exclu des stats). |
-| POST | `/api/play/matches/{id}/abandon` | participant, match `live` ou `awaiting_confirmation` | → `abandoned`, `winner_user_id` = l'autre joueur, compté sans confirmation. |
-| GET | `/api/play/history?page&size` | tout compte | mes matchs terminés (`confirmed`, `disputed`, `abandoned`), plus récents d'abord. |
+| POST | `/api/play/matches/{id}/dispute` | participant, match `awaiting_confirmation` | → `disputed` (exclu des stats) ; 409 sinon. |
+| POST | `/api/play/matches/{id}/abandon` | participant, match `live` ou `awaiting_confirmation` | → `abandoned`, `winner_user_id` = l'autre joueur, `result` = copie du `state` courant, compté sans confirmation. |
+| GET | `/api/play/history?page&size` | tout compte | `{total, page, size, items: [HistoryItem]}`, `size` ≤ 50 ; mes matchs terminés (`confirmed`, `disputed`, `abandoned`), plus récents d'abord. |
 | GET | `/api/play/stats` | tout compte | `StatsOut` (voir ci-dessous). |
 | GET | `/api/play/current` | tout compte | mon salon actif et/ou mon match `live` / `awaiting_confirmation`, sinon `{room: null, match: null}` (reprise après fermeture de l'app). |
 
@@ -92,9 +99,11 @@ MatchPlayerOut user {id, handle, avatar_url}, seat, legend, deck, score,
 MatchOut       id, room_code, mode, status, host_id, first_player_id,
                started_at, ended_at, winner_user_id, players [MatchPlayerOut],
                state, result, version
-HistoryItem    match_id, mode, status, played_at, opponent {handle, avatar_url},
-               my_legend, opponent_legend, my_deck, opponent_deck, my_score,
-               opponent_score, my_rounds, opponent_rounds, outcome ('win'|'loss'|'disputed')
+HistoryItem    match_id, mode, status, played_at, opponent {id, handle, avatar_url} | null,
+               my_legend / opponent_legend (card_out | null),
+               my_deck / opponent_deck ({id, name, format} | null, deck supprimé = null),
+               my_score, opponent_score, my_rounds, opponent_rounds,
+               outcome ('win'|'loss'|'disputed')
 StatsOut       totals {played, won, lost, win_rate, current_streak, best_streak},
                by_format [{mode, played, won, lost}],
                by_deck [{deck_id, name, format, played, won, lost, win_rate}],

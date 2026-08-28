@@ -7,6 +7,7 @@ import '../../cards/data/cards_api.dart';
 import '../../cards/domain/card.dart';
 import '../data/game_store.dart';
 import '../data/legends_repository.dart';
+import '../domain/game_actions.dart';
 import '../domain/game_engine.dart';
 import '../domain/game_mode.dart';
 import '../domain/game_state.dart';
@@ -87,7 +88,7 @@ final gameControllerProvider = NotifierProvider<GameController, GameState?>(
 
 /// Pilote la partie : applique le moteur puis sauvegarde. `null` = personne
 /// n'est à table, l'écran affiche la configuration.
-class GameController extends Notifier<GameState?> {
+class GameController extends Notifier<GameState?> implements GameActions {
   @override
   GameState? build() => null;
 
@@ -108,12 +109,15 @@ class GameController extends Notifier<GameState?> {
   /// Reprend une partie relue depuis la sauvegarde.
   void resume(GameState saved) => _apply(saved);
 
+  @override
   void addPoint(String playerId) =>
       _mutate((state) => GameEngine.addPoint(state, playerId: playerId));
 
+  @override
   void removePoint(String playerId) =>
       _mutate((state) => GameEngine.removePoint(state, playerId: playerId));
 
+  @override
   void exhaustion({required String fromPlayerId, required String toPlayerId}) =>
       _mutate(
         (state) => GameEngine.exhaustion(
@@ -123,30 +127,39 @@ class GameController extends Notifier<GameState?> {
         ),
       );
 
+  @override
   void addXp(String playerId, [int amount = 1]) => _mutate(
     (state) => GameEngine.addXp(state, playerId: playerId, amount: amount),
   );
 
+  @override
   void spendXp(String playerId, [int amount = 1]) => _mutate(
     (state) => GameEngine.spendXp(state, playerId: playerId, amount: amount),
   );
 
+  @override
   void setXp(String playerId, int value) => _mutate(
     (state) => GameEngine.setXp(state, playerId: playerId, value: value),
   );
 
+  @override
   void nextTurn() => _mutate(GameEngine.nextTurn);
 
+  @override
   void undo() => _mutate(GameEngine.undo);
 
+  @override
   void newRound() => _mutate(GameEngine.newRound);
 
+  @override
   void reset() => _mutate((state) => GameEngine.reset(state));
 
+  @override
   void renamePlayer(String playerId, String name) => _mutate(
     (state) => GameEngine.updatePlayer(state, playerId: playerId, name: name),
   );
 
+  @override
   void setLegend(String playerId, RiftCard? legend) => _mutate(
     (state) => GameEngine.updatePlayer(
       state,
@@ -157,11 +170,13 @@ class GameController extends Notifier<GameState?> {
   );
 
   /// Le rappel des ajustements du premier tour a été vu : il ne revient pas.
+  @override
   void markHintSeen() => _mutate(
     (state) => state.hintSeen ? state : state.copyWith(hintSeen: true),
   );
 
   /// Quitte la table et efface la sauvegarde.
+  @override
   void quit() {
     state = null;
     unawaited(_store.clear());

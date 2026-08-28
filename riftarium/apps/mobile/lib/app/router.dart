@@ -15,6 +15,11 @@ import '../features/decks/ui/deck_detail_screen.dart';
 import '../features/decks/ui/decks_screen.dart';
 import '../features/game/ui/game_screen.dart';
 import '../features/home/ui/home_screen.dart';
+import '../features/play/ui/history_screen.dart';
+import '../features/play/ui/room_screen.dart';
+import '../features/play/ui/stats_screen.dart';
+import '../features/play/ui/tracked_match_screen.dart';
+import '../features/play/ui/tracked_play_screen.dart';
 import '../features/profile/ui/profile_screen.dart';
 import '../features/rules/ui/advanced_help_screen.dart';
 import '../features/rules/ui/advanced_topic_screen.dart';
@@ -43,8 +48,20 @@ abstract final class AppRoutes {
   static String advancedTopic(String slug) => '/regles/avancee/$slug';
   static const officialRules = '/regles/officielles';
   static const profile = '/profil';
+
+  /// Mes parties suivies : historique et statistiques.
+  static const history = '/profil/historique';
+  static const playStats = '/profil/statistiques';
+
   static const scan = '/scan';
   static const game = '/partie';
+
+  /// Partie suivie : création ou entrée dans un salon.
+  static const trackedPlay = '/partie/suivie';
+
+  /// Salon d'attente. Même chemin que sur le site : `riftarium.re/salon/CODE`.
+  static String room(String code) => '/salon/$code';
+  static String trackedMatch(int id) => '/partie/match/$id';
 
   /// Connexion avec retour vers `from` une fois la session ouverte.
   static String loginFrom(String from) =>
@@ -53,7 +70,14 @@ abstract final class AppRoutes {
   static const _entry = {splash, login, register};
 
   /// Préfixes réservés aux comptes connectés.
-  static const _gatedPrefixes = [collection, decks, profile, scan];
+  static const _gatedPrefixes = [
+    collection,
+    decks,
+    profile,
+    scan,
+    trackedPlay,
+    '/salon',
+  ];
 
   static bool isGated(String location) =>
       _gatedPrefixes.any((p) => location == p || location.startsWith('$p/'));
@@ -120,15 +144,44 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.scan,
         builder: (context, state) => const ScanScreen(),
       ),
-      // Compteur de partie : plein écran, utilisable sans compte.
+      // Compteur de partie : plein écran, utilisable sans compte. La partie
+      // suivie et le match qui en sort exigent, eux, une session.
       GoRoute(
         path: AppRoutes.game,
         builder: (context, state) => const GameScreen(),
+        routes: [
+          GoRoute(
+            path: 'suivie',
+            builder: (context, state) => const TrackedPlayScreen(),
+          ),
+          GoRoute(
+            path: 'match/:id',
+            builder: (context, state) => TrackedMatchScreen(
+              matchId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+            ),
+          ),
+        ],
+      ),
+      // Salon d'attente : le code arrive par saisie ou par lien partagé.
+      GoRoute(
+        path: '/salon/:code',
+        builder: (context, state) =>
+            RoomScreen(code: state.pathParameters['code']!.toUpperCase()),
       ),
       // Le profil se pousse par-dessus les onglets (avatar en haut à droite).
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const ProfileScreen(),
+        routes: [
+          GoRoute(
+            path: 'historique',
+            builder: (context, state) => const HistoryScreen(),
+          ),
+          GoRoute(
+            path: 'statistiques',
+            builder: (context, state) => const PlayStatsScreen(),
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

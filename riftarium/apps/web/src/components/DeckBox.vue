@@ -7,13 +7,17 @@ import UserAvatar from "./UserAvatar.vue"
 const props = defineProps({
   deck: { type: Object, required: true },
   to: { type: String, required: true },
-  community: { type: Boolean, default: false }
+  community: { type: Boolean, default: false },
+  /* Bilan des parties suivies de ce deck ({played, won, lost}), fourni par la vue
+     qui liste les decks du propriétaire connecté. Jamais sur la communauté. */
+  record: { type: Object, default: null }
 })
 defineEmits(["like", "remove"])
 
 const legal = computed(() => legalState(props.deck))
 const legend = computed(() => legendOf(props.deck))
 const runes = computed(() => runesOf(props.deck))
+const record = computed(() => (!props.community && props.record?.played ? props.record : null))
 
 /* « 3 manquante(s) (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
 function missingNote(deck) {
@@ -87,6 +91,13 @@ function missingNote(deck) {
           />
         </span>
         <span class="deck-box-stats">
+          <span
+            v-if="record"
+            class="deck-record mono"
+            :title="`Parties suivies : ${record.won} victoire(s), ${record.lost} défaite(s)`"
+          >
+            {{ record.won }} V · {{ record.lost }} D
+          </span>
           <button
             v-if="community"
             type="button"
