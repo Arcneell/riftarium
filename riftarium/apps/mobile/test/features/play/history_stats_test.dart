@@ -54,6 +54,41 @@ void main() {
       expect(find.text('jinx'), findsNWidgets(2));
     });
 
+    testWidgets('le pseudo de l’adversaire mène à son profil public', (
+      tester,
+    ) async {
+      final server = PlayFakeApi({
+        'GET /play/history': historyPageJson(),
+        'GET /users/jinx': {
+          'id': 8,
+          'handle': 'jinx',
+          'avatar_url': null,
+          'bio': 'Boum.',
+          'created_at': '2026-01-15T10:00:00Z',
+          'is_me': false,
+          'is_followed': false,
+          'followers_count': 0,
+          'following_count': 0,
+          'visibility': const <String, dynamic>{},
+        },
+      });
+      await tester.pumpWidget(
+        playApp(
+          tester: tester,
+          server: server,
+          location: '/profil/historique',
+          size: tall,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('jinx').first);
+      await tester.pumpAndSettle();
+
+      expect(server.paths, contains('GET /users/jinx'));
+      expect(find.text('Boum.'), findsOneWidget);
+    });
+
     testWidgets('sans partie, l’écran invite à en lancer une', (tester) async {
       final server = PlayFakeApi({
         'GET /play/history': historyPageJson(items: [], total: 0),

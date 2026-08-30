@@ -63,6 +63,6 @@ GameState? gameOf(WidgetTester tester) {
 Future<void> startGame(WidgetTester tester) async {
   await tester.tap(find.text('Tirer le premier joueur'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Toucher pour continuer'));
+  await tester.tap(find.text('PREMIER JOUEUR'));
   await tester.pumpAndSettle();
 }

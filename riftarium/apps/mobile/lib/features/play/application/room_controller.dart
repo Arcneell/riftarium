@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_exception.dart';
 import '../../cards/domain/card.dart';
+import '../../decks/data/decks_api.dart';
 import '../../decks/domain/deck.dart';
 import '../data/play_api.dart';
 import '../domain/match.dart';
@@ -64,8 +65,26 @@ class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
   Future<void> setLegend(RiftCard? legend) =>
       _updateMe(legendCardId: legend?.id, clearLegend: legend == null);
 
-  Future<void> setDeck(Deck? deck) =>
-      _updateMe(deckId: deck?.id, clearDeck: deck == null);
+  /// Choix d'un deck. La légende part avec lui : on relit le deck complet
+  /// (`GET /decks/{id}`) pour prendre la carte de zone Légende **telle qu'elle
+  /// y figure** — même variante (alt-art, overnumbered, signature) — et
+  /// l'envoyer dans le même `PUT`. Le joueur reste libre d'en changer ensuite.
+  Future<void> setDeck(Deck? deck) async {
+    if (deck == null) {
+      await _updateMe(clearDeck: true, ready: false);
+      return;
+    }
+    RiftCard? legend;
+    try {
+      legend = (await ref.read(decksApiProvider).get(deck.id)).legend;
+    } on ApiException {
+      // Le deck n'a pas pu être relu : on garde ce que la liste en savait.
+      legend = deck.legend;
+    }
+    // `legendCardId` nul laisse la légende courante en place : un deck sans
+    // légende ne défait pas un choix déjà fait à la main.
+    await _updateMe(deckId: deck.id, legendCardId: legend?.id, ready: false);
+  }
 
   /// L'invité quitte le salon.
   Future<void> leave() async {

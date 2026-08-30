@@ -7566,3 +7566,278 @@ button.progress-row:hover {
     grid-row: auto;
   }
 }
+
+/* ============================================================
+   Profils publics, hauts faits et amis
+   Contrat : docs/profils-et-hauts-faits.md. Rien de neuf côté
+   couleurs : les paliers reprennent l'or, le hextech et le
+   prisme du site, les barres réutilisent .progress-bar.
+   ============================================================ */
+
+.profile-public,
+.friends-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.profile-public .profile-hero {
+  margin-bottom: 0;
+}
+.profile-hero-body {
+  min-width: 0;
+}
+.profile-hero-body h1 {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.profile-bio {
+  color: var(--ink);
+  max-width: 62ch;
+  overflow-wrap: anywhere;
+}
+.profile-since {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-size: 0.78rem;
+}
+.profile-follow-counts {
+  color: var(--gold-deep);
+}
+/* Les actions du profil (suivre, modifier) se rangent à droite du bloc identité. */
+.profile-hero-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-self: center;
+}
+
+.profile-section h2 {
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  color: var(--ink-strong);
+  margin-bottom: 12px;
+}
+.profile-section .stat-row {
+  margin-bottom: 16px;
+}
+.profile-section .play-legend-list,
+.profile-section .profile-sets {
+  margin-bottom: 16px;
+}
+/* Une section fermée ne montre rien d'autre que la raison de son silence. */
+.profile-hidden {
+  font-size: 0.9rem;
+}
+.profile-sets {
+  list-style: none;
+}
+.profile-cards {
+  --tile-min: 150px;
+  margin-top: 4px;
+}
+.profile-history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+/* Les lignes de match vivent déjà dans un panneau : pas de double cadre. */
+.profile-history .play-row {
+  padding: 16px 18px;
+  box-shadow: none;
+  background: rgba(245, 239, 225, 0.5);
+}
+
+/* ---------- Médailles (hauts faits) ---------- */
+.medal-family + .medal-family {
+  margin-top: 18px;
+}
+.medal-family-head {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 10px;
+}
+.medal-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+.medal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  border-left: 4px solid var(--medal, var(--gold));
+}
+/* Le palier ne se lit pas qu'à la couleur : le libellé l'écrit sous le titre. */
+.medal.tier-bronze {
+  --medal: #a4703a;
+}
+.medal.tier-silver {
+  --medal: #8d94a0;
+}
+.medal.tier-gold {
+  --medal: var(--gold);
+}
+.medal.tier-prism {
+  --medal: var(--hex);
+  border-image: var(--prism) 1;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.medal.locked {
+  opacity: 0.58;
+  background: none;
+}
+.medal-glyph {
+  font-size: 1.5rem;
+  line-height: 1.1;
+  flex: none;
+  filter: saturate(0.85);
+}
+.medal.locked .medal-glyph {
+  filter: grayscale(1);
+}
+.medal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+.medal-body b {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  color: var(--ink-strong);
+  font-weight: 400;
+}
+.medal-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.medal-bar {
+  margin-top: 4px;
+}
+.medal-bar i {
+  background: var(--medal, var(--gold));
+}
+
+/* ---------- Confidentialité ---------- */
+.privacy-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.privacy-list .switch {
+  align-items: flex-start;
+  width: 100%;
+}
+.privacy-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.privacy-label b {
+  color: var(--ink-strong);
+  font-weight: 600;
+}
+.privacy-label .muted {
+  font-size: 0.78rem;
+}
+
+/* ---------- Amis ---------- */
+.friends-page h2 {
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  color: var(--ink-strong);
+  margin-bottom: 12px;
+}
+.friends-search .search {
+  margin-bottom: 14px;
+}
+.friend-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: rgba(245, 239, 225, 0.5);
+}
+.friend-ident {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-right: auto;
+}
+.friend-name {
+  font-weight: 600;
+  color: var(--ink-strong);
+  overflow-wrap: anywhere;
+}
+/* Sans bloc d'identité (recherche, abonnés), c'est le pseudo qui pousse les boutons à droite. */
+.friend-row > .friend-name {
+  margin-right: auto;
+}
+.friend-when {
+  font-size: 0.72rem;
+}
+.friends-invite {
+  border-color: var(--gold-soft);
+}
+.friends-invite-code {
+  font-size: 1.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-strong);
+  margin-bottom: 8px;
+}
+.friends-invite-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.friends-invite-link {
+  font-size: 0.74rem;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.friends-note {
+  font-size: 0.86rem;
+  max-width: 72ch;
+}
+
+@media (max-width: 760px) {
+  .profile-hero-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .profile-cards {
+    --tile-min: 120px;
+  }
+  .friend-row {
+    align-items: flex-start;
+  }
+}

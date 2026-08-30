@@ -66,10 +66,9 @@ class _AdvancedHelpScreenState extends ConsumerState<AdvancedHelpScreen> {
       body: CustomScrollView(
         slivers: [
           PageBanner(
-            title: 'Chaque mécanique a sa fiche',
-            eyebrow: 'Aide avancée',
+            title: 'Aide avancée',
             art: RiftBanners.rules,
-            expandedHeight: 160,
+            expandedHeight: 200,
             leading: RulesBackButton(),
             actions: [ProfileAction()],
           ),
@@ -88,7 +87,7 @@ class _AdvancedHelpScreenState extends ConsumerState<AdvancedHelpScreen> {
             ],
             data: _bodySlivers,
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 28)),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
@@ -175,7 +174,6 @@ class _AdvancedHelpScreenState extends ConsumerState<AdvancedHelpScreen> {
                 '${group.topics.length}',
                 style: riftText(context).mono,
               ),
-              padding: const EdgeInsets.fromLTRB(18, 22, 18, 10),
             ),
           ),
           SliverPadding(

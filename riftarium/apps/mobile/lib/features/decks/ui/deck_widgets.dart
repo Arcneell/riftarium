@@ -71,13 +71,9 @@ List<Color> domainPair(List<String> domains) {
   ];
 }
 
-/// Légalité affichée : libellé court, couleur et raison en clair.
+/// Légalité affichée : libellé court et couleur.
 class DeckLegalState {
-  const DeckLegalState({
-    required this.legal,
-    required this.label,
-    required this.reason,
-  });
+  const DeckLegalState({required this.legal, required this.label});
 
   /// Deck au format officiel dont tous les contrôles passent.
   factory DeckLegalState.forDeck(Deck deck) =>
@@ -89,39 +85,26 @@ class DeckLegalState {
 
   factory DeckLegalState._of(bool tournament, bool legal) {
     if (!tournament) {
-      return const DeckLegalState(
-        legal: false,
-        label: 'Illégal',
-        reason: 'Format libre : ce deck ne suit pas les règles officielles.',
-      );
+      return const DeckLegalState(legal: false, label: 'Illégal');
     }
-    return DeckLegalState(
-      legal: legal,
-      label: legal ? 'Légal' : 'Illégal',
-      reason: legal
-          ? 'Toutes les règles officielles de construction sont respectées.'
-          : 'Ce deck ne respecte pas encore toutes les règles de construction.',
-    );
+    return DeckLegalState(legal: legal, label: legal ? 'Légal' : 'Illégal');
   }
 
   final bool legal;
   final String label;
-  final String reason;
 
   Color get color => legal ? RiftColors.calm : RiftColors.fury;
 }
 
-/// Pastille « Légal » / « Illégal » avec la raison en infobulle.
+/// Pastille « Légal » / « Illégal ».
 class DeckLegalBadge extends StatelessWidget {
   const DeckLegalBadge({super.key, required this.state});
 
   final DeckLegalState state;
 
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: state.reason,
-    child: MonoBadge(label: state.label, color: state.color),
-  );
+  Widget build(BuildContext context) =>
+      MonoBadge(label: state.label, color: state.color);
 }
 
 /// Couverture d'une boîte de deck : le visuel de la légende, légèrement
@@ -650,7 +633,7 @@ class _DecksSegmentDelegate extends SliverPersistentHeaderDelegate {
 
   final DecksTab current;
 
-  static const _height = 64.0;
+  static const _height = 72.0;
 
   @override
   double get minExtent => _height;
@@ -684,12 +667,20 @@ class _DecksSegmentDelegate extends SliverPersistentHeaderDelegate {
         segments: const [
           ButtonSegment(
             value: DecksTab.mine,
-            label: Text('Mes decks'),
+            label: Text(
+              'Mes decks',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             icon: Icon(Icons.layers_outlined, size: 18),
           ),
           ButtonSegment(
             value: DecksTab.community,
-            label: Text('Communauté'),
+            label: Text(
+              'Communauté',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             icon: Icon(Icons.groups_2_outlined, size: 18),
           ),
         ],

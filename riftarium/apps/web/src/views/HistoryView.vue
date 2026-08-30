@@ -1,10 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
-import { cardThumb } from "../api.js"
 import { BANNERS } from "../banners.js"
+import MatchRow from "../components/MatchRow.vue"
 import PageBanner from "../components/PageBanner.vue"
-import UserAvatar from "../components/UserAvatar.vue"
-import { formatPlayedAt, getHistory, modeLabel, outcomeLabel, outcomeTone } from "../play.js"
+import { getHistory } from "../play.js"
 
 const SIZE = 20
 
@@ -56,73 +55,7 @@ onMounted(load)
         <p class="muted mono play-count">{{ total }} partie(s) terminée(s)</p>
 
         <ol class="play-history">
-          <li v-for="item in items" :key="item.match_id" class="panel play-row">
-            <div class="play-row-head">
-              <span class="mono play-when">{{ formatPlayedAt(item.played_at) }}</span>
-              <span class="chip play-mode">{{ modeLabel(item.mode) }}</span>
-              <span class="chip play-outcome" :class="outcomeTone(item.outcome)">{{ outcomeLabel(item.outcome) }}</span>
-            </div>
-
-            <div class="play-duel">
-              <div class="play-side">
-                <p class="play-side-who">Moi</p>
-                <div class="play-side-legend">
-                  <img
-                    v-if="item.my_legend?.image_url"
-                    class="play-legend-thumb"
-                    :src="cardThumb(item.my_legend.image_url, 72)"
-                    :alt="`Légende : ${item.my_legend.name}`"
-                    width="72"
-                    height="72"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span v-else class="play-legend-thumb empty" aria-hidden="true"></span>
-                  <span class="mono">{{ item.my_legend?.name || "Sans légende" }}</span>
-                </div>
-                <p class="play-side-deck mono">
-                  <RouterLink v-if="item.my_deck?.id" :to="`/decks/${item.my_deck.id}`">{{
-                    item.my_deck.name
-                  }}</RouterLink>
-                  <span v-else class="muted">Sans deck</span>
-                </p>
-              </div>
-
-              <div class="play-score">
-                <b>{{ item.my_score }} – {{ item.opponent_score }}</b>
-                <span v-if="item.mode === 'match'" class="mono muted">
-                  manches {{ item.my_rounds }} – {{ item.opponent_rounds }}
-                </span>
-              </div>
-
-              <div class="play-side">
-                <p class="play-side-who">
-                  <template v-if="item.opponent">
-                    <UserAvatar :src="item.opponent.avatar_url" :handle="item.opponent.handle" :size="22" />
-                    {{ item.opponent.handle }}
-                  </template>
-                  <span v-else class="muted">Compte supprimé</span>
-                </p>
-                <div class="play-side-legend">
-                  <img
-                    v-if="item.opponent_legend?.image_url"
-                    class="play-legend-thumb"
-                    :src="cardThumb(item.opponent_legend.image_url, 72)"
-                    :alt="`Légende adverse : ${item.opponent_legend.name}`"
-                    width="72"
-                    height="72"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <span v-else class="play-legend-thumb empty" aria-hidden="true"></span>
-                  <span class="mono">{{ item.opponent_legend?.name || "Sans légende" }}</span>
-                </div>
-                <p class="play-side-deck mono">
-                  <span class="muted">{{ item.opponent_deck?.name || "Sans deck" }}</span>
-                </p>
-              </div>
-            </div>
-          </li>
+          <MatchRow v-for="item in items" :key="item.match_id" :item="item" />
         </ol>
 
         <div v-if="pageCount > 1" class="pager">

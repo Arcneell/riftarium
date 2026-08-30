@@ -90,3 +90,15 @@ String cardCountLabel(int total) {
   if (total <= 0) return 'Aucune carte';
   return total == 1 ? '1 carte' : '$total cartes';
 }
+
+/// « 3 lots », « 1 lot », « Aucun lot » (feuille d'édition de la collection).
+String lotCountLabel(int total) {
+  if (total <= 0) return 'Aucun lot';
+  return total == 1 ? '1 lot' : '$total lots';
+}
+
+/// « 3 exemplaires », « 1 exemplaire », « Aucun exemplaire ».
+String copyCountLabel(int total) {
+  if (total <= 0) return 'Aucun exemplaire';
+  return total == 1 ? '1 exemplaire' : '$total exemplaires';
+}

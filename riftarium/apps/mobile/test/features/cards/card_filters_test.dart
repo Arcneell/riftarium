@@ -107,7 +107,7 @@ void main() {
       const meta = PricesMeta();
 
       expect(meta.note, contains('TCGplayer'));
-      expect(meta.note, contains('Ni cote officielle'));
+      expect(meta.note, contains('taux BCE'));
     });
   });
 }

@@ -116,10 +116,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Aucune carte'), findsWidgets);
-    expect(
-      find.text('Change la recherche ou retire des filtres.'),
-      findsOneWidget,
-    );
+    expect(find.text('Recharger la cartothèque'), findsOneWidget);
   });
 
   testWidgets('une erreur d’API propose de réessayer', (tester) async {

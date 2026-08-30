@@ -117,11 +117,6 @@ class _TrackedStartPanelState extends ConsumerState<TrackedStartPanel> {
         ),
         const SizedBox(height: 18),
         Text('Rejoindre un salon', style: text.displaySmall),
-        const SizedBox(height: 4),
-        Text(
-          'Saisis le code que ton adversaire t’a partagé.',
-          style: text.small,
-        ),
         const SizedBox(height: 12),
         TextField(
           controller: _code,

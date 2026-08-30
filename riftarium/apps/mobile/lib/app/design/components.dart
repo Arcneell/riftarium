@@ -87,9 +87,14 @@ class GhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sans icône, `OutlinedButton.icon` garderait l'écart icône/libellé et
+    // décalerait le texte : on prend le bouton simple.
+    if (icon == null) {
+      return OutlinedButton(onPressed: onPressed, child: Text(label));
+    }
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: 18),
+      icon: Icon(icon, size: 18),
       label: Text(label),
     );
   }

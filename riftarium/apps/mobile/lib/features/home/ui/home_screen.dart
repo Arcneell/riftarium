@@ -34,6 +34,12 @@ class HomeScreen extends ConsumerWidget {
     final text = riftText(context);
     final profile = auth.profile;
     final signedIn = auth.isSignedIn;
+    // Hauteur des accès rapides : marges du panneau (14 × 2), pastille d'icône,
+    // respiration, sur-titre et titre sur deux lignes — le tout à l'échelle de
+    // texte du système, pour que « Decks partagés » tienne toujours.
+    final scaler = MediaQuery.textScalerOf(context);
+    final quickTileHeight =
+        28 + 34 + 10 + scaler.scale(11) * 1.2 + 2 + scaler.scale(17) * 1.2 * 2;
 
     return Scaffold(
       body: CustomScrollView(
@@ -42,11 +48,8 @@ class HomeScreen extends ConsumerWidget {
           PageBanner(
             title: signedIn && profile != null
                 ? 'Bonjour ${profile.handle}'
-                : 'Vos cartes, vos decks, vos règles.',
+                : 'Tes cartes, tes decks, tes règles.',
             eyebrow: 'Riftarium',
-            subtitle: signedIn
-                ? null
-                : 'Le compagnon de Riftbound, dans ta poche.',
             art: RiftBanners.home,
             expandedHeight: 260,
             focus: const Alignment(0.3, -0.2),
@@ -67,14 +70,32 @@ class HomeScreen extends ConsumerWidget {
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-            sliver: SliverGrid.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
-              children: [
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: quickTileHeight,
+              ),
+              delegate: SliverChildListDelegate([
                 _QuickTile(
                   index: 1,
+                  icon: Icons.inventory_2_outlined,
+                  eyebrow: 'Mes cartes',
+                  title: 'Ma collection',
+                  color: RiftColors.calm,
+                  onTap: () => context.go(AppRoutes.collection),
+                ),
+                _QuickTile(
+                  index: 2,
+                  icon: Icons.layers_outlined,
+                  eyebrow: 'Construire',
+                  title: 'Mes decks',
+                  color: RiftColors.mind,
+                  onTap: () => context.go(AppRoutes.decks),
+                ),
+                _QuickTile(
+                  index: 3,
                   icon: Icons.groups_2_outlined,
                   eyebrow: 'Communauté',
                   title: 'Decks partagés',
@@ -82,46 +103,25 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => context.go(AppRoutes.community),
                 ),
                 _QuickTile(
-                  index: 2,
-                  icon: Icons.sports_esports_outlined,
-                  eyebrow: 'À la table',
-                  title: 'Compteur de partie',
-                  color: RiftColors.mind,
-                  onTap: () => context.push(AppRoutes.game),
-                ),
-                _QuickTile(
-                  index: 3,
+                  index: 4,
                   icon: Icons.bolt_outlined,
                   eyebrow: 'En pleine partie',
                   title: 'Aide avancée',
                   color: RiftColors.order,
                   onTap: () => context.go(AppRoutes.advancedHelp),
                 ),
-                _QuickTile(
-                  index: 4,
-                  icon: Icons.style_outlined,
-                  eyebrow: 'Cartothèque',
-                  title: 'Toutes les cartes',
-                  color: RiftColors.fury,
-                  onTap: () => context.go(AppRoutes.cards),
-                ),
-              ],
+              ]),
             ),
           ),
           const SliverToBoxAdapter(
-            child: SectionTitle(eyebrow: 'Au hasard', title: 'Carte du moment'),
+            child: SectionTitle(title: 'Carte du moment'),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             sliver: SliverToBoxAdapter(child: _RandomCard()),
           ),
           if (signedIn && profile != null && profile.stats.isNotEmpty) ...[
-            const SliverToBoxAdapter(
-              child: SectionTitle(
-                eyebrow: 'Mon compte',
-                title: 'En un coup d’œil',
-              ),
-            ),
+            const SliverToBoxAdapter(child: SectionTitle(title: 'Mon compte')),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 18),
               sliver: SliverToBoxAdapter(
@@ -163,7 +163,7 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         'Un compte gratuit pour compter tes cartes, construire '
-                        'tes decks et les partager. Le même que sur le site.',
+                        'tes decks et les partager.',
                         style: text.small,
                       ),
                       const SizedBox(height: 14),
@@ -368,9 +368,16 @@ class _Stat extends StatelessWidget {
               '$value',
               style: text.displayMedium.copyWith(color: RiftColors.gold),
             ),
-            Text(
-              label.toUpperCase(),
-              style: text.eyebrow.copyWith(color: text.muted),
+            // Réduit plutôt que coupé : « EXEMPLAIRES » dépasse un tiers
+            // d'écran en espacé.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                style: text.eyebrow.copyWith(color: text.muted),
+              ),
             ),
           ],
         ),

@@ -177,10 +177,7 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
                 final parsed = int.tryParse(value.trim());
                 if (parsed != null) _game.setXp(player.id, parsed);
               },
-              decoration: const InputDecoration(
-                labelText: 'XP exacte',
-                helperText: 'Valider pour fixer la réserve.',
-              ),
+              decoration: const InputDecoration(labelText: 'XP exacte'),
             ),
             const SizedBox(height: 18),
             GhostButton(

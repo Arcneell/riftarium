@@ -113,6 +113,75 @@ void main() {
     );
   });
 
+  testWidgets('choisir un deck envoie la légende telle qu’elle y figure', (
+    tester,
+  ) async {
+    final server = PlayFakeApi({
+      'GET /play/rooms/ABC234': room(),
+      'PUT /play/rooms/ABC234/me': room(),
+      'GET /decks/mine': [deckJson()],
+      'GET /decks/3': deckJson(),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/salon/ABC234',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mon deck'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ahri contrôle'));
+    await tester.pumpAndSettle();
+
+    // Le deck a été relu pour y prendre la carte de zone Légende : la variante
+    // du deck (`OGN-001-alt`) l'emporte sur celle déjà posée dans le salon.
+    expect(server.paths, contains('GET /decks/3'));
+    expect(server.last('PUT', '/play/rooms/ABC234/me')!.body, {
+      'legend_card_id': 'OGN-001-alt',
+      'deck_id': 3,
+      'ready': false,
+    });
+  });
+
+  testWidgets('le pseudo d’un joueur du salon mène à son profil', (
+    tester,
+  ) async {
+    final server = PlayFakeApi({
+      'GET /play/rooms/ABC234': room(),
+      'GET /users/jinx': {
+        'id': 8,
+        'handle': 'jinx',
+        'avatar_url': null,
+        'bio': 'Boum.',
+        'created_at': '2026-01-15T10:00:00Z',
+        'is_me': false,
+        'is_followed': false,
+        'followers_count': 0,
+        'following_count': 0,
+        'visibility': const <String, dynamic>{},
+      },
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/salon/ABC234',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('jinx'));
+    await tester.pumpAndSettle();
+
+    expect(server.paths, contains('GET /users/jinx'));
+    expect(find.text('Boum.'), findsOneWidget);
+  });
+
   testWidgets('un salon expiré le dit et renvoie au jeu', (tester) async {
     final server = PlayFakeApi({
       'GET /play/rooms/ABC234': roomJson(

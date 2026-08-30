@@ -17,7 +17,7 @@ void main() {
     expect(find.text('Règles officielles'), findsOneWidget);
 
     // Chaque palier annonce ce qu'il contient, compté sur les fichiers.
-    expect(find.text('3 mécaniques, des cas concrets'), findsOneWidget);
+    expect(find.text('3 mécaniques'), findsOneWidget);
     expect(find.text('5 + 1 règles'), findsOneWidget);
   });
 

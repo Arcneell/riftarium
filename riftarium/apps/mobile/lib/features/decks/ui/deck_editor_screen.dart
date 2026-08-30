@@ -273,7 +273,7 @@ class _Counters extends StatelessWidget {
                   Text(
                     zone.label,
                     textAlign: TextAlign.center,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: text.small.copyWith(fontSize: 11),
                   ),
@@ -329,7 +329,7 @@ class _CardSearch extends ConsumerWidget {
           ),
         ),
         SizedBox(
-          height: 42,
+          height: 46,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -371,7 +371,9 @@ class _CardSearch extends ConsumerWidget {
               onRetry: () => ref.invalidate(deckCardSearchProvider(query)),
             ),
             data: (page) => page.items.isEmpty
-                ? Padding(
+                // Le panneau défile : sur un écran court il ne déborde pas
+                // de la place laissée par la recherche et ses filtres.
+                ? SingleChildScrollView(
                     padding: const EdgeInsets.all(18),
                     child: InvitePanel(
                       icon: Icons.search_off_outlined,
@@ -503,14 +505,12 @@ class _DeckList extends StatelessWidget {
         child: InvitePanel(
           icon: Icons.style_outlined,
           title: 'Deck vide',
-          message:
-              'Choisis d’abord ta légende dans l’onglet « Cartes » : elle fixe '
-              'les domaines du deck.',
+          message: 'Commence par la légende : elle fixe les domaines du deck.',
         ),
       );
     }
     return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 32),
       children: [
         for (final zone in deckZones)
           if (groups[zone.key]!.isNotEmpty) ...[
@@ -518,7 +518,6 @@ class _DeckList extends StatelessWidget {
               title:
                   '${zone.label} · ${zoneCount(groups, zone.key)}'
                   '/${zone.target}${zone.key == 'main' ? '+' : ''}',
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
             ),
             for (final entry in groups[zone.key]!)
               _DeckRow(
@@ -613,7 +612,6 @@ class _FilterMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = value == null ? label : (labels[value] ?? value!);
     return PopupMenuButton<String>(
-      tooltip: label,
       onSelected: (selected) => onSelected(selected == '' ? null : selected),
       itemBuilder: (context) => [
         PopupMenuItem(value: '', child: Text('Tous ($label)')),
@@ -640,19 +638,29 @@ class _Pager extends StatelessWidget {
   Widget build(BuildContext context) {
     if (page <= 1 && !hasMore) return const SizedBox.shrink();
     final text = riftText(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton(
-          onPressed: page <= 1 ? null : () => onChanged(page - 1),
-          child: const Text('← Précédent'),
-        ),
-        Text('page $page', style: text.mono),
-        TextButton(
-          onPressed: hasMore ? () => onChanged(page + 1) : null,
-          child: const Text('Suivant →'),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextButton(
+            onPressed: page <= 1 ? null : () => onChanged(page - 1),
+            child: const Text('← Précédent'),
+          ),
+          Flexible(
+            child: Text(
+              'page $page',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.mono,
+            ),
+          ),
+          TextButton(
+            onPressed: hasMore ? () => onChanged(page + 1) : null,
+            child: const Text('Suivant →'),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Float,
@@ -43,6 +44,13 @@ class User(Base):
     # Une suspension expirée est simplement ignorée (pas de nettoyage nécessaire).
     suspended_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     suspension_reason: Mapped[str | None] = mapped_column(String(280), nullable=True)
+    # Confidentialité du profil public (voir docs/profils-et-hauts-faits.md) :
+    # stats de duels et collection masquées par défaut, decks publics et hauts
+    # faits visibles — le joueur décide depuis PATCH /api/auth/me.
+    show_stats: Mapped[bool] = mapped_column(Boolean, default=False)
+    show_collection: Mapped[bool] = mapped_column(Boolean, default=False)
+    show_decks: Mapped[bool] = mapped_column(Boolean, default=True)
+    show_achievements: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -325,3 +333,36 @@ class MatchPlayer(Base):
     score: Mapped[int] = mapped_column(Integer, default=0)
     rounds_won: Mapped[int] = mapped_column(Integer, default=0)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Achievement(Base):
+    """Haut fait débloqué par un joueur : la date est posée une fois pour toutes.
+
+    `key` renvoie au catalogue de app/achievements.py (aucune donnée d'affichage
+    n'est stockée : titre, icône et seuil vivent dans le code). `progress` fige
+    la valeur atteinte au moment du déblocage.
+    """
+
+    __tablename__ = "achievements"
+    __table_args__ = (UniqueConstraint("user_id", "key", name="uq_achievement_user_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(64), index=True)
+    unlocked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Follow(Base):
+    """Suivi unilatéral (« amis ») : un carnet d'adversaires, sans réciprocité ni messagerie."""
+
+    __tablename__ = "follows"
+    __table_args__ = (
+        UniqueConstraint("follower_id", "followed_id", name="uq_follow_pair"),
+        CheckConstraint("follower_id <> followed_id", name="ck_follow_not_self"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    follower_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    followed_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

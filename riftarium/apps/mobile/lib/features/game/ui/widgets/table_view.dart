@@ -119,12 +119,14 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
     return Row(
       children: [
         Expanded(child: _panel(members[0], showScore: false)),
+        const SizedBox(width: 8),
         _TeamScore(
           state: widget.state,
           team: team,
           onAdd: () => _game.addPoint(members[0].id),
           onRemove: () => _game.removePoint(members[0].id),
         ),
+        const SizedBox(width: 8),
         Expanded(child: _panel(members[1], showScore: false)),
       ],
     );
@@ -227,9 +229,7 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Quitter la partie ?'),
-        content: const Text(
-          'Les scores en cours seront effacés. La table se referme.',
-        ),
+        content: const Text('Les scores en cours seront effacés.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -398,22 +398,31 @@ class _ControlBar extends StatelessWidget {
             ),
           Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    state.mode.roundsToWin > 1
-                        ? 'M${state.round} · TOUR ${state.turnNumber}'
-                        : 'TOUR ${state.turnNumber}',
-                    style: text.eyebrow.copyWith(fontSize: 9.5),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    formatChrono(elapsed),
-                    style: text.monoStrong.copyWith(fontSize: 14),
-                  ),
-                ],
+              // Le chrono est borné : « Tour suivant » garde sa place, c'est
+              // lui qui s'ellipse quand la police est agrandie.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 96),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      state.mode.roundsToWin > 1
+                          ? 'M${state.round} · TOUR ${state.turnNumber}'
+                          : 'TOUR ${state.turnNumber}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.eyebrow.copyWith(fontSize: 9.5),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatChrono(elapsed),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.monoStrong.copyWith(fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 10),
               if (!readOnly)

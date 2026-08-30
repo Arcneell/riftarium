@@ -131,9 +131,6 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                     padding: const EdgeInsets.fromLTRB(18, 32, 18, 24),
                     child: EmptyView(
                       title: 'Ta wishlist est vide',
-                      detail:
-                          'Croise une carte qui te manque dans la cartothèque '
-                          'et ajoute-la depuis sa fiche.',
                       icon: Icons.favorite_border,
                       action: GoldButton(
                         label: 'Parcourir les cartes',

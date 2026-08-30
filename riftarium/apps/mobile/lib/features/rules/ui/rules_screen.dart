@@ -83,8 +83,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           PageBanner(
-            title: 'La bonne réponse, au bon niveau',
-            eyebrow: 'Règles',
+            title: 'Règles',
             art: RiftBanners.rules,
             actions: [ProfileAction()],
           ),
@@ -129,12 +128,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                 accent: RiftColors.gold,
                 kicker: 'Commencer ici',
                 title: 'Aide avancée',
-                text:
-                    'Une fiche par mécanique : l’essentiel, une démo, des cas '
-                    'concrets, puis le texte officiel si le doute persiste.',
-                meta: topics == 0
-                    ? null
-                    : '$topics mécaniques, des cas concrets',
+                meta: topics == 0 ? null : '$topics mécaniques',
                 action: 'Chercher une mécanique',
                 big: true,
                 onTap: () => context.go(AppRoutes.advancedHelp),
@@ -151,9 +145,6 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
                     : RiftColors.ink,
                 kicker: 'Dernier recours',
                 title: 'Règles officielles',
-                text:
-                    'Le texte intégral qui fait foi, cherchable et disponible '
-                    'hors ligne.',
                 meta: core == 0
                     ? null
                     : '${formatRuleCount(core)} + '
@@ -167,10 +158,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
       ),
       if (frequent.isNotEmpty) ...[
         const SliverToBoxAdapter(
-          child: SectionTitle(
-            eyebrow: 'Au plus vite',
-            title: 'Sujets fréquents',
-          ),
+          child: SectionTitle(title: 'Sujets fréquents'),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -312,7 +300,6 @@ class _TierPanel extends StatelessWidget {
     required this.accent,
     required this.kicker,
     required this.title,
-    required this.text,
     required this.action,
     required this.onTap,
     this.meta,
@@ -323,7 +310,6 @@ class _TierPanel extends StatelessWidget {
   final Color accent;
   final String kicker;
   final String title;
-  final String text;
   final String action;
   final VoidCallback onTap;
   final String? meta;
@@ -374,8 +360,6 @@ class _TierPanel extends StatelessWidget {
                       ? styles.displayMedium
                       : styles.displayMedium.copyWith(fontSize: 22),
                 ),
-                const SizedBox(height: 8),
-                Text(text, style: styles.small.copyWith(fontSize: 14)),
                 if (meta != null) ...[
                   const SizedBox(height: 10),
                   MonoBadge(label: meta!, color: accent),

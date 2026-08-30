@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,9 @@ import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
 import '../../../core/api_exception.dart';
+import '../../../app/widgets/search_field.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../cards/domain/card_labels.dart';
 import '../application/collection_controller.dart';
 import '../domain/collection.dart';
 import 'widgets/collection_edit_sheet.dart';
@@ -117,7 +120,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                 onToggle: () => setState(() => _progressOpen = !_progressOpen),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                 sliver: SliverToBoxAdapter(
                   child: Reveal(
                     index: 4,
@@ -171,7 +174,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                     ),
                   ),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: 36)),
+              const SliverToBoxAdapter(child: SizedBox(height: 40)),
             ],
           ],
         ),
@@ -186,6 +189,11 @@ String messageOf(Object? error) => error is ApiException
     ? error.message
     : 'Contenu indisponible pour le moment.';
 
+/// Première lettre en capitale : les libellés du domaine sont écrits en
+/// minuscule pour s'enchaîner, mais ils ouvrent parfois une ligne.
+String _capitalize(String value) =>
+    value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
+
 /// Trois panneaux : cartes différentes, exemplaires, valeur estimée.
 class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.state});
@@ -195,7 +203,7 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
       sliver: SliverToBoxAdapter(
         // Les trois panneaux gardent la même hauteur, quel que soit le nombre
         // de lignes de leur libellé.
@@ -260,9 +268,14 @@ class _Stat extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                label.toUpperCase(),
-                style: text.eyebrow.copyWith(color: text.muted),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  style: text.eyebrow.copyWith(color: text.muted),
+                ),
               ),
             ],
           ),
@@ -308,8 +321,6 @@ class _ProgressSliver extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('COMPLÉTION', style: text.eyebrow),
-                            const SizedBox(height: 3),
                             Text(
                               'Complétion par set',
                               style: text.displaySmall.copyWith(fontSize: 18),
@@ -335,7 +346,7 @@ class _ProgressSliver extends ConsumerWidget {
                 PrismBar(value: overall.ratio, height: 10),
                 const SizedBox(height: 6),
                 Text(
-                  '${overall.percent} % · ${overall.missingLabel}',
+                  '${overall.percent} % · ${_capitalize(overall.missingLabel)}',
                   style: text.mono,
                 ),
                 if (open) ...[
@@ -382,7 +393,7 @@ class _ProgressRow extends StatelessWidget {
           const SizedBox(height: 7),
           PrismBar(value: row.ratio),
           const SizedBox(height: 5),
-          Text(row.missingLabel, style: text.mono),
+          Text(_capitalize(row.missingLabel), style: text.mono),
         ],
       ),
     );
@@ -407,30 +418,14 @@ class _SearchSliver extends ConsumerWidget {
     final text = riftText(context);
     final notifier = ref.read(collectionControllerProvider.notifier);
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
       sliver: SliverToBoxAdapter(
         child: Reveal(
           index: 5,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: controller,
-                autocorrect: false,
-                textInputAction: TextInputAction.search,
-                style: text.body,
-                decoration: InputDecoration(
-                  hintText: 'Jinx, ogn-202, reaction…',
-                  prefixIcon: Icon(Icons.search, size: 20, color: text.muted),
-                  suffixIcon: state.query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          tooltip: 'Effacer la recherche',
-                          onPressed: controller.clear,
-                        ),
-                ),
-              ),
+              RiftSearchField(controller: controller),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -445,7 +440,7 @@ class _SearchSliver extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text('${state.total} carte(s)', style: text.mono),
+              Text(cardCountLabel(state.total), style: text.mono),
             ],
           ),
         ),
@@ -462,29 +457,41 @@ class _CardsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 8),
-      sliver: SliverLayoutBuilder(
-        builder: (context, constraints) {
-          const gap = 12.0;
-          final width = constraints.crossAxisExtent;
-          final columns = (width / 170).ceil().clamp(2, 6);
-          final tileWidth = (width - gap * (columns - 1)) / columns;
-          return SliverGrid(
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        // Même règle que la cartothèque : trois colonnes sur un téléphone tenu
+        // droit, deux sur un très petit écran, quatre une fois tourné.
+        final width = constraints.crossAxisExtent;
+        final columns = width < 340
+            ? 2
+            : width >= 640
+            ? 4
+            : 3;
+        final available = math.max(
+          columns * 60.0,
+          width - RiftSpace.page.horizontal,
+        );
+        final tileWidth = (available - gap * (columns - 1)) / columns;
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+          sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               crossAxisSpacing: gap,
               mainAxisSpacing: 16,
-              mainAxisExtent: tileWidth / CardImage.portraitRatio + 68,
+              // Le bloc texte sous le visuel (nom, code, prix, état) tient
+              // encore à grande échelle de texte.
+              mainAxisExtent: tileWidth / CardImage.portraitRatio + 80,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) =>
                   _CollectionTile(item: items[index], index: index),
               childCount: items.length,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -509,7 +516,7 @@ class _CollectionTile extends StatelessWidget {
       child: Semantics(
         button: true,
         label:
-            '${item.card.name}, ${item.totalQty} exemplaire(s), '
+            '${item.card.name}, ${copyCountLabel(item.totalQty)}, '
             '${item.entriesLabel}',
         child: PressScale(
           onTap: () => context.go(AppRoutes.card(item.card.id)),
@@ -602,8 +609,7 @@ class _Empty extends StatelessWidget {
       child: EmptyView(
         title: empty ? 'Ta collection est vide' : 'Aucune carte ne correspond',
         detail: empty
-            ? 'Scanne une carte ou ouvre sa fiche pour dire combien '
-                  'd’exemplaires tu possèdes.'
+            ? 'Aucune carte pour l’instant.'
             : 'Essaie un autre nom, un code (ogn-202) ou un type.',
         icon: Icons.style_outlined,
         action: empty
@@ -615,7 +621,7 @@ class _Empty extends StatelessWidget {
                     expand: false,
                     onPressed: () => context.push(AppRoutes.scan),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => context.go(AppRoutes.cards),
                     child: const Text('Parcourir les cartes'),

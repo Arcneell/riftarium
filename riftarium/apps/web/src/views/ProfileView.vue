@@ -6,6 +6,20 @@ import { BANNERS } from "../banners.js"
 import ModalDialog from "../components/ModalDialog.vue"
 import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
+import {
+  PRIVACY_TOGGLES,
+  achievementGlyph,
+  achievementPercent,
+  achievementProgress,
+  formatMemberSince,
+  formatUnlockedAt,
+  getMyAchievements,
+  groupAchievements,
+  isUnlocked,
+  profilePath,
+  tierLabel,
+  updatePrivacy
+} from "../social.js"
 
 const router = useRouter()
 
@@ -22,10 +36,18 @@ const secret = reactive({ current: "", next: "", confirm: "", saving: false, err
 const danger = reactive({ open: false, password: "", handle: "", deleting: false, error: "" })
 const avatarBusy = ref(false)
 
-const memberSince = computed(() => {
-  if (!me.value?.created_at) return ""
-  return new Date(me.value.created_at).toLocaleDateString("fr-FR", { year: "numeric", month: "long" })
-})
+/* Hauts faits : le catalogue complet, groupé par famille, débloqués en tête. */
+const achievements = ref([])
+const achievementsLoading = ref(true)
+const achievementsError = ref("")
+
+/* Confidentialité : quatre interrupteurs enregistrés à la volée (PATCH /api/auth/me). */
+const privacy = reactive({ saving: "", error: "", ok: "" })
+for (const toggle of PRIVACY_TOGGLES) privacy[toggle.key] = false
+
+const memberSince = computed(() => formatMemberSince(me.value?.created_at))
+const unlockedCount = computed(() => achievements.value.reduce((sum, group) => sum + group.unlocked, 0))
+const achievementCount = computed(() => achievements.value.reduce((sum, group) => sum + group.total, 0))
 
 function applyProfile(profile) {
   me.value = profile
@@ -36,6 +58,9 @@ function applyProfile(profile) {
   /* Tient le bandeau global (App.vue) au courant du statut de vérification. */
   if ("email_verified" in profile) session.emailVerified = profile.email_verified
   if ("is_admin" in profile) session.isAdmin = profile.is_admin
+  /* Le contrat n'envoie les quatre booléens que depuis la migration 0010 : sans
+     eux, on retombe sur « masqué », jamais sur une case cochée par défaut. */
+  for (const toggle of PRIVACY_TOGGLES) privacy[toggle.key] = Boolean(profile[toggle.key])
 }
 
 async function load() {
@@ -49,6 +74,40 @@ async function load() {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+/* Appel à part : un catalogue de hauts faits indisponible ne doit pas priver le
+   joueur de ses formulaires de compte. */
+async function loadAchievements() {
+  achievementsLoading.value = true
+  achievementsError.value = ""
+  try {
+    achievements.value = groupAchievements(await getMyAchievements())
+  } catch (e) {
+    achievements.value = []
+    achievementsError.value = e.message
+  } finally {
+    achievementsLoading.value = false
+  }
+}
+
+/* Bascule optimiste : l'interrupteur suit le doigt, et revient en arrière si l'API refuse. */
+async function togglePrivacy(key) {
+  if (privacy.saving) return
+  const next = !privacy[key]
+  privacy[key] = next
+  privacy.saving = key
+  privacy.error = ""
+  privacy.ok = ""
+  try {
+    applyProfile(await updatePrivacy({ [key]: next }))
+    privacy.ok = "Réglage enregistré"
+  } catch (e) {
+    privacy[key] = !next
+    privacy.error = e.message
+  } finally {
+    privacy.saving = ""
   }
 }
 
@@ -199,7 +258,10 @@ async function deleteAccount() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadAchievements()
+})
 </script>
 
 <template>
@@ -218,6 +280,11 @@ onMounted(load)
             <p class="muted" v-if="me.bio">{{ me.bio }}</p>
             <p class="muted mono" v-else>Pas encore de bio.</p>
             <p class="muted mono" v-if="memberSince">Membre depuis {{ memberSince }}</p>
+          </div>
+          <!-- Les deux pages qui prolongent le compte : ce que les autres voient, et son carnet d'adversaires. -->
+          <div class="profile-hero-actions">
+            <RouterLink class="btn btn-ghost btn-sm" :to="profilePath(me.handle)">Voir mon profil public</RouterLink>
+            <RouterLink class="btn btn-ghost btn-sm" to="/amis">Mes amis</RouterLink>
           </div>
         </div>
 
@@ -244,7 +311,80 @@ onMounted(load)
           </div>
         </div>
 
+        <div class="panel profile-section">
+          <h3>
+            Hauts faits
+            <span v-if="achievementCount" class="mono muted">({{ unlockedCount }} / {{ achievementCount }})</span>
+          </h3>
+          <p class="muted" style="margin-bottom: 16px">
+            Les hauts faits liés aux parties ne comptent que les duels suivis et confirmés — jamais la partie libre.
+          </p>
+          <p v-if="achievementsError" class="error">{{ achievementsError }}</p>
+          <p v-else-if="achievementsLoading" class="muted">Chargement des hauts faits…</p>
+          <template v-else>
+            <div v-for="group in achievements" :key="group.family" class="medal-family">
+              <p class="medal-family-head mono">
+                {{ group.label }} <span class="muted">{{ group.unlocked }} / {{ group.total }}</span>
+              </p>
+              <ul class="medal-grid">
+                <li
+                  v-for="item in group.items"
+                  :key="item.key"
+                  class="medal"
+                  :class="[`tier-${item.tier || 'bronze'}`, { locked: !isUnlocked(item) }]"
+                >
+                  <span class="medal-glyph" aria-hidden="true">{{ achievementGlyph(item.icon) }}</span>
+                  <span class="medal-body">
+                    <b>{{ item.title }}</b>
+                    <span class="muted">{{ item.description }}</span>
+                    <span v-if="isUnlocked(item)" class="mono medal-meta">
+                      {{ tierLabel(item.tier) }}
+                      <template v-if="formatUnlockedAt(item.unlocked_at)">
+                        · débloqué le {{ formatUnlockedAt(item.unlocked_at) }}
+                      </template>
+                    </span>
+                    <template v-else>
+                      <span class="progress-bar medal-bar">
+                        <i :style="{ width: `${achievementPercent(item)}%` }"></i>
+                      </span>
+                      <span class="mono medal-meta">{{ achievementProgress(item) }}</span>
+                    </template>
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <p v-if="!achievements.length" class="muted">Aucun haut fait au catalogue pour l'instant.</p>
+          </template>
+        </div>
+
         <div class="profile-grid">
+          <div class="panel profile-privacy">
+            <h3>Confidentialité</h3>
+            <p class="muted" style="margin-bottom: 16px">
+              Ce que votre <RouterLink :to="profilePath(me.handle)">profil public</RouterLink> montre aux autres
+              joueurs. Chaque changement est enregistré aussitôt.
+            </p>
+            <ul class="privacy-list">
+              <li v-for="toggle in PRIVACY_TOGGLES" :key="toggle.key">
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    :checked="privacy[toggle.key]"
+                    :disabled="Boolean(privacy.saving)"
+                    @change="togglePrivacy(toggle.key)"
+                  /><i></i>
+                  <span class="privacy-label">
+                    <b>{{ toggle.label }}</b>
+                    <span class="muted">{{ toggle.hint }}</span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <p v-if="privacy.error" class="error">{{ privacy.error }}</p>
+            <p v-else-if="privacy.saving" class="muted mono">Enregistrement…</p>
+            <p v-else-if="privacy.ok" class="success">{{ privacy.ok }}</p>
+          </div>
+
           <form class="panel" @submit.prevent="saveIdentity">
             <h3>Identité</h3>
             <p class="muted" style="margin-bottom: 16px">

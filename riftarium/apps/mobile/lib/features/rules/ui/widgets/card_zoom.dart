@@ -54,7 +54,7 @@ class _CardZoom extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              '${card.name} — toucher pour fermer',
+              card.name,
               textAlign: TextAlign.center,
               style: text.mono.copyWith(color: RiftColors.goldSoft),
             ),

@@ -30,9 +30,9 @@ class TrackedPlayScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('TABLE DE JEU', style: text.eyebrow),
+                          Text('PARTIE SUIVIE', style: text.eyebrow),
                           const SizedBox(height: 4),
-                          Text('Partie suivie', style: text.displayMedium),
+                          Text('Nouvelle partie', style: text.displayMedium),
                         ],
                       ),
                     ),
@@ -48,7 +48,11 @@ class TrackedPlayScreen extends StatelessWidget {
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
-                  children: const [PlayResumePanel(), TrackedStartPanel()],
+                  children: const [
+                    PlayResumePanel(),
+                    SizedBox(height: 20),
+                    TrackedStartPanel(),
+                  ],
                 ),
               ),
             ],

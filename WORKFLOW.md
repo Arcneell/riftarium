@@ -219,6 +219,10 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   statistiques) : contrat dans `riftarium/docs/suivi-des-matchs.md`, source de
   vérité pour l'API, le mobile et le site. Toute évolution passe d'abord par ce
   fichier.
+- **Profils publics, hauts faits, amis** : contrat dans
+  `riftarium/docs/profils-et-hauts-faits.md` (réglages de confidentialité,
+  catalogue des hauts faits, suivis). Les hauts faits de duel ne comptent que les
+  matchs suivis confirmés, jamais la partie libre.
 - **Dette connue** : le rendu du texte enrichi existe deux fois
   (`features/cards/domain/card_text.dart` + `ui/widgets/card_glyph.dart`, et
   `features/rules/ui/rule_rich_text.dart`). À fusionner dans `lib/app/design/`

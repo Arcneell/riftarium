@@ -13,6 +13,10 @@ const ME = { id: 12, handle: "nyra", avatar_url: null }
 const HOST = { id: 12, handle: "nyra", avatar_url: null }
 const GUEST = { id: 27, handle: "nova", avatar_url: "https://cdn.example/nova.png" }
 const JINX = { id: "leg-1", name: "Jinx", image_url: "https://cdn.example/jinx.png" }
+/* Le deck range une impression alt-art de la même légende : c'est cet `id`-là
+   que le salon doit reprendre, pas celui de la carte de base. */
+const JINX_ALT = { id: "leg-1-alt", name: "Jinx", type: "Legend", image_url: "https://cdn.example/jinx-alt.png" }
+const DECK_7 = { id: 7, name: "Fureur", cards: [{ card: JINX_ALT, qty: 1 }] }
 
 const seat = (user, over = {}) => ({
   user,
@@ -47,10 +51,11 @@ function lastCall(path, method) {
   return call ? { path: call[0], ...(call[1] || {}) } : null
 }
 
-function setupApi({ me = ME, room = makeRoom(), match = null, decks = [], cards = [JINX] } = {}) {
+function setupApi({ me = ME, room = makeRoom(), match = null, decks = [], cards = [JINX], deck = DECK_7 } = {}) {
   api.mockImplementation((path) => {
     if (path === "/api/auth/me") return Promise.resolve(me)
     if (path === "/api/decks/mine") return Promise.resolve(decks)
+    if (path.startsWith("/api/decks/")) return deck ? Promise.resolve(deck) : Promise.reject(new Error("Introuvable"))
     if (path.startsWith("/api/cards")) return Promise.resolve({ items: cards, total: cards.length })
     if (path === "/api/play/current") return Promise.resolve({ room: null, match: null })
     if (path.startsWith("/api/play/matches/")) return Promise.resolve(match)
@@ -65,7 +70,8 @@ async function mountView(path = "/salon/ABC234") {
     routes: [
       { path: "/salon/:code?", component: RoomView },
       { path: "/historique", component: { template: "<div />" } },
-      { path: "/statistiques", component: { template: "<div />" } }
+      { path: "/statistiques", component: { template: "<div />" } },
+      { path: "/u/:handle", component: { template: "<div />" } }
     ]
   })
   router.push(path)
@@ -255,6 +261,63 @@ describe("RoomView", () => {
     const { wrapper } = await mountView()
     expect(wrapper.get(".error").text()).toBe("Salon introuvable")
     expect(wrapper.find(".play-seat").exists()).toBe(false)
+    wrapper.unmount()
+  })
+  it("choisir un deck envoie la légende telle qu'elle est rangée dans le deck", async () => {
+    setupApi({ room: makeRoom({ players: [seat(HOST)] }), decks: [{ id: 7, name: "Fureur" }] })
+    const { wrapper } = await mountView()
+
+    await wrapper.get("#room-deck").setValue("7")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/decks/7")
+    /* Même impression que dans le deck (alt-art), et le joueur repasse « pas prêt ». */
+    expect(lastCall("/api/play/rooms/ABC234/me")).toMatchObject({
+      method: "PUT",
+      body: { legend_card_id: "leg-1-alt", deck_id: 7, ready: false }
+    })
+    wrapper.unmount()
+  })
+
+  it("deck sans légende ou illisible : la légende déjà choisie est conservée", async () => {
+    setupApi({
+      room: makeRoom({ players: [seat(HOST, { legend: JINX })] }),
+      decks: [{ id: 7, name: "Fureur" }],
+      deck: { id: 7, name: "Fureur", cards: [] }
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get("#room-deck").setValue("7")
+    await flushPromises()
+    expect(lastCall("/api/play/rooms/ABC234/me").body).toEqual({
+      legend_card_id: "leg-1",
+      deck_id: 7,
+      ready: false
+    })
+    wrapper.unmount()
+  })
+
+  it("retirer le deck ne touche pas à la légende et n'interroge aucun deck", async () => {
+    setupApi({
+      room: makeRoom({ players: [seat(HOST, { legend: JINX, deck: { id: 7, name: "Fureur" } })] }),
+      decks: [{ id: 7, name: "Fureur" }]
+    })
+    const { wrapper } = await mountView()
+    api.mockClear()
+    await wrapper.get("#room-deck").setValue("")
+    await flushPromises()
+    expect(api.mock.calls.some(([path]) => path === "/api/decks/7")).toBe(false)
+    expect(lastCall("/api/play/rooms/ABC234/me").body).toEqual({
+      legend_card_id: "leg-1",
+      deck_id: null,
+      ready: false
+    })
+    wrapper.unmount()
+  })
+
+  it("le pseudo d'un joueur mène à son profil public", async () => {
+    setupApi({ room: makeRoom({ players: [seat(HOST), seat(GUEST)] }) })
+    const { wrapper } = await mountView()
+    const links = wrapper.findAll(".play-seat-who a").map((link) => link.attributes("href"))
+    expect(links).toEqual(["/u/nyra", "/u/nova"])
     wrapper.unmount()
   })
 })

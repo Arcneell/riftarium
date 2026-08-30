@@ -120,7 +120,7 @@ void main() {
 
     // Espace insécable avant le symbole (voir formatEuro).
     expect(find.text('12,34\u00A0€'), findsOneWidget);
-    expect(find.textContaining('Mise à jour : 20/08/2026'), findsOneWidget);
+    expect(find.textContaining('20/08/2026'), findsOneWidget);
   });
 
   testWidgets('les variantes sont proposées en carrousel', (tester) async {

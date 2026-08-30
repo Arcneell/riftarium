@@ -193,6 +193,27 @@ export const router = createRouter({
       meta: { auth: true, noindex: true, title: "Mon profil", description: "Compte Riftarium." }
     },
     {
+      /* Profil public d'un joueur : lisible sans compte, mais jamais indexé —
+         un pseudo est une donnée personnelle, et la bêta reste fermée. */
+      path: "/u/:handle",
+      component: () => import("./views/PublicProfileView.vue"),
+      meta: {
+        noindex: true,
+        title: "Profil de joueur",
+        description: "Profil Riftbound d'un joueur : hauts faits, duels, collection et decks publics."
+      }
+    },
+    {
+      path: "/amis",
+      component: () => import("./views/FriendsView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Mes amis",
+        description: "Joueurs suivis et abonnés : retrouver un adversaire et l'inviter dans un salon."
+      }
+    },
+    {
       /* Console d'administration masquée : pour tout visiteur non admin (connecté ou non),
          la porte rend la page 404 du site — mêmes titre et description, zéro indice.
          Jamais dans le sitemap. Le code de la console n'est chargé que pour un admin. */
@@ -283,6 +304,8 @@ function sectionOf(path) {
   if (path.startsWith("/collection")) return "collection"
   if (path.startsWith("/scan")) return "scan"
   if (path.startsWith("/profil")) return "profil"
+  if (path.startsWith("/u/")) return "profil-public"
+  if (path.startsWith("/amis")) return "amis"
   if (path.startsWith("/historique")) return "historique"
   if (path.startsWith("/statistiques")) return "statistiques"
   if (path.startsWith("/salon")) return "salon"

@@ -93,7 +93,6 @@ class _BannerBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = riftText(context);
     final paper = Theme.of(context).scaffoldBackgroundColor;
-    final topPadding = MediaQuery.paddingOf(context).top;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -142,7 +141,6 @@ class _BannerBackground extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: topPadding),
       ],
     );
   }

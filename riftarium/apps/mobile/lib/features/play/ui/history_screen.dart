@@ -72,9 +72,7 @@ class HistoryScreen extends ConsumerWidget {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Aucune partie suivie',
-            detail:
-                'Lance une partie suivie : le score, les decks et le résultat '
-                'seront gardés ici.',
+            detail: 'Aucune partie suivie terminée.',
             icon: Icons.history_rounded,
             action: GoldButton(
               label: 'Jouer une partie suivie',
@@ -131,30 +129,46 @@ class _HistoryTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              PlayAvatar(user: item.opponent, size: 40),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.opponent?.displayName ?? 'Joueur retiré',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.title,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        item.modeLabel,
-                        if (item.playedAt != null) _date(item.playedAt!),
-                        if (item.status == 'abandoned') 'abandon',
-                      ].join(' · '),
-                      style: text.small.copyWith(fontSize: 12),
-                    ),
-                  ],
+                // Le pseudo de l'adversaire mène à son profil public.
+                child: PressScale(
+                  onTap: (item.opponent?.handle ?? '').isEmpty
+                      ? null
+                      : () => context.push(
+                          AppRoutes.player(item.opponent!.handle),
+                        ),
+                  child: Row(
+                    children: [
+                      PlayAvatar(user: item.opponent, size: 40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.opponent?.displayName ?? 'Joueur retiré',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.title,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                item.modeLabel,
+                                if (item.playedAt != null)
+                                  _date(item.playedAt!),
+                                if (item.status == 'abandoned') 'abandon',
+                              ].join(' · '),
+                              style: text.small.copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -184,8 +198,10 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                Text('vs', style: text.mono),
-                const SizedBox(width: 8),
+                if (item.myLegend != null || item.opponentLegend != null) ...[
+                  Text('vs', style: text.mono),
+                  const SizedBox(width: 8),
+                ],
                 if (item.opponentLegend != null) ...[
                   SizedBox(
                     width: 26,

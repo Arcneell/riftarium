@@ -104,7 +104,7 @@ class _Frame extends StatelessWidget {
           title: title,
           eyebrow: eyebrow.isEmpty ? 'Aide avancée' : eyebrow,
           art: RiftBanners.rules,
-          expandedHeight: 180,
+          expandedHeight: 220,
           leading: const RulesBackButton(fallback: AppRoutes.advancedHelp),
         ),
         child,
@@ -385,10 +385,7 @@ class _Examples extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          'Toucher une carte pour la lire. © Riot Games.',
-          style: text.mono.copyWith(fontSize: 10),
-        ),
+        Text('© Riot Games', style: text.mono.copyWith(fontSize: 10)),
       ],
     );
   }

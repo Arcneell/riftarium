@@ -177,6 +177,12 @@ class ProfilePatch(BaseModel):
     avatar_card_id: str | None = Field(default=None, max_length=32)
     # Préférence e-mail (décisions de modération) : modifiable sans mot de passe.
     notify_moderation: bool | None = None
+    # Confidentialité du profil public : quatre réglages indépendants, modifiables
+    # sans mot de passe (seuls handle et email l'exigent).
+    show_stats: bool | None = None
+    show_collection: bool | None = None
+    show_decks: bool | None = None
+    show_achievements: bool | None = None
     current_password: str | None = Field(default=None, max_length=128)
 
 
@@ -358,3 +364,86 @@ class MatchFinishIn(BaseModel):
 
     winner_user_id: int = Field(ge=1)
     result: MatchState
+
+
+class AchievementOut(BaseModel):
+    """Un haut fait du catalogue vu par un joueur : progression et date de déblocage."""
+
+    key: str
+    family: str
+    title: str
+    description: str
+    icon: str
+    tier: str
+    threshold: int
+    current: int
+    unlocked_at: str | None = None
+
+
+class PublicUserOut(BaseModel):
+    """Carte de visite minimale d'un compte (recherche, abonnés)."""
+
+    id: int
+    handle: str
+    avatar_url: str | None = None
+
+
+class FollowingOut(PublicUserOut):
+    """Joueur suivi, avec la date de son dernier match suivi (pour trier le carnet)."""
+
+    last_match_at: str | None = None
+
+
+class FollowsOut(BaseModel):
+    following: list[FollowingOut]
+    followers: list[PublicUserOut]
+
+
+class ProfileVisibility(BaseModel):
+    """Réglages de confidentialité tels qu'ils s'appliquent au profil consulté."""
+
+    show_stats: bool
+    show_collection: bool
+    show_decks: bool
+    show_achievements: bool
+
+
+class ProfileSetOut(BaseModel):
+    set_id: str
+    name: str
+    owned: int
+    total: int
+
+
+class ProfileCollectionOut(BaseModel):
+    unique_cards: int
+    total_cards: int
+    sets: list[ProfileSetOut]
+
+
+class ProfileDeckOut(BaseModel):
+    id: int
+    name: str
+    format: str
+    legend: dict | None = None
+    likes: int
+
+
+class PublicProfileOut(BaseModel):
+    """Profil public : les sections masquées valent null, jamais une liste vide."""
+
+    id: int
+    handle: str
+    avatar_url: str | None = None
+    bio: str = ""
+    created_at: str | None = None
+    is_me: bool = False
+    # null pour un visiteur anonyme : « suivi » n'a de sens que connecté.
+    is_followed: bool | None = None
+    followers_count: int = 0
+    following_count: int = 0
+    visibility: ProfileVisibility
+    stats: dict | None = None
+    achievements: list[AchievementOut] | None = None
+    collection_summary: ProfileCollectionOut | None = None
+    decks: list[ProfileDeckOut] | None = None

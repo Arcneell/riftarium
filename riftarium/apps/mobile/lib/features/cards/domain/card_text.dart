@@ -211,9 +211,18 @@ KeywordFamily keywordFamily(String label) {
 }
 
 /// Découpe le texte d'une carte en morceaux affichables.
+/// Les données source collent parfois deux capacités sans espace
+/// (`…Empowered.)[Empowered] …`, `showdowns.)This spell…`) : on rétablit le
+/// saut de ligne que la carte imprimée montre. Une phrase suivie d'un espace
+/// n'est pas touchée.
+final RegExp _gluedAbility = RegExp(r'([.)])(?=\[[A-Z]|[A-Z])');
+
+String _breakGluedAbilities(String source) =>
+    source.replaceAllMapped(_gluedAbility, (match) => '${match[1]}\n');
+
 List<CardTextPart> parseCardText(String? text) {
   if (text == null || text.isEmpty) return const [];
-  final source = decodeEntities(text);
+  final source = _breakGluedAbilities(decodeEntities(text));
   final parts = <CardTextPart>[];
   final pending = StringBuffer();
 

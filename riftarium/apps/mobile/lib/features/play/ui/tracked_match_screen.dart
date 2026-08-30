@@ -369,18 +369,19 @@ class _ResultView extends StatelessWidget {
             onPressed: onClose,
           ),
         ] else ...[
-          Text(switch (match.status) {
-            'confirmed' =>
-              'Résultat confirmé par vous deux : il compte dans vos '
-                  'statistiques.',
-            'disputed' =>
-              'Résultat contesté : il est exclu des statistiques. '
-                  'Rejouez la partie pour trancher.',
-            _ =>
-              'Partie abandonnée : elle compte comme une défaite pour celui '
-                  'qui a abandonné.',
-          }, style: text.small),
-          const SizedBox(height: 16),
+          // Le statut « Résultat confirmé » se lit déjà plus haut : on
+          // n'explique que les cas qui demandent une suite.
+          if (match.status != 'confirmed') ...[
+            Text(switch (match.status) {
+              'disputed' =>
+                'Résultat contesté : il est exclu des statistiques. '
+                    'Rejouez la partie pour trancher.',
+              _ =>
+                'Partie abandonnée : elle compte comme une défaite pour celui '
+                    'qui a abandonné.',
+            }, style: text.small),
+            const SizedBox(height: 16),
+          ],
           GoldButton(
             label: 'Voir l’historique',
             icon: Icons.history_rounded,
@@ -446,6 +447,7 @@ class _Side extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [

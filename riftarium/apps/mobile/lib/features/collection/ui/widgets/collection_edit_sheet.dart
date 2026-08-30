@@ -6,6 +6,7 @@ import '../../../../app/adaptive.dart';
 import '../../../../app/design/components.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/api_exception.dart';
+import '../../../cards/domain/card_labels.dart';
 import '../../application/collection_controller.dart';
 import '../../domain/collection.dart';
 import 'quantity_stepper.dart';
@@ -69,7 +70,8 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
       context,
       title: 'Retirer de la collection ?',
       message:
-          '${item.card.name} et ses ${item.entries.length} lot(s) seront retirés de ton inventaire.',
+          '${item.card.name} et ${lotCountLabel(item.entries.length).toLowerCase()} '
+          'seront retirés de ton inventaire.',
       closeLabel: 'Annuler',
       confirmLabel: 'Retirer',
       destructive: true,
@@ -110,7 +112,7 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
                       Text(item.card.name, style: text.displaySmall),
                       const SizedBox(height: 4),
                       Text(
-                        '${item.card.displayCode} · ${item.totalQty} exemplaire(s)',
+                        '${item.card.displayCode} · ${copyCountLabel(item.totalQty)}',
                         style: text.mono,
                       ),
                       const SizedBox(height: 16),
@@ -240,12 +242,20 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          TextButton(
-                            onPressed: _busy ? null : () => _remove(item),
-                            style: TextButton.styleFrom(
-                              foregroundColor: RiftColors.fury,
+                          // Le libellé long cède la place à « Fermer » quand
+                          // l'échelle de texte est grande.
+                          Flexible(
+                            child: TextButton(
+                              onPressed: _busy ? null : () => _remove(item),
+                              style: TextButton.styleFrom(
+                                foregroundColor: RiftColors.fury,
+                              ),
+                              child: const Text(
+                                'Retirer de la collection',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            child: const Text('Retirer de la collection'),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),

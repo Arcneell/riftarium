@@ -32,7 +32,8 @@ async function mountView() {
     routes: [
       { path: "/historique", component: HistoryView },
       { path: "/decks/:id", component: { template: "<div />" } },
-      { path: "/salon/:code?", component: { template: "<div />" } }
+      { path: "/salon/:code?", component: { template: "<div />" } },
+      { path: "/u/:handle", component: { template: "<div />" } }
     ]
   })
   router.push("/historique")
@@ -78,6 +79,9 @@ describe("HistoryView", () => {
     const thumbs = row.findAll("img.play-legend-thumb")
     expect(thumbs).toHaveLength(2)
     expect(thumbs[0].attributes("src")).toContain("w=72")
+
+    /* Le pseudo de l'adversaire mène à son profil public. */
+    expect(row.get(".play-side-who a").attributes("href")).toBe("/u/nova")
     wrapper.unmount()
   })
 

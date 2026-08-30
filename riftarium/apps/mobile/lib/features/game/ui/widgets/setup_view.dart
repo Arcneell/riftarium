@@ -14,6 +14,7 @@ import '../../domain/game_engine.dart';
 import '../../domain/game_mode.dart';
 import '../../domain/game_state.dart';
 import '../../domain/player.dart';
+import '../../../play/application/play_providers.dart';
 import '../../../play/ui/widgets/play_resume_panel.dart';
 import '../../../play/ui/widgets/tracked_start_panel.dart';
 import 'draw_overlay.dart';
@@ -185,6 +186,10 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   Widget build(BuildContext context) {
     final text = riftText(context);
     final saved = ref.watch(savedGameProvider).valueOrNull;
+    // Le panneau de reprise s'efface quand il n'y a rien à reprendre :
+    // l'écart qui le suit ne doit apparaître qu'avec lui.
+    final play = ref.watch(currentPlayProvider).valueOrNull;
+    final hasResume = play != null && !play.isEmpty;
     final drawn = _firstPlayerId;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final body = Column(
@@ -196,6 +201,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
             padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
             children: [
               const PlayResumePanel(),
+              if (hasResume) const SizedBox(height: 22),
               _PlayChoice(
                 tracked: _tracked,
                 onSelect: (tracked) => setState(() => _tracked = tracked),
@@ -429,13 +435,12 @@ class _ModeCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(mode.tagline, style: text.small),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
+                if (mode.isTeamPlay) const MonoBadge(label: '2 équipes'),
                 MonoBadge(label: '${mode.playerCount} joueurs'),
                 MonoBadge(label: 'Victoire ${mode.victoryScore}'),
                 MonoBadge(

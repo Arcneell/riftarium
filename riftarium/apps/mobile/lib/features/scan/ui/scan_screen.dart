@@ -305,7 +305,6 @@ class _CodeGuideState extends State<_CodeGuide>
 
   @override
   Widget build(BuildContext context) {
-    final text = riftText(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 42, vertical: 10),
@@ -343,16 +342,6 @@ class _CodeGuideState extends State<_CodeGuide>
                           decoration: BoxDecoration(
                             color: RiftColors.inkStrong.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(RiftRadius.sm),
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          'Code de la carte ici',
-                          textAlign: TextAlign.center,
-                          style: text.mono.copyWith(
-                            fontSize: 11.5,
-                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -438,14 +427,9 @@ class _StageMessage extends StatelessWidget {
       ScanStage.noCamera => (
         Icons.videocam_off_outlined,
         'Aucune caméra',
-        state.message ??
-            'Cet appareil n’a pas de caméra utilisable pour le scan.',
+        state.message,
       ),
-      _ => (
-        Icons.error_outline,
-        'Scan indisponible',
-        state.message ?? 'Le scanner n’a pas pu démarrer.',
-      ),
+      _ => (Icons.error_outline, 'Scan indisponible', state.message),
     };
     // Le fond est encre : on force la palette sombre pour que les textes de
     // l'état vide restent en parchemin clair.
@@ -519,7 +503,8 @@ class _History extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 84,
+      // Vignette 44 px de large au ratio 5/7, plus le rembourrage vertical.
+      height: 92,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
