@@ -13,6 +13,7 @@ import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/share_origin.dart';
 import '../../../core/api_exception.dart';
 import '../../../core/config.dart';
 import '../../auth/application/auth_controller.dart';
@@ -697,7 +698,11 @@ class _ActionBar extends ConsumerWidget {
       lines.add('${AppConfig.webBaseUrl}/decks/${deck.id}');
     }
     await SharePlus.instance.share(
-      ShareParams(text: lines.join('\n'), subject: deck.name),
+      ShareParams(
+        text: lines.join('\n'),
+        subject: deck.name,
+        sharePositionOrigin: shareOriginOf(context),
+      ),
     );
   }
 }

@@ -21,6 +21,12 @@ class RiftariumApp extends ConsumerWidget {
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
       routerConfig: router,
+      // Les écrans iOS vivent dans des CupertinoPageScaffold : sans ancêtre
+      // Material, les Text prennent le style de secours (jaune, doublement
+      // souligné) et les effets d'encre n'ont pas de support. Ce Material
+      // transparent fournit les deux sans rien peindre.
+      builder: (context, child) =>
+          Material(type: MaterialType.transparency, child: child!),
     );
   }
 }
