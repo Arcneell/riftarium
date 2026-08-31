@@ -14,6 +14,7 @@ import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/rift_avatar.dart';
+import '../../../app/widgets/share_origin.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
@@ -72,13 +73,19 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {
+    // Ancre mesurée avant l'appel réseau : le contexte peut être démonté après.
+    final origin = shareOriginOf(context);
     try {
       final data = await ref
           .read(authControllerProvider.notifier)
           .exportAccount();
       final json = const JsonEncoder.withIndent('  ').convert(data);
       await SharePlus.instance.share(
-        ShareParams(text: json, subject: 'Export Riftarium (RGPD)'),
+        ShareParams(
+          text: json,
+          subject: 'Export Riftarium (RGPD)',
+          sharePositionOrigin: origin,
+        ),
       );
     } on ApiException catch (error) {
       if (!context.mounted) return;

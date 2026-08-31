@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../app/design/components.dart';
 import '../../../../app/router.dart';
 import '../../../../app/theme.dart';
+import '../../../../app/widgets/share_origin.dart';
 import '../../../../core/config.dart';
 
 /// Feuille de partage du code d'un salon : ce qu'on lit à voix haute, ce qu'on
@@ -36,10 +37,11 @@ class _InviteSheet extends StatelessWidget {
     ).showSnackBar(const SnackBar(content: Text('Code copié.')));
   }
 
-  Future<void> _share() => SharePlus.instance.share(
+  Future<void> _share(BuildContext context) => SharePlus.instance.share(
     ShareParams(
       text: 'Rejoins ma partie Riftarium : $_url',
       subject: 'Salon $code',
+      sharePositionOrigin: shareOriginOf(context),
     ),
   );
 
@@ -79,7 +81,7 @@ class _InviteSheet extends StatelessWidget {
                 child: GhostButton(
                   label: 'Partager',
                   icon: Icons.ios_share_rounded,
-                  onPressed: _share,
+                  onPressed: () => _share(context),
                 ),
               ),
             ],

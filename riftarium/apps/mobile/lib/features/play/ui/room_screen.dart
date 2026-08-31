@@ -12,6 +12,7 @@ import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/share_origin.dart';
 import '../../../core/api_exception.dart';
 import '../../../core/config.dart';
 import '../../auth/application/auth_controller.dart';
@@ -114,6 +115,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
       ShareParams(
         text: 'Rejoins ma partie Riftarium : $url',
         subject: 'Salon ${room.code}',
+        sharePositionOrigin: shareOriginOf(context),
       ),
     );
   }
