@@ -162,8 +162,8 @@ onMounted(async () => {
       <p class="eyebrow">La cartothèque</p>
       <h2>Toutes les cartes du jeu</h2>
       <p class="lead">
-        La recherche couvre le nom et le texte des cartes, les filtres font le reste : domaine, type, rareté, coût,
-        set. Les variantes alt-art et les signatures y sont, avec leur prix indicatif.
+        La recherche couvre le nom et le texte des cartes, les filtres font le reste : domaine, type, rareté, coût, set.
+        Les variantes alt-art et les signatures y sont, avec leur prix indicatif.
       </p>
     </div>
     <CardRiver />
