@@ -15,13 +15,13 @@
         <stop offset="1" stop-color="#8a6a2f" />
       </linearGradient>
       <radialGradient id="lg-glow" cx=".5" cy=".5" r=".5">
-        <stop offset="0" stop-color="#0b8f84" stop-opacity=".14" />
-        <stop offset="1" stop-color="#0b8f84" stop-opacity="0" />
+        <stop offset="0" stop-color="#35e0d0" stop-opacity=".2" />
+        <stop offset="1" stop-color="#35e0d0" stop-opacity="0" />
       </radialGradient>
     </defs>
-    <circle cx="120" cy="120" r="112" fill="#fdfaf2" />
+    <circle cx="120" cy="120" r="112" fill="#0e1c34" />
     <circle cx="120" cy="120" r="112" fill="none" stroke="url(#lg-gold)" stroke-width="5" />
-    <circle cx="120" cy="120" r="100" fill="none" stroke="#8a6a2f" stroke-width="1" opacity=".3" />
+    <circle cx="120" cy="120" r="100" fill="none" stroke="#d9bd82" stroke-width="1" opacity=".35" />
     <path
       d="M 120 34 A 86 86 0 1 1 119.9 34"
       fill="none"
@@ -36,8 +36,8 @@
     <g transform="rotate(-12 120 120)">
       <rect x="92" y="76" width="56" height="82" rx="9" fill="#ffffff" stroke="url(#lg-gold)" stroke-width="3.5" />
       <rect x="99" y="83" width="42" height="42" rx="6" fill="none" stroke="#b08a3e" stroke-width="1.4" opacity=".45" />
-      <circle cx="120" cy="104" r="10" fill="#0b8f84" />
-      <circle cx="120" cy="104" r="15" fill="none" stroke="#0b8f84" stroke-width="1.2" opacity=".35" />
+      <circle cx="120" cy="104" r="10" fill="#0da496" />
+      <circle cx="120" cy="104" r="15" fill="none" stroke="#0da496" stroke-width="1.2" opacity=".45" />
       <rect x="100" y="134" width="40" height="4" rx="2" fill="#b08a3e" opacity=".6" />
       <rect x="100" y="143" width="28" height="4" rx="2" fill="#b08a3e" opacity=".35" />
     </g>

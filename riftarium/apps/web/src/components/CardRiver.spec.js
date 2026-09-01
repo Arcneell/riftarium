@@ -82,7 +82,7 @@ describe("CardRiver", () => {
     vi.restoreAllMocks()
   })
 
-  it("tire deux lots aléatoires et n'affiche que les cartes illustrées", async () => {
+  it("tire deux lots aléatoires et n'affiche que les cartes illustrées en portrait", async () => {
     const CardRiver = await loadRiver()
     const wrapper = mountRiver(CardRiver)
     await flushPromises()
@@ -95,7 +95,8 @@ describe("CardRiver", () => {
     expect(wrapper.get(`[aria-label="Voir la carte Carte 1"] img`).attributes("src")).toBe(
       cardThumb("https://cdn.example/1.png?accountingTag=RB", 180)
     )
-    expect(wrapper.get(`[aria-label="Voir la carte Carte 3"]`).classes()).toContain("landscape")
+    /* Les cartes paysage (champs de bataille) sont écartées de la rivière. */
+    expect(wrapper.findAll(".river-card").every((card) => !card.html().includes("card-3"))).toBe(true)
     expect(wrapper.findAll(".river-row")).toHaveLength(2)
     wrapper.unmount()
   })

@@ -44,7 +44,9 @@ function mountHome() {
       { path: "/regles", component: { template: "<div />" } },
       { path: "/decks", component: { template: "<div />" } },
       { path: "/collection", component: { template: "<div />" } },
-      { path: "/communaute", component: { template: "<div />" } }
+      { path: "/communaute", component: { template: "<div />" } },
+      { path: "/scan", component: { template: "<div />" } },
+      { path: "/wishlist", component: { template: "<div />" } }
     ]
   })
   return mount(HomeView, {
@@ -93,6 +95,17 @@ describe("HomeView", () => {
     for (const hash of SIGNATURES) {
       expect(sources.some((src) => src.includes(hash) && src.includes("w=460"))).toBe(true)
     }
+  })
+
+  it("déroule les salles de la vitrine avec leurs liens et la Règle d'or", async () => {
+    const wrapper = mountHome()
+    await flushPromises()
+
+    expect(wrapper.findAll(".hall-art")).toHaveLength(3)
+    for (const to of ["/cartes", "/decks", "/communaute", "/collection", "/scan", "/wishlist", "/regles"]) {
+      expect(wrapper.find(`a[href="${to}"]`).exists()).toBe(true)
+    }
+    expect(wrapper.text()).toContain("Règle d'or")
   })
 
   it("sur téléphone, l'éventail décoratif n'est pas rendu du tout (aucune image téléchargée)", async () => {
