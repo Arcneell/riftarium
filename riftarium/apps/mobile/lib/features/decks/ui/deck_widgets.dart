@@ -444,7 +444,7 @@ class DeckBox extends StatelessWidget {
                     if (missing != null)
                       MonoBadge(
                         label: missing == 0
-                            ? 'Complet ✓'
+                            ? 'Complet'
                             : '$missing manquante(s)'
                                   '${missingCost == null ? '' : ' ~$missingCost'}',
                         color: missing == 0

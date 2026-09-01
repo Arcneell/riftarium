@@ -58,13 +58,12 @@ class AdvancedTopicScreen extends ConsumerWidget {
           final topic = document.topicBySlug(slug);
           if (topic == null) {
             return _Frame(
-              title: 'Sujet introuvable',
+              title: 'Aide avancée',
               eyebrow: 'Aide avancée',
               child: SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyView(
                   title: 'Sujet introuvable',
-                  detail: 'Cette mécanique n’existe pas (ou plus).',
                   action: GhostButton(
                     label: 'Toute l’aide avancée',
                     onPressed: () => context.go(AppRoutes.advancedHelp),
@@ -419,7 +418,6 @@ class _OfficialSectionsState extends ConsumerState<_OfficialSections> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'En cas de doute, ce texte fait foi : '
             '${located.isEmpty ? widget.sections.length : located.length} '
             'section${located.length > 1 ? 's' : ''} du document officiel.',
             style: text.small,

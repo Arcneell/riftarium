@@ -128,9 +128,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                         icon: Icons.groups_2_outlined,
                         title: 'Aucun deck partagé',
                         message:
-                            'Rien ici pour l’instant — ou aucun deck ne '
-                            'correspond à tes filtres. Le premier deck publié '
-                            'depuis l’éditeur ouvrira le bal.',
+                            'Aucun deck publié ne correspond à ces filtres.',
                         action: GhostButton(
                           label: 'Réinitialiser les filtres',
                           icon: Icons.filter_alt_off_outlined,
@@ -484,7 +482,7 @@ class _Pager extends StatelessWidget {
         children: [
           TextButton(
             onPressed: page <= 1 ? null : () => onChanged(page - 1),
-            child: const Text('← Précédent'),
+            child: const Text('Précédent'),
           ),
           Flexible(
             child: Text(
@@ -496,7 +494,7 @@ class _Pager extends StatelessWidget {
           ),
           TextButton(
             onPressed: page >= pageCount ? null : () => onChanged(page + 1),
-            child: const Text('Suivant →'),
+            child: const Text('Suivant'),
           ),
         ],
       ),

@@ -645,7 +645,7 @@ class _Pager extends StatelessWidget {
         children: [
           TextButton(
             onPressed: page <= 1 ? null : () => onChanged(page - 1),
-            child: const Text('← Précédent'),
+            child: const Text('Précédent'),
           ),
           Flexible(
             child: Text(
@@ -657,7 +657,7 @@ class _Pager extends StatelessWidget {
           ),
           TextButton(
             onPressed: hasMore ? () => onChanged(page + 1) : null,
-            child: const Text('Suivant →'),
+            child: const Text('Suivant'),
           ),
         ],
       ),

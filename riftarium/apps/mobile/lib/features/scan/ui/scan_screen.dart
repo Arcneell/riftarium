@@ -421,8 +421,7 @@ class _StageMessage extends StatelessWidget {
       ScanStage.permissionDenied => (
         Icons.no_photography_outlined,
         'Accès à la caméra refusé',
-        'Autorise la caméra pour Riftarium dans les réglages de ton téléphone, '
-            'puis reviens sur cet écran.',
+        'Autorise la caméra pour Riftarium dans les réglages du téléphone.',
       ),
       ScanStage.noCamera => (
         Icons.videocam_off_outlined,

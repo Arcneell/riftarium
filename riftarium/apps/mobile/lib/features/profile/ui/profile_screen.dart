@@ -591,7 +591,7 @@ class _FriendsPanel extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     follows == null
-                        ? 'Suivis, abonnés, invitations.'
+                        ? 'Chargement…'
                         : '${follows.following.length} suivis · '
                               '${follows.followers.length} abonnés',
                     style: follows == null ? text.small : text.bodyStrong,

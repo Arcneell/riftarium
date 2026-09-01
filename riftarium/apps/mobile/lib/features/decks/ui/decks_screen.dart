@@ -45,11 +45,10 @@ class DecksScreen extends ConsumerWidget {
               padding: EdgeInsets.fromLTRB(18, 18, 18, 32),
               sliver: SliverToBoxAdapter(
                 child: SignInPanel(
-                  title: 'Tes decks t’attendent',
+                  title: 'Tes decks',
                   message:
-                      'Connecte-toi pour créer tes decks, les partager et '
-                      'suivre ceux que tu aimes. La communauté, elle, reste '
-                      'ouverte à tous.',
+                      'Connecte-toi pour créer et partager tes decks. La '
+                      'communauté reste ouverte à tous.',
                   returnTo: AppRoutes.decks,
                 ),
               ),
@@ -110,11 +109,10 @@ class DecksScreen extends ConsumerWidget {
                 sliver: SliverToBoxAdapter(
                   child: InvitePanel(
                     icon: Icons.style_outlined,
-                    title: 'Construis ton premier deck',
+                    title: 'Aucun deck',
                     message:
-                        'Choisis une légende, elle fixe les domaines — le '
-                        'reste se joue dans l’éditeur. Un code partagé fait '
-                        'aussi l’affaire.',
+                        'Crée un deck depuis l’éditeur, ou importe un code '
+                        'partagé.',
                     action: GhostButton(
                       label: 'Importer un code',
                       icon: Icons.qr_code_2_outlined,

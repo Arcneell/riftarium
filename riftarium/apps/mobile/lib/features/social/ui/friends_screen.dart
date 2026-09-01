@@ -261,11 +261,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     title: _followers
                         ? 'Personne ne te suit encore'
                         : 'Tu ne suis personne',
-                    detail: _followers
-                        ? 'Partage ton pseudo : tes adversaires te retrouveront '
-                              'depuis la recherche.'
-                        : 'Cherche le pseudo d’un adversaire et suis-le : tu le '
-                              'retrouveras ici pour l’inviter.',
                     icon: Icons.group_outlined,
                   ),
                 ),

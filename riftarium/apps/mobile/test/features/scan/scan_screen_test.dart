@@ -117,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Accès à la caméra refusé'), findsOneWidget);
-      expect(find.textContaining('réglages de ton téléphone'), findsOneWidget);
+      expect(find.textContaining('réglages du téléphone'), findsOneWidget);
     });
 
     testWidgets('panne : message de l’API et bouton Réessayer', (tester) async {

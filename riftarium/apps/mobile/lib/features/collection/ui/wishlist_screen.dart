@@ -55,9 +55,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
       return const CollectionSignIn(
         title: 'Wishlist',
         eyebrow: 'Mes envies',
-        message:
-            'Connecte-toi pour noter les cartes qu’il te manque et savoir '
-            'ce qu’il t’en coûtera.',
+        message: 'Connecte-toi pour suivre les cartes qu’il te manque.',
         returnTo: AppRoutes.wishlist,
         expandedHeight: 160,
       );

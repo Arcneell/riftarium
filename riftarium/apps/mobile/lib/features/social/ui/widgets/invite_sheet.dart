@@ -64,8 +64,6 @@ class _InviteSheet extends StatelessWidget {
               style: text.monoStrong.copyWith(fontSize: 36, letterSpacing: 8),
             ),
           ),
-          const SizedBox(height: 10),
-          Text('Envoie-lui ce code.', style: text.small),
           const SizedBox(height: 16),
           Row(
             children: [

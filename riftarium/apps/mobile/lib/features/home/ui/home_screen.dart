@@ -48,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
           PageBanner(
             title: signedIn && profile != null
                 ? 'Bonjour ${profile.handle}'
-                : 'Tes cartes, tes decks, tes règles.',
+                : 'Le compagnon Riftbound',
             eyebrow: 'Riftarium',
             art: RiftBanners.home,
             expandedHeight: 260,
@@ -156,14 +156,11 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Ta collection te suit partout',
-                        style: text.displaySmall,
-                      ),
+                      Text('Compte Riftarium', style: text.displaySmall),
                       const SizedBox(height: 6),
                       Text(
-                        'Un compte gratuit pour compter tes cartes, construire '
-                        'tes decks et les partager.',
+                        'Connecte-toi pour retrouver ta collection et tes '
+                        'decks.',
                         style: text.small,
                       ),
                       const SizedBox(height: 14),

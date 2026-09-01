@@ -215,8 +215,8 @@ class _AccountRequired extends StatelessWidget {
           Text('COMPTE REQUIS', style: text.eyebrow),
           const SizedBox(height: 6),
           Text(
-            'Une partie suivie relie deux comptes : le score, les decks et le '
-            'résultat sont enregistrés pour vous deux.',
+            'Une partie suivie relie deux comptes : le résultat est '
+            'enregistré pour les deux joueurs.',
             style: text.body,
           ),
           const SizedBox(height: 18),

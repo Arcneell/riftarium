@@ -175,7 +175,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       await showAdaptiveMessage(
         navigator.context,
         title: 'Compte supprimé',
-        message: 'Tes données ont été effacées. Merci d’avoir joué avec nous.',
+        message: 'Tes données ont été effacées.',
       );
     } on ApiException catch (error) {
       if (mounted) {

@@ -770,7 +770,7 @@ class _DeckBox extends StatelessWidget {
                           ? RiftColors.gold
                           : RiftColors.hex,
                     ),
-                    MonoBadge(label: '${deck.likes} ♥'),
+                    MonoBadge(label: '${deck.likes} j’aime'),
                     if (deck.legend != null)
                       MonoBadge(label: deck.legend!.name),
                   ],
