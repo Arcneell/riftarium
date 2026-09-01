@@ -221,14 +221,11 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
           <p v-if="invite.error" class="error">{{ invite.error }}</p>
           <template v-else-if="invite.code">
             <p class="mono friends-invite-code">{{ invite.code }}</p>
-            <p class="muted">
-              Transmettez ce code (ou le lien) à {{ invite.handle }} : le compteur de la partie se tient sur le
-              téléphone de l'hôte.
-            </p>
+            <p class="muted">Transmettez ce code (ou le lien) à {{ invite.handle }}.</p>
             <div class="friends-invite-actions">
               <RouterLink class="btn btn-gold btn-sm" :to="`/salon/${invite.code}`">Ouvrir le salon</RouterLink>
               <button type="button" class="btn btn-ghost btn-sm" @click="copyInvite">
-                {{ invite.copied ? "Lien copié ✓" : "Copier le lien" }}
+                {{ invite.copied ? "Lien copié" : "Copier le lien" }}
               </button>
             </div>
             <p class="mono muted friends-invite-link">{{ invite.link }}</p>
@@ -259,7 +256,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
         </div>
 
         <p v-if="empty" class="muted friends-note">
-          Suivre un joueur, c'est se constituer un carnet d'adversaires : rien n'est publié, rien n'est notifié.
+          Suivre un joueur reste privé : rien n'est publié, rien n'est notifié.
         </p>
       </template>
     </div>

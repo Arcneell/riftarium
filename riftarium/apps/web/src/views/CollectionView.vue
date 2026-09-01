@@ -75,7 +75,7 @@ function percentOf(row) {
 }
 
 function missingText(row) {
-  if (!row.missing) return "set complet ✓"
+  if (!row.missing) return "set complet"
   const cost = formatEur(row.missing_cost_eur)
   return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
 }
@@ -185,7 +185,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.collection" title="Mon inventaire" />
+  <PageBanner :art="BANNERS.collection" title="Ma collection" />
 
   <section>
     <div class="wrap cards-wrap">

@@ -78,7 +78,7 @@ describe("DeckMissingModal", () => {
     button.click()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/wishlist/from-deck/7", { method: "POST" })
-    expect(modal().querySelector(".wish-from-deck").textContent).toContain("2 ajoutée(s) ✓")
+    expect(modal().querySelector(".wish-from-deck").textContent).toContain("2 ajoutée(s)")
     wrapper.unmount()
   })
 

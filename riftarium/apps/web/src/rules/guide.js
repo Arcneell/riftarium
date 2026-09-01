@@ -323,7 +323,7 @@ export const STEPS = [
     terms: ["épuisé", "préparé", "phase principale", "Accélération"],
     text: [
       "Vous **épuisez vos 2 runes** : 2 énergie, le coût exact de **Legion Rearguard**. Il quitte votre main et entre dans votre **base**, **épuisé** — couché sur le côté, il ne fera rien ce tour-ci.",
-      "Son texte propose **Accélération** : payer 1 énergie + 1 Fureur de plus pour qu'il arrive **préparé**. Vous n'avez plus de quoi payer — ce sera pour une autre partie.",
+      "Son texte propose **Accélération** : payer 1 énergie + 1 Fureur de plus pour qu'il arrive **préparé**. Vous n'avez plus de quoi payer.",
       "Les unités, équipements et sorts se jouent pendant votre **phase principale**, dans l'ordre que vous voulez, tant que vos runes peuvent payer."
     ],
     scene: {
@@ -377,7 +377,7 @@ export const STEPS = [
     terms: ["joueur du tour", "ordre des tours"],
     text: [
       "À lui : mêmes phases, dans le même ordre. Il canalise **3 runes** (bonus du joueur qui commence en second), pioche, puis joue **Sunlit Guardian** dans **sa** base — **épuisé**, comme toute unité qui arrive.",
-      "Lisez sa carte : **Bouclier** (+1 puissance quand il défend) et **Tank** (les dégâts de combat doivent lui être attribués en premier). Un défenseur né.",
+      "Lisez sa carte : **Bouclier** (+1 puissance quand il défend) et **Tank** (les dégâts de combat doivent lui être attribués en premier).",
       "Il termine son tour. Les tours alternent ainsi jusqu'à 8 points."
     ],
     scene: {
@@ -431,7 +431,7 @@ export const STEPS = [
     text: [
       "**Son éveil prépare Sunlit Guardian** — voilà pourquoi il ne pouvait pas bouger avant : une unité arrive épuisée et attend l'éveil suivant de son propriétaire.",
       "Il fait son **déplacement standard** : Guardian s'épuise et marche sur le **Monastery of Hirana**, son champ de bataille. Personne n'y était : il en prend le contrôle → **conquête, 1 point pour lui**.",
-      "Au début de **son** prochain tour, ce champ lui rapportera encore 1 point d'**occupation** — si vous le laissez faire."
+      "Au début de **son** prochain tour, ce champ lui rapportera encore 1 point d'**occupation**."
     ],
     scene: {
       cards: board([
@@ -626,7 +626,7 @@ export const STEPS = [
       "La rapide : **conquérir les 2 champs de bataille dans le même tour** — le point de la victoire par conquête n'est accordé que si vous avez marqué sur chaque champ ce tour-là (sinon, vous piochez une carte à la place).",
       "La patiente : **tenir un champ** et laisser l'**occupation**, sans restriction, vous porter à 8.",
       "Cas particulier : si vous devez piocher avec un deck principal vide, vous êtes **exténué** — votre défausse est remélangée en un nouveau deck et un adversaire de votre choix gagne 1 point.",
-      "Vous savez jouer. Pour chaque mécanique en détail, direction l'**aide avancée** — et le texte officiel tranche toujours."
+      "Pour chaque mécanique en détail, voir l'**aide avancée** ; en cas de doute, le texte officiel tranche."
     ],
     scene: {
       cards: board([

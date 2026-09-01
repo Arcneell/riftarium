@@ -362,7 +362,7 @@ onMounted(() => {
             <h3>Confidentialité</h3>
             <p class="muted" style="margin-bottom: 16px">
               Ce que votre <RouterLink :to="profilePath(me.handle)">profil public</RouterLink> montre aux autres
-              joueurs. Chaque changement est enregistré aussitôt.
+              joueurs.
             </p>
             <ul class="privacy-list">
               <li v-for="toggle in PRIVACY_TOGGLES" :key="toggle.key">
@@ -387,9 +387,7 @@ onMounted(() => {
 
           <form class="panel" @submit.prevent="saveIdentity">
             <h3>Identité</h3>
-            <p class="muted" style="margin-bottom: 16px">
-              Le pseudo apparaît sur vos decks publics. La bio est limitée à 280 caractères.
-            </p>
+            <p class="muted" style="margin-bottom: 16px">Le pseudo apparaît sur vos decks publics.</p>
             <div class="field">
               <label for="profile-handle">Pseudo</label>
               <input
@@ -433,9 +431,7 @@ onMounted(() => {
 
           <div class="panel">
             <h3>Portrait de légende</h3>
-            <p class="muted" style="margin-bottom: 16px">
-              Une tête parmi les légendes Riftbound — visuels officiels, jamais rehébergés.
-            </p>
+            <p class="muted" style="margin-bottom: 16px">Choisissez un portrait parmi les légendes Riftbound.</p>
             <div class="avatar-scroller" :class="{ busy: avatarBusy }" tabindex="0" aria-label="Choisir un portrait">
               <div class="avatar-grid">
                 <button

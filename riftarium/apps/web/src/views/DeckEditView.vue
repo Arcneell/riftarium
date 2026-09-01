@@ -461,7 +461,7 @@ onBeforeUnmount(() => {
            qui ne doit pas flotter à vide entre deux sauvegardes. -->
       <span v-if="canEdit" class="dbuilder-save" :class="[saveState, { idle: !saveState }]">
         <template v-if="saveState === 'saving'">Enregistrement…</template>
-        <template v-else-if="saveState === 'saved'">Enregistré ✓</template>
+        <template v-else-if="saveState === 'saved'">Enregistré</template>
         <template v-else-if="saveState === 'error'">Erreur de sauvegarde</template>
       </span>
       <span v-if="error" class="error">{{ error }}</span>
@@ -532,12 +532,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <p class="muted mono dbuilder-count">
-          {{ result.total }} carte(s) <span v-if="loading">— chargement…</span>
-          <span class="dbuilder-hint">{{
-            finePointer ? "— cliquez ou glissez une carte vers le deck" : "— touchez une carte pour l'ajouter au deck"
-          }}</span>
-        </p>
+        <p class="muted mono dbuilder-count">{{ result.total }} carte(s) <span v-if="loading">— chargement…</span></p>
 
         <div ref="grid" class="dbuilder-grid" :style="{ '--tile-min': `${tileMin}px` }">
           <div v-for="card in result.items" :key="card.id" class="gcard-slot">
@@ -605,7 +600,7 @@ onBeforeUnmount(() => {
           :class="{ hot: drag.overDeck }"
           aria-hidden="true"
         >
-          <span>{{ drag.overDeck ? "Déposez pour ajouter au deck" : "Glissez-déposez ici" }}</span>
+          <span>Déposez ici</span>
         </div>
 
         <!-- Boîte de deck : la légende en vitrine avec ses deux runes -->

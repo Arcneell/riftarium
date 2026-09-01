@@ -104,7 +104,7 @@ describe("HistoryView", () => {
     const { wrapper } = await mountView()
     const empty = wrapper.get(".play-empty")
     expect(empty.text()).toContain("Partie suivie")
-    expect(empty.text()).toContain("application Riftarium")
+    expect(empty.text()).toContain("application mobile")
     expect(empty.get("a.btn-gold").attributes("href")).toBe("/salon")
     expect(wrapper.find(".play-row").exists()).toBe(false)
     wrapper.unmount()

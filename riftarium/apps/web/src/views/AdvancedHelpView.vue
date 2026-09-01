@@ -28,7 +28,7 @@ const grouped = computed(() =>
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" title="Chaque mécanique a sa page">
+  <PageBanner :art="BANNERS.rules" title="Aide avancée">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Aide avancée </template>
     <template #after>
       <label class="search" style="max-width: 420px; margin-top: 18px">
@@ -74,7 +74,6 @@ const grouped = computed(() =>
       </div>
 
       <div style="text-align: center; margin-top: 44px" v-reveal>
-        <p class="muted" style="font-size: 0.85rem; margin-bottom: 14px">Pas trouvé ? Le texte intégral fait foi.</p>
         <RouterLink class="btn" to="/regles/officielles">Chercher dans les règles officielles</RouterLink>
       </div>
     </div>

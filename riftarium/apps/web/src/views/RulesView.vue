@@ -239,7 +239,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" title="Le texte intégral, consultable et cherchable">
+  <PageBanner :art="BANNERS.rules" title="Règles officielles">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Texte officiel </template>
   </PageBanner>
 

@@ -227,7 +227,7 @@ onMounted(load)
               <p v-else class="muted">Aucun haut fait débloqué pour l'instant.</p>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -303,7 +303,7 @@ onMounted(load)
               </div>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -359,7 +359,7 @@ onMounted(load)
               </div>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -374,7 +374,7 @@ onMounted(load)
               <p v-else class="muted">Aucun deck public pour l'instant.</p>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>

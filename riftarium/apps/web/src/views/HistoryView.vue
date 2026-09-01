@@ -66,13 +66,10 @@ onMounted(load)
       </template>
 
       <div v-else-if="empty" class="panel play-empty">
-        <h3>Aucune partie suivie pour l'instant</h3>
+        <h3>Aucune partie suivie</h3>
         <p class="muted">
-          Le compteur vit sur le téléphone : ouvrez l'application Riftarium, choisissez « Jouer » puis « Partie suivie »
-          pour créer un salon. Votre adversaire vous rejoint avec le code ou le lien partagé.
-        </p>
-        <p class="muted">
-          Un code vous a été envoyé ? Ouvrez le <RouterLink to="/salon">salon</RouterLink> pour le saisir.
+          Les parties suivies se créent depuis l'application mobile (« Jouer », puis « Partie suivie »). Un code reçu se
+          saisit dans le <RouterLink to="/salon">salon</RouterLink>.
         </p>
         <RouterLink class="btn btn-gold" to="/salon">Rejoindre un salon</RouterLink>
       </div>

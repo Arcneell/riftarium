@@ -68,7 +68,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" title="Prise en main : apprenez à jouer">
+  <PageBanner :art="BANNERS.rules" title="Prise en main">
     <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Prise en main </template>
   </PageBanner>
 
@@ -90,7 +90,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
             :aria-pressed="fullscreen"
             @click="toggleFullscreen"
           >
-            {{ fullscreen ? "✕ Quitter le plein écran" : "⛶ Plein écran" }}
+            {{ fullscreen ? "Quitter le plein écran" : "Plein écran" }}
           </button>
         </div>
 
@@ -258,7 +258,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               @click="goTo(i)"
             ></button>
           </div>
-          <p class="muted" style="font-size: 0.72rem">Astuce : flèches ← → du clavier pour naviguer.</p>
+          <p class="muted" style="font-size: 0.72rem">Flèches ← → du clavier pour naviguer.</p>
         </div>
         <div class="guide-copy">
           <h3 class="guide-title">{{ step.title }}</h3>
@@ -281,16 +281,16 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
   <section style="padding-top: 0">
     <div class="wrap cols-2">
       <div class="panel" v-reveal>
-        <h3 style="margin-bottom: 10px">Une situation compliquée ?</h3>
+        <h3 style="margin-bottom: 10px">Aide avancée</h3>
         <p class="muted" style="font-size: 0.95rem; margin-bottom: 16px">
-          L'aide avancée détaille chaque mécanique : timing, combat, mots-clés, cas particuliers.
+          Chaque mécanique en détail : timing, combat, mots-clés.
         </p>
         <RouterLink class="btn" to="/regles/avancee">Ouvrir l'aide avancée</RouterLink>
       </div>
       <div class="panel" v-reveal="1">
-        <h3 style="margin-bottom: 10px">Le texte qui fait foi</h3>
+        <h3 style="margin-bottom: 10px">Règles officielles</h3>
         <p class="muted" style="font-size: 0.95rem; margin-bottom: 16px">
-          Les 2 137 règles officielles restent consultables et cherchables, en dernier recours.
+          Le texte officiel intégral, en dernier recours.
         </p>
         <RouterLink class="btn" to="/regles/officielles">Ouvrir les règles officielles</RouterLink>
       </div>

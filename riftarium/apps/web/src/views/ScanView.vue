@@ -141,7 +141,7 @@ const hudText = computed(() => {
   if (state.value === "paused") return "Scan en pause"
   if (ocrProgress.value !== null) return `Moteur de lecture : ${Math.round(ocrProgress.value * 100)} %`
   if (lastCode.value) return `Code lu : ${formatCode(lastCode.value)}`
-  if (hint.value) return "Rien de sûr : rapprochez-vous, mettez plus de lumière et évitez les reflets."
+  if (hint.value) return "Rien de sûr — rapprochez la carte."
   return "Recherche…"
 })
 
@@ -386,10 +386,7 @@ function onAutoAddChange() {
              suffit à identifier une carte. On garde donc l'import de photo, sans lancer la
              boucle caméra (elle n'aurait rien à comparer entre deux images). -->
         <div v-if="!index.hashed" class="panel scan-nocam">
-          <p>
-            Empreintes visuelles pas encore calculées : seule la lecture du code imprimé est disponible. Importez une
-            photo bien nette du bas de la carte.
-          </p>
+          <p>Importez une photo nette du bas de la carte : son code imprimé sera lu.</p>
         </div>
         <div
           v-if="index.hashed && camera.status === 'on'"
@@ -408,7 +405,7 @@ function onAutoAddChange() {
         </p>
         <div v-else-if="index.hashed" class="panel scan-nocam">
           <p v-if="camera.error">{{ camera.error }}</p>
-          <p v-else>Pas de caméra ici ? Importez une photo de la carte : le résultat est le même.</p>
+          <p v-else>Sans caméra, importez une photo de la carte.</p>
         </div>
 
         <div class="scan-actions">
@@ -452,10 +449,7 @@ function onAutoAddChange() {
         </div>
 
         <div v-if="noMatch" class="panel scan-nomatch">
-          <p>
-            Aucun résultat plausible. Reprenez la photo : carte bien à plat, silhouette remplie, lumière uniforme et
-            sans reflet.
-          </p>
+          <p>Aucun résultat. Reprenez la photo avec la carte à plat, sans reflet.</p>
           <button v-if="camera.status === 'on'" type="button" class="btn btn-ghost btn-sm" @click="scanAgain">
             Reprendre le scan
           </button>
@@ -532,7 +526,7 @@ function onAutoAddChange() {
               <button type="button" class="btn btn-ghost" @click="scanAgain">Scanner une autre carte</button>
             </div>
             <p v-if="added[card.id]" class="scan-added">
-              Ajouté ✓<template v-if="added[card.id] > 1"> ×{{ added[card.id] }}</template>
+              Ajouté<template v-if="added[card.id] > 1"> ×{{ added[card.id] }}</template>
             </p>
 
             <div v-if="result.alternatives.length" class="scan-alt">

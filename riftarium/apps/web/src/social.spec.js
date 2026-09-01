@@ -133,8 +133,8 @@ describe("social — libellés et progression", () => {
   })
 
   it("rend un glyphe sobre pour une icône Material, connue ou non", () => {
-    expect(achievementGlyph("emoji_events")).toBe("🏆")
-    expect(achievementGlyph("une_icone_que_le_web_ne_connait_pas")).toBe("🏅")
+    expect(achievementGlyph("emoji_events")).toBe("✪")
+    expect(achievementGlyph("une_icone_que_le_web_ne_connait_pas")).toBe("✪")
   })
 
   it("chiffre la progression et la borne au seuil", () => {

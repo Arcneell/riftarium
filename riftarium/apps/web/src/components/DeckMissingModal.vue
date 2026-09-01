@@ -27,7 +27,7 @@ async function addMissingToWishlist() {
   wishBusy.value = true
   try {
     const payload = await api(`/api/wishlist/from-deck/${props.deckId}`, { method: "POST" })
-    wishLabel.value = `${payload.added} ajoutée(s) ✓`
+    wishLabel.value = `${payload.added} ajoutée(s)`
   } catch (e) {
     wishLabel.value = e.message
   } finally {
@@ -42,7 +42,7 @@ async function copyMissing() {
   )
   try {
     await navigator.clipboard.writeText(lines.join("\n"))
-    copyLabel.value = "Copié ✓"
+    copyLabel.value = "Copié"
   } catch {
     copyLabel.value = "Copie impossible"
   }
@@ -126,6 +126,6 @@ async function copyMissing() {
         <button class="btn btn-ghost" @click="copyMissing">{{ copyLabel }}</button>
       </div>
     </template>
-    <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck. Bon match !</p>
+    <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck.</p>
   </ModalDialog>
 </template>

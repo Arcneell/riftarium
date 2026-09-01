@@ -115,9 +115,8 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
           <template v-if="officialSections.length">
             <h3 class="topic-part">Le texte officiel, en intégralité</h3>
             <p class="muted" style="font-size: 0.8rem; margin-bottom: 16px">
-              Toutes les règles de cette mécanique, reproduites telles quelles. En cas de doute, ce texte fait foi —
               <RouterLink :to="`/regles/officielles?doc=core&section=${topic.sections[0]}`"
-                >l'ouvrir dans le lecteur</RouterLink
+                >Ouvrir dans le lecteur</RouterLink
               >.
             </p>
             <article v-for="section in officialSections" :key="section.id" class="topic-official panel">
@@ -149,7 +148,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
                 <span class="mono">{{ card.name }}</span>
               </button>
             </div>
-            <p class="muted" style="font-size: 0.68rem">Cliquez la carte pour la lire en plein écran. © Riot Games.</p>
+            <p class="muted" style="font-size: 0.68rem">© Riot Games.</p>
           </template>
 
           <h3 class="topic-part">Dans la même catégorie</h3>
@@ -173,7 +172,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
         @click="zoomCard = null"
       >
         <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
-        <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
+        <p class="mono">{{ zoomCard.name }}</p>
       </div>
     </section>
   </template>

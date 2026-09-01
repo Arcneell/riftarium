@@ -210,7 +210,7 @@ export const TOPICS = [
       },
       {
         q: "Je choisis quel adversaire gagne le point ?",
-        a: "Oui : « choisir un adversaire qui gagnera 1 point » — en duel, pas de choix ; à 3-4 joueurs, c'est un vrai levier politique."
+        a: "Oui : « choisir un adversaire qui gagnera 1 point » — en duel, pas de choix ; à 3-4 joueurs, le choix est libre."
       },
       {
         q: "Un effet me demande de révéler 5 cartes, il m'en reste 2. Exténuation ?",
@@ -834,7 +834,7 @@ export const TOPICS = [
       },
       {
         q: "Accélération + Embuscade : l'unité peut-elle arriver préparée sur un champ de bataille ?",
-        a: "Oui, en payant les deux : Embuscade autorise l'emplacement, l'Accélération l'état préparé — de quoi surprendre en pleine confrontation."
+        a: "Oui, en payant les deux : Embuscade autorise l'emplacement, l'Accélération l'état préparé."
       },
       {
         q: "Mon unité Fureur/Chaos : quelle essence pour l'Accélération ?",
@@ -885,7 +885,7 @@ export const TOPICS = [
     summary: "Tout ce que permet Action, plus les états fermés : répondre avant la résolution adverse.",
     details: [
       "[Réaction] = toutes les permissions d'[Action], **plus les états fermés** : jouable en réponse à un sort ou une compétence déjà dans la chaîne, avant sa résolution.",
-      "Un sort [Réaction] s'empile au-dessus et se résout **avant** les objets déjà en attente — c'est l'outil de la contre-attaque.",
+      "Un sort [Réaction] s'empile au-dessus et se résout **avant** les objets déjà en attente.",
       "Les compétences des runes (« Ajoutez [1] », « Ajoutez 1 essence ») sont des [Réaction] : c'est pourquoi vous pouvez produire des ressources à l'instant exact où un coût se présente, même hors de votre tour.",
       "Une Réaction reste soumise au système de focalisation pendant les confrontations : vous la jouez quand une fenêtre s'ouvre, pas à n'importe quel instant."
     ],

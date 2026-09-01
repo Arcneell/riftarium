@@ -171,7 +171,7 @@ describe("PublicProfileView", () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.findAll(".profile-hidden")).toHaveLength(4)
-    expect(wrapper.get(".profile-hidden").text()).toContain("Ce joueur garde ceci pour lui")
+    expect(wrapper.get(".profile-hidden").text()).toContain("Masqué par ce joueur")
     expect(called("/api/users/nova/collection")).toBe(false)
     expect(called("/api/users/nova/history")).toBe(false)
     expect(wrapper.find(".medal").exists()).toBe(false)

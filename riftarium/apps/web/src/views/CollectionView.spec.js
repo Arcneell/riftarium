@@ -193,7 +193,7 @@ describe("CollectionView", () => {
     expect(rows).toHaveLength(2)
     expect(rows[0].get(".progress-name").text()).toBe("Origins")
     expect(rows[0].get(".progress-bar i").attributes("style")).toContain("width: 50%")
-    expect(rows[1].get(".progress-missing").text()).toContain("set complet ✓")
+    expect(rows[1].get(".progress-missing").text()).toContain("set complet")
     expect(rows[1].get(".progress-missing").classes()).toContain("done")
     wrapper.unmount()
   })
