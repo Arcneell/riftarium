@@ -3,12 +3,12 @@ import { computed, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 import { api, session, setSession } from "../api.js"
 import { BANNERS } from "../banners.js"
+import AchievementMedal from "../components/AchievementMedal.vue"
 import ModalDialog from "../components/ModalDialog.vue"
 import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
 import {
   PRIVACY_TOGGLES,
-  achievementGlyph,
   achievementPercent,
   achievementProgress,
   formatMemberSince,
@@ -333,7 +333,7 @@ onMounted(() => {
                   class="medal"
                   :class="[`tier-${item.tier || 'bronze'}`, { locked: !isUnlocked(item) }]"
                 >
-                  <span class="medal-glyph" aria-hidden="true">{{ achievementGlyph(item.icon) }}</span>
+                  <AchievementMedal :icon="item.icon" :tier="item.tier" :locked="!isUnlocked(item)" />
                   <span class="medal-body">
                     <b>{{ item.title }}</b>
                     <span class="muted">{{ item.description }}</span>

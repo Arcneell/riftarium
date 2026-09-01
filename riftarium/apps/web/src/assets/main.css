@@ -7697,17 +7697,128 @@ button.progress-row:hover {
   border-left-style: solid;
 }
 .medal.locked {
-  opacity: 0.58;
+  opacity: 0.62;
   background: none;
 }
-.medal-glyph {
-  font-size: 1.5rem;
-  line-height: 1.1;
+
+/* Gemme hexagonale : forme des impressions alternatives Riftbound,
+   palier = matériau. La couleur ne porte pas le sens (libellé à côté). */
+.gem {
+  position: relative;
   flex: none;
-  filter: saturate(0.85);
+  width: 42px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 2px 3px rgba(58, 42, 18, 0.28));
 }
-.medal.locked .medal-glyph {
-  filter: grayscale(1);
+.gem::before,
+.gem-face,
+.gem-foil {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.gem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gem-rim, var(--line));
+}
+.gem-face {
+  position: absolute;
+  inset: 2.5px;
+  background: var(--gem-face, var(--surface));
+}
+.gem-foil {
+  position: absolute;
+  inset: 2.5px;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.55) 47%, transparent 62%);
+  background-size: 300% 100%;
+  background-position: 82% 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.gem-glyph {
+  position: relative;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--gem-ink, var(--ink-strong));
+  text-shadow: 0 1px 1px rgba(38, 26, 8, 0.35);
+}
+
+.gem-bronze {
+  --gem-rim: linear-gradient(160deg, #d8a468, #7c4f24);
+  --gem-face: linear-gradient(160deg, #b98a52, #8a5a2c);
+  --gem-ink: #fff3e0;
+}
+.gem-silver {
+  --gem-rim: linear-gradient(160deg, #eef1f6, #7f8794);
+  --gem-face: linear-gradient(160deg, #c9cfda, #8d94a0);
+  --gem-ink: #263140;
+}
+.gem-silver .gem-glyph {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.gem-gold {
+  --gem-rim: linear-gradient(160deg, #ecd394, #7a5d28);
+  --gem-face: var(--gold-grad);
+  --gem-ink: #fff8e4;
+}
+/* Or : reflet foil fixe, discret. */
+.gem-gold .gem-foil {
+  opacity: 0.55;
+}
+/* Prisme : gemme irisée, teinte qui tourne + balayage foil. */
+.gem-prism {
+  --gem-rim: linear-gradient(160deg, var(--mind), var(--calm), var(--chaos));
+  --gem-face: linear-gradient(150deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
+  --gem-ink: #fff;
+}
+.gem-prism .gem-face {
+  animation: gem-hue 9s linear infinite;
+}
+.gem-prism .gem-foil {
+  opacity: 0.75;
+  animation: gem-foil 5.5s ease-in-out infinite;
+}
+@keyframes gem-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+@keyframes gem-foil {
+  0%,
+  52% {
+    background-position: 130% 0;
+  }
+  88%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+.gem.locked {
+  filter: none;
+  --gem-rim: var(--line);
+  --gem-face: var(--surface);
+  --gem-ink: var(--muted);
+}
+.gem.locked .gem-glyph {
+  opacity: 0.7;
+  text-shadow: none;
+}
+.gem.locked .gem-face {
+  animation: none;
+}
+.gem.locked .gem-foil {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gem-prism .gem-face,
+  .gem-prism .gem-foil {
+    animation: none;
+  }
+  .gem-prism .gem-foil {
+    opacity: 0.45;
+  }
 }
 .medal-body {
   display: flex;
