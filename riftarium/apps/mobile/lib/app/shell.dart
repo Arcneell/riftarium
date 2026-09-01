@@ -133,9 +133,7 @@ class _RiftBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final barColor = (dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2))
-        .withValues(alpha: 0.96);
+    final barColor = RiftColors.paper2.withValues(alpha: 0.96);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final tabs = _allTabs;
@@ -241,7 +239,6 @@ class _PlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       button: true,
       label: 'Jouer : compteur de partie',
@@ -266,10 +263,7 @@ class _PlayButton extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RiftColors.goldGradient,
-                      border: Border.all(
-                        color: dark ? RiftColors.darkPaper2 : RiftColors.paper,
-                        width: 3,
-                      ),
+                      border: Border.all(color: RiftColors.paper2, width: 3),
                       boxShadow: RiftShadows.glowGold,
                     ),
                     child: const Icon(

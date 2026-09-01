@@ -35,11 +35,8 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = dark ? RiftColors.darkPaper2 : RiftColors.paper2;
-    final glow = dark
-        ? RiftColors.darkPaper2.withValues(alpha: 0.4)
-        : const Color(0xFFFDFAF2);
+    final base = RiftColors.paper2;
+    final glow = const Color(0xFF1C3050);
     final reduce = MediaQuery.disableAnimationsOf(context);
     return SizedBox(
       width: widget.width,

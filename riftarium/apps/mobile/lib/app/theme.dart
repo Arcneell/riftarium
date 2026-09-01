@@ -37,12 +37,12 @@ ThemeData buildTheme(Brightness brightness) {
       ).copyWith(
         primary: RiftColors.gold,
         onPrimary: Colors.white,
-        primaryContainer: dark ? RiftColors.goldDeep : RiftColors.goldSoft,
-        onPrimaryContainer: dark ? RiftColors.darkInk : RiftColors.goldDeep,
+        primaryContainer: const Color(0xFF2C2410),
+        onPrimaryContainer: RiftColors.goldSoft,
         secondary: RiftColors.hex,
         onSecondary: Colors.white,
-        secondaryContainer: dark ? const Color(0xFF123C38) : RiftColors.hexSoft,
-        onSecondaryContainer: dark ? RiftColors.hexSoft : RiftColors.calmText,
+        secondaryContainer: RiftColors.hexSoft,
+        onSecondaryContainer: RiftColors.calmText,
         surface: paper,
         onSurface: ink,
         surfaceContainerHighest: paper2,
@@ -95,9 +95,7 @@ ThemeData buildTheme(Brightness brightness) {
       titleTextStyle: text.displaySmall,
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: dark
-          ? RiftColors.darkPaper2.withValues(alpha: 0.94)
-          : const Color(0xFFFDFAF2).withValues(alpha: 0.94),
+      backgroundColor: RiftColors.paper2.withValues(alpha: 0.94),
       surfaceTintColor: Colors.transparent,
       indicatorColor: RiftColors.gold.withValues(alpha: 0.18),
       height: 64,
@@ -122,7 +120,7 @@ ThemeData buildTheme(Brightness brightness) {
       ),
     ),
     cardTheme: CardThemeData(
-      color: dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2),
+      color: RiftColors.paper2,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -142,7 +140,7 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2),
+      fillColor: RiftColors.surfaceSolid,
       hintStyle: text.small,
       labelStyle: text.small,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -162,7 +160,7 @@ ThemeData buildTheme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: RiftColors.gold,
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF241A06),
         minimumSize: const Size.fromHeight(50),
         shape: const StadiumBorder(),
         textStyle: text.bodyStrong.copyWith(fontSize: 15.5),
@@ -171,9 +169,7 @@ ThemeData buildTheme(Brightness brightness) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: ink,
-        side: BorderSide(
-          color: dark ? RiftColors.darkLine : RiftColors.lineStrong,
-        ),
+        side: const BorderSide(color: RiftColors.lineStrong),
         minimumSize: const Size.fromHeight(48),
         shape: const StadiumBorder(),
         textStyle: text.bodyStrong.copyWith(fontSize: 15),
@@ -181,16 +177,14 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: dark ? RiftColors.hexSoft : RiftColors.calmText,
+        foregroundColor: RiftColors.calmText,
         textStyle: text.bodyStrong.copyWith(fontSize: 15),
       ),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(
         selectedBackgroundColor: RiftColors.gold.withValues(alpha: 0.18),
-        selectedForegroundColor: dark
-            ? RiftColors.goldSoft
-            : RiftColors.goldDeep,
+        selectedForegroundColor: RiftColors.goldSoft,
         foregroundColor: muted,
         side: BorderSide(color: line),
         textStyle: text.small.copyWith(fontVariations: RiftFonts.weight(600)),
@@ -230,10 +224,7 @@ ThemeData buildTheme(Brightness brightness) {
       brightness: brightness,
       primaryColor: RiftColors.gold,
       scaffoldBackgroundColor: paper,
-      barBackgroundColor:
-          (dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2)).withValues(
-            alpha: 0.92,
-          ),
+      barBackgroundColor: RiftColors.paper2.withValues(alpha: 0.92),
       textTheme: CupertinoTextThemeData(
         primaryColor: RiftColors.gold,
         textStyle: text.body,
