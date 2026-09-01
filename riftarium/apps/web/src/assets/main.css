@@ -1796,9 +1796,9 @@ td.num {
   inset: -12%;
   pointer-events: none;
   background:
-    radial-gradient(46% 38% at 70% 44%, rgba(53, 224, 208, 0.11) 0%, transparent 65%),
-    radial-gradient(36% 30% at 82% 62%, rgba(115, 85, 207, 0.1) 0%, transparent 60%),
-    radial-gradient(42% 36% at 62% 30%, rgba(201, 167, 92, 0.09) 0%, transparent 60%);
+    radial-gradient(46% 38% at 70% 44%, rgba(53, 224, 208, 0.16) 0%, transparent 65%),
+    radial-gradient(36% 30% at 82% 62%, rgba(115, 85, 207, 0.15) 0%, transparent 60%),
+    radial-gradient(42% 36% at 62% 30%, rgba(201, 167, 92, 0.13) 0%, transparent 60%);
   filter: blur(2px);
 }
 .hero-grid {
@@ -1825,6 +1825,16 @@ td.num {
     transform: none;
   }
 }
+/* Dernier segment du titre : dégradé champagne vers hex, immobile (le reste
+   du titre garde son reflet animé). */
+.h1-accent {
+  font-style: normal;
+  background: linear-gradient(100deg, #e9d8ab 10%, #c9a75c 45%, #35e0d0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: none;
+}
 .hero-copy .eyebrow {
   animation: rise 0.6s cubic-bezier(0.22, 0.8, 0.32, 1) 0.05s both;
 }
@@ -1836,6 +1846,35 @@ td.num {
 }
 .hero-copy .hero-cta {
   animation: rise 0.7s cubic-bezier(0.22, 0.8, 0.32, 1) 0.36s both;
+}
+/* Chiffres du site, intégrés au héros : filet laiton, numéral champagne. */
+.hero-stats {
+  display: flex;
+  gap: 34px;
+  flex-wrap: wrap;
+  margin-top: 42px;
+  animation: rise 0.7s cubic-bezier(0.22, 0.8, 0.32, 1) 0.5s both;
+}
+.hero-stat {
+  border-top: 1px solid rgba(201, 167, 92, 0.4);
+  padding-top: 10px;
+  min-width: 72px;
+}
+.hero-stat b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.55rem;
+  line-height: 1.1;
+  color: var(--ink-strong);
+}
+.hero-stat span {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .hero-fan {
@@ -1867,12 +1906,12 @@ td.num {
 }
 .hero-fan .fan-card {
   position: absolute;
-  width: 218px;
+  width: 238px;
   border-radius: 14px;
   overflow: hidden;
   box-shadow:
     0 26px 50px rgba(0, 0, 0, 0.65),
-    0 0 64px color-mix(in srgb, var(--halo, var(--gold)) 26%, transparent);
+    0 0 74px color-mix(in srgb, var(--halo, var(--gold)) 38%, transparent);
   animation:
     fan-pose 0.8s cubic-bezier(0.22, 0.8, 0.32, 1) 0.3s both,
     float 7s ease-in-out infinite;
@@ -1895,7 +1934,7 @@ td.num {
   right: 4%;
   bottom: 30px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 167, 92, 0.55), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201, 167, 92, 0.75), transparent);
 }
 .hero-fan .fan-card img {
   width: 100%;
@@ -1955,6 +1994,24 @@ td.num {
     0 0 38px color-mix(in srgb, var(--chip, var(--gold)) 14%, transparent);
   border-color: color-mix(in srgb, var(--chip, var(--gold)) 40%, transparent);
   color: var(--ink);
+}
+.module {
+  position: relative;
+  overflow: hidden;
+}
+.module .m-mark {
+  position: absolute;
+  top: -18px;
+  right: -14px;
+  color: var(--chip, var(--gold));
+  opacity: 0.14;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(200deg, #000 30%, transparent 78%);
+  mask-image: linear-gradient(200deg, #000 30%, transparent 78%);
+  transition: opacity 0.3s ease;
+}
+.module:hover .m-mark {
+  opacity: 0.26;
 }
 .module .m-icon {
   width: 52px;
@@ -2806,42 +2863,6 @@ footer {
   outline: 2px solid var(--hex);
   outline-offset: 4px;
   border-radius: 12px;
-}
-
-/* ---------- Bandeau de chiffres ---------- */
-.figures {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-.figure {
-  flex: 1 1 180px;
-  text-align: center;
-  padding: 30px 18px;
-  border-left: 1px solid var(--line);
-}
-.figure:first-child {
-  border-left: none;
-}
-.figure b {
-  display: block;
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3.4vw, 2.7rem);
-  line-height: 1.1;
-  background: linear-gradient(180deg, var(--ink-strong) 40%, var(--gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.figure span {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 /* ---------- Interlude illustré ---------- */

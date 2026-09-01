@@ -134,13 +134,31 @@ onMounted(async () => {
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Le compagnon pour Riftbound</p>
-        <h1>Vos cartes, vos decks,<br class="hide-mobile" />vos règles.</h1>
+        <h1>Vos cartes, vos decks, <br class="hide-mobile" /><em class="h1-accent">vos règles.</em></h1>
         <p class="lead" style="margin-top: 20px">
           Cartothèque, suivi de collection, deck builder et texte officiel des règles, en français.
         </p>
         <div class="hero-cta">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
           <RouterLink class="btn" to="/regles">Lire les règles</RouterLink>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <b>{{ cardCount ?? "—" }}</b>
+            <span>cartes</span>
+          </div>
+          <div class="hero-stat">
+            <b>{{ setCount ?? "—" }}</b>
+            <span>sets</span>
+          </div>
+          <div class="hero-stat">
+            <b>{{ RULE_COUNTS.core.toLocaleString("fr-FR") }}</b>
+            <span>règles du jeu</span>
+          </div>
+          <div class="hero-stat">
+            <b>{{ RULE_COUNTS.tournament.toLocaleString("fr-FR") }}</b>
+            <span>règles de tournoi</span>
+          </div>
         </div>
       </div>
       <div v-if="showFan" class="hero-fan" aria-hidden="true">
@@ -153,27 +171,6 @@ onMounted(async () => {
     </div>
     <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
   </section>
-
-  <div class="wrap" v-reveal>
-    <div class="figures">
-      <div class="figure">
-        <b>{{ cardCount ?? "—" }}</b
-        ><span>cartes</span>
-      </div>
-      <div class="figure">
-        <b>{{ setCount ?? "—" }}</b
-        ><span>sets</span>
-      </div>
-      <div class="figure">
-        <b>{{ RULE_COUNTS.core.toLocaleString("fr-FR") }}</b
-        ><span>règles du jeu</span>
-      </div>
-      <div class="figure">
-        <b>{{ RULE_COUNTS.tournament.toLocaleString("fr-FR") }}</b
-        ><span>règles de tournoi</span>
-      </div>
-    </div>
-  </div>
 
   <section style="padding-bottom: 40px">
     <div class="wrap" style="margin-bottom: 36px">
@@ -203,6 +200,7 @@ onMounted(async () => {
           v-bind="module.to ? { to: module.to } : { href: module.href, target: '_blank', rel: 'noopener' }"
           :style="{ '--chip': module.chip }"
         >
+          <span class="m-mark" aria-hidden="true"><Icon :name="module.icon" :size="110" /></span>
           <span class="m-icon"><Icon :name="module.icon" :size="24" /></span>
           <h3>{{ module.title }}</h3>
           <p>{{ module.text }}</p>

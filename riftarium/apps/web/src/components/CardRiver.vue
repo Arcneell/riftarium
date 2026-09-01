@@ -32,7 +32,9 @@ async function refill(i) {
   state[i].loading = true
   try {
     const data = await api(`/api/cards?sort=random&size=${BATCH}`)
-    state[i].pool.push(...data.items.filter((card) => card.image_url))
+    /* Jamais de carte paysage (champs de bataille) : une carte couchée au
+       milieu des portraits casse le rythme de la rivière. */
+    state[i].pool.push(...data.items.filter((card) => card.image_url && card.orientation !== "landscape"))
   } catch {
     /* on rejouera les cartes déjà passées plutôt que de laisser un trou */
   }
