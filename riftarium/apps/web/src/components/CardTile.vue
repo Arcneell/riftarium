@@ -23,6 +23,7 @@ const price = computed(() => formatEur(props.card.price_eur))
       v-tilt
       class="card-tile"
       :class="{ landscape: card.orientation === 'landscape' }"
+      :style="{ '--halo': DOMAINS[card.domains?.[0]]?.color || 'var(--gold)' }"
       :to="`/cartes/${card.id}`"
     >
       <div class="card-art" :class="{ foil }">
