@@ -350,10 +350,9 @@ class _ProfileBanner extends StatelessWidget {
               fit: BoxFit.cover,
               alignment: const Alignment(0.3, -0.2),
               fadeInDuration: RiftMotion.slow,
-              placeholder: (context, url) =>
-                  Container(color: RiftColors.inkStrong),
+              placeholder: (context, url) => Container(color: RiftColors.night),
               errorWidget: (context, url, error) =>
-                  Container(color: RiftColors.inkStrong),
+                  Container(color: RiftColors.night),
             ),
             DecoratedBox(
               decoration: BoxDecoration(
@@ -361,8 +360,8 @@ class _ProfileBanner extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    RiftColors.inkStrong.withValues(alpha: 0.35),
-                    RiftColors.inkStrong.withValues(alpha: 0.05),
+                    RiftColors.night.withValues(alpha: 0.35),
+                    RiftColors.night.withValues(alpha: 0.05),
                     paper.withValues(alpha: 0),
                     paper,
                   ],

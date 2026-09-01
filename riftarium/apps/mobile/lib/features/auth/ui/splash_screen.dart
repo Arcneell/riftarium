@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RiftColors.inkStrong,
+      backgroundColor: RiftColors.night,
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: RadialGradient(

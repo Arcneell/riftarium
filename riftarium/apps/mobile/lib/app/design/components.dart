@@ -250,7 +250,7 @@ class MonoBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: filled
-            ? RiftColors.inkStrong.withValues(alpha: 0.78)
+            ? RiftColors.night.withValues(alpha: 0.78)
             : tint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(RiftRadius.sm),
         border: filled ? null : Border.all(color: tint.withValues(alpha: 0.4)),

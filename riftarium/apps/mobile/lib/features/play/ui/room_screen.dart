@@ -240,7 +240,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
     final room = ref.watch(roomControllerProvider(widget.code));
     return gameTheme(
       child: Scaffold(
-        backgroundColor: RiftColors.inkStrong,
+        backgroundColor: RiftColors.night,
         body: SafeArea(
           child: Stack(
             children: [

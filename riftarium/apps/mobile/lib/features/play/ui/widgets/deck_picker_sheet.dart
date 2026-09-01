@@ -23,7 +23,7 @@ Future<DeckChoice?> showDeckPicker(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: RiftColors.inkStrong,
+      backgroundColor: RiftColors.night,
       builder: (context) => Theme(
         data: buildTheme(Brightness.dark),
         child: const FractionallySizedBox(

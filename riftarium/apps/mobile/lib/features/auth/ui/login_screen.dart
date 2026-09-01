@@ -204,7 +204,7 @@ class BannerBackButton extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: RiftColors.inkStrong.withValues(alpha: 0.45),
+                color: RiftColors.night.withValues(alpha: 0.45),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
               ),
               child: const Icon(

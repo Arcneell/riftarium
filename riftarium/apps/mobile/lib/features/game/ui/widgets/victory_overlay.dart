@@ -73,7 +73,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: ColoredBox(
-                  color: RiftColors.inkStrong.withValues(alpha: 0.9),
+                  color: RiftColors.night.withValues(alpha: 0.9),
                   child: SafeArea(
                     child: Center(
                       child: SingleChildScrollView(

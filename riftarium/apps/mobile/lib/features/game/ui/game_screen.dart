@@ -79,7 +79,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     return gameTheme(
       child: Scaffold(
-        backgroundColor: RiftColors.inkStrong,
+        backgroundColor: RiftColors.night,
         body: SafeArea(
           child: Stack(
             children: [

@@ -17,7 +17,7 @@ Future<void> showPlayerSheet(BuildContext context, {required Player player}) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: RiftColors.inkStrong,
+      backgroundColor: RiftColors.night,
       builder: (context) => Theme(
         data: buildTheme(Brightness.dark),
         child: _PlayerSheet(playerId: player.id),

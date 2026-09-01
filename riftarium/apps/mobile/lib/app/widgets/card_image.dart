@@ -118,10 +118,18 @@ class CardImage extends StatelessWidget {
     }
 
     if (shadow) {
+      // Lumière de vitrine : la carte émet un halo de la couleur de son
+      // domaine, en plus de l'ombre portée (miroir du survol web).
+      final halo = RiftColors.domain(
+        card.domains.isEmpty ? '' : card.domains.first,
+      );
       image = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: radius,
-          boxShadow: RiftShadows.soft,
+          boxShadow: [
+            ...RiftShadows.soft,
+            BoxShadow(color: halo.withValues(alpha: 0.24), blurRadius: 26),
+          ],
         ),
         child: image,
       );

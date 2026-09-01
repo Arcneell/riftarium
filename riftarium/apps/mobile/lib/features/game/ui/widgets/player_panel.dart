@@ -153,7 +153,7 @@ class _Backdrop extends StatelessWidget {
               radius: 1.1,
               colors: [
                 color.withValues(alpha: legend == null ? 0.42 : 0.24),
-                RiftColors.inkStrong.withValues(alpha: 0.96),
+                RiftColors.night.withValues(alpha: 0.96),
               ],
             ),
           ),
@@ -172,8 +172,8 @@ class _Backdrop extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  RiftColors.inkStrong.withValues(alpha: 0.25),
-                  RiftColors.inkStrong.withValues(alpha: 0.35),
+                  RiftColors.night.withValues(alpha: 0.25),
+                  RiftColors.night.withValues(alpha: 0.35),
                 ],
               ),
             ),
@@ -243,7 +243,7 @@ class _Identity extends StatelessWidget {
                 style: text.bodyStrong.copyWith(
                   fontSize: 14,
                   shadows: const [
-                    Shadow(color: RiftColors.inkStrong, blurRadius: 8),
+                    Shadow(color: RiftColors.night, blurRadius: 8),
                   ],
                 ),
               ),
@@ -255,7 +255,7 @@ class _Identity extends StatelessWidget {
                   style: text.mono.copyWith(
                     fontSize: 10,
                     shadows: const [
-                      Shadow(color: RiftColors.inkStrong, blurRadius: 8),
+                      Shadow(color: RiftColors.night, blurRadius: 8),
                     ],
                   ),
                 ),
@@ -304,7 +304,7 @@ class BigScore extends StatelessWidget {
             // chiffre tient même posé sur la partie claire d'une illustration.
             Shadow(color: color.withValues(alpha: 0.55), blurRadius: 28),
             const Shadow(
-              color: RiftColors.inkStrong,
+              color: RiftColors.night,
               blurRadius: 14,
               offset: Offset(0, 2),
             ),
@@ -332,8 +332,8 @@ class ScoreHalo extends StatelessWidget {
       shape: BoxShape.circle,
       gradient: RadialGradient(
         colors: [
-          RiftColors.inkStrong.withValues(alpha: 0.55),
-          RiftColors.inkStrong.withValues(alpha: 0),
+          RiftColors.night.withValues(alpha: 0.55),
+          RiftColors.night.withValues(alpha: 0),
         ],
         stops: const [0.35, 1],
       ),
@@ -365,7 +365,7 @@ class XpBar extends StatelessWidget {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: RiftColors.inkStrong.withValues(alpha: 0.72),
+        color: RiftColors.night.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(RiftRadius.full),
         border: Border.all(color: RiftColors.goldSoft.withValues(alpha: 0.28)),
       ),

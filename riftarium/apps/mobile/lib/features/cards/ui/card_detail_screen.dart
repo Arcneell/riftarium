@@ -557,7 +557,7 @@ void _openFullScreen(BuildContext context, RiftCard card) {
   Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       opaque: false,
-      barrierColor: RiftColors.inkStrong,
+      barrierColor: RiftColors.night,
       transitionDuration: RiftMotion.base,
       pageBuilder: (context, animation, _) => FadeTransition(
         opacity: animation,
@@ -615,7 +615,7 @@ class _FullScreenCardImageState extends State<_FullScreenCardImage> {
   Widget build(BuildContext context) {
     final fade = (1 - _drag / 320).clamp(0.4, 1.0);
     return Material(
-      color: RiftColors.inkStrong.withValues(alpha: fade),
+      color: RiftColors.night.withValues(alpha: fade),
       child: Stack(
         children: [
           Positioned.fill(

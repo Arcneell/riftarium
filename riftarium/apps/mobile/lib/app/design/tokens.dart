@@ -17,6 +17,10 @@ abstract final class RiftColors {
   static const line = Color(0x29C9A75C); // rgba(201,167,92,.16)
   static const lineStrong = Color(0x66C9A75C); // rgba(201,167,92,.4)
 
+  /// Nuit profonde : voiles, scrims et fonds d'écrans immersifs (l'ancien
+  /// « inkStrong » du thème parchemin, qui désignait l'encre la plus sombre).
+  static const night = Color(0xFF0A1428);
+
   // Texte : bleu-clair lunaire, champagne pour les titres
   static const ink = Color(0xFFD7E0EC);
   static const inkStrong = Color(0xFFF2EAD6);
