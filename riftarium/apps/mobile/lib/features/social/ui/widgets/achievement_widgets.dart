@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/design/components.dart';
 import '../../../../app/theme.dart';
 import '../../domain/achievement.dart';
+import 'achievement_icons.dart';
 
 /// Gemme hexagonale d'un haut fait : la forme reprend la gemme hex des
 /// impressions alternatives Riftbound, le palier donne le matériau (cuivre,
@@ -27,7 +29,7 @@ class AchievementMedallion extends StatelessWidget {
     final unlocked = achievement.isUnlocked;
     final prism = unlocked && achievement.tier == 'prism';
     final material = _gemMaterial(achievement.tier);
-    final icon = achievementIcon(achievement.icon, family: achievement.family);
+    final iconSvg = achievementIconSvg(achievement.key, achievement.icon);
 
     final Widget face;
     final Color ink;
@@ -73,7 +75,12 @@ class AchievementMedallion extends StatelessWidget {
               child: ClipPath(clipper: const _HexClipper(), child: face),
             ),
             Center(
-              child: Icon(icon, size: size * 0.42, color: ink),
+              child: SvgPicture.string(
+                iconSvg,
+                width: size * 0.48,
+                height: size * 0.48,
+                colorFilter: ColorFilter.mode(ink, BlendMode.srcIn),
+              ),
             ),
           ],
         ),
