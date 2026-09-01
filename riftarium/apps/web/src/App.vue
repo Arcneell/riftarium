@@ -203,15 +203,14 @@ async function logout() {
   <footer>
     <div class="footer-in">
       <div class="footer-grid">
-        <div>
+        <div class="footer-about">
           <div class="footer-brand"><Logo /><b>Riftarium</b></div>
           <p>
-            Un site fan-made pour tout retrouver sur Riftbound : les cartes, les règles officielles, sa collection et
-            ses decks. Développé par un joueur, sur son temps libre. Gratuit, au code source accessible.
+            Un site fan-made pour Riftbound : cartes, règles officielles, collection et decks. Développé par un joueur,
+            gratuit, au code source ouvert.
           </p>
           <p v-if="CLOSED_BETA" class="footer-contact">
-            Bêta fermée : le site n'est pas annoncé publiquement et n'est pas indexé. Accès sur invitation, pour tests
-            et retours de bugs.
+            Bêta fermée : accès sur invitation, pour tests et retours de bugs.
           </p>
           <p class="footer-contact">
             Contact :
@@ -219,19 +218,25 @@ async function logout() {
           </p>
         </div>
         <div>
-          <p class="foot-head">Le site</p>
+          <p class="foot-head">Explorer</p>
           <ul>
             <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
-            <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
             <li><RouterLink to="/regles">Règles</RouterLink></li>
+            <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
             <li><RouterLink to="/decks">Deck builder</RouterLink></li>
-            <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
             <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
-            <li v-if="session.token"><RouterLink to="/historique">Mes parties suivies</RouterLink></li>
-            <li v-if="session.token"><RouterLink to="/statistiques">Mes statistiques</RouterLink></li>
-            <li v-if="session.token"><RouterLink to="/amis">Mes amis</RouterLink></li>
-            <li v-if="session.token"><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
-            <li v-if="session.token"><RouterLink to="/profil">Mon profil</RouterLink></li>
+            <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
+          </ul>
+        </div>
+        <div v-if="session.token">
+          <p class="foot-head">Mon compte</p>
+          <ul>
+            <li><RouterLink to="/collection">Ma collection</RouterLink></li>
+            <li><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
+            <li><RouterLink to="/historique">Mes parties suivies</RouterLink></li>
+            <li><RouterLink to="/statistiques">Mes statistiques</RouterLink></li>
+            <li><RouterLink to="/amis">Mes amis</RouterLink></li>
+            <li><RouterLink to="/profil">Mon profil</RouterLink></li>
           </ul>
         </div>
         <div>
