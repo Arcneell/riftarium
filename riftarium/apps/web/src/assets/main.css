@@ -1760,6 +1760,38 @@ td.num {
   padding: 120px 0 140px;
   overflow: hidden;
 }
+/* Accueil : le héros occupe l'écran (moins l'en-tête), le contenu est centré
+   verticalement, un chevron invite à défiler. */
+.hero-full {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100dvh - 67px);
+  padding: 60px 0 90px;
+}
+.hero-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid var(--gold-soft);
+  border-bottom: 2px solid var(--gold-soft);
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0.8;
+  animation: cue 2.4s ease-in-out 1.4s infinite both;
+}
+@keyframes cue {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.8;
+  }
+  50% {
+    translate: 0 7px;
+    opacity: 0.35;
+  }
+}
 /* Même traitement que .page-banner : l'illustration s'efface par masque au lieu
    d'être recouverte d'un aplat de parchemin, qui laissait un trait net au bord
    bas là où le halo doré du fond reprenait. */
@@ -1968,80 +2000,112 @@ td.num {
   bottom: auto;
 }
 
-/* ---------- Tuiles modules (accueil) ---------- */
-.modules {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 26px;
-}
-.module {
-  display: block;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 30px;
-  box-shadow: var(--shadow-soft);
-  transition:
-    transform 0.2s,
-    box-shadow 0.25s,
-    border-color 0.2s;
-  color: var(--ink);
-}
-.module:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    var(--shadow),
-    0 0 38px color-mix(in srgb, var(--chip, var(--gold)) 14%, transparent);
-  border-color: color-mix(in srgb, var(--chip, var(--gold)) 40%, transparent);
-  color: var(--ink);
-}
-.module {
+/* ---------- Salles de la vitrine (accueil) ---------- */
+/* Une bande cinématique par pilier du site : l'art officiel en fond, voilé de
+   nuit et effacé aux bords par un masque, un accent de domaine par salle. */
+.hall {
   position: relative;
   overflow: hidden;
+  padding: 110px 0;
 }
-.module .m-mark {
+.hall-art::before {
+  content: "";
   position: absolute;
-  top: -18px;
-  right: -14px;
-  color: var(--chip, var(--gold));
-  opacity: 0.14;
+  inset: 0;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(200deg, #000 30%, transparent 78%);
-  mask-image: linear-gradient(200deg, #000 30%, transparent 78%);
-  transition: opacity 0.3s ease;
+  background-image:
+    linear-gradient(
+      to right,
+      rgba(10, 20, 40, 0.94) 0%,
+      rgba(10, 20, 40, 0.86) 32%,
+      rgba(10, 20, 40, 0.55) 62%,
+      rgba(10, 20, 40, 0.3) 100%
+    ),
+    var(--art, none);
+  background-size: cover;
+  background-position: 72% 32%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
 }
-.module:hover .m-mark {
-  opacity: 0.26;
+/* Une salle sur deux inverse le sens : texte à droite, art dégagé à gauche. */
+.hall-art.flip::before {
+  background-image:
+    linear-gradient(
+      to left,
+      rgba(10, 20, 40, 0.94) 0%,
+      rgba(10, 20, 40, 0.86) 32%,
+      rgba(10, 20, 40, 0.55) 62%,
+      rgba(10, 20, 40, 0.3) 100%
+    ),
+    var(--art, none);
+  background-position: 30% 32%;
 }
-.module .m-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--r-full);
+.hall > .wrap {
+  position: relative;
+  z-index: 1;
+}
+.hall-grid {
   display: grid;
-  place-items: center;
-  color: color-mix(in srgb, var(--chip, var(--gold)) 65%, #fff);
-  background: color-mix(in srgb, var(--chip, var(--gold)) 24%, var(--paper-2));
-  border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 40%, transparent);
-  margin-bottom: 18px;
-}
-.module .m-go {
-  display: inline-flex;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 48px;
   align-items: center;
-  margin-top: 14px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--gold-deep);
 }
-.module h3 {
-  color: var(--ink-strong);
-  margin-bottom: 8px;
+.hall-art.flip .hall-copy {
+  grid-column: 2;
 }
-.module p {
+.hall .eyebrow {
+  color: color-mix(in srgb, var(--chip, var(--gold)) 75%, #fff);
+}
+.hall .eyebrow::before {
+  background: var(--chip, var(--gold));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--chip, var(--gold)) 60%, transparent);
+}
+.hall h2 {
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+}
+.hall .lead {
+  font-size: 1.02rem;
+}
+.hall-cta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.hall-plaque {
+  margin-top: 0;
+  justify-self: end;
+  max-width: 480px;
+}
+.hall-art.flip .hall-plaque {
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: start;
+}
+/* Salle d'entrée : pas d'art en fond, la rivière de cartes est le visuel. */
+.hall-river {
+  padding: 96px 0 72px;
+}
+.hall-river .hall-head {
+  margin-bottom: 40px;
+}
+.hall-river .hall-head .lead {
+  margin-top: 12px;
+}
+.hall-river .hall-cta {
+  margin-top: 40px;
+}
+
+/* Signature du projet, juste avant le pied de page. */
+.made-by {
+  padding: 26px 28px 72px;
+  text-align: center;
+}
+.made-by p {
+  margin: 0 auto;
+  max-width: 72ch;
   color: var(--muted);
-  font-size: 0.92rem;
-}
-.module:hover .m-go {
-  color: var(--hex);
+  font-size: 0.9rem;
 }
 
 /* ---------- Bannières de page ---------- */
@@ -2441,11 +2505,32 @@ footer {
   .card-detail {
     padding-top: 14px;
   }
-  .modules {
-    grid-template-columns: 1fr 1fr;
-  }
   .footer-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  /* Salles : une colonne, le texte repasse devant, la plaque suit. */
+  .hall {
+    padding: 72px 0;
+  }
+  .hall-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+  .hall-art.flip .hall-copy {
+    grid-column: auto;
+  }
+  .hall-art.flip .hall-plaque {
+    grid-row: auto;
+    grid-column: auto;
+  }
+  .hall-plaque {
+    justify-self: start;
+    max-width: none;
+  }
+  .hall-art::before,
+  .hall-art.flip::before {
+    background-image: linear-gradient(to bottom, rgba(10, 20, 40, 0.8), rgba(10, 20, 40, 0.92)), var(--art, none);
+    background-position: center 30%;
   }
   .legal-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -2605,9 +2690,6 @@ footer {
   }
   .hero-fan {
     display: none;
-  }
-  .modules {
-    grid-template-columns: minmax(0, 1fr);
   }
   .footer-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2863,24 +2945,6 @@ footer {
   outline: 2px solid var(--hex);
   outline-offset: 4px;
   border-radius: 12px;
-}
-
-/* ---------- Interlude illustré ---------- */
-.interlude {
-  position: relative;
-  height: 330px;
-  background-image:
-    linear-gradient(to bottom, var(--paper), rgba(10, 20, 40, 0.08) 30%, rgba(10, 20, 40, 0.08) 70%, var(--paper)),
-    var(--art, none);
-  background-size: cover;
-  background-position: center 30%;
-  background-attachment: fixed;
-}
-@media (hover: none), (max-width: 760px) {
-  .interlude {
-    background-attachment: scroll;
-    height: 220px;
-  }
 }
 
 @media (max-width: 980px) {
