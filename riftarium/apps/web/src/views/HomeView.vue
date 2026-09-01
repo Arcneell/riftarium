@@ -11,18 +11,20 @@ const setCount = ref(null)
 
 /* Trois cartes « Signature » (signées par leur illustrateur) :
    Ahri - Nine-Tailed Fox, Lee Sin - Blind Monk, Kai'Sa - Daughter of the Void. */
+/* --halo : chaque carte de la vitrine émet la lumière de son illustration
+   (braises d'Ahri, or de Lee Sin, void de Kai'Sa). */
 const FAN = [
   {
     hash: "e5fe571a8f09c0a9e76345ec32b446480f54617c-1488x2078.png",
-    style: "left:2%; top:60px; rotate:-9deg; z-index:1"
+    style: "left:2%; top:60px; rotate:-9deg; z-index:1; --halo:var(--fury)"
   },
   {
     hash: "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
-    style: "left:30%; top:18px; rotate:1deg; z-index:2"
+    style: "left:30%; top:18px; rotate:1deg; z-index:2; --halo:var(--gold)"
   },
   {
     hash: "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png",
-    style: "left:58%; top:52px; rotate:9deg; z-index:1"
+    style: "left:58%; top:52px; rotate:9deg; z-index:1; --halo:var(--mind)"
   }
 ]
 const cardImg = (hash) =>
@@ -128,14 +130,15 @@ onMounted(async () => {
 
 <template>
   <section class="hero-splash" :style="splashStyle">
+    <div class="hero-beam" aria-hidden="true"></div>
     <div class="wrap hero-grid">
-      <div>
+      <div class="hero-copy">
         <p class="eyebrow">Le compagnon pour Riftbound</p>
         <h1>Vos cartes, vos decks,<br class="hide-mobile" />vos règles.</h1>
         <p class="lead" style="margin-top: 20px">
           Cartothèque, suivi de collection, deck builder et texte officiel des règles, en français.
         </p>
-        <div style="display: flex; gap: 16px; margin-top: 34px; flex-wrap: wrap">
+        <div class="hero-cta">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
           <RouterLink class="btn" to="/regles">Lire les règles</RouterLink>
         </div>
@@ -224,9 +227,9 @@ onMounted(async () => {
         </p>
         <RouterLink class="btn btn-gold" to="/regles">Ouvrir les règles</RouterLink>
       </div>
-      <div class="panel" v-reveal="1">
+      <div class="golden-rule" v-reveal="1" style="margin-top: 0">
         <p class="eyebrow">Règle 002 — la Règle d'or</p>
-        <p style="font-family: var(--font-display); font-size: 1.25rem; line-height: 1.5; color: var(--ink-strong)">
+        <p class="golden-rule-text">
           « Ce qui est inscrit sur une carte a priorité sur ce qui est inscrit dans les règles du jeu. »
         </p>
         <p class="muted mono" style="font-size: 0.74rem; margin-top: 14px">Règles du jeu Riftbound · © Riot Games</p>
