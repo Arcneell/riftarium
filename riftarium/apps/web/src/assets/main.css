@@ -1,8 +1,10 @@
 /* ============================================================
-   Riftarium — thème « parchemin de la Faille »
-   Thème clair inspiré du site officiel Riftbound : parchemin
-   crème, encre marine, or de Piltover, touche hextech.
-   Les cartes (sombres) se posent dessus comme sur une table.
+   Riftarium — thème « Vitrine hextech »
+   Nuit de Piltover : bleu abyssal en fond, laiton pour la
+   matière, sarcelle hextech pour l'interaction. Les cartes
+   sont la source de lumière, l'écrin reste sombre et discret.
+   Les noms de variables datent du thème parchemin : --paper
+   désigne toujours le fond de page, --ink le texte.
    ============================================================ */
 
 /* Polices auto-hébergées (latin + latin-ext) — pas de requête vers Google. */
@@ -126,27 +128,57 @@
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
     U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
+/* Cinzel (police variable, graisses 400 à 900) : capitales épigraphiques pour
+   les titres — les bas-de-casse sortent en petites capitales, c'est voulu. */
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/cinzel-latin-var.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/cinzel-latin-ext-var.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
 :root {
-  --paper: #f5efe1;
-  --paper-2: #ede4cf;
-  --surface: rgba(253, 250, 242, 0.82);
-  --line: rgba(138, 106, 47, 0.2);
-  --line-strong: rgba(138, 106, 47, 0.45);
+  /* Fonds : nuit de Piltover. --paper reste le fond de page, --paper-2 les
+     surfaces posées dessus, --surface les panneaux translucides (verre). */
+  --paper: #0a1428;
+  --paper-2: #13233f;
+  --surface: rgba(19, 33, 59, 0.72);
+  /* Surface opaque des champs de saisie et fonds pleins (ex-#fdfaf2). */
+  --surface-solid: #101d33;
+  /* Filets laiton. */
+  --line: rgba(201, 167, 92, 0.16);
+  --line-strong: rgba(201, 167, 92, 0.4);
 
-  --ink: #16283a;
-  --ink-strong: #0a1428;
-  /* Assombri (#77705e → #6b6450) : contraste ≥ 4.5:1 même sur le parchemin foncé du pied de page. */
-  --muted: #6b6450;
+  /* Texte : bleu-clair lunaire, champagne pour les titres. */
+  --ink: #d7e0ec;
+  --ink-strong: #f2ead6;
+  /* Contraste ≥ 4.5:1 sur les deux fonds nuit. */
+  --muted: #94a3b9;
 
-  --gold: #b08a3e;
-  /* Assombri (#8a6a2f → #7a5d28) : liens et intertitres dorés lisibles (≥ 4.5:1) sur les deux parchemins. */
-  --gold-deep: #7a5d28;
-  --gold-soft: #d9bd82;
-  --gold-grad: linear-gradient(135deg, #c9a75c 0%, #a98338 55%, #8a6a2f 100%);
+  /* Laiton : --gold-deep sert aux liens et intertitres (clair sur nuit). */
+  --gold: #c9a75c;
+  --gold-deep: #dcc07e;
+  --gold-soft: #a98338;
+  --gold-grad: linear-gradient(135deg, #d9bd82 0%, #b08a3e 55%, #8a6a2f 100%);
 
-  --hex: #0b8f84;
-  --hex-soft: #d7f2ef;
+  /* Hex : l'énergie hextech, éclaircie pour la nuit. --hex-soft est le fond
+     des états « activé » (interrupteurs), sombre teinté sarcelle. */
+  --hex: #35e0d0;
+  --hex-soft: #143c3f;
 
   --fury: #cf4437;
   --calm: #178f7f;
@@ -155,16 +187,16 @@
   --chaos: #c2439b;
   --order: #ab7c1a;
 
-  /* Variantes « texte » des couleurs de domaine : assombries juste ce qu'il faut pour un
-     contraste ≥ 4.5:1 sur fond parchemin. Réservées au texte — les pastilles et chips
-     graphiques gardent les teintes d'origine ci-dessus. */
-  --fury-text: #c03a2e;
-  --calm-text: #10756a;
-  --mind-text: #7355cf;
-  --body-text: #2f7340;
-  --chaos-text: #b0348a;
-  --order-text: #8a641a;
-  --hex-text: #0a7568;
+  /* Variantes « texte » des couleurs de domaine : éclaircies juste ce qu'il faut
+     pour un contraste ≥ 4.5:1 sur fond nuit. Réservées au texte — les pastilles
+     et chips graphiques gardent les teintes d'origine ci-dessus. */
+  --fury-text: #f0705f;
+  --calm-text: #3ecfbb;
+  --mind-text: #a68df5;
+  --body-text: #6cc47e;
+  --chaos-text: #e77ac4;
+  --order-text: #d9a94e;
+  --hex-text: #43d6c6;
 
   --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
 
@@ -173,12 +205,12 @@
   --r-lg: 28px;
   --r-full: 999px;
 
-  --shadow: 0 16px 40px rgba(74, 56, 22, 0.14);
-  --shadow-soft: 0 8px 22px rgba(74, 56, 22, 0.1);
-  --glow-hex: 0 0 0 3px rgba(11, 143, 132, 0.15);
-  --glow-gold: 0 10px 30px rgba(138, 106, 47, 0.28);
+  --shadow: 0 16px 40px rgba(2, 6, 16, 0.5);
+  --shadow-soft: 0 8px 22px rgba(2, 6, 16, 0.38);
+  --glow-hex: 0 0 0 3px rgba(53, 224, 208, 0.18);
+  --glow-gold: 0 10px 30px rgba(201, 167, 92, 0.24);
 
-  --font-display: "Marcellus", serif;
+  --font-display: "Cinzel", "Marcellus", serif;
   --font-body: "Outfit", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 }
@@ -238,8 +270,9 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(1200px 620px at 85% -8%, rgba(11, 143, 132, 0.09) 0%, transparent 60%),
-    radial-gradient(1000px 560px at -8% 30%, rgba(176, 138, 62, 0.12) 0%, transparent 55%);
+    radial-gradient(1200px 620px at 85% -8%, rgba(53, 224, 208, 0.07) 0%, transparent 60%),
+    radial-gradient(1000px 560px at -8% 30%, rgba(201, 167, 92, 0.07) 0%, transparent 55%),
+    radial-gradient(900px 500px at 60% 110%, rgba(115, 85, 207, 0.06) 0%, transparent 60%);
 }
 
 ::selection {
@@ -306,8 +339,8 @@ h3 {
   color: var(--ink-strong);
 }
 h1 {
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
-  background: linear-gradient(110deg, #0a1428 30%, #8a6a2f 50%, #0a1428 70%);
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+  background: linear-gradient(110deg, #f2ead6 30%, #c9a75c 50%, #f2ead6 70%);
   background-size: 240% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -349,7 +382,7 @@ h3 {
   height: 8px;
   border-radius: 50%;
   background: var(--hex);
-  box-shadow: 0 0 8px rgba(11, 143, 132, 0.6);
+  box-shadow: 0 0 8px rgba(53, 224, 208, 0.6);
   animation: pulse 2.6s ease-in-out infinite;
 }
 @keyframes pulse {
@@ -473,7 +506,7 @@ section {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(245, 239, 225, 0.85);
+  background: rgba(10, 20, 40, 0.78);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
 }
@@ -775,14 +808,14 @@ section {
   padding: 4px 13px;
   border-radius: var(--r-full);
   border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 55%, transparent);
-  background: color-mix(in srgb, var(--chip, var(--gold)) 12%, #fff);
-  color: color-mix(in srgb, var(--chip, var(--gold)) 80%, #000);
+  background: color-mix(in srgb, var(--chip, var(--gold)) 22%, var(--paper-2));
+  color: color-mix(in srgb, var(--chip, var(--gold)) 65%, #fff);
 }
 .chip-rune {
   --chip: transparent;
   padding: 4px 12px 4px 8px;
   border: 1px solid var(--line-strong);
-  background: rgba(253, 250, 242, 0.9);
+  background: rgba(16, 29, 51, 0.9);
   color: var(--ink-strong);
 }
 .chip-rune .rb-glyph {
@@ -809,7 +842,7 @@ input[type="number"],
 textarea,
 select {
   width: 100%;
-  background: #fdfaf2;
+  background: var(--surface-solid);
   border: 1px solid var(--line-strong);
   border-radius: var(--r);
   color: var(--ink-strong);
@@ -828,7 +861,7 @@ select:focus {
 }
 input::placeholder,
 textarea::placeholder {
-  color: rgba(119, 112, 94, 0.6);
+  color: rgba(148, 163, 185, 0.55);
 }
 textarea {
   resize: vertical;
@@ -909,7 +942,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #fdfaf2;
+  background: var(--surface-solid);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-full);
   padding: 0 20px;
@@ -940,7 +973,7 @@ textarea {
   font-size: 0.84rem;
   color: var(--muted);
   border: 1px solid var(--line);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
   transition: all 0.18s;
 }
 .filter:hover {
@@ -986,7 +1019,7 @@ textarea {
   padding: 0 13px;
   border-radius: var(--r-full);
   border: 1px solid var(--line);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
   color: var(--muted);
   font-size: 0.84rem;
   transition: all 0.18s;
@@ -1048,7 +1081,7 @@ textarea {
   border-radius: var(--r);
   border: 1px solid var(--line-strong);
   background: var(--paper);
-  box-shadow: 0 18px 40px rgba(30, 22, 8, 0.24);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
 }
 .fsel-search {
   display: block;
@@ -1057,7 +1090,7 @@ textarea {
   padding: 7px 10px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
   font-size: 0.84rem;
 }
 .fsel-empty {
@@ -1151,11 +1184,15 @@ textarea {
   display: block;
   border-radius: var(--r);
   background: var(--paper-2);
-  box-shadow: 0 10px 26px rgba(74, 56, 22, 0.22);
+  box-shadow: 0 10px 26px rgba(2, 6, 16, 0.5);
   transition: box-shadow 0.25s;
 }
+/* Lumière de vitrine : au survol, la carte émet un halo de la couleur de son
+   domaine (--halo posé par CardTile), en plus de l'ombre portée. */
 .card-tile:hover img {
-  box-shadow: 0 20px 44px rgba(74, 56, 22, 0.32);
+  box-shadow:
+    0 20px 44px rgba(2, 6, 16, 0.65),
+    0 0 44px color-mix(in srgb, var(--halo, var(--gold)) 34%, transparent);
 }
 .card-tile.landscape img {
   aspect-ratio: 1038 / 744;
@@ -1268,7 +1305,7 @@ textarea {
   background: var(--gold-grad);
   color: #fdf8ec;
   font-size: 0.8rem;
-  box-shadow: 0 4px 12px rgba(74, 56, 22, 0.35);
+  box-shadow: 0 4px 12px rgba(2, 6, 16, 0.6);
   pointer-events: none;
 }
 .bulk-bar {
@@ -1297,7 +1334,7 @@ textarea {
   background: var(--line);
 }
 .bulk-danger {
-  color: #a33a2a;
+  color: #f0705f;
 }
 
 .card-text {
@@ -1373,7 +1410,7 @@ textarea {
   border-radius: var(--r-lg);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  box-shadow: 0 28px 60px rgba(30, 22, 8, 0.35);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6);
   animation: preview-in 0.32s cubic-bezier(0.22, 0.8, 0.32, 1);
   pointer-events: none;
 }
@@ -1455,7 +1492,7 @@ textarea {
   object-fit: contain;
   display: block;
   border-radius: var(--r-lg);
-  box-shadow: 0 24px 54px rgba(74, 56, 22, 0.3);
+  box-shadow: 0 24px 54px rgba(2, 6, 16, 0.55);
   background: var(--paper-2);
 }
 .card-art.landscape img.full,
@@ -1560,7 +1597,7 @@ textarea {
 }
 
 .rules-text {
-  background: #fdfaf2;
+  background: var(--surface-solid);
   border: 1px solid var(--line);
   border-left: 3px solid var(--gold);
   border-radius: var(--r-sm);
@@ -1692,8 +1729,8 @@ td.num {
   aspect-ratio: 744/1039;
   object-fit: cover;
   border-radius: 8px;
-  border: 2px solid #fdfaf2;
-  box-shadow: 0 5px 14px rgba(74, 56, 22, 0.3);
+  border: 2px solid var(--paper-2);
+  box-shadow: 0 5px 14px rgba(2, 6, 16, 0.55);
   margin-left: -22px;
   transition: transform 0.2s;
 }
@@ -1734,13 +1771,13 @@ td.num {
   background-image:
     linear-gradient(
       to right,
-      rgba(245, 239, 225, 0.92) 0%,
-      rgba(245, 239, 225, 0.8) 22%,
-      rgba(245, 239, 225, 0.5) 48%,
-      rgba(245, 239, 225, 0.2) 75%,
-      rgba(245, 239, 225, 0.08) 100%
+      rgba(10, 20, 40, 0.92) 0%,
+      rgba(10, 20, 40, 0.8) 22%,
+      rgba(10, 20, 40, 0.5) 48%,
+      rgba(10, 20, 40, 0.2) 75%,
+      rgba(10, 20, 40, 0.08) 100%
     ),
-    linear-gradient(to bottom, rgba(245, 239, 225, 0.5), rgba(245, 239, 225, 0) 30%), var(--splash, none);
+    linear-gradient(to bottom, rgba(10, 20, 40, 0.5), rgba(10, 20, 40, 0) 30%), var(--splash, none);
   background-size: cover;
   background-position: 76% 30%;
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0) 97%);
@@ -1780,7 +1817,7 @@ td.num {
   width: 218px;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 26px 50px rgba(30, 22, 8, 0.4);
+  box-shadow: 0 26px 50px rgba(0, 0, 0, 0.65);
   animation: float 7s ease-in-out infinite;
 }
 .hero-fan .fan-card:nth-child(2) {
@@ -1852,8 +1889,8 @@ td.num {
   border-radius: var(--r-full);
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, var(--chip, var(--gold)) 82%, #000);
-  background: color-mix(in srgb, var(--chip, var(--gold)) 16%, #fff);
+  color: color-mix(in srgb, var(--chip, var(--gold)) 65%, #fff);
+  background: color-mix(in srgb, var(--chip, var(--gold)) 24%, var(--paper-2));
   border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 40%, transparent);
   margin-bottom: 18px;
 }
@@ -1908,15 +1945,15 @@ td.num {
   background-image:
     linear-gradient(
       to right,
-      rgba(245, 239, 225, 0.9) 0%,
-      rgba(245, 239, 225, 0.74) 18%,
-      rgba(245, 239, 225, 0.5) 38%,
-      rgba(245, 239, 225, 0.26) 58%,
-      rgba(245, 239, 225, 0.08) 78%,
-      rgba(245, 239, 225, 0) 100%
+      rgba(10, 20, 40, 0.9) 0%,
+      rgba(10, 20, 40, 0.74) 18%,
+      rgba(10, 20, 40, 0.5) 38%,
+      rgba(10, 20, 40, 0.26) 58%,
+      rgba(10, 20, 40, 0.08) 78%,
+      rgba(10, 20, 40, 0) 100%
     ),
-    linear-gradient(to bottom, rgba(245, 239, 225, 0.22), rgba(245, 239, 225, 0) 28%),
-    var(--banner, radial-gradient(700px 320px at 78% 20%, rgba(11, 143, 132, 0.12), transparent 70%));
+    linear-gradient(to bottom, rgba(10, 20, 40, 0.22), rgba(10, 20, 40, 0) 28%),
+    var(--banner, radial-gradient(700px 320px at 78% 20%, rgba(53, 224, 208, 0.12), transparent 70%));
   background-size: cover;
   /* Sur une bande large et courte, l'image déborde surtout en hauteur : on vise
      le milieu de l'illustration (personnages) plutôt que le ciel du haut. */
@@ -2326,7 +2363,7 @@ footer {
     inset: 0;
     /* au-dessus du bandeau traceurs (80), qui sinon flottait sur le tiroir */
     z-index: 85;
-    background: rgba(24, 18, 10, 0.44);
+    background: rgba(3, 7, 16, 0.6);
     backdrop-filter: blur(2px);
   }
   .scrim-enter-active,
@@ -2353,10 +2390,10 @@ footer {
       calc(24px + env(safe-area-inset-bottom, 0px)) 16px;
     overflow-y: auto;
     overscroll-behavior: contain;
-    background: rgba(245, 239, 225, 0.98);
+    background: rgba(13, 24, 44, 0.98);
     backdrop-filter: blur(18px);
     border-left: 1px solid var(--line-strong);
-    box-shadow: -20px 0 56px rgba(24, 18, 10, 0.22);
+    box-shadow: -20px 0 56px rgba(0, 0, 0, 0.5);
     transform: translateX(101%);
     /* visibility retardée : le panneau reste focusable pendant la fermeture,
        puis sort de l'ordre de tabulation une fois hors écran. */
@@ -2536,7 +2573,7 @@ footer {
   margin-left: calc(var(--indent, 0) * 22px);
 }
 .rule:hover {
-  background: rgba(253, 250, 242, 0.8);
+  background: rgba(16, 29, 51, 0.8);
 }
 .rule.target {
   background: var(--hex-soft);
@@ -2553,7 +2590,7 @@ footer {
   font-size: 0.97rem;
 }
 .rule-example {
-  background: rgba(253, 250, 242, 0.9);
+  background: rgba(16, 29, 51, 0.9);
   border-left: 3px solid var(--gold-soft);
   border-radius: 8px;
   padding: 10px 14px;
@@ -2575,9 +2612,9 @@ footer {
   font-family: var(--font-mono);
   font-size: 0.78em;
   font-weight: 600;
-  background: color-mix(in srgb, var(--chip, var(--gold)) 14%, #fff);
+  background: color-mix(in srgb, var(--chip, var(--gold)) 22%, var(--paper-2));
   border: 1px solid color-mix(in srgb, var(--chip, var(--gold)) 45%, transparent);
-  color: color-mix(in srgb, var(--chip, var(--gold)) 80%, #000);
+  color: color-mix(in srgb, var(--chip, var(--gold)) 65%, #fff);
 }
 .rref {
   display: inline-block;
@@ -2586,7 +2623,7 @@ footer {
   font-size: 0.84em;
   color: var(--gold-deep);
   border: 1px solid var(--line-strong);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
   transition:
     color 0.15s,
     border-color 0.15s;
@@ -2672,7 +2709,7 @@ footer {
   aspect-ratio: 744/1039;
   object-fit: cover;
   border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(74, 56, 22, 0.25);
+  box-shadow: 0 8px 20px rgba(2, 6, 16, 0.5);
   content-visibility: auto;
   contain-intrinsic-size: 150px 209px;
 }
@@ -2689,7 +2726,7 @@ footer {
     transform: scaleX(-1) translateY(-10px) scale(1.05);
   }
   .river-card:hover img {
-    box-shadow: 0 18px 36px rgba(74, 56, 22, 0.38);
+    box-shadow: 0 18px 36px rgba(2, 6, 16, 0.65);
   }
 }
 .river-card:focus-visible {
@@ -2736,13 +2773,7 @@ footer {
   position: relative;
   height: 330px;
   background-image:
-    linear-gradient(
-      to bottom,
-      var(--paper),
-      rgba(245, 239, 225, 0.08) 30%,
-      rgba(245, 239, 225, 0.08) 70%,
-      var(--paper)
-    ),
+    linear-gradient(to bottom, var(--paper), rgba(10, 20, 40, 0.08) 30%, rgba(10, 20, 40, 0.08) 70%, var(--paper)),
     var(--art, none);
   background-size: cover;
   background-position: center 30%;
@@ -2812,7 +2843,7 @@ footer {
   font-size: 1.3rem;
 }
 .tier.big {
-  background: radial-gradient(420px 200px at 85% -20%, rgba(11, 143, 132, 0.12), transparent 70%), var(--surface);
+  background: radial-gradient(420px 200px at 85% -20%, rgba(53, 224, 208, 0.12), transparent 70%), var(--surface);
 }
 .tier-step {
   position: absolute;
@@ -2861,9 +2892,9 @@ footer {
   border-radius: var(--r-lg);
   border: 1px solid var(--line-strong);
   background:
-    radial-gradient(80% 60% at 50% 0%, rgba(11, 143, 132, 0.08), transparent 60%),
+    radial-gradient(80% 60% at 50% 0%, rgba(53, 224, 208, 0.08), transparent 60%),
     radial-gradient(110% 80% at 50% 115%, rgba(176, 138, 62, 0.16), transparent 60%),
-    linear-gradient(180deg, #fbf6ea, #f2ebd9);
+    linear-gradient(180deg, #14253f, #0d1a30);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -2947,7 +2978,7 @@ footer {
   right: 15.5%;
   top: 85%;
   bottom: 0.5%;
-  border: 1.5px dashed rgba(11, 143, 132, 0.45);
+  border: 1.5px dashed rgba(53, 224, 208, 0.45);
   border-bottom: none;
   border-radius: var(--r) var(--r) 0 0;
   pointer-events: none;
@@ -2990,7 +3021,7 @@ footer {
   width: 100%;
   display: block;
   border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(74, 56, 22, 0.25);
+  box-shadow: 0 8px 20px rgba(2, 6, 16, 0.5);
 }
 .tb-bf-name {
   position: absolute;
@@ -3055,7 +3086,7 @@ footer {
   width: 100%;
   display: block;
   border-radius: 8%;
-  box-shadow: 0 6px 14px rgba(74, 56, 22, 0.3);
+  box-shadow: 0 6px 14px rgba(2, 6, 16, 0.55);
 }
 .tb-card.wide {
   width: 15%;
@@ -3088,8 +3119,8 @@ footer {
 }
 .tb-card.glow img {
   box-shadow:
-    0 0 0 3px rgba(11, 143, 132, 0.55),
-    0 10px 24px rgba(11, 143, 132, 0.35);
+    0 0 0 3px rgba(53, 224, 208, 0.55),
+    0 10px 24px rgba(53, 224, 208, 0.35);
 }
 .tb-enter-from {
   opacity: 0;
@@ -3156,10 +3187,10 @@ footer {
   height: 100%;
   border-radius: 8%;
   background:
-    radial-gradient(60% 60% at 50% 42%, rgba(11, 143, 132, 0.5), transparent 70%),
+    radial-gradient(60% 60% at 50% 42%, rgba(53, 224, 208, 0.5), transparent 70%),
     linear-gradient(160deg, #12263f, #0a1428);
   border: 2px solid var(--gold);
-  box-shadow: 0 6px 14px rgba(74, 56, 22, 0.3);
+  box-shadow: 0 6px 14px rgba(2, 6, 16, 0.55);
 }
 .tb-back::after {
   content: "";
@@ -3276,7 +3307,7 @@ footer {
   animation: bd-march 0.9s linear infinite;
 }
 .tb-move.halo {
-  stroke: rgba(11, 143, 132, 0.25);
+  stroke: rgba(53, 224, 208, 0.25);
   stroke-width: 3;
   stroke-dasharray: none;
   animation: none;
@@ -3307,7 +3338,7 @@ footer {
   width: 100%;
   height: 100%;
   border-radius: 4.5%;
-  box-shadow: 0 18px 44px rgba(30, 20, 5, 0.45);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
 }
 .tb-focus-note {
   position: absolute;
@@ -3336,7 +3367,7 @@ footer {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(20, 14, 4, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(3px);
   cursor: zoom-out;
   animation: preview-in 0.25s ease;
@@ -3493,7 +3524,7 @@ footer {
   max-width: none;
   padding: clamp(14px, 2vw, 36px);
   overflow: auto;
-  background: radial-gradient(90% 60% at 50% 0%, rgba(11, 143, 132, 0.06), transparent 60%), var(--paper);
+  background: radial-gradient(90% 60% at 50% 0%, rgba(53, 224, 208, 0.06), transparent 60%), var(--paper);
 }
 .guide-layout.full {
   align-items: start;
@@ -3711,8 +3742,8 @@ footer {
   border-radius: var(--r);
   overflow: hidden;
   background:
-    radial-gradient(80% 70% at 50% 0%, rgba(11, 143, 132, 0.07), transparent 60%),
-    linear-gradient(180deg, #fbf6ea, #f2ebd9);
+    radial-gradient(80% 70% at 50% 0%, rgba(53, 224, 208, 0.07), transparent 60%),
+    linear-gradient(180deg, #14253f, #0d1a30);
   box-shadow: var(--shadow-soft);
   margin-bottom: 18px;
 }
@@ -3760,7 +3791,7 @@ footer {
   width: 46px;
   height: 64px;
   border-radius: 7px;
-  background: #fdfaf2;
+  background: var(--surface-solid);
   border: 2px solid var(--gold);
   box-shadow: var(--shadow-soft);
   display: flex;
@@ -3784,7 +3815,7 @@ footer {
 }
 .demo-item.card.glow {
   box-shadow:
-    0 0 0 3px rgba(11, 143, 132, 0.5),
+    0 0 0 3px rgba(53, 224, 208, 0.5),
     var(--shadow-soft);
 }
 .demo-item.zone {
@@ -3855,7 +3886,7 @@ footer {
   gap: 14px;
   padding: 10px 14px;
   border-top: 1px solid var(--line);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
 }
 .demo-caption {
   font-size: 0.82rem;
@@ -3913,7 +3944,7 @@ footer {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(10, 20, 40, 0.45);
+  background: rgba(4, 9, 20, 0.65);
   backdrop-filter: blur(6px);
   animation: modal-fade 0.2s ease-out;
 }
@@ -4084,7 +4115,7 @@ h2.dbuilder-name {
   aspect-ratio: 744 / 1039;
   object-fit: cover;
   border-radius: var(--r-sm);
-  box-shadow: 0 6px 16px rgba(74, 56, 22, 0.22);
+  box-shadow: 0 6px 16px rgba(2, 6, 16, 0.5);
   transition:
     box-shadow 0.2s,
     filter 0.25s;
@@ -4099,7 +4130,7 @@ h2.dbuilder-name {
   z-index: 2;
 }
 .gcard:hover img {
-  box-shadow: 0 18px 36px rgba(74, 56, 22, 0.38);
+  box-shadow: 0 18px 36px rgba(2, 6, 16, 0.65);
 }
 .gcard:active {
   cursor: grabbing;
@@ -4123,7 +4154,7 @@ h2.dbuilder-name {
   bottom: 7px;
   padding: 2px 8px;
   border-radius: var(--r-full);
-  background: rgba(253, 250, 242, 0.94);
+  background: rgba(16, 29, 51, 0.94);
   border: 1px solid var(--line-strong);
   color: var(--ink-strong);
   font-family: var(--font-mono);
@@ -4252,7 +4283,7 @@ h2.dbuilder-name {
   padding: 8px 4px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
 }
 .deck-meters .meter b {
   display: block;
@@ -4418,7 +4449,7 @@ h2.dbuilder-name {
   width: 24px;
   height: 24px;
   border-radius: var(--r-full);
-  background: rgba(253, 250, 242, 0.92);
+  background: rgba(16, 29, 51, 0.92);
   color: var(--ink-strong);
   font-size: 0.9rem;
   line-height: 1;
@@ -4575,7 +4606,7 @@ body.drag-active * {
   border-radius: var(--r-lg);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  box-shadow: 0 28px 60px rgba(30, 22, 8, 0.35);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   animation: preview-in-flat 0.18s ease-out;
 }
@@ -4716,7 +4747,7 @@ body.drag-active * {
   width: 28px;
   height: 28px;
   border-radius: var(--r-full);
-  background: rgba(253, 250, 242, 0.9);
+  background: rgba(16, 29, 51, 0.9);
   color: var(--ink-strong);
   font-size: 0.75rem;
   opacity: 0;
@@ -4750,7 +4781,7 @@ body.drag-active * {
   place-items: center;
   border: 2px dashed var(--gold);
   border-radius: var(--r);
-  background: rgba(245, 239, 225, 0.82);
+  background: rgba(16, 29, 51, 0.82);
   pointer-events: none;
   animation: modal-fade 0.15s ease-out;
 }
@@ -4764,7 +4795,7 @@ body.drag-active * {
   box-shadow: var(--glow-gold);
 }
 .drop-hint.hot {
-  background: rgba(245, 239, 225, 0.55);
+  background: rgba(10, 20, 40, 0.55);
   border-style: solid;
 }
 
@@ -4805,8 +4836,8 @@ body.drag-active * {
   border-radius: var(--r-lg);
   overflow: hidden;
   background:
-    radial-gradient(90% 120% at 0% 50%, rgba(255, 255, 255, 0.7), transparent 60%),
-    linear-gradient(135deg, #fdfaf2 0%, #f4ebd8 100%);
+    radial-gradient(90% 120% at 0% 50%, rgba(255, 255, 255, 0.07), transparent 60%),
+    linear-gradient(135deg, #16294a 0%, #0e1b33 100%);
   box-shadow: var(--shadow-soft);
   transition:
     transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1),
@@ -4867,7 +4898,7 @@ body.drag-active * {
   inset: 3.2%;
   border-radius: calc(var(--cover-w) * 0.05);
   background: var(--cover) center / cover no-repeat;
-  filter: drop-shadow(0 8px 16px rgba(74, 56, 22, 0.35));
+  filter: drop-shadow(0 8px 16px rgba(2, 6, 16, 0.6));
   transform: rotate(-2deg);
   transition: transform 0.25s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
@@ -4948,8 +4979,8 @@ body.drag-active * {
 }
 .deck-legal.ok {
   color: var(--hex-text);
-  border-color: rgba(11, 143, 132, 0.4);
-  background: rgba(11, 143, 132, 0.1);
+  border-color: rgba(53, 224, 208, 0.4);
+  background: rgba(53, 224, 208, 0.1);
 }
 .deck-legal.ko {
   color: var(--fury-text);
@@ -4979,7 +5010,7 @@ body.drag-active * {
   gap: 4px;
 }
 .deck-box-runes img {
-  filter: drop-shadow(0 1px 2px rgba(74, 56, 22, 0.3));
+  filter: drop-shadow(0 1px 2px rgba(2, 6, 16, 0.55));
 }
 .deck-box-foot .deck-box-stats {
   display: flex;
@@ -5286,7 +5317,7 @@ button.deck-box-stat:hover,
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--gold) 16%, #fff);
+  background: color-mix(in srgb, var(--gold) 24%, var(--paper-2));
   border: 2px solid var(--gold-soft);
   box-shadow: var(--shadow-soft);
   flex-shrink: 0;
@@ -5347,7 +5378,7 @@ button.deck-box-stat:hover,
   padding: 8px 10px 8px 8px;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  background: rgba(245, 239, 225, 0.5);
+  background: rgba(10, 20, 40, 0.5);
   scrollbar-width: thin;
   scrollbar-color: var(--gold-soft) transparent;
 }
@@ -5455,7 +5486,7 @@ button.deck-box-stat:hover,
     width: 44px;
     height: 44px;
     border-radius: var(--r-full);
-    background: rgba(253, 250, 242, 0.92);
+    background: rgba(16, 29, 51, 0.92);
     border: 1px solid var(--line-strong);
     color: var(--ink-strong);
     font-family: var(--font-mono);
@@ -6067,15 +6098,15 @@ button.deck-box-stat:hover,
    visites = or, utilisateurs = sarcelle, decks = violet. Les couleurs de statut
    sont réservées à la barre de modération, jamais réutilisées comme série. */
 .admin-stats {
-  --chart-gold: #c08508;
-  --chart-teal: #0a8b7c;
-  --chart-violet: #7355cf;
-  --chart-status-ok: #2f7340;
+  --chart-gold: #d9a94e;
+  --chart-teal: #2fbfae;
+  --chart-violet: #a68df5;
+  --chart-status-ok: #5cb87a;
   --chart-status-wait: #cf9200;
-  --chart-status-ko: #ad2417;
+  --chart-status-ko: #e05a48;
   /* Grille hairline à peine plus foncée que la surface ; surface = fond des panneaux. */
-  --chart-grid: rgba(107, 100, 80, 0.16);
-  --chart-surface: #fbf7ec;
+  --chart-grid: rgba(148, 163, 185, 0.18);
+  --chart-surface: #101d33;
 }
 
 /* Tuiles KPI : valeur en semibold, delta 7 j discret sous la valeur. */
@@ -6193,7 +6224,7 @@ button.deck-box-stat:hover,
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: #fffdf7;
+  background: var(--surface-solid);
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   padding: 6px 10px;
@@ -6313,28 +6344,28 @@ button.deck-box-stat:hover,
   border-radius: var(--r-full);
   border: 1px solid var(--line-strong);
   color: var(--muted);
-  background: rgba(253, 250, 242, 0.9);
+  background: rgba(16, 29, 51, 0.9);
   white-space: nowrap;
 }
 .admin-badge.is-gold {
   border-color: color-mix(in srgb, var(--gold) 60%, transparent);
   color: var(--gold-deep);
-  background: color-mix(in srgb, var(--gold) 12%, #fff);
+  background: color-mix(in srgb, var(--gold) 20%, var(--paper-2));
 }
 .admin-badge.is-ok {
   border-color: color-mix(in srgb, var(--hex) 55%, transparent);
   color: var(--hex-text);
-  background: color-mix(in srgb, var(--hex) 10%, #fff);
+  background: color-mix(in srgb, var(--hex) 16%, var(--paper-2));
 }
 .admin-badge.is-wait {
   border-color: color-mix(in srgb, var(--order) 65%, transparent);
   color: var(--order-text);
-  background: color-mix(in srgb, var(--order) 14%, #fff);
+  background: color-mix(in srgb, var(--order) 22%, var(--paper-2));
 }
 .admin-badge.is-ko {
   border-color: color-mix(in srgb, var(--fury) 55%, transparent);
   color: var(--fury-text);
-  background: color-mix(in srgb, var(--fury) 10%, #fff);
+  background: color-mix(in srgb, var(--fury) 18%, var(--paper-2));
 }
 .admin-counts {
   font-size: 0.76rem;
@@ -6498,7 +6529,7 @@ button.deck-box-stat:hover,
   bottom: 7px;
   padding: 2px 7px;
   border-radius: var(--r-full);
-  background: rgba(253, 250, 242, 0.92);
+  background: rgba(16, 29, 51, 0.92);
   border: 1px solid var(--line);
   color: var(--muted);
   font-family: var(--font-mono);
@@ -6642,7 +6673,7 @@ button.progress-row:hover {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: var(--r-full);
-  background: #fdfaf2;
+  background: var(--surface-solid);
   overflow: hidden;
 }
 .wish-stepper button {
@@ -6686,7 +6717,7 @@ button.progress-row:hover {
   transition: color 0.18s;
 }
 .wish-remove:hover {
-  color: #a33a2a;
+  color: #f0705f;
 }
 .wish-empty {
   max-width: 560px;
@@ -6701,7 +6732,7 @@ button.progress-row:hover {
   padding: 7px 16px;
   border-radius: var(--r-full);
   border: 1px solid var(--line);
-  background: rgba(253, 250, 242, 0.7);
+  background: rgba(16, 29, 51, 0.7);
   color: var(--muted);
   font-size: 0.84rem;
   cursor: pointer;
@@ -7286,10 +7317,10 @@ button.progress-row:hover {
 /* ---------- Statistiques ---------- */
 /* Mêmes séries que le tableau de bord : or pour le volume, sarcelle pour les victoires. */
 .play-stats {
-  --chart-gold: #c08508;
-  --chart-teal: #0a8b7c;
-  --chart-grid: rgba(107, 100, 80, 0.16);
-  --chart-surface: #fbf7ec;
+  --chart-gold: #d9a94e;
+  --chart-teal: #2fbfae;
+  --chart-grid: rgba(148, 163, 185, 0.18);
+  --chart-surface: #101d33;
 }
 .play-panel {
   padding: 26px;
@@ -7650,7 +7681,7 @@ button.progress-row:hover {
 .profile-history .play-row {
   padding: 16px 18px;
   box-shadow: none;
-  background: rgba(245, 239, 225, 0.5);
+  background: rgba(10, 20, 40, 0.5);
 }
 
 /* ---------- Médailles (hauts faits) ---------- */
@@ -7894,7 +7925,7 @@ button.progress-row:hover {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  background: rgba(245, 239, 225, 0.5);
+  background: rgba(10, 20, 40, 0.5);
 }
 .friend-ident {
   display: flex;
