@@ -121,7 +121,7 @@ class _TrackedMatchScreenState extends ConsumerState<TrackedMatchScreen> {
     final tracked = ref.watch(trackedMatchControllerProvider(widget.matchId));
     return gameTheme(
       child: Scaffold(
-        backgroundColor: RiftColors.inkStrong,
+        backgroundColor: RiftColors.night,
         body: SafeArea(
           child: tracked.when(
             loading: () => const LoadingView(),

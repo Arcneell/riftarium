@@ -113,7 +113,7 @@ class _DemoStage extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF12253C), RiftColors.inkStrong],
+              colors: [Color(0xFF12253C), RiftColors.night],
             ),
           ),
           child: Stack(
@@ -264,7 +264,7 @@ class _DemoItemView extends StatelessWidget {
             fontFamily: RiftFonts.mono,
             fontSize: (stageWidth * 0.024).clamp(7.5, 11.0),
             height: 1.25,
-            color: RiftColors.inkStrong,
+            color: RiftColors.night,
           ),
         ),
       ),

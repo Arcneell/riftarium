@@ -293,19 +293,16 @@ class _DialogError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: RiftColors.fury.withValues(alpha: dark ? 0.18 : 0.1),
+        color: RiftColors.fury.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(RiftRadius.sm),
         border: Border.all(color: RiftColors.fury.withValues(alpha: 0.45)),
       ),
       child: Text(
         message,
-        style: text.small.copyWith(
-          color: dark ? RiftColors.fury : RiftColors.furyText,
-        ),
+        style: text.small.copyWith(color: RiftColors.furyText),
       ),
     );
   }

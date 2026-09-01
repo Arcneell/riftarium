@@ -62,7 +62,6 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
     final card = widget.card;
     final price = card.priceEur;
     final owned = card.ownedQty ?? 0;
-    final dark = theme.brightness == Brightness.dark;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final raised = _raised || reduceMotion;
 
@@ -73,7 +72,7 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2),
+          color: RiftColors.paper2,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(RiftRadius.lg),
           ),
@@ -158,7 +157,7 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
               _SheetNote(
                 message: widget.addError!,
                 color: RiftColors.fury,
-                textColor: dark ? RiftColors.fury : RiftColors.furyText,
+                textColor: RiftColors.furyText,
                 icon: Icons.error_outline,
               ),
             ],
@@ -169,7 +168,7 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
                     ? '1 exemplaire ajouté.'
                     : '${widget.addedQty} exemplaires ajoutés.',
                 color: RiftColors.calm,
-                textColor: dark ? RiftColors.hexSoft : RiftColors.calmText,
+                textColor: RiftColors.calmText,
                 icon: Icons.check_circle_outline,
               ),
             ],

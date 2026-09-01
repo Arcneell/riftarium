@@ -53,7 +53,7 @@ class DrawOverlay extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onDismiss,
         child: ColoredBox(
-          color: RiftColors.inkStrong.withValues(alpha: 0.94),
+          color: RiftColors.night.withValues(alpha: 0.94),
           child: SafeArea(
             child: AnimatedBuilder(
               animation: animation,

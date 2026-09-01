@@ -118,11 +118,10 @@ class RiftPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: dark ? RiftColors.darkPaper2 : const Color(0xFFFDFAF2),
+        color: RiftColors.paper2,
         borderRadius: BorderRadius.circular(RiftRadius.md),
         border: Border.all(color: theme.colorScheme.outline),
         boxShadow: raised ? RiftShadows.soft : null,
@@ -195,7 +194,6 @@ class DomainChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = RiftColors.domain(domain);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final label = labels[domain] ?? domain;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -203,7 +201,7 @@ class DomainChip extends StatelessWidget {
         vertical: compact ? 2 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: dark ? 0.28 : 0.13),
+        color: color.withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(RiftRadius.full),
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
@@ -222,7 +220,7 @@ class DomainChip extends StatelessWidget {
               fontFamily: RiftFonts.body,
               fontVariations: RiftFonts.weight(600),
               fontSize: compact ? 11 : 12.5,
-              color: dark ? color : RiftColors.domainText(domain),
+              color: RiftColors.domainText(domain),
             ),
           ),
         ],
@@ -252,7 +250,7 @@ class MonoBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: filled
-            ? RiftColors.inkStrong.withValues(alpha: 0.78)
+            ? RiftColors.night.withValues(alpha: 0.78)
             : tint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(RiftRadius.sm),
         border: filled ? null : Border.all(color: tint.withValues(alpha: 0.4)),

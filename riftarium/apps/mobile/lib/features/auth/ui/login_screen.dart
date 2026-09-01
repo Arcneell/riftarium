@@ -204,7 +204,7 @@ class BannerBackButton extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: RiftColors.inkStrong.withValues(alpha: 0.45),
+                color: RiftColors.night.withValues(alpha: 0.45),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
               ),
               child: const Icon(
@@ -229,29 +229,22 @@ class AuthError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: RiftColors.fury.withValues(alpha: dark ? 0.18 : 0.1),
+        color: RiftColors.fury.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(RiftRadius.sm),
         border: Border.all(color: RiftColors.fury.withValues(alpha: 0.45)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 18,
-            color: dark ? RiftColors.fury : RiftColors.furyText,
-          ),
+          Icon(Icons.error_outline, size: 18, color: RiftColors.furyText),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
               message,
-              style: text.small.copyWith(
-                color: dark ? RiftColors.fury : RiftColors.furyText,
-              ),
+              style: text.small.copyWith(color: RiftColors.furyText),
             ),
           ),
         ],

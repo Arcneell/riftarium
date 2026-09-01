@@ -156,7 +156,7 @@ class _DeckHeader extends ConsumerWidget {
       pinned: true,
       stretch: true,
       expandedHeight: 300,
-      backgroundColor: RiftColors.inkStrong,
+      backgroundColor: RiftColors.night,
       surfaceTintColor: Colors.transparent,
       iconTheme: const IconThemeData(color: RiftColors.paper),
       title: LayoutBuilder(
@@ -194,9 +194,9 @@ class _DeckHeader extends ConsumerWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    RiftColors.inkStrong.withValues(alpha: 0.72),
-                    RiftColors.inkStrong.withValues(alpha: 0.5),
-                    RiftColors.inkStrong.withValues(alpha: 0.92),
+                    RiftColors.night.withValues(alpha: 0.72),
+                    RiftColors.night.withValues(alpha: 0.5),
+                    RiftColors.night.withValues(alpha: 0.92),
                   ],
                   stops: const [0, 0.42, 1],
                 ),

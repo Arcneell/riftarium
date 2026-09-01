@@ -1,62 +1,72 @@
 import 'package:flutter/widgets.dart';
 
-/// Charte Riftarium, transposée de `apps/web/src/assets/main.css` (`:root`).
-/// Parchemin et encre bleu nuit, or comme accent, hex (sarcelle) pour les
-/// interactions, une couleur par domaine de jeu.
+/// Charte Riftarium « Vitrine hextech », transposée de
+/// `apps/web/src/assets/main.css` (`:root`). Nuit de Piltover en fond, laiton
+/// pour la matière, sarcelle hextech pour les interactions, une couleur par
+/// domaine de jeu. Les cartes sont la source de lumière, l'écrin reste sombre :
+/// clair et sombre partagent donc les mêmes valeurs (les alias dark* restent
+/// pour les écrans existants).
 abstract final class RiftColors {
-  // Fonds
-  static const paper = Color(0xFFF5EFE1);
-  static const paper2 = Color(0xFFEDE4CF);
-  static const surface = Color(0xD1FDFAF2); // rgba(253,250,242,.82)
-  static const line = Color(0x338A6A2F); // rgba(138,106,47,.2)
-  static const lineStrong = Color(0x738A6A2F); // rgba(138,106,47,.45)
+  // Fonds (nuit)
+  static const paper = Color(0xFF0A1428);
+  static const paper2 = Color(0xFF13233F);
+  static const surface = Color(0xB813213B); // rgba(19,33,59,.72)
+  /// Surface opaque des champs de saisie et fonds pleins (ex-parchemin clair).
+  static const surfaceSolid = Color(0xFF101D33);
+  // Filets laiton
+  static const line = Color(0x29C9A75C); // rgba(201,167,92,.16)
+  static const lineStrong = Color(0x66C9A75C); // rgba(201,167,92,.4)
 
-  // Encre
-  static const ink = Color(0xFF16283A);
-  static const inkStrong = Color(0xFF0A1428);
-  static const muted = Color(0xFF6B6450);
+  /// Nuit profonde : voiles, scrims et fonds d'écrans immersifs (l'ancien
+  /// « inkStrong » du thème parchemin, qui désignait l'encre la plus sombre).
+  static const night = Color(0xFF0A1428);
 
-  // Or
-  static const gold = Color(0xFFB08A3E);
-  static const goldDeep = Color(0xFF7A5D28);
+  // Texte : bleu-clair lunaire, champagne pour les titres
+  static const ink = Color(0xFFD7E0EC);
+  static const inkStrong = Color(0xFFF2EAD6);
+  static const muted = Color(0xFF94A3B9);
+
+  // Laiton : goldDeep sert aux liens et intertitres (clair sur nuit)
+  static const gold = Color(0xFFC9A75C);
+  static const goldDeep = Color(0xFFDCC07E);
   static const goldSoft = Color(0xFFD9BD82);
   static const goldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFC9A75C), Color(0xFFA98338), Color(0xFF8A6A2F)],
+    colors: [Color(0xFFD9BD82), Color(0xFFB08A3E), Color(0xFF8A6A2F)],
     stops: [0, 0.55, 1],
   );
 
-  // Hex (interactions, liens, focus)
-  static const hex = Color(0xFF0B8F84);
-  static const hexSoft = Color(0xFFD7F2EF);
+  // Hex (interactions, liens, focus) et fond des états « activé »
+  static const hex = Color(0xFF35E0D0);
+  static const hexSoft = Color(0xFF143C3F);
 
-  // Domaines de jeu (pastilles) et variantes texte (contraste ≥ 4.5 sur parchemin)
+  // Domaines de jeu (pastilles) et variantes texte (contraste ≥ 4.5 sur nuit)
   static const fury = Color(0xFFCF4437);
   static const calm = Color(0xFF178F7F);
   static const mind = Color(0xFF7355CF);
   static const body = Color(0xFF3F8F50);
   static const chaos = Color(0xFFC2439B);
   static const order = Color(0xFFAB7C1A);
-  static const furyText = Color(0xFFC03A2E);
-  static const calmText = Color(0xFF10756A);
-  static const mindText = Color(0xFF7355CF);
-  static const bodyText = Color(0xFF2F7340);
-  static const chaosText = Color(0xFFB0348A);
-  static const orderText = Color(0xFF8A641A);
+  static const furyText = Color(0xFFF0705F);
+  static const calmText = Color(0xFF3ECFBB);
+  static const mindText = Color(0xFFA68DF5);
+  static const bodyText = Color(0xFF6CC47E);
+  static const chaosText = Color(0xFFE77AC4);
+  static const orderText = Color(0xFFD9A94E);
 
   /// Arc-en-ciel des six domaines (barres de progression, séparateurs).
   static const prism = LinearGradient(
     colors: [fury, order, body, calm, mind, chaos],
   );
 
-  // Mode sombre : encre en fond, parchemin en texte, or inchangé.
-  static const darkPaper = Color(0xFF0E1826);
-  static const darkPaper2 = Color(0xFF15233A);
-  static const darkSurface = Color(0xCC1A2B45);
-  static const darkLine = Color(0x40D9BD82);
-  static const darkInk = Color(0xFFF1EADB);
-  static const darkMuted = Color(0xFFB7AD98);
+  // Alias historiques du mode sombre : mêmes valeurs que le thème unique.
+  static const darkPaper = paper;
+  static const darkPaper2 = paper2;
+  static const darkSurface = surface;
+  static const darkLine = line;
+  static const darkInk = ink;
+  static const darkMuted = muted;
 
   static Color domain(String name) => switch (name.toLowerCase()) {
     'fury' || 'fureur' => fury,
@@ -89,13 +99,13 @@ abstract final class RiftRadius {
 
 abstract final class RiftShadows {
   static const soft = [
-    BoxShadow(color: Color(0x1A4A3816), blurRadius: 22, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x61020610), blurRadius: 22, offset: Offset(0, 8)),
   ];
   static const raised = [
-    BoxShadow(color: Color(0x244A3816), blurRadius: 40, offset: Offset(0, 16)),
+    BoxShadow(color: Color(0x80020610), blurRadius: 40, offset: Offset(0, 16)),
   ];
   static const glowGold = [
-    BoxShadow(color: Color(0x478A6A2F), blurRadius: 30, offset: Offset(0, 10)),
+    BoxShadow(color: Color(0x3DC9A75C), blurRadius: 30, offset: Offset(0, 10)),
   ];
 }
 

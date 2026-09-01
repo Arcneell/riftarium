@@ -45,6 +45,9 @@ flutter:
   # Polices du site (OFL) : Marcellus (titres), Outfit (texte, variable),
   # IBM Plex Mono (codes, prix, badges).
   fonts:
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel-Variable.ttf
     - family: Marcellus
       fonts:
         - asset: assets/fonts/Marcellus-Regular.ttf

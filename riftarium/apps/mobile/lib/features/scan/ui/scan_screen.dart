@@ -26,7 +26,7 @@ class ScanScreen extends ConsumerWidget {
     final camera = controller.camera;
 
     return Scaffold(
-      backgroundColor: RiftColors.inkStrong,
+      backgroundColor: RiftColors.night,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -83,7 +83,7 @@ class _CameraLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = camera;
     if (controller == null || !controller.value.isInitialized) {
-      return const ColoredBox(color: RiftColors.inkStrong);
+      return const ColoredBox(color: RiftColors.night);
     }
     final size = controller.value.previewSize;
     if (size == null) return CameraPreview(controller);
@@ -112,10 +112,10 @@ class _Veil extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              RiftColors.inkStrong.withValues(alpha: 0.82),
-              RiftColors.inkStrong.withValues(alpha: 0.22),
-              RiftColors.inkStrong.withValues(alpha: 0.28),
-              RiftColors.inkStrong.withValues(alpha: 0.86),
+              RiftColors.night.withValues(alpha: 0.82),
+              RiftColors.night.withValues(alpha: 0.22),
+              RiftColors.night.withValues(alpha: 0.28),
+              RiftColors.night.withValues(alpha: 0.86),
             ],
             stops: const [0, 0.26, 0.62, 1],
           ),
@@ -198,7 +198,7 @@ class _RoundButton extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: RiftColors.inkStrong.withValues(alpha: 0.5),
+              color: RiftColors.night.withValues(alpha: 0.5),
               border: Border.all(
                 color: active
                     ? RiftColors.gold
@@ -250,7 +250,7 @@ class _StatusBanner extends StatelessWidget {
           key: ValueKey(label),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
-            color: RiftColors.inkStrong.withValues(alpha: 0.74),
+            color: RiftColors.night.withValues(alpha: 0.74),
             borderRadius: BorderRadius.circular(RiftRadius.full),
             border: Border.all(color: tint.withValues(alpha: 0.75), width: 1.3),
           ),
@@ -340,7 +340,7 @@ class _CodeGuideState extends State<_CodeGuide>
                       Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: RiftColors.inkStrong.withValues(alpha: 0.4),
+                            color: RiftColors.night.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(RiftRadius.sm),
                           ),
                         ),

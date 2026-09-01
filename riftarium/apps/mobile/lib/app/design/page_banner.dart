@@ -101,9 +101,9 @@ class _BannerBackground extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: focus,
           fadeInDuration: RiftMotion.slow,
-          placeholder: (context, url) => Container(color: RiftColors.inkStrong),
+          placeholder: (context, url) => Container(color: RiftColors.night),
           errorWidget: (context, url, error) =>
-              Container(color: RiftColors.inkStrong),
+              Container(color: RiftColors.night),
         ),
         // Voile encre en haut (lisibilité de la barre), parchemin en bas.
         DecoratedBox(
@@ -112,8 +112,8 @@ class _BannerBackground extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                RiftColors.inkStrong.withValues(alpha: 0.35),
-                RiftColors.inkStrong.withValues(alpha: 0.05),
+                RiftColors.night.withValues(alpha: 0.35),
+                RiftColors.night.withValues(alpha: 0.05),
                 paper.withValues(alpha: 0.0),
                 paper,
               ],

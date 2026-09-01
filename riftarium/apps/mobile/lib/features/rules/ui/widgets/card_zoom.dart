@@ -12,7 +12,7 @@ Future<void> showGuideCardZoom(BuildContext context, GuideCard card) {
   if (card.image.isEmpty) return Future<void>.value();
   return showDialog<void>(
     context: context,
-    barrierColor: RiftColors.inkStrong.withValues(alpha: 0.86),
+    barrierColor: RiftColors.night.withValues(alpha: 0.86),
     builder: (context) => _CardZoom(card: card),
   );
 }
