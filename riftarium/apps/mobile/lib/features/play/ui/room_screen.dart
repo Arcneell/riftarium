@@ -16,6 +16,7 @@ import '../../../app/widgets/share_origin.dart';
 import '../../../core/api_exception.dart';
 import '../../../core/config.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../game/domain/game_mode.dart';
 import '../../game/domain/player.dart';
 import '../../game/ui/widgets/draw_overlay.dart';
 import '../../game/ui/widgets/game_theme.dart';
@@ -264,9 +265,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                       : _spin,
                   steps: _spinSteps,
                   target: _drawTarget,
-                  note:
-                      'Le second joueur canalise une rune de plus à sa '
-                      'première canalisation.',
+                  note: GameMode.duel.firstTurnNotes.first,
                   onDismiss: _start,
                 ),
             ],
@@ -347,8 +346,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                   const SizedBox(height: 8),
                   Text(
                     room.guest == null
-                        ? 'Partage le code : la partie démarrera dès que vous '
-                              'serez tous les deux prêts.'
+                        ? 'En attente du second joueur.'
                         : 'Il manque encore un « Prêt ».',
                     textAlign: TextAlign.center,
                     style: text.small,
@@ -364,7 +362,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
               ] else ...[
                 if (me == null)
                   Text(
-                    'Tu regardes ce salon sans y avoir de place.',
+                    'Salon complet : tu le consultes en spectateur.',
                     textAlign: TextAlign.center,
                     style: text.small,
                   )

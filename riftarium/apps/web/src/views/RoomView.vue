@@ -415,9 +415,7 @@ onBeforeUnmount(() => {
                 <span v-if="player.confirmed" class="chip play-outcome calm">Confirmé</span>
               </li>
             </ul>
-            <p class="muted">
-              Le compteur se tient sur le téléphone de l'hôte ; cette page suit le score en lecture seule.
-            </p>
+            <p class="muted">Cette page suit le score en lecture seule.</p>
             <div v-if="canConfirm" class="play-actions-row">
               <button class="btn btn-gold" type="button" :disabled="busy" @click="confirmResult">
                 Confirmer le résultat

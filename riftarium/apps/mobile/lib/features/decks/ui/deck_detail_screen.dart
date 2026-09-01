@@ -129,9 +129,7 @@ class _DeckView extends StatelessWidget {
                 child: InvitePanel(
                   icon: Icons.style_outlined,
                   title: 'Deck vide',
-                  message:
-                      'Commence par la légende : elle fixe les domaines du '
-                      'deck.',
+                  message: 'Ce deck ne contient aucune carte.',
                 ),
               ),
             ),
@@ -739,8 +737,7 @@ class DeckMissingSheet extends ConsumerWidget {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Text(
-                      'Tu possèdes déjà toutes les cartes de ce deck. '
-                      'Bon match !',
+                      'Tu possèdes déjà toutes les cartes de ce deck.',
                       style: text.body,
                       textAlign: TextAlign.center,
                     ),

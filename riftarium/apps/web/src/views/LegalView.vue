@@ -22,26 +22,11 @@ import {
 import PageBanner from "../components/PageBanner.vue"
 
 const TITLES = {
-  mentions: {
-    title: "Mentions légales",
-    lead: "Qui édite Riftarium, comment nous joindre, où sont hébergées les pages."
-  },
-  privacy: {
-    title: "Politique de confidentialité",
-    lead: "Quelles données le site traite, pourquoi, combien de temps, et quels droits vous avez."
-  },
-  terms: {
-    title: "Conditions d'utilisation",
-    lead: "Les règles du service : comptes, decks publics, modération, responsabilité."
-  },
-  cookies: {
-    title: "Cookies et traceurs",
-    lead: "Ce que le site stocke sur votre appareil, et ce qu'il ne stocke pas."
-  },
-  report: {
-    title: "Signaler un contenu",
-    lead: "Comment nous prévenir d'un contenu illicite, abusif ou qui viole les conditions."
-  }
+  mentions: { title: "Mentions légales" },
+  privacy: { title: "Politique de confidentialité" },
+  terms: { title: "Conditions d'utilisation" },
+  cookies: { title: "Cookies et traceurs" },
+  report: { title: "Signaler un contenu" }
 }
 
 const route = useRoute()

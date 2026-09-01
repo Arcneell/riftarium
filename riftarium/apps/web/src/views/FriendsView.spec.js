@@ -129,12 +129,12 @@ describe("FriendsView", () => {
     wrapper.unmount()
   })
 
-  it("listes vides : explique à quoi sert le carnet d'adversaires", async () => {
+  it("listes vides : précise que le suivi reste privé", async () => {
     setupApi({ following: [], followers: [] })
     const { wrapper } = await mountView()
     expect(wrapper.text()).toContain("Personne pour l'instant")
     expect(wrapper.text()).toContain("Personne ne vous suit encore")
-    expect(wrapper.get(".friends-note").text()).toContain("carnet d'adversaires")
+    expect(wrapper.get(".friends-note").text()).toContain("reste privé")
     wrapper.unmount()
   })
 

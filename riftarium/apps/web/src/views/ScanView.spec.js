@@ -124,7 +124,7 @@ describe("ScanView", () => {
     /* La version voyage dans l'URL : sans elle, un onglet rouvert après déploiement
        rejouerait depuis son cache (max-age=3600) un payload sans `rid`. */
     expect(api).toHaveBeenCalledWith("/api/cards/hashes?v=2")
-    expect(wrapper.find(".scan-nocam").text()).toContain("Importez une photo")
+    expect(wrapper.find(".scan-nocam").text()).toContain("importez une photo")
     expect(wrapper.find(".scan-import input").exists()).toBe(true)
     expect(wrapper.find(".scan-stage").exists()).toBe(false)
     wrapper.unmount()
@@ -158,7 +158,7 @@ describe("ScanView", () => {
     setMediaDevices({ getUserMedia })
     const { wrapper } = await mountView()
     expect(wrapper.find(".scan-empty").exists()).toBe(false)
-    expect(wrapper.find(".scan-nocam").text()).toContain("seule la lecture du code")
+    expect(wrapper.find(".scan-nocam").text()).toContain("son code imprimé sera lu")
     expect(wrapper.find(".scan-import input").exists()).toBe(true)
     /* Pas de boucle caméra : sans empreinte elle n'aurait rien à comparer d'une image à l'autre. */
     expect(getUserMedia).not.toHaveBeenCalled()
@@ -230,7 +230,7 @@ describe("ScanView", () => {
     const call = api.mock.calls.find(([path]) => path === "/api/collection/card-1/entries")
     /* Défaut : FR (site français, préférence mémorisée ensuite via localStorage). */
     expect(call[1]).toEqual({ method: "POST", body: { qty: 1, condition: "NM", lang: "FR" } })
-    expect(wrapper.get(".scan-added").text()).toContain("Ajouté ✓")
+    expect(wrapper.get(".scan-added").text()).toContain("Ajouté")
     wrapper.unmount()
   })
 
@@ -276,7 +276,7 @@ describe("ScanView", () => {
     const { wrapper } = await mountView()
     await importPhoto(wrapper)
 
-    expect(wrapper.get(".scan-nomatch").text()).toContain("Aucun résultat plausible")
+    expect(wrapper.get(".scan-nomatch").text()).toContain("Aucun résultat")
     expect(wrapper.find(".scan-result").exists()).toBe(false)
     expect(api.mock.calls.some(([path]) => path === "/api/cards/card-1")).toBe(false)
     wrapper.unmount()

@@ -64,7 +64,7 @@ const MODULES = [
     icon: "book",
     chip: "var(--order)",
     title: "Règles",
-    text: "Le texte officiel intégral en français, consultable et cherchable en quelques secondes.",
+    text: "Le texte officiel intégral en français, avec recherche plein texte.",
     to: "/regles",
     go: "Consulter"
   },
@@ -88,7 +88,7 @@ const MODULES = [
     icon: "camera",
     chip: "var(--calm)",
     title: "Scanner",
-    text: "Présentez une carte à l'appareil photo : son code est lu, sa fiche et son prix s'affichent, un geste l'ajoute à la collection.",
+    text: "L'appareil photo lit le code de la carte et ouvre sa fiche ; un geste l'ajoute à la collection.",
     to: "/scan",
     go: "Scanner"
   },
@@ -98,13 +98,13 @@ const MODULES = [
     title: "Communauté",
     text: "Parcourez les decks publiés par les autres joueurs, votez pour vos préférés, partagez les vôtres.",
     to: "/communaute",
-    go: "Découvrir"
+    go: "Voir les decks"
   },
   {
     icon: "code",
     chip: "var(--calm)",
     title: "Fait par un joueur",
-    text: "Gratuit, au code source accessible, sans pub ni boutique. Les retours et les idées sont bienvenus.",
+    text: "Projet fan-made gratuit, sans pub ni boutique. Les retours sont bienvenus.",
     href: "https://github.com/Arcneell/riftarium",
     go: "Voir sur GitHub"
   }
@@ -130,11 +130,10 @@ onMounted(async () => {
   <section class="hero-splash" :style="splashStyle">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">Le compagnon tout-en-un pour Riftbound</p>
-        <h1>Vos cartes, vos decks,<br class="hide-mobile" />vos règles. Un seul site.</h1>
+        <p class="eyebrow">Le compagnon pour Riftbound</p>
+        <h1>Vos cartes, vos decks,<br class="hide-mobile" />vos règles.</h1>
         <p class="lead" style="margin-top: 20px">
-          Cartothèque complète, suivi de collection, deck builder et règles officielles : tout ce qu'il faut pour jouer
-          à Riftbound, réuni au même endroit.
+          Cartothèque, suivi de collection, deck builder et texte officiel des règles, en français.
         </p>
         <div style="display: flex; gap: 16px; margin-top: 34px; flex-wrap: wrap">
           <RouterLink class="btn btn-gold" to="/cartes">Voir les cartes</RouterLink>
@@ -175,19 +174,19 @@ onMounted(async () => {
 
   <section style="padding-bottom: 40px">
     <div class="wrap" style="margin-bottom: 36px">
-      <p class="eyebrow" v-reveal>Les cartes</p>
-      <h2 v-reveal>La cartothèque complète, toujours à jour</h2>
+      <p class="eyebrow" v-reveal>Cartothèque</p>
+      <h2 v-reveal>Toutes les cartes du jeu</h2>
     </div>
     <CardRiver />
     <div class="wrap" style="text-align: center; margin-top: 36px" v-reveal>
-      <RouterLink class="btn btn-gold" to="/cartes">Explorer la cartothèque</RouterLink>
+      <RouterLink class="btn btn-gold" to="/cartes">Ouvrir la cartothèque</RouterLink>
     </div>
   </section>
 
   <section>
     <div class="wrap">
-      <p class="eyebrow" v-reveal>Tout-en-un</p>
-      <h2 v-reveal style="margin-bottom: 36px">Tout ce qu'il faut pour jouer</h2>
+      <p class="eyebrow" v-reveal>Le site</p>
+      <h2 v-reveal style="margin-bottom: 36px">Les fonctionnalités</h2>
       <div class="modules">
         <!-- Objet composant (et non la chaîne "RouterLink"), et jamais de href indéfini :
              un attribut href retombant écraserait celui que RouterLink calcule, produisant
@@ -223,7 +222,6 @@ onMounted(async () => {
           Un doute sur un effet ou une interaction ? Cherchez un mot-clé et retrouvez la règle exacte, avec son
           contexte.
         </p>
-        <p class="muted" style="margin-bottom: 26px">Sur téléphone comme sur ordinateur, en pleine partie.</p>
         <RouterLink class="btn btn-gold" to="/regles">Ouvrir les règles</RouterLink>
       </div>
       <div class="panel" v-reveal="1">
@@ -232,25 +230,6 @@ onMounted(async () => {
           « Ce qui est inscrit sur une carte a priorité sur ce qui est inscrit dans les règles du jeu. »
         </p>
         <p class="muted mono" style="font-size: 0.74rem; margin-top: 14px">Règles du jeu Riftbound · © Riot Games</p>
-      </div>
-    </div>
-  </section>
-
-  <section style="padding-top: 32px; padding-bottom: 104px">
-    <div class="wrap cols-2">
-      <div class="panel" v-reveal>
-        <h3 style="margin-bottom: 10px">Gratuit, sans pub</h3>
-        <p class="muted" style="font-size: 0.95rem">
-          Riftarium est un projet fan-made, non commercial et indépendant de Riot Games. Pas de boutique, pas de
-          publicité.
-        </p>
-      </div>
-      <div class="panel" v-reveal="1">
-        <h3 style="margin-bottom: 10px">Un projet de joueur</h3>
-        <p class="muted" style="font-size: 0.95rem">
-          Le code est ouvert et le site évolue avec vos retours. Une idée, un bug ? Rendez-vous sur
-          <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">GitHub</a>.
-        </p>
       </div>
     </div>
   </section>

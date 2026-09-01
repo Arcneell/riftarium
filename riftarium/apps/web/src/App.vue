@@ -219,7 +219,7 @@ async function logout() {
           </p>
         </div>
         <div>
-          <p class="foot-head">Explorer</p>
+          <p class="foot-head">Le site</p>
           <ul>
             <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
             <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
@@ -249,7 +249,7 @@ async function logout() {
             </li>
             <li v-if="SHOW_DONATIONS">
               <a href="https://ko-fi.com/arcneell" target="_blank" rel="noopener" class="footer-support"
-                >☕ Soutenir le projet (Ko-fi)</a
+                >Soutenir le projet (Ko-fi)</a
               >
             </li>
           </ul>

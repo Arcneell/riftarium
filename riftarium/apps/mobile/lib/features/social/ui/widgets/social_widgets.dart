@@ -11,15 +11,12 @@ import 'achievement_widgets.dart';
 /// dont le texte est déjà rédigé en français.
 String socialErrorMessage(
   Object? error, {
-  String fallback = 'Contenu indisponible pour le moment.',
+  String fallback = 'Chargement impossible. Réessaie plus tard.',
 }) => error is ApiException ? error.message : fallback;
 
 /// Section qu'un joueur garde pour lui : une ligne discrète, pas une erreur.
 class HiddenNote extends StatelessWidget {
-  const HiddenNote({
-    super.key,
-    this.message = 'Ce joueur garde ceci pour lui.',
-  });
+  const HiddenNote({super.key, this.message = 'Masqué par ce joueur.'});
 
   final String message;
 

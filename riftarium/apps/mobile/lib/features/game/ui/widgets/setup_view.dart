@@ -394,7 +394,7 @@ class _ResumePanel extends StatelessWidget {
           ),
           TextButton(
             onPressed: onDismiss,
-            child: const Text('Effacer et repartir de zéro'),
+            child: const Text('Repartir de zéro'),
           ),
         ],
       ),
@@ -636,7 +636,7 @@ class _PlayChoice extends StatelessWidget {
         Expanded(
           child: _ChoiceCard(
             title: 'Partie libre',
-            detail: 'Le compteur, sans compte.',
+            detail: 'Sans compte, rien n’est enregistré.',
             icon: Icons.sports_esports_outlined,
             selected: !tracked,
             onTap: () => onSelect(false),

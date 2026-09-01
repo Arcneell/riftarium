@@ -80,9 +80,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
       return const CollectionSignIn(
         title: 'Ma collection',
         eyebrow: 'Inventaire',
-        message:
-            'Un compte gratuit pour compter tes cartes, suivre ta complétion '
-            'par set et garder ta wishlist sous la main.',
+        message: 'Connecte-toi pour suivre ta collection.',
         returnTo: AppRoutes.collection,
       );
     }
@@ -187,7 +185,7 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
 /// [ApiException] dont le message est déjà en français.
 String messageOf(Object? error) => error is ApiException
     ? error.message
-    : 'Contenu indisponible pour le moment.';
+    : 'Chargement impossible. Réessaie plus tard.';
 
 /// Première lettre en capitale : les libellés du domaine sont écrits en
 /// minuscule pour s'enchaîner, mais ils ouvrent parfois une ligne.
@@ -609,7 +607,7 @@ class _Empty extends StatelessWidget {
       child: EmptyView(
         title: empty ? 'Ta collection est vide' : 'Aucune carte ne correspond',
         detail: empty
-            ? 'Aucune carte pour l’instant.'
+            ? null
             : 'Essaie un autre nom, un code (ogn-202) ou un type.',
         icon: Icons.style_outlined,
         action: empty

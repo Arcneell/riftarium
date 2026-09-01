@@ -103,8 +103,7 @@ class _LegendPickerSheetState extends ConsumerState<_LegendPickerSheet> {
                     error: (error, _) => ErrorView(
                       message:
                           'Les légendes n’ont pas pu être chargées. '
-                          'Sans réseau ni copie locale, saisis simplement les '
-                          'noms des joueurs.',
+                          'Tu peux saisir les noms des joueurs à la main.',
                       onRetry: () => ref.invalidate(legendsProvider),
                     ),
                     data: (groups) => _Grid(

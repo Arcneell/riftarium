@@ -122,9 +122,7 @@ onMounted(load)
           @remove="askRemove"
         />
       </div>
-      <p v-if="!decks.length" class="muted">
-        Aucun deck pour l'instant — cliquez sur « Nouveau deck », le reste se passe dans l'éditeur.
-      </p>
+      <p v-if="!decks.length" class="muted">Aucun deck. Créez-en un avec « Nouveau deck ».</p>
     </div>
   </section>
 

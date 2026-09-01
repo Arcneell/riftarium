@@ -189,8 +189,7 @@ onMounted(async () => {
       </div>
 
       <p v-if="!result.items.length && !error && !loading" class="muted">
-        Rien ici pour l'instant. Le premier deck publié depuis <RouterLink to="/decks">l'éditeur</RouterLink> ouvrira le
-        bal.
+        Aucun deck publié ne correspond. Les decks se publient depuis <RouterLink to="/decks">l'éditeur</RouterLink>.
       </p>
     </div>
   </section>

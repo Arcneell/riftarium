@@ -38,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(DecksScreen), findsOneWidget);
-    expect(find.text('Tes decks t’attendent'), findsOneWidget);
+    expect(find.text('Tes decks'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
     // Le segment reste visible : la communauté est à un tap.
     expect(find.text('Mes decks'), findsOneWidget);
@@ -77,7 +77,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mes decks'), findsWidgets);
-    expect(find.text('Construis ton premier deck'), findsOneWidget);
+    expect(find.text('Aucun deck'), findsOneWidget);
     expect(find.text('Nouveau deck'), findsOneWidget);
     // Barre d'actions + rappel dans l'invitation.
     expect(find.text('Importer un code'), findsNWidgets(2));

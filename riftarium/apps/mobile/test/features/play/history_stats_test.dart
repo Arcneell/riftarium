@@ -157,7 +157,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Rien à compter pour l’instant'), findsOneWidget);
+      expect(find.text('Aucune partie suivie confirmée'), findsOneWidget);
     });
   });
 }

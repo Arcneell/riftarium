@@ -79,7 +79,7 @@ function missingNote(deck) {
         <template v-if="community && deck.missing_cards !== undefined && deck.missing_cards !== null">
           ·
           <span v-if="deck.missing_cards === 0" class="deck-buildable" title="Vous possédez toutes les cartes">
-            Complet ✓
+            Complet
           </span>
           <span v-else class="deck-missing" :title="PRICE_NOTE">{{ missingNote(deck) }}</span>
         </template>

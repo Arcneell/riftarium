@@ -52,7 +52,7 @@ void main() {
     expect(find.text('Decks publics'), findsOneWidget);
     expect(find.text('Ahri contrôle'), findsOneWidget);
     expect(find.text('Historique'), findsOneWidget);
-    expect(find.text('Ce joueur garde ceci pour lui.'), findsNothing);
+    expect(find.text('Masqué par ce joueur.'), findsNothing);
     // Les sections fermées n'auraient rien demandé de plus.
     expect(server.paths, contains('GET /users/jinx/collection'));
     expect(server.paths, contains('GET /users/jinx/history'));
@@ -71,7 +71,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Hauts faits, duels, collection, decks, historique.
-    expect(find.text('Ce joueur garde ceci pour lui.'), findsNWidgets(5));
+    expect(find.text('Masqué par ce joueur.'), findsNWidgets(5));
     expect(find.text('Ahri contrôle'), findsNothing);
     expect(server.paths, isNot(contains('GET /users/jinx/collection')));
     expect(server.paths, isNot(contains('GET /users/jinx/history')));

@@ -315,7 +315,7 @@ class _BookMeta extends StatelessWidget {
         Row(
           children: [
             AdaptiveTextButton(
-              label: 'PDF officiel ↗',
+              label: 'PDF officiel',
               onPressed: book.source.isEmpty
                   ? null
                   : () => onOpenSource(book.source),

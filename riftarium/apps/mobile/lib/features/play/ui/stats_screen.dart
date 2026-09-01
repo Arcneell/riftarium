@@ -71,8 +71,7 @@ class PlayStatsScreen extends ConsumerWidget {
         SliverFillRemaining(
           hasScrollBody: false,
           child: EmptyView(
-            title: 'Rien à compter pour l’instant',
-            detail: 'Aucune partie suivie confirmée.',
+            title: 'Aucune partie suivie confirmée',
             icon: Icons.insights_outlined,
             action: GoldButton(
               label: 'Jouer une partie suivie',

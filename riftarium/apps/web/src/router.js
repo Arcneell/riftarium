@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import { session } from "./api.js"
-import { applyRouteSeo } from "./seo.js"
+import { applyRouteSeo, DEFAULT_DESCRIPTION, DEFAULT_TITLE } from "./seo.js"
 import HomeView from "./views/HomeView.vue"
 
 export const router = createRouter({
@@ -10,9 +10,8 @@ export const router = createRouter({
       path: "/",
       component: HomeView,
       meta: {
-        title: "Riftarium — Cartes, decks et règles Riftbound",
-        description:
-          "Cartothèque, deck builder, règles officielles et collection pour Riftbound. Site fan-made gratuit, en français."
+        title: DEFAULT_TITLE,
+        description: DEFAULT_DESCRIPTION
       }
     },
     {

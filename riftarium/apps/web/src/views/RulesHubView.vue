@@ -2,6 +2,7 @@
 import { onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
+import { RULE_COUNTS } from "../stats.js"
 import { useOnline } from "../composables/useOnline.js"
 import PageBanner from "../components/PageBanner.vue"
 
@@ -22,7 +23,7 @@ const TIERS = [
     chip: "var(--hex)",
     kicker: "Commencer ici",
     title: "Guide du débutant",
-    text: "Dix étapes animées sur un plateau : placer ses cartes, jouer un tour, combattre, marquer. Cinq minutes pour comprendre le jeu.",
+    text: "Un tutoriel animé sur un plateau : placer ses cartes, jouer un tour, combattre, marquer.",
     go: "Apprendre à jouer",
     big: true
   },
@@ -31,7 +32,7 @@ const TIERS = [
     chip: "var(--gold)",
     kicker: "En pleine partie",
     title: "Aide avancée",
-    text: "Une page complète par mécanique : l'essentiel, des cas concrets, des cartes d'exemple et le texte officiel intégral — timing, combat, points, mots-clés.",
+    text: "Une page par mécanique : l'essentiel, des cas concrets, des cartes d'exemple et le texte officiel.",
     go: "Chercher une mécanique"
   },
   {
@@ -39,14 +40,14 @@ const TIERS = [
     chip: "var(--ink)",
     kicker: "Dernier recours",
     title: "Règles officielles",
-    text: "Les 2 137 règles du jeu et les 812 règles de tournoi, intégrales et cherchables. Le texte qui fait foi.",
+    text: `Les ${RULE_COUNTS.core.toLocaleString("fr-FR")} règles du jeu et les ${RULE_COUNTS.tournament.toLocaleString("fr-FR")} règles de tournoi, intégrales et cherchables. Le texte qui fait foi.`,
     go: "Ouvrir le texte intégral"
   }
 ]
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" title="Trouvez la bonne réponse, au bon niveau" />
+  <PageBanner :art="BANNERS.rules" title="Règles" />
 
   <div class="offline-note" v-if="!online" role="status">Hors ligne — règles servies depuis le cache</div>
 
@@ -71,7 +72,7 @@ const TIERS = [
       </div>
 
       <div class="panel golden-rule" v-reveal="1" style="margin-top: 44px">
-        <p class="eyebrow">À retenir avant tout — la Règle d'or</p>
+        <p class="eyebrow">Règle 002 — la Règle d'or</p>
         <p style="font-family: var(--font-display); font-size: 1.15rem; line-height: 1.5; color: var(--ink-strong)">
           « Ce qui est inscrit sur une carte a priorité sur ce qui est inscrit dans les règles du jeu. »
         </p>

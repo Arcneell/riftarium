@@ -41,7 +41,7 @@ describe("AdminGateView (/admin masqué)", () => {
 
   it("un visiteur anonyme voit exactement la page 404, sans appel à l'API admin", async () => {
     const wrapper = await mountGate()
-    expect(wrapper.text()).toContain("Erreur 404")
+    expect(wrapper.text()).toContain("404")
     expect(wrapper.text()).toContain("Page introuvable")
     expect(wrapper.find(".admin-tabs").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
@@ -53,7 +53,7 @@ describe("AdminGateView (/admin masqué)", () => {
     session.handle = "nyra"
     session.isAdmin = false
     const wrapper = await mountGate()
-    expect(wrapper.text()).toContain("Erreur 404")
+    expect(wrapper.text()).toContain("404")
     expect(wrapper.text()).not.toContain("administration")
     expect(api).not.toHaveBeenCalled()
     wrapper.unmount()

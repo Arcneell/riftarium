@@ -132,7 +132,7 @@ describe("CommunityView", () => {
     wrapper.unmount()
   })
 
-  it("connecté : chaque boîte indique Complet ✓ ou le nombre de manquantes et leur coût", async () => {
+  it("connecté : chaque boîte indique Complet ou le nombre de manquantes et leur coût", async () => {
     session.token = "jeton"
     api.mockImplementation((path) => {
       if (path.startsWith("/api/community/decks")) {
@@ -151,7 +151,7 @@ describe("CommunityView", () => {
     })
     const { wrapper } = await mountView()
     const boxes = wrapper.findAll(".deck-box")
-    expect(boxes[0].get(".deck-buildable").text()).toContain("Complet ✓")
+    expect(boxes[0].get(".deck-buildable").text()).toContain("Complet")
     expect(boxes[0].find(".deck-missing").exists()).toBe(false)
     expect(boxes[1].get(".deck-missing").text()).toContain("3 manquante(s) (~4,50")
     wrapper.unmount()

@@ -127,9 +127,8 @@ onMounted(refresh)
       </div>
 
       <p v-else-if="!loading && !error" class="muted wish-empty">
-        Votre wishlist est vide pour l'instant. Croisez une carte qui vous manque dans la
-        <RouterLink to="/cartes">cartothèque</RouterLink> et ajoutez-la d'un clic sur le cœur de sa fiche — vous saurez
-        toujours combien il vous en coûtera pour l'obtenir.
+        Votre wishlist est vide. Le cœur sur la fiche d'une carte de la
+        <RouterLink to="/cartes">cartothèque</RouterLink> l'ajoute ici.
       </p>
     </div>
   </section>

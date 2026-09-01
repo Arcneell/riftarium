@@ -270,9 +270,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   children: [
                     _PrivacySwitch(
                       title: 'Mes statistiques de duels',
-                      detail:
-                          'Mes parties suivies, mon bilan et mes légendes '
-                          'apparaissent sur mon profil.',
+                      detail: 'Visibles sur mon profil public.',
                       value: _showStats,
                       onChanged: (value) => setState(() => _showStats = value),
                     ),
@@ -287,17 +285,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     _PrivacySwitch(
                       title: 'Mes decks publics',
-                      detail:
-                          'La liste de mes decks publics est affichée sur mon '
-                          'profil.',
+                      detail: 'Visibles sur mon profil public.',
                       value: _showDecks,
                       onChanged: (value) => setState(() => _showDecks = value),
                     ),
                     _PrivacySwitch(
                       title: 'Mes hauts faits',
-                      detail:
-                          'Les hauts faits que j’ai débloqués sont visibles de '
-                          'tous.',
+                      detail: 'Visibles sur mon profil public.',
                       value: _showAchievements,
                       onChanged: (value) =>
                           setState(() => _showAchievements = value),

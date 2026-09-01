@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { cardThumb, session } from "../api.js"
 import { BANNERS } from "../banners.js"
+import AchievementMedal from "../components/AchievementMedal.vue"
 import CardTile from "../components/CardTile.vue"
 import DeckBox from "../components/DeckBox.vue"
 import MatchRow from "../components/MatchRow.vue"
@@ -11,7 +12,6 @@ import UserAvatar from "../components/UserAvatar.vue"
 import { formatWinRate, winRatePercent } from "../play.js"
 import { applySeo } from "../seo.js"
 import {
-  achievementGlyph,
   followUser,
   formatMemberSince,
   formatUnlockedAt,
@@ -211,7 +211,7 @@ onMounted(load)
             <template v-if="shows('show_achievements')">
               <ul v-if="achievements.length" class="medal-grid">
                 <li v-for="item in achievements" :key="item.key" class="medal" :class="`tier-${item.tier || 'bronze'}`">
-                  <span class="medal-glyph" aria-hidden="true">{{ achievementGlyph(item.icon) }}</span>
+                  <AchievementMedal :achievement-key="item.key" :icon="item.icon" :tier="item.tier" />
                   <span class="medal-body">
                     <b>{{ item.title }}</b>
                     <span class="muted">{{ item.description }}</span>
@@ -227,7 +227,7 @@ onMounted(load)
               <p v-else class="muted">Aucun haut fait débloqué pour l'instant.</p>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -303,7 +303,7 @@ onMounted(load)
               </div>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -359,7 +359,7 @@ onMounted(load)
               </div>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>
@@ -374,7 +374,7 @@ onMounted(load)
               <p v-else class="muted">Aucun deck public pour l'instant.</p>
             </template>
             <p v-else class="muted profile-hidden">
-              Ce joueur garde ceci pour lui.
+              Masqué par ce joueur.
               <RouterLink v-if="profile.is_me" to="/profil">Modifier ma confidentialité</RouterLink>
             </p>
           </div>

@@ -30,7 +30,7 @@ void main() {
     expect(find.text('Éléments de jeu'), findsOneWidget);
     expect(find.text('Mis à jour le 16 juillet 2026'), findsOneWidget);
     expect(find.text('5 règles'), findsOneWidget);
-    expect(find.text('PDF officiel ↗'), findsOneWidget);
+    expect(find.text('PDF officiel'), findsOneWidget);
   });
 
   testWidgets('un chapitre mène à ses sections puis à son texte', (

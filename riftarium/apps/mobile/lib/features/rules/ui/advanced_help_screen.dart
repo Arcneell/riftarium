@@ -153,10 +153,8 @@ class _AdvancedHelpScreenState extends ConsumerState<AdvancedHelpScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 36, 18, 0),
             child: EmptyView(
-              title: 'Aucune mécanique',
-              detail:
-                  'Rien ne correspond à cette recherche. Le texte officiel, '
-                  'lui, est intégral.',
+              title: 'Aucune mécanique ne correspond',
+              detail: 'Essaie un autre mot, ou passe par le texte officiel.',
               icon: Icons.search_off_outlined,
               action: GhostButton(
                 label: 'Ouvrir les règles officielles',

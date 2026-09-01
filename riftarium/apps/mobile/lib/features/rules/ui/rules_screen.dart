@@ -126,7 +126,7 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
               child: _TierPanel(
                 step: 1,
                 accent: RiftColors.gold,
-                kicker: 'Commencer ici',
+                kicker: 'En pleine partie',
                 title: 'Aide avancée',
                 meta: topics == 0 ? null : '$topics mécaniques',
                 action: 'Chercher une mécanique',
@@ -516,7 +516,7 @@ class _GoldenRule extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('À retenir avant tout'.toUpperCase(), style: text.eyebrow),
+          Text('Règle 002 — La Règle d’or'.toUpperCase(), style: text.eyebrow),
           const SizedBox(height: 8),
           const GoldRule(),
           const SizedBox(height: 10),

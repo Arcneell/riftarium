@@ -95,6 +95,6 @@ export function legalState(deck) {
         : null
   if (valid === null) return { ok: true, label: "Légal", title: "Deck au format officiel." }
   return valid
-    ? { ok: true, label: "Légal", title: "Toutes les règles officielles de construction sont respectées." }
-    : { ok: false, label: "Illégal", title: "Ce deck ne respecte pas encore toutes les règles de construction." }
+    ? { ok: true, label: "Légal", title: "Deck au format officiel." }
+    : { ok: false, label: "Illégal", title: "Ce deck ne respecte pas toutes les règles de construction." }
 }

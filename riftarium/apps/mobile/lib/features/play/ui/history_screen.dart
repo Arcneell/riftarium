@@ -72,7 +72,6 @@ class HistoryScreen extends ConsumerWidget {
           hasScrollBody: false,
           child: EmptyView(
             title: 'Aucune partie suivie',
-            detail: 'Aucune partie suivie terminée.',
             icon: Icons.history_rounded,
             action: GoldButton(
               label: 'Jouer une partie suivie',

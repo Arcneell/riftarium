@@ -70,12 +70,12 @@ async function submit() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" :title="mode === 'login' ? 'Bon retour' : 'Bienvenue dans la Faille'" show-title />
+  <PageBanner :art="BANNERS.auth" :title="mode === 'login' ? 'Connexion' : 'Créer un compte'" show-title />
 
   <section>
     <div class="wrap" style="max-width: 480px">
       <div v-if="registered" class="panel">
-        <p class="success" style="margin-top: 0">Compte créé, bienvenue {{ handle }} !</p>
+        <p class="success" style="margin-top: 0">Compte créé pour {{ handle }}.</p>
         <p class="muted" style="margin-bottom: 20px">
           Un e-mail de vérification a été envoyé à <strong>{{ email }}</strong
           >. Cliquez sur le lien qu'il contient pour confirmer votre adresse.
