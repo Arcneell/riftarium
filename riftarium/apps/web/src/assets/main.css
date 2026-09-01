@@ -2215,13 +2215,22 @@ footer {
 .footer-in {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 28px 24px;
+  padding: 40px 28px 24px;
 }
+/* Colonnes en flex : la colonne « Mon compte » n'existe que connecté, la
+   rangée se répartit d'elle-même ; chaque catégorie tient en 5-6 liens. */
 .footer-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.5fr 0.5fr 0.7fr;
-  gap: 28px;
-  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px 44px;
+  margin-bottom: 28px;
+}
+.footer-about {
+  flex: 2 1 250px;
+  max-width: 330px;
+}
+.footer-grid > div:not(.footer-about) {
+  flex: 1 1 150px;
 }
 /* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
 .footer-grid .foot-head {
@@ -2231,13 +2240,16 @@ footer {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--gold-deep);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .footer-grid ul {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 9px;
+}
+.footer-grid ul a {
+  white-space: nowrap;
 }
 .footer-brand {
   display: flex;
@@ -2505,9 +2517,6 @@ footer {
   .card-detail {
     padding-top: 14px;
   }
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-  }
   /* Salles : une colonne, le texte repasse devant, la plaque suit. */
   .hall {
     padding: 72px 0;
@@ -2692,8 +2701,10 @@ footer {
     display: none;
   }
   .footer-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 26px;
+    gap: 24px 32px;
+  }
+  .footer-about {
+    max-width: none;
   }
   .traceurs-notice {
     flex-direction: column;
