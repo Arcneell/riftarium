@@ -62,7 +62,7 @@ const HALLS = [
     flip: false,
     eyebrow: "L'atelier",
     title: "Des decks vérifiés en direct",
-    text: "Le deck builder applique les règles officielles pendant que vous construisez : légende, domaines, exemplaires — la liste est jugée légale ou non à chaque carte. Les decks des autres joueurs se parcourent, se copient et se votent.",
+    text: "Le deck builder vérifie les règles officielles à mesure que vous ajoutez des cartes ; si la liste n'est pas légale, il vous dit pourquoi. Vous pouvez aussi publier vos decks et importer ceux des autres joueurs.",
     links: [
       { to: "/decks", label: "Construire un deck", gold: true },
       { to: "/communaute", label: "Decks de la communauté" }
@@ -74,8 +74,8 @@ const HALLS = [
     art: BANNERS.collection,
     flip: true,
     eyebrow: "La collection",
-    title: "Chaque exemplaire à sa place",
-    text: "Quantité, état, langue : suivez ce que vous possédez, set par set, et gardez ce qui vous manque en wishlist. Le scanner lit le code d'une carte et l'ajoute d'un geste.",
+    title: "Ce que vous avez, ce qui vous manque",
+    text: "Notez vos exemplaires avec leur quantité, leur état et leur langue, suivez la complétion de chaque set, gardez le reste en wishlist. Pour trier un classeur, le scanner lit le code de la carte et l'ajoute pour vous.",
     links: [
       { to: "/collection", label: "Suivre ma collection", gold: true },
       { to: "/scan", label: "Scanner une carte" },
@@ -89,7 +89,7 @@ const HALLS = [
     flip: false,
     eyebrow: "Pendant la partie",
     title: "Une règle, tout de suite",
-    text: "Un doute sur un effet ou une interaction ? Guide du débutant sur plateau animé, aide par mécanique et texte officiel intégral — tout est cherchable, en français.",
+    text: "Un doute en pleine partie ? Le guide du débutant montre le jeu sur un plateau animé, l'aide avancée explique chaque mécanique avec des cas concrets, et le texte officiel complet se cherche en français.",
     links: [{ to: "/regles", label: "Ouvrir les règles", gold: true }],
     plaque: true
   }
@@ -162,8 +162,8 @@ onMounted(async () => {
       <p class="eyebrow">La cartothèque</p>
       <h2>Toutes les cartes du jeu</h2>
       <p class="lead">
-        Chaque carte et chacune de ses variantes — alt-arts, overnumbered, signatures — avec recherche plein texte,
-        filtres et prix indicatifs.
+        La recherche couvre le nom et le texte des cartes, les filtres font le reste : domaine, type, rareté, coût,
+        set. Les variantes alt-art et les signatures y sont, avec leur prix indicatif.
       </p>
     </div>
     <CardRiver />
