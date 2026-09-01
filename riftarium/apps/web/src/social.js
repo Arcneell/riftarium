@@ -116,46 +116,8 @@ export function familyLabel(family) {
   return FAMILIES[family] || "Autres"
 }
 
-/* Le contrat fournit un nom d'icône Material, partagé avec l'application mobile.
-   Le site n'embarque pas de police d'icônes (CSP stricte, aucune dépendance) et
-   son composant Icon.vue ne couvre que la navigation : on rend un glyphe sobre,
-   la médaille colorée par le palier portant l'essentiel de l'information. */
-const GLYPHS = {
-  directions_run: "➤",
-  hexagon: "⬡",
-  inventory_2: "▣",
-  emoji_events: "✪",
-  military_tech: "✠",
-  workspace_premium: "❖",
-  star: "★",
-  stars: "★",
-  local_fire_department: "✶",
-  bolt: "↯",
-  shield: "▲",
-  swords: "⚔",
-  sports_martial_arts: "⚔",
-  collections: "▤",
-  collections_bookmark: "▤",
-  style: "❏",
-  auto_awesome: "✦",
-  diamond: "◆",
-  groups: "◎",
-  group: "◎",
-  person_add: "◎",
-  calendar_month: "▦",
-  event_repeat: "▦",
-  favorite: "♥",
-  verified: "✓",
-  gavel: "⚖",
-  balance: "⚖",
-  architecture: "△",
-  public: "◉",
-  trending_up: "↗"
-}
-
-export function achievementGlyph(icon) {
-  return GLYPHS[icon] || "✪"
-}
+/* L'icône d'un haut fait est un tracé SVG unique par clé du catalogue :
+   voir achievementIcons.js (rendu par AchievementMedal.vue). */
 
 /** Un haut fait est acquis dès que l'API a daté son déblocage. */
 export function isUnlocked(item) {

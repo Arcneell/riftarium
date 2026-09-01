@@ -211,7 +211,7 @@ onMounted(load)
             <template v-if="shows('show_achievements')">
               <ul v-if="achievements.length" class="medal-grid">
                 <li v-for="item in achievements" :key="item.key" class="medal" :class="`tier-${item.tier || 'bronze'}`">
-                  <AchievementMedal :icon="item.icon" :tier="item.tier" />
+                  <AchievementMedal :achievement-key="item.key" :icon="item.icon" :tier="item.tier" />
                   <span class="medal-body">
                     <b>{{ item.title }}</b>
                     <span class="muted">{{ item.description }}</span>

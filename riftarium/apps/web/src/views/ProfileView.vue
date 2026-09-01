@@ -333,7 +333,12 @@ onMounted(() => {
                   class="medal"
                   :class="[`tier-${item.tier || 'bronze'}`, { locked: !isUnlocked(item) }]"
                 >
-                  <AchievementMedal :icon="item.icon" :tier="item.tier" :locked="!isUnlocked(item)" />
+                  <AchievementMedal
+                    :achievement-key="item.key"
+                    :icon="item.icon"
+                    :tier="item.tier"
+                    :locked="!isUnlocked(item)"
+                  />
                   <span class="medal-body">
                     <b>{{ item.title }}</b>
                     <span class="muted">{{ item.description }}</span>

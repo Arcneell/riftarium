@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   PRIVACY_TOGGLES,
-  achievementGlyph,
   achievementPercent,
   achievementProgress,
   followUser,
@@ -130,11 +129,6 @@ describe("social — libellés et progression", () => {
     expect(tierLabel("gold")).toBe("Or")
     expect(tierLabel("prism")).toBe("Prisme")
     expect(tierLabel("inconnu")).toBe("Bronze")
-  })
-
-  it("rend un glyphe sobre pour une icône Material, connue ou non", () => {
-    expect(achievementGlyph("emoji_events")).toBe("✪")
-    expect(achievementGlyph("une_icone_que_le_web_ne_connait_pas")).toBe("✪")
   })
 
   it("chiffre la progression et la borne au seuil", () => {
