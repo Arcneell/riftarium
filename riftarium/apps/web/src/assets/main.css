@@ -1315,12 +1315,25 @@ textarea {
   gap: 10px;
   padding: 12px 16px;
   margin-bottom: 18px;
-  border: 1px solid var(--line);
+  /* Accent sarcelle : la barre signale un mode actif, pas un simple panneau. */
+  border: 1px solid color-mix(in srgb, var(--hex) 35%, transparent);
   border-radius: var(--r);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
   position: sticky;
-  top: 12px;
+  /* Sous l'en-tête collant (~67 px), sinon la barre glissait dessous. */
+  top: 80px;
   z-index: 5;
+}
+.bulk-count {
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--hex-soft);
+  color: var(--hex-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .bulk-bar select {
   width: auto;
@@ -1335,6 +1348,514 @@ textarea {
 }
 .bulk-danger {
   color: #f0705f;
+}
+
+/* Stats de la collection : bande pleine largeur, tuiles égales. */
+.col-stats {
+  margin-bottom: 22px;
+}
+.col-stats .stat {
+  flex: 1 1 150px;
+}
+
+/* Actions (sélection, scan, export) détachées des filtres de recherche. */
+.board-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+/* État vide : une invitation, pas un constat. */
+.col-empty {
+  padding: 48px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+}
+.col-empty-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--ink-strong);
+  margin-bottom: 6px;
+}
+.col-empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+  .board-actions {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+}
+
+/* ============================================================
+   Collection : le classeur. Double page de 9 pochettes comme un
+   vrai classeur de cartes — les possédées en pleine couleur, les
+   manquantes en fantôme (visuel gris, numéro, prix). Tourner la
+   page fait pivoter la double page autour du dos à anneaux.
+   ============================================================ */
+
+/* Commutateur Classeur / Inventaire. */
+.view-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--surface);
+}
+.view-switch button {
+  padding: 7px 20px;
+  border-radius: var(--r-full);
+  font-size: 0.86rem;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.view-switch button:hover {
+  color: var(--ink-strong);
+}
+.view-switch button.active {
+  background: var(--gold-grad);
+  color: #fdf8ec;
+  font-weight: 600;
+}
+
+/* Onglets de sets : nom, pourcentage et mini-jauge ; gemme quand complet. */
+.binder-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.binder-tab {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 8px;
+  min-width: 160px;
+  padding: 11px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+.binder-tab:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+.binder-tab.active {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+}
+.binder-tab.done .tab-name {
+  color: var(--gold-deep);
+}
+.tab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tab-name {
+  font-family: var(--font-display);
+  font-size: 0.94rem;
+  color: var(--ink-strong);
+  white-space: nowrap;
+}
+.tab-pct {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.binder-tab .progress-gem {
+  width: 15px;
+  height: 17px;
+  font-size: 0.56rem;
+}
+.tab-bar {
+  display: block;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  overflow: hidden;
+}
+.tab-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold-grad);
+  transition: width 0.5s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+/* Le classeur lui-même : cuir de nuit, filet laiton. */
+.binder {
+  position: relative;
+  padding: 20px 24px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: linear-gradient(160deg, rgba(201, 167, 92, 0.07), transparent 42%), linear-gradient(#0e1a31, #0b1526);
+  box-shadow: var(--shadow);
+}
+.binder-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 22px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.binder-title {
+  font-size: clamp(1.25rem, 2.4vw, 1.65rem);
+}
+.binder-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.binder-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* Jauge du set ouvert : un fil d'or sous l'en-tête. */
+.binder-progress {
+  height: 4px;
+  margin-bottom: 18px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  overflow: hidden;
+}
+.binder-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold-grad);
+  transition: width 0.6s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+/* Scène en perspective : la double page pivote autour du dos. */
+.binder-stage {
+  perspective: 1800px;
+}
+.binder-stage.loading .binder-spread {
+  opacity: 0.75;
+}
+.binder-spread {
+  display: grid;
+  grid-template-columns: 1fr 36px 1fr;
+  gap: 14px;
+  transform-style: preserve-3d;
+  transition: opacity 0.25s;
+}
+.binder-page {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+/* Dos à anneaux : ombre de pliure et trois anneaux laiton. */
+.binder-spine {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, transparent, rgba(2, 6, 16, 0.75) 30% 70%, transparent);
+}
+.binder-spine i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #cfa860;
+  background: rgba(2, 6, 16, 0.6);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 244, 214, 0.55),
+    0 2px 6px rgba(2, 6, 16, 0.8);
+}
+
+/* Pochette : gaine plastique en creux, la carte est la lumière. */
+.pocket {
+  position: relative;
+  display: block;
+  aspect-ratio: 5 / 7;
+  border-radius: 9px;
+  background: rgba(2, 6, 16, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 167, 92, 0.12),
+    inset 0 10px 24px rgba(2, 6, 16, 0.55);
+  overflow: hidden;
+  animation: pocket-in 0.5s cubic-bezier(0.22, 0.8, 0.32, 1) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+  transition:
+    transform 0.22s,
+    box-shadow 0.25s;
+}
+@keyframes pocket-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+.pocket img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+/* Reflet fixe de la gaine plastique. */
+.pocket::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.13) 0%, transparent 30%);
+  pointer-events: none;
+}
+.pocket:hover,
+.pocket:focus-visible {
+  transform: translateY(-4px) scale(1.03);
+  z-index: 2;
+  box-shadow: 0 16px 32px rgba(2, 6, 16, 0.65);
+}
+/* Balayage foil au survol d'une carte possédée. */
+.pocket-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.32) 50%, transparent 65%);
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.pocket:not(.ghost):hover .pocket-sheen {
+  animation: pocket-sheen 0.7s ease-out;
+}
+@keyframes pocket-sheen {
+  from {
+    opacity: 1;
+    background-position: 120% 0;
+  }
+  to {
+    opacity: 1;
+    background-position: -20% 0;
+  }
+}
+/* Les impressions foil scintillent doucement en continu. */
+.pocket.foil:not(.ghost) .pocket-sheen {
+  opacity: 0.4;
+  animation: gem-foil 5.5s ease-in-out infinite;
+}
+.pocket-qty {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: var(--gold-grad);
+  color: #fdf8ec;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(2, 6, 16, 0.6);
+}
+
+/* Carte manquante : fantôme reconnaissable, numéro et prix pour la trouver. */
+.pocket.ghost img {
+  filter: grayscale(1) brightness(0.4) contrast(0.9);
+  opacity: 0.55;
+  transition:
+    filter 0.25s,
+    opacity 0.25s;
+}
+.pocket.ghost:hover img,
+.pocket.ghost:focus-visible img {
+  filter: grayscale(0.55) brightness(0.6);
+  opacity: 0.8;
+}
+.pocket-num {
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: rgba(2, 6, 16, 0.75);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+.pocket-price {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: rgba(2, 6, 16, 0.75);
+  color: var(--gold-deep);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+/* Champ de bataille (paysage) : glissé de côté dans la pochette, comme dans
+   un vrai classeur. L'image pivotée occupe exactement la pochette (5/7). */
+.pocket.landscape img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140%;
+  height: calc(100% * 5 / 7);
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* Pochette vide (fin de set) et squelette de chargement. */
+.pocket.blank {
+  background: rgba(2, 6, 16, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(201, 167, 92, 0.07);
+  cursor: default;
+}
+.pocket.blank:hover {
+  transform: none;
+  box-shadow: inset 0 0 0 1px rgba(201, 167, 92, 0.07);
+}
+.pocket.shimmer {
+  background: linear-gradient(100deg, rgba(2, 6, 16, 0.3) 40%, rgba(201, 167, 92, 0.08) 50%, rgba(2, 6, 16, 0.3) 60%);
+  background-size: 220% 100%;
+  animation: pocket-shimmer 1.4s linear infinite;
+}
+@keyframes pocket-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* Tournage de page : la page côté mouvement se soulève et pivote par-dessus
+   le dos à anneaux, la nouvelle retombe de l'autre côté — comme une vraie
+   feuille. Le fondu du reste de la double page est retardé pour que le
+   pivotement se lise d'abord. Durées reprises par :duration dans la vue. */
+.turn-next-leave-active,
+.turn-prev-leave-active {
+  /* Le fondu n'arrive qu'à la toute fin : la feuille reste opaque pendant
+     qu'elle pivote, la face cachée disparaît d'elle-même après 90°. */
+  transition: opacity 0.08s ease 0.2s;
+}
+.turn-next-enter-active,
+.turn-prev-enter-active {
+  transition: opacity 0.12s ease;
+}
+.turn-next-enter-from,
+.turn-prev-enter-from,
+.turn-next-leave-to,
+.turn-prev-leave-to {
+  opacity: 0;
+}
+.turn-next-leave-active .binder-page,
+.turn-prev-leave-active .binder-page,
+.turn-next-enter-active .binder-page,
+.turn-prev-enter-active .binder-page {
+  backface-visibility: hidden;
+}
+.turn-next-leave-active .binder-page:last-of-type {
+  position: relative;
+  z-index: 2;
+  transform-origin: left center;
+  animation: page-lift 0.28s cubic-bezier(0.45, 0.05, 0.55, 0.95) both;
+}
+.turn-next-enter-active .binder-page:first-of-type {
+  transform-origin: right center;
+  animation: page-fall 0.32s cubic-bezier(0.17, 0.67, 0.35, 1) both;
+}
+.turn-prev-leave-active .binder-page:first-of-type {
+  position: relative;
+  z-index: 2;
+  transform-origin: right center;
+  animation: page-lift-back 0.28s cubic-bezier(0.45, 0.05, 0.55, 0.95) both;
+}
+.turn-prev-enter-active .binder-page:last-of-type {
+  transform-origin: left center;
+  animation: page-fall-back 0.32s cubic-bezier(0.17, 0.67, 0.35, 1) both;
+}
+@keyframes page-lift {
+  to {
+    transform: rotateY(-100deg);
+  }
+}
+@keyframes page-fall {
+  from {
+    transform: rotateY(100deg);
+  }
+}
+@keyframes page-lift-back {
+  to {
+    transform: rotateY(100deg);
+  }
+}
+@keyframes page-fall-back {
+  from {
+    transform: rotateY(-100deg);
+  }
+}
+
+.binder-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.binder-empty {
+  padding: 60px 24px;
+  text-align: center;
+}
+.binder-empty-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--ink-strong);
+  margin-bottom: 6px;
+}
+
+@media (max-width: 820px) {
+  /* Une seule page à la fois : les deux pages s'empilent, le dos disparaît. */
+  .binder {
+    padding: 16px 14px 14px;
+  }
+  .binder-spread {
+    grid-template-columns: 1fr;
+  }
+  .binder-spine {
+    display: none;
+  }
+  .binder-page {
+    gap: 8px;
+  }
+  .binder-tab {
+    min-width: 132px;
+    padding: 9px 12px 10px;
+  }
 }
 
 .card-text {
@@ -6838,34 +7359,20 @@ button.deck-box-stat:hover,
    parchemin, encre, et un seul accent doré (la barre).
    ============================================================ */
 
-/* ---------- Collection : progression par set (repliée en bas de page) ---------- */
-.progress-fold {
-  margin: 30px 0 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
+/* Gemme de complétion : hexagone laiton, clin d'œil aux impressions
+   alternatives et aux hauts faits. Portée par les onglets du classeur. */
+.progress-gem {
+  width: 18px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--gold-grad);
+  color: #fdf8ec;
+  font-size: 0.62rem;
+  font-family: var(--font-body);
 }
-.progress-summary {
-  cursor: pointer;
-  padding: 14px 20px;
-  font-family: var(--font-display);
-  font-size: 1.02rem;
-  color: var(--ink-strong);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  list-style-position: inside;
-}
-.progress-summary:hover {
-  color: var(--gold-deep);
-}
-.progress-panel {
-  padding: 4px 20px 18px;
-}
-.progress-loading {
-  font-size: 0.78rem;
-}
+/* Lignes de progression : servent aux profils publics (sets d'un joueur). */
 .progress-row {
   display: grid;
   grid-template-columns: minmax(110px, 210px) 1fr auto minmax(150px, auto);
@@ -6879,23 +7386,6 @@ button.deck-box-stat:hover,
   text-align: left;
   font: inherit;
   color: var(--ink);
-}
-/* Les lignes de set sont cliquables : elles appliquent le filtre Sets de la grille. */
-button.progress-row {
-  cursor: pointer;
-  transition: background 0.18s;
-}
-button.progress-row:hover {
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
-}
-.progress-overall {
-  padding-bottom: 13px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid var(--line);
-}
-.progress-overall .progress-name {
-  font-weight: 700;
-  color: var(--ink-strong);
 }
 .progress-name {
   overflow: hidden;
