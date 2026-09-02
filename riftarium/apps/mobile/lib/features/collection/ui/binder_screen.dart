@@ -419,15 +419,15 @@ class _BinderPage extends ConsumerWidget {
         )),
       );
     }
-    if (request.page < pages) {
-      ref.watch(
-        binderPageProvider((
-          setId: request.setId,
-          owned: request.owned,
-          page: request.page + 1,
-        )),
-      );
-    }
+    final next = request.page < pages
+        ? ref.watch(
+            binderPageProvider((
+              setId: request.setId,
+              owned: request.owned,
+              page: request.page + 1,
+            )),
+          )
+        : null;
 
     final page = ref.watch(binderPageProvider(request));
     return page.when(
@@ -437,15 +437,22 @@ class _BinderPage extends ConsumerWidget {
         onRetry: () => ref.invalidate(binderPageProvider(request)),
       ),
       data: (data) {
+        // Vignettes de la page et de la suivante mises en cache : la feuille
+        // arrive pleine, sans squelettes ni fondus pendant le glissement.
+        final upcoming = next?.valueOrNull?.items ?? const <RiftCard>[];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            unawaited(
+              precacheCardThumbs(context, [...data.items, ...upcoming]),
+            );
+          }
+        });
         final cards = List<RiftCard?>.from(data.items);
         while (cards.length < binderPageSize) {
           cards.add(null);
         }
         return _PocketGrid(
-          cells: [
-            for (final (index, card) in cards.indexed)
-              _Pocket(card: card, index: index),
-          ],
+          cells: [for (final card in cards) _Pocket(card: card)],
         );
       },
     );
@@ -511,7 +518,7 @@ class _PageSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _PocketGrid(
-      cells: [for (var i = 0; i < binderPageSize; i++) const _Pocket(index: 0)],
+      cells: [for (var i = 0; i < binderPageSize; i++) const _Pocket()],
     );
   }
 }
@@ -528,10 +535,9 @@ const _grayscale = ColorFilter.matrix(<double>[
 /// avec son code et son prix. L'appui ouvre la fiche. Sans carte, la pochette
 /// reste une gaine vide.
 class _Pocket extends StatelessWidget {
-  const _Pocket({this.card, required this.index});
+  const _Pocket({this.card});
 
   final RiftCard? card;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -567,66 +573,66 @@ class _Pocket extends StatelessWidget {
     }
 
     final price = formatEur(held.priceEur);
-    return Reveal(
-      index: index,
-      child: Semantics(
-        button: true,
-        label: owned
-            ? '${held.name}, ${held.ownedQty} exemplaire(s)'
-            : 'Carte manquante : ${held.name}',
-        child: PressScale(
-          onTap: () => context.go(AppRoutes.card(held.id)),
-          child: Container(
-            decoration: sleeve,
-            padding: const EdgeInsets.all(3),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                visual,
-                if (owned)
+    // Pas de Reveal ici : rejouer la cascade à chaque page construite pendant
+    // le glissement faisait clignoter la feuille (vide, puis remplie une
+    // pochette à la fois). Le pivotement de page suffit comme mouvement.
+    return Semantics(
+      button: true,
+      label: owned
+          ? '${held.name}, ${held.ownedQty} exemplaire(s)'
+          : 'Carte manquante : ${held.name}',
+      child: PressScale(
+        onTap: () => context.go(AppRoutes.card(held.id)),
+        child: Container(
+          decoration: sleeve,
+          padding: const EdgeInsets.all(3),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              visual,
+              if (owned)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: MonoBadge(label: '×${held.ownedQty}', filled: true),
+                )
+              else ...[
+                if (price != null)
                   Positioned(
                     top: 4,
                     right: 4,
-                    child: MonoBadge(label: '×${held.ownedQty}', filled: true),
-                  )
-                else ...[
-                  if (price != null)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: MonoBadge(
-                        label: price,
-                        filled: true,
-                        color: RiftColors.goldDeep,
-                      ),
+                    child: MonoBadge(
+                      label: price,
+                      filled: true,
+                      color: RiftColors.goldDeep,
                     ),
-                  Positioned(
-                    bottom: 4,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: RiftColors.night.withValues(alpha: 0.72),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          held.displayCode,
-                          style: text.mono.copyWith(
-                            fontSize: 9.5,
-                            color: Colors.white,
-                          ),
+                  ),
+                Positioned(
+                  bottom: 4,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: RiftColors.night.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        held.displayCode,
+                        style: text.mono.copyWith(
+                          fontSize: 9.5,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),

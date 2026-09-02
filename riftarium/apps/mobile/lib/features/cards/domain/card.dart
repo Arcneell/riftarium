@@ -26,6 +26,7 @@ class RiftCard {
     this.overnumbered = false,
     this.foil = false,
     this.priceEur,
+    this.priceFoilEur,
     this.ownedQty,
     this.wishedQty,
   });
@@ -55,6 +56,7 @@ class RiftCard {
       overnumbered: json['overnumbered'] == true,
       foil: json['foil'] == true,
       priceEur: (json['price_eur'] as num?)?.toDouble(),
+      priceFoilEur: (json['price_foil_eur'] as num?)?.toDouble(),
       ownedQty: (json['owned_qty'] as num?)?.toInt(),
       wishedQty: (json['wished_qty'] as num?)?.toInt(),
     );
@@ -83,6 +85,9 @@ class RiftCard {
   final bool overnumbered;
   final bool foil;
   final double? priceEur;
+
+  /// Prix indicatif de l'impression foil, quand la source le distingue.
+  final double? priceFoilEur;
   final int? ownedQty;
   final int? wishedQty;
 
@@ -120,6 +125,7 @@ class RiftCard {
     overnumbered: overnumbered,
     foil: foil,
     priceEur: priceEur,
+    priceFoilEur: priceFoilEur,
     ownedQty: ownedQty ?? this.ownedQty,
     wishedQty: wishedQty ?? this.wishedQty,
   );
