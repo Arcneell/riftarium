@@ -34,7 +34,8 @@ class ScanResultSheet extends StatefulWidget {
   final bool adding;
   final String? addError;
 
-  final VoidCallback onAdd;
+  /// Ajout à la collection, avec la quantité choisie au stepper.
+  final ValueChanged<int> onAdd;
   final VoidCallback onOpenCard;
   final VoidCallback onNext;
 
@@ -47,12 +48,22 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
   /// « arrive » sous le cadre.
   bool _raised = false;
 
+  /// Quantité à ajouter d'un coup (booster ouvert, playset) : 1 à 99, remise
+  /// à 1 quand une nouvelle carte est reconnue.
+  int _qty = 1;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _raised = true);
     });
+  }
+
+  @override
+  void didUpdateWidget(ScanResultSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.card.id != widget.card.id) setState(() => _qty = 1);
   }
 
   @override
@@ -122,7 +133,10 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
                       Text(
                         price == null
                             ? 'Prix estimé indisponible'
-                            : 'Prix estimé ${formatEuro(price)}',
+                            : _qty == 1
+                            ? 'Prix estimé ${formatEuro(price)}'
+                            : 'Prix estimé ${formatEuro(price)} · '
+                                  '×$_qty ≈ ${formatEuro(price * _qty)}',
                         style: text.monoStrong.copyWith(
                           fontSize: 14,
                           color: RiftColors.gold,
@@ -173,11 +187,22 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
               ),
             ],
             const SizedBox(height: 14),
-            GoldButton(
-              label: '+1 dans ma collection',
-              icon: Icons.add,
-              loading: widget.adding,
-              onPressed: widget.onAdd,
+            Row(
+              children: [
+                _QtyStepper(
+                  qty: _qty,
+                  onChanged: (value) => setState(() => _qty = value),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GoldButton(
+                    label: '+$_qty dans ma collection',
+                    icon: Icons.add,
+                    loading: widget.adding,
+                    onPressed: () => widget.onAdd(_qty),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Row(
@@ -236,6 +261,52 @@ class _SheetNote extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(message, style: text.small.copyWith(color: textColor)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quantité à ajouter : − / valeur / +, bornée de 1 à 99.
+class _QtyStepper extends StatelessWidget {
+  const _QtyStepper({required this.qty, required this.onChanged});
+
+  final int qty;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Un exemplaire de moins',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            onPressed: qty > 1 ? () => onChanged(qty - 1) : null,
+            icon: const Icon(Icons.remove),
+          ),
+          SizedBox(
+            width: 24,
+            child: Text(
+              '$qty',
+              textAlign: TextAlign.center,
+              style: text.monoStrong.copyWith(fontSize: 15),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Un exemplaire de plus',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            onPressed: qty < 99 ? () => onChanged(qty + 1) : null,
+            icon: const Icon(Icons.add),
           ),
         ],
       ),

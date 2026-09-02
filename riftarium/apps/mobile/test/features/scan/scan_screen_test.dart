@@ -21,7 +21,7 @@ class _FrozenScanController extends ScanController {
   _FrozenScanController(this._initial);
 
   final ScanState _initial;
-  int addCalls = 0;
+  final List<int> addedQtys = [];
   int nextCalls = 0;
 
   @override
@@ -31,9 +31,9 @@ class _FrozenScanController extends ScanController {
   CameraController? get camera => null;
 
   @override
-  Future<void> addOne() async {
-    addCalls++;
-    state = state.copyWith(addedQty: state.addedQty + 1);
+  Future<void> add([int qty = 1]) async {
+    addedQtys.add(qty);
+    state = state.copyWith(addedQty: state.addedQty + qty);
   }
 
   /// Pousse un état fabriqué depuis le test.
@@ -204,8 +204,20 @@ void main() {
 
       await tester.tap(find.text('+1 dans ma collection'));
       await tester.pumpAndSettle();
-      expect(controller.addCalls, 1);
+      expect(controller.addedQtys, [1]);
       expect(find.text('1 exemplaire ajouté.'), findsOneWidget);
+
+      // Le stepper monte la quantité : le bouton et l'appel la suivent.
+      await tester.tap(find.byTooltip('Un exemplaire de plus'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Un exemplaire de plus'));
+      await tester.pumpAndSettle();
+      // Le prix suit la quantité : sous-total affiché à côté de l'unitaire.
+      expect(find.text('Prix estimé 12,34 € · ×3 ≈ 37,02 €'), findsOneWidget);
+      await tester.tap(find.text('+3 dans ma collection'));
+      await tester.pumpAndSettle();
+      expect(controller.addedQtys, [1, 3]);
+      expect(find.text('4 exemplaires ajoutés.'), findsOneWidget);
 
       await tester.tap(find.text('Scanner la suivante'));
       await tester.pumpAndSettle();
@@ -214,6 +226,9 @@ void main() {
       // La carte reste dans la rangée des dernières cartes scannées.
       expect(find.text('Cadre le code de la carte'), findsOneWidget);
       expect(find.text('Jinx, la fauteuse de troubles'), findsOneWidget);
+      // L'historique porte le prix de chaque carte et le cumul de la session.
+      expect(find.text('1 carte scannée · ~12,34 €'), findsOneWidget);
+      expect(find.text('12,34 €'), findsOneWidget);
     });
 
     testWidgets('carte en cours de chargement : indicateur, pas de feuille', (
@@ -258,7 +273,7 @@ void main() {
             addedQty: 0,
             adding: false,
             addError: null,
-            onAdd: () {},
+            onAdd: (_) {},
             onOpenCard: () {},
             onNext: () {},
           ),
@@ -280,7 +295,7 @@ void main() {
             addedQty: 0,
             adding: false,
             addError: 'Pas de connexion. Vérifie ton réseau.',
-            onAdd: () {},
+            onAdd: (_) {},
             onOpenCard: () {},
             onNext: () {},
           ),
@@ -305,7 +320,7 @@ void main() {
             addedQty: 2,
             adding: false,
             addError: null,
-            onAdd: () {},
+            onAdd: (_) {},
             onOpenCard: () => opened++,
             onNext: () {},
           ),

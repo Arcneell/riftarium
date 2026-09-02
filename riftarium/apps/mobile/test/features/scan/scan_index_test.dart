@@ -147,7 +147,7 @@ void main() {
           }),
         });
 
-        final total = await ScanCollectionApi(client()).addOne('OGN-209');
+        final total = await ScanCollectionApi(client()).add('OGN-209');
 
         expect(total, 3);
         final request = adapter.requests.single;
@@ -165,7 +165,7 @@ void main() {
       });
 
       expect(
-        () => ScanCollectionApi(client()).addOne('NOPE'),
+        () => ScanCollectionApi(client()).add('NOPE'),
         throwsA(
           isA<ApiException>().having(
             (error) => error.message,
