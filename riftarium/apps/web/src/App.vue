@@ -248,6 +248,14 @@ async function logout() {
             <li>
               <a href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener">Signaler un bug</a>
             </li>
+            <li>
+              <!-- Toujours la dernière release : l'asset garde le nom fixe riftarium.apk. -->
+              <a
+                href="https://github.com/Arcneell/riftarium/releases/latest/download/riftarium.apk"
+                title="Version de test signée hors Play Store : autoriser l'installation de sources inconnues."
+                >Application Android (APK)</a
+              >
+            </li>
             <li><a href="https://api.riftcodex.com/docs" target="_blank" rel="noopener">Données : API Riftcodex</a></li>
             <li>
               <a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a>

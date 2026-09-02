@@ -50,13 +50,13 @@ class _KeywordPill extends StatelessWidget {
 
   final CardTextKeyword keyword;
 
-  /// Familles du site transposées dans la palette Riftarium : temporalité en
-  /// calme, combat en chaos, état en corps, le reste en encre sourde.
+  /// Couleurs des familles relevées sur les cartes officielles — les mêmes
+  /// valeurs que `.rb-kw.timing/.combat/.state/.utility` sur le site.
   static Color _colorOf(KeywordFamily family) => switch (family) {
-    KeywordFamily.timing => RiftColors.calmText,
-    KeywordFamily.combat => RiftColors.chaos,
-    KeywordFamily.state => RiftColors.body,
-    KeywordFamily.utility => RiftColors.muted,
+    KeywordFamily.timing => const Color(0xFF24705F),
+    KeywordFamily.combat => const Color(0xFFCC356E),
+    KeywordFamily.state => const Color(0xFF94B42A),
+    KeywordFamily.utility => const Color(0xFF6C6D6C),
   };
 
   @override

@@ -197,6 +197,25 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("cascade des pochettes : à l'ouverture d'un set, pas au tournage de page", async () => {
+    const { wrapper } = await mountView()
+    // Première ouverture : la double page « distribue » ses pochettes.
+    expect(wrapper.get(".binder-spread").classes()).toContain("deal")
+
+    // Tourner la page du même set : la page arrive pleine, sans cascade.
+    await wrapper.findAll(".binder-nav button")[1].trigger("click")
+    await vi.waitFor(() => {
+      expect(wrapper.get(".binder-spread").classes()).not.toContain("deal")
+    })
+
+    // Changer de set : nouvelle distribution.
+    await wrapper.findAll(".binder-tab")[1].trigger("click")
+    await vi.waitFor(() => {
+      expect(wrapper.get(".binder-spread").classes()).toContain("deal")
+    })
+    wrapper.unmount()
+  })
+
   it("flèches du clavier : feuillettent le classeur", async () => {
     const { wrapper } = await mountView()
     api.mockClear()

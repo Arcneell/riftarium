@@ -1601,11 +1601,16 @@ textarea {
     inset 0 0 0 1px rgba(201, 167, 92, 0.12),
     inset 0 10px 24px rgba(2, 6, 16, 0.55);
   overflow: hidden;
-  animation: pocket-in 0.5s cubic-bezier(0.22, 0.8, 0.32, 1) both;
-  animation-delay: calc(var(--i, 0) * 28ms);
   transition:
     transform 0.22s,
     box-shadow 0.25s;
+}
+/* Cascade d'apparition : seulement à l'ouverture d'un set ou d'un filtre
+   (.deal). En la rejouant à chaque tournage, la page arrivait vide puis se
+   re-remplissait pochette par pochette — un clignotement. */
+.binder-spread.deal .pocket {
+  animation: pocket-in 0.5s cubic-bezier(0.22, 0.8, 0.32, 1) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
 }
 @keyframes pocket-in {
   from {
