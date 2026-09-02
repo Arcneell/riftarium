@@ -1315,12 +1315,25 @@ textarea {
   gap: 10px;
   padding: 12px 16px;
   margin-bottom: 18px;
-  border: 1px solid var(--line);
+  /* Accent sarcelle : la barre signale un mode actif, pas un simple panneau. */
+  border: 1px solid color-mix(in srgb, var(--hex) 35%, transparent);
   border-radius: var(--r);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
   position: sticky;
-  top: 12px;
+  /* Sous l'en-tête collant (~67 px), sinon la barre glissait dessous. */
+  top: 80px;
   z-index: 5;
+}
+.bulk-count {
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--hex-soft);
+  color: var(--hex-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .bulk-bar select {
   width: auto;
@@ -1335,6 +1348,55 @@ textarea {
 }
 .bulk-danger {
   color: #f0705f;
+}
+
+/* Stats de la collection : bande pleine largeur, tuiles égales. */
+.col-stats {
+  margin-bottom: 22px;
+}
+.col-stats .stat {
+  flex: 1 1 150px;
+}
+
+/* Actions (sélection, scan, export) détachées des filtres de recherche. */
+.board-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+/* État vide : une invitation, pas un constat. */
+.col-empty {
+  padding: 48px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+}
+.col-empty-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--ink-strong);
+  margin-bottom: 6px;
+}
+.col-empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+  .board-actions {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
 }
 
 .card-text {
@@ -6838,33 +6900,147 @@ button.deck-box-stat:hover,
    parchemin, encre, et un seul accent doré (la barre).
    ============================================================ */
 
-/* ---------- Collection : progression par set (repliée en bas de page) ---------- */
-.progress-fold {
-  margin: 30px 0 6px;
+/* ---------- Collection : tableau de progression (tête de page) ---------- */
+/* Le tableau de bord du collectionneur : la jauge globale puis une tuile par
+   set, cliquable (elle applique le filtre Sets de la grille). Les classes de
+   base .progress-* restent partagées avec les profils publics : tout ce qui
+   est propre aux tuiles est préfixé .progress-board / .progress-sets. */
+.progress-board {
+  margin: 4px 0 26px;
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--r-lg);
   background: var(--surface);
+  box-shadow: var(--shadow-soft);
 }
 .progress-summary {
-  cursor: pointer;
-  padding: 14px 20px;
-  font-family: var(--font-display);
-  font-size: 1.02rem;
-  color: var(--ink-strong);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
   flex-wrap: wrap;
-  list-style-position: inside;
-}
-.progress-summary:hover {
-  color: var(--gold-deep);
+  padding: 18px 24px 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--ink-strong);
 }
 .progress-panel {
-  padding: 4px 20px 18px;
+  padding: 12px 24px 22px;
 }
 .progress-loading {
   font-size: 0.78rem;
+}
+/* Jauge globale : nom et compteur sur la première ligne, barre pleine
+   largeur, coût des manquantes dessous. */
+.progress-board .progress-overall {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "name count"
+    "bar bar"
+    "missing missing";
+  gap: 6px 14px;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.progress-board .progress-overall .progress-name {
+  grid-area: name;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+.progress-board .progress-overall .progress-count {
+  grid-area: count;
+  font-size: 0.8rem;
+  align-self: center;
+}
+.progress-board .progress-overall .progress-bar {
+  grid-area: bar;
+  height: 12px;
+}
+.progress-board .progress-overall .progress-missing {
+  grid-area: missing;
+  text-align: right;
+}
+/* Tuiles de set : une jauge compacte par set, en grille fluide. */
+.progress-sets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.progress-sets .progress-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "name pct"
+    "bar bar"
+    "count missing";
+  gap: 7px 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: rgba(16, 29, 51, 0.55);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.25s;
+}
+.progress-sets .progress-row:hover {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--gold) 10%, rgba(16, 29, 51, 0.55));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+.progress-sets .progress-name {
+  grid-area: name;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+.progress-pct {
+  grid-area: pct;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--ink-strong);
+  white-space: nowrap;
+}
+.progress-sets .progress-bar {
+  grid-area: bar;
+}
+.progress-sets .progress-count {
+  grid-area: count;
+}
+.progress-sets .progress-missing {
+  grid-area: missing;
+  white-space: normal;
+}
+/* Set complet : liseré laiton et gemme hexagonale, clin d'œil aux
+   impressions alternatives et aux hauts faits. */
+.progress-sets .progress-row.done {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 9%, rgba(16, 29, 51, 0.55));
+}
+.progress-sets .progress-row.done .progress-pct {
+  color: var(--gold-deep);
+}
+.progress-gem {
+  width: 18px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--gold-grad);
+  color: #fdf8ec;
+  font-size: 0.62rem;
+  font-family: var(--font-body);
 }
 .progress-row {
   display: grid;

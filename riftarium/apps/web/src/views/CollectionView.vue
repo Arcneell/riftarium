@@ -189,7 +189,7 @@ onMounted(async () => {
 
   <section>
     <div class="wrap cards-wrap">
-      <div class="stat-row">
+      <div class="stat-row col-stats">
         <div class="stat" v-reveal>
           Cartes<b>{{ result.total_cards }}</b>
         </div>
@@ -200,6 +200,67 @@ onMounted(async () => {
           Valeur estimée<b>{{ formatEur(result.value_eur) || "—" }}</b>
         </div>
       </div>
+
+      <!-- Progression en tête de page : c'est le tableau de bord du collectionneur,
+           chaque set est cliquable et filtre la grille dessous. -->
+      <section
+        v-if="progress || progressLoading"
+        class="progress-board"
+        aria-label="Progression de la collection"
+        v-reveal="3"
+      >
+        <h2 class="progress-summary">
+          Progression par set
+          <span v-if="progress" class="muted mono">
+            {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
+          </span>
+        </h2>
+        <div class="progress-panel">
+          <p v-if="progressLoading && !progress" class="muted mono progress-loading">Calcul de votre progression…</p>
+          <template v-if="progress">
+            <div class="progress-row progress-overall">
+              <span class="progress-name">Tous sets confondus</span>
+              <span class="progress-count">
+                {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
+              </span>
+              <div
+                class="progress-bar"
+                role="img"
+                :aria-label="`${progress.overall.owned} cartes possédées sur ${progress.overall.total}`"
+              >
+                <i :style="{ width: `${percentOf(progress.overall)}%` }"></i>
+              </div>
+              <span class="progress-missing" :class="{ done: !progress.overall.missing }" :title="PRICE_NOTE">
+                {{ missingText(progress.overall) }}
+              </span>
+            </div>
+            <div class="progress-sets">
+              <button
+                v-for="row in progress.sets"
+                :key="row.set_id"
+                type="button"
+                class="progress-row"
+                :class="{ done: !row.missing }"
+                :title="`Filtrer la collection sur ${row.name}`"
+                @click="filterBySet(row.set_id)"
+              >
+                <span class="progress-name">{{ row.name }}</span>
+                <span class="progress-pct">
+                  <span v-if="!row.missing" class="progress-gem" aria-hidden="true">✓</span>
+                  {{ percentOf(row) }} %
+                </span>
+                <div class="progress-bar" role="img" :aria-label="`${row.owned} cartes possédées sur ${row.total}`">
+                  <i :style="{ width: `${percentOf(row)}%` }"></i>
+                </div>
+                <span class="progress-count">{{ row.owned }}/{{ row.total }}</span>
+                <span class="progress-missing" :class="{ done: !row.missing }" :title="PRICE_NOTE">
+                  {{ missingText(row) }}
+                </span>
+              </button>
+            </div>
+          </template>
+        </div>
+      </section>
 
       <div class="filter-board">
         <label class="search filter-search">
@@ -256,18 +317,28 @@ onMounted(async () => {
         <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
           Réinitialiser ({{ activeCount }})
         </button>
-        <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
-          {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
-        </button>
-        <RouterLink class="btn btn-ghost btn-sm scan-entry" to="/scan">Scanner une carte</RouterLink>
-        <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
-        <a v-if="session.token" class="btn btn-ghost btn-sm" href="/api/collection/export.csv" download>
-          Exporter (CSV)
-        </a>
+        <!-- Actions sur la collection, séparées des filtres de recherche. -->
+        <div class="board-actions">
+          <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
+            {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
+          </button>
+          <RouterLink
+            class="btn btn-ghost btn-sm scan-entry"
+            to="/scan"
+            title="Identifier une carte avec l'appareil photo"
+          >
+            <Icon name="camera" :size="16" />
+            Scanner
+          </RouterLink>
+          <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
+          <a v-if="session.token" class="btn btn-ghost btn-sm" href="/api/collection/export.csv" download>
+            Exporter (CSV)
+          </a>
+        </div>
       </div>
 
       <div v-if="selectMode" class="bulk-bar" role="toolbar" aria-label="Opérations sur la sélection">
-        <span class="mono">{{ selected.size }} carte(s)</span>
+        <span class="mono bulk-count">{{ selected.size }} carte(s)</span>
         <button class="btn btn-ghost btn-sm" @click="selectPage">Toute la page</button>
         <span class="bulk-sep"></span>
         <button
@@ -340,11 +411,22 @@ onMounted(async () => {
         </div>
       </div>
 
-      <p v-if="!loading && !result.items.length && !result.unique_cards" class="muted">
-        Votre collection est encore vide — ouvrez une <RouterLink to="/cartes">fiche carte</RouterLink> et notez combien
-        d'exemplaires vous possédez.
-      </p>
-      <p v-else-if="!loading && !result.items.length" class="muted">Aucune carte ne correspond aux filtres.</p>
+      <div v-if="!loading && !result.items.length && !result.unique_cards" class="col-empty">
+        <p class="col-empty-title">Votre vitrine est encore vide</p>
+        <p class="muted">
+          Notez vos exemplaires depuis une fiche carte, ou scannez vos cartes pour les ajouter d'un geste.
+        </p>
+        <div class="col-empty-actions">
+          <RouterLink class="btn" to="/cartes">Parcourir les cartes</RouterLink>
+          <RouterLink class="btn btn-ghost" to="/scan">Scanner une carte</RouterLink>
+        </div>
+      </div>
+      <div v-else-if="!loading && !result.items.length" class="col-empty">
+        <p class="col-empty-title">Aucune carte ne correspond aux filtres</p>
+        <div class="col-empty-actions">
+          <button class="btn btn-ghost" @click="reset">Réinitialiser les filtres</button>
+        </div>
+      </div>
 
       <div class="pager" v-if="pageCount > 1">
         <button class="btn btn-ghost btn-sm" :disabled="state.page <= 1" @click="state.page--">← Précédent</button>
@@ -353,54 +435,6 @@ onMounted(async () => {
           Suivant →
         </button>
       </div>
-
-      <!-- Repliée par défaut : consultable à la demande, sans encombrer la page. -->
-      <details v-if="progress || progressLoading" class="progress-fold" v-reveal>
-        <summary class="progress-summary">
-          Progression par set
-          <span v-if="progress" class="muted mono">
-            {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
-          </span>
-        </summary>
-        <div class="progress-panel">
-          <p v-if="progressLoading && !progress" class="muted mono progress-loading">Calcul de votre progression…</p>
-          <template v-if="progress">
-            <div class="progress-row progress-overall">
-              <span class="progress-name">Tous sets confondus</span>
-              <div
-                class="progress-bar"
-                role="img"
-                :aria-label="`${progress.overall.owned} cartes possédées sur ${progress.overall.total}`"
-              >
-                <i :style="{ width: `${percentOf(progress.overall)}%` }"></i>
-              </div>
-              <span class="progress-count">
-                {{ progress.overall.owned }}/{{ progress.overall.total }} · {{ percentOf(progress.overall) }} %
-              </span>
-              <span class="progress-missing" :class="{ done: !progress.overall.missing }" :title="PRICE_NOTE">
-                {{ missingText(progress.overall) }}
-              </span>
-            </div>
-            <button
-              v-for="row in progress.sets"
-              :key="row.set_id"
-              type="button"
-              class="progress-row"
-              :title="`Filtrer la collection sur ${row.name}`"
-              @click="filterBySet(row.set_id)"
-            >
-              <span class="progress-name">{{ row.name }}</span>
-              <div class="progress-bar" role="img" :aria-label="`${row.owned} cartes possédées sur ${row.total}`">
-                <i :style="{ width: `${percentOf(row)}%` }"></i>
-              </div>
-              <span class="progress-count">{{ row.owned }}/{{ row.total }} · {{ percentOf(row) }} %</span>
-              <span class="progress-missing" :class="{ done: !row.missing }" :title="PRICE_NOTE">
-                {{ missingText(row) }}
-              </span>
-            </button>
-          </template>
-        </div>
-      </details>
     </div>
   </section>
 
