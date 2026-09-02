@@ -25,7 +25,7 @@ class ScanCollectionApi {
 
   /// Ajoute [qty] exemplaire(s) et renvoie la quantité totale possédée après
   /// l'ajout (`total_qty` de la réponse).
-  Future<int> addOne(String cardId, {int qty = 1}) async {
+  Future<int> add(String cardId, {int qty = 1}) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/collection/$cardId/entries',

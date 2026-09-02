@@ -9,6 +9,7 @@ import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
+import '../../cards/domain/card_labels.dart';
 import '../application/scan_controller.dart';
 import 'scan_result_sheet.dart';
 
@@ -486,14 +487,15 @@ class _Result extends StatelessWidget {
       addedQty: state.addedQty,
       adding: state.adding,
       addError: state.addError,
-      onAdd: controller.addOne,
+      onAdd: controller.add,
       onOpenCard: () => context.go(AppRoutes.card(card.id)),
       onNext: controller.scanNext,
     );
   }
 }
 
-/// Rangée des dernières cartes reconnues pendant la session.
+/// Rangée des dernières cartes reconnues pendant la session : chaque vignette
+/// porte son prix estimé, et l'en-tête cumule la valeur de ce qui a été scanné.
 class _History extends StatelessWidget {
   const _History({required this.state});
 
@@ -501,28 +503,78 @@ class _History extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      // Vignette 44 px de large au ratio 5/7, plus le rembourrage vertical.
-      height: 92,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
-        itemCount: state.history.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final entry = state.history[index];
-          return Reveal(
-            index: index,
-            child: PressScale(
-              onTap: () => context.go(AppRoutes.card(entry.card.id)),
-              child: Tooltip(
-                message: '${entry.card.name} · ${entry.code}',
-                child: CardImage(card: entry.card, width: 44, shadow: true),
-              ),
-            ),
-          );
-        },
-      ),
+    final text = riftText(context);
+    final history = state.history;
+    var total = 0.0;
+    var priced = 0;
+    for (final entry in history) {
+      final price = entry.card.priceEur;
+      if (price != null) {
+        total += price;
+        priced++;
+      }
+    }
+    final count = history.length;
+    final label = StringBuffer(
+      count == 1 ? '1 carte scannée' : '$count cartes scannées',
+    );
+    if (priced > 0) label.write(' · ~${formatEuro(total)}');
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+          child: Text(
+            label.toString(),
+            style: text.mono.copyWith(fontSize: 11.5),
+          ),
+        ),
+        SizedBox(
+          // Vignette 44 px de large au ratio 5/7, le prix dessous, plus le
+          // rembourrage vertical.
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+            itemCount: history.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final entry = history[index];
+              final price = entry.card.priceEur;
+              return Reveal(
+                index: index,
+                child: PressScale(
+                  onTap: () => context.go(AppRoutes.card(entry.card.id)),
+                  child: Tooltip(
+                    message: '${entry.card.name} · ${entry.code}',
+                    child: SizedBox(
+                      width: 44,
+                      child: Column(
+                        children: [
+                          CardImage(card: entry.card, width: 44, shadow: true),
+                          const SizedBox(height: 3),
+                          Text(
+                            price == null ? '—' : formatEuro(price),
+                            maxLines: 1,
+                            overflow: TextOverflow.visible,
+                            softWrap: false,
+                            style: text.mono.copyWith(
+                              fontSize: 9.5,
+                              color: RiftColors.goldDeep,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

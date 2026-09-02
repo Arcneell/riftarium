@@ -379,21 +379,23 @@ class ScanController extends AutoDisposeNotifier<ScanState>
     return history.length > 12 ? history.sublist(0, 12) : history;
   }
 
-  /// « +1 dans ma collection » : ajoute un exemplaire et met à jour la
+  /// « +N dans ma collection » : ajoute la quantité choisie et met à jour la
   /// quantité possédée affichée.
-  Future<void> addOne() async {
+  Future<void> add([int qty = 1]) async {
     final card = state.card;
-    if (card == null || state.adding) return;
+    if (card == null || state.adding || qty < 1) return;
     _set(state.copyWith(adding: true, clearAddError: true));
     try {
-      final total = await ref.read(scanCollectionApiProvider).addOne(card.id);
+      final total = await ref
+          .read(scanCollectionApiProvider)
+          .add(card.id, qty: qty);
       if (_closed) return;
       final updated = card.copyWith(ownedQty: total);
       _set(
         state.copyWith(
           card: updated,
           adding: false,
-          addedQty: state.addedQty + 1,
+          addedQty: state.addedQty + qty,
           history: [
             for (final entry in state.history)
               if (entry.card.id == updated.id)
