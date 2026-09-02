@@ -8,6 +8,7 @@ import '../features/auth/ui/register_screen.dart';
 import '../features/auth/ui/splash_screen.dart';
 import '../features/cards/ui/card_detail_screen.dart';
 import '../features/cards/ui/cards_screen.dart';
+import '../features/collection/ui/binder_screen.dart';
 import '../features/collection/ui/collection_screen.dart';
 import '../features/collection/ui/wishlist_screen.dart';
 import '../features/decks/ui/community_screen.dart';
@@ -44,6 +45,7 @@ abstract final class AppRoutes {
   static String card(String id) => '/cartes/$id';
   static const collection = '/collection';
   static const wishlist = '/collection/wishlist';
+  static const binder = '/collection/classeur';
   static const decks = '/decks';
   static String deck(int id) => '/decks/$id';
   static const community = '/decks/communaute';
@@ -223,6 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'wishlist',
                     builder: (context, state) => const WishlistScreen(),
+                  ),
+                  GoRoute(
+                    path: 'classeur',
+                    builder: (context, state) => const BinderScreen(),
                   ),
                 ],
               ),
