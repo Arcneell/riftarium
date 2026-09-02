@@ -95,7 +95,7 @@ const binderLoading = ref(false)
 const binderError = ref("")
 /* Instantané affiché : remplacé seulement quand la réponse arrive, pour que
    l'animation de tournage parte d'une page pleine vers une page pleine. */
-const spread = ref(null) // { key, items, page, pages, total }
+const spread = ref(null) // { key, scope, deal, items, page, pages, total }
 const turnDir = ref(1) // 1 : on avance (ou change de set), -1 : on recule
 
 let binderSeq = 0
@@ -114,8 +114,14 @@ async function loadBinder() {
     if (binderOwned.value) params.set("owned", binderOwned.value)
     const data = await api(`/api/cards?${params}`)
     if (seq !== binderSeq) return
+    /* La cascade d'apparition des pochettes ne joue qu'à l'ouverture d'un set
+       (ou d'un filtre) : en la rejouant à chaque tournage, la page neuve
+       arrivait vide puis se re-remplissait — un clignotement, pas une page. */
+    const scope = `${binderSet.value}|${binderOwned.value}`
     spread.value = {
-      key: `${binderSet.value}|${data.page}|${binderOwned.value}`,
+      key: `${scope}|${data.page}`,
+      scope,
+      deal: spread.value?.scope !== scope,
       items: data.items,
       page: data.page,
       pages: Math.max(1, Math.ceil(data.total / SPREAD_SIZE)),
@@ -397,7 +403,12 @@ onMounted(async () => {
               mode="out-in"
               :duration="{ leave: 280, enter: 320 }"
             >
-              <div v-if="spread && spread.items.length" :key="spread.key" class="binder-spread">
+              <div
+                v-if="spread && spread.items.length"
+                :key="spread.key"
+                class="binder-spread"
+                :class="{ deal: spread.deal }"
+              >
                 <div class="binder-page">
                   <template v-for="(card, i) in leftCards" :key="card ? card.id : `l-${i}`">
                     <RouterLink
