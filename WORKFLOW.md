@@ -95,6 +95,17 @@ flutter build ipa               # Mac seulement, compte développeur Apple requi
 Mise à jour de Flutter : `flutter upgrade`, puis reporter la version dans
 `mobile.yml` et ce tableau, puis `flutter analyze` + `flutter test`.
 
+Distribution de test Android : le pied de page du site pointe vers
+`https://github.com/Arcneell/riftarium/releases/latest/download/riftarium.apk`.
+Publier chaque APK en le renommant d'abord (l'URL « latest » exige un nom
+d'asset stable) :
+
+```bash
+cp dist/riftarium-<version>-<sha>.apk /tmp/riftarium.apk
+gh release create mobile-v<version> /tmp/riftarium.apk \
+  --title "Riftarium Android <version>" --notes "APK de test (signé debug)."
+```
+
 ## 5. Vérifier avant de pousser
 
 Lancer les vérifications de **chaque application touchée**. Ce sont exactement
