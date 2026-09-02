@@ -19,7 +19,9 @@ import '../../collection/ui/widgets/card_collection_actions.dart';
 import '../application/cards_controller.dart';
 import '../domain/card.dart';
 import '../domain/card_labels.dart';
+import '../domain/card_text.dart';
 import '../domain/prices_meta.dart';
+import 'widgets/card_glyph.dart';
 import 'widgets/card_text_view.dart';
 
 /// Fiche d'une carte : on l'ouvre sur son visuel, posé dans la lueur de son
@@ -383,7 +385,9 @@ class _CardStage extends StatelessWidget {
   }
 }
 
-/// Énergie, puissance et pouvoir, uniquement quand la carte les porte.
+/// Énergie, puissance et pouvoir, uniquement quand la carte les porte —
+/// avec les glyphes officiels, comme la fiche du site : pastille d'énergie,
+/// glyphe de puissance teinté à l'encre, runes de domaine pour le pouvoir.
 class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.card});
 
@@ -391,15 +395,66 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = <(String, String)>[
-      if (card.energy != null) ('Énergie', '${card.energy}'),
-      if (card.might != null) ('Puissance', '${card.might}'),
-      if (card.power != null) ('Pouvoir', '${card.power}'),
+    final text = riftText(context);
+    final runes = powerRunes(card.domains, card.power);
+    final stats = <(String, Widget)>[
+      if (card.energy != null)
+        (
+          'Énergie',
+          CardGlyph(
+            glyph: CardTextGlyph(
+              token: 'energy_${card.energy}',
+              label: 'Énergie ${card.energy}',
+              kind: GlyphKind.energy,
+            ),
+            size: 30,
+          ),
+        ),
+      if (card.might != null)
+        (
+          'Puissance',
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CardGlyph(
+                glyph: const CardTextGlyph(
+                  token: 'might',
+                  label: 'Puissance',
+                  kind: GlyphKind.ink,
+                ),
+                size: 22,
+                color: RiftColors.gold,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '${card.might}',
+                style: text.displayMedium.copyWith(
+                  fontSize: 24,
+                  color: RiftColors.gold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      if (runes.isNotEmpty)
+        (
+          'Pouvoir',
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (index, rune) in runes.indexed)
+                Padding(
+                  padding: EdgeInsets.only(left: index == 0 ? 0 : 3),
+                  child: CardGlyph(glyph: rune, size: 22),
+                ),
+            ],
+          ),
+        ),
     ];
     if (stats.isEmpty) return const SizedBox.shrink();
-    final text = riftText(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final (index, (label, value)) in stats.indexed) ...[
           if (index > 0) const SizedBox(width: 10),
@@ -408,11 +463,12 @@ class _StatsRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               child: Column(
                 children: [
-                  Text(
-                    value,
-                    style: text.displayMedium.copyWith(
-                      fontSize: 24,
-                      color: RiftColors.gold,
+                  SizedBox(
+                    height: 32,
+                    child: Center(
+                      // Réduit si la valeur déborde (pouvoir à trois runes
+                      // sur un petit écran).
+                      child: FittedBox(fit: BoxFit.scaleDown, child: value),
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -448,22 +504,71 @@ class _PriceBlock extends ConsumerWidget {
     final meta =
         ref.watch(pricesMetaProvider).valueOrNull ?? const PricesMeta();
 
+    // Prix foil affiché seulement quand la source le distingue du prix normal
+    // (les cartes n'existant qu'en foil n'ont qu'un prix), comme sur le site.
+    final foil = card.priceFoilEur;
+    final showFoil = foil != null && foil != price;
+
     return RiftPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Prix indicatif'.toUpperCase(), style: text.eyebrow),
           const SizedBox(height: 4),
-          Text(
-            formatEuro(price),
-            style: text.displayMedium.copyWith(fontSize: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                formatEuro(price),
+                style: text.displayMedium.copyWith(fontSize: 24),
+              ),
+              if (showFoil) ...[
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'foil : ${formatEuro(foil)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.mono.copyWith(
+                      fontSize: 12.5,
+                      color: RiftColors.goldDeep,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 8),
           Text(meta.note, style: text.small.copyWith(fontSize: 12)),
+          const SizedBox(height: 2),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 34),
+            ),
+            onPressed: () => _openCardmarket(context, card.name),
+            child: const Text('Voir sur Cardmarket ↗'),
+          ),
         ],
       ),
     );
   }
+}
+
+/// Recherche de la carte sur Cardmarket, comme le lien de la fiche du site.
+Future<void> _openCardmarket(BuildContext context, String name) async {
+  final uri = Uri.parse(
+    'https://www.cardmarket.com/fr/Riftbound/Products/Search'
+    '?searchString=${Uri.encodeComponent(name)}',
+  );
+  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (opened || !context.mounted) return;
+  await showAdaptiveMessage(
+    context,
+    title: 'Lien non ouvert',
+    message: 'Impossible d’ouvrir $uri sur cet appareil.',
+  );
 }
 
 /// Autres impressions de la même carte (alt-art, signature, overnumbered).

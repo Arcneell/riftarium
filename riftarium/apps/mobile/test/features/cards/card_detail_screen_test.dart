@@ -106,6 +106,13 @@ void main() {
     expect(find.text('ÉNERGIE'), findsOneWidget);
     expect(find.text('PUISSANCE'), findsOneWidget);
     expect(find.text('POUVOIR'), findsOneWidget);
+    // Valeurs en glyphes officiels, comme la fiche du site : pastille
+    // d'énergie, glyphe de puissance + valeur, une rune par point de pouvoir
+    // (premier domaine : Fureur).
+    expect(_glyph('Énergie 5'), findsOneWidget);
+    expect(_glyph('Puissance'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+    expect(_glyph('Rune de Fureur'), findsNWidgets(2));
     expect(find.text('Ouvrir sur le site'), findsOneWidget);
   });
 
@@ -121,6 +128,20 @@ void main() {
     // Espace insécable avant le symbole (voir formatEuro).
     expect(find.text('12,34\u00A0€'), findsOneWidget);
     expect(find.textContaining('20/08/2026'), findsOneWidget);
+    expect(find.text('Voir sur Cardmarket ↗'), findsOneWidget);
+  });
+
+  testWidgets('le prix foil est affiché quand il diffère du prix normal', (
+    tester,
+  ) async {
+    reduceMotion(tester);
+    final api = CardsFakeApi(routes(card: {...jinx, 'price_foil_eur': 22.5}));
+
+    await tester.pumpWidget(app(api));
+    await settle(tester);
+
+    expect(find.text('12,34 €'), findsOneWidget);
+    expect(find.text('foil : 22,50 €'), findsOneWidget);
   });
 
   testWidgets('les variantes sont proposées en carrousel', (tester) async {
@@ -204,3 +225,8 @@ void main() {
     expect(find.text('MA COLLECTION'), findsOneWidget);
   });
 }
+
+/// Un glyphe officiel se repère à son étiquette d'accessibilité (CardGlyph).
+Finder _glyph(String label) => find.byWidgetPredicate(
+  (widget) => widget is Semantics && widget.properties.label == label,
+);
