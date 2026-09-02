@@ -122,22 +122,34 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                 sliver: SliverToBoxAdapter(
                   child: Reveal(
                     index: 4,
-                    child: Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: GoldButton(
-                            label: 'Scanner',
-                            icon: Icons.center_focus_strong_outlined,
-                            onPressed: () => context.push(AppRoutes.scan),
-                          ),
+                        // Le classeur est la vitrine de la collection : c'est
+                        // lui qui porte l'action dorée de l'écran.
+                        GoldButton(
+                          label: 'Ouvrir le classeur',
+                          icon: Icons.auto_stories_outlined,
+                          onPressed: () => context.go(AppRoutes.binder),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: GhostButton(
-                            label: 'Wishlist',
-                            icon: Icons.favorite_border,
-                            onPressed: () => context.go(AppRoutes.wishlist),
-                          ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GhostButton(
+                                label: 'Scanner',
+                                icon: Icons.center_focus_strong_outlined,
+                                onPressed: () => context.push(AppRoutes.scan),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: GhostButton(
+                                label: 'Wishlist',
+                                icon: Icons.favorite_border,
+                                onPressed: () => context.go(AppRoutes.wishlist),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
