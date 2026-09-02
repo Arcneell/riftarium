@@ -56,27 +56,33 @@ RiftboundId? parseRiftboundId(String? rid) {
   );
 }
 
-/// Code lu sur une carte : « OGN 209/298 ». Le set et l'étoile sont des bonus
-/// (jamais exigés, jamais décisifs) — voir [matchByCode].
+/// Code lu sur une carte : « OGN 209/298 », « OGN 007a/298 ». Le set et le
+/// suffixe sont des bonus (jamais exigés, jamais décisifs) — voir [matchByCode].
 class CollectorCode {
   const CollectorCode({
     required this.number,
     required this.total,
     this.set,
-    this.star = false,
+    this.suffix = '',
   });
 
   /// Set à trois lettres quand l'OCR l'a lu, null sinon.
   final String? set;
   final int number;
   final int total;
-  final bool star;
+
+  /// Suffixe de variante lu entre le numéro et le total : lettre d'impression
+  /// des arts alternatifs (« a »), étoile des signatures (« * »), ou les deux.
+  /// Vide pour une impression de base.
+  final String suffix;
+
+  bool get star => suffix.contains('*');
 
   /// Le code tel qu'il est imprimé, numéro complété à la longueur du total
   /// (« OGN 002/298 », jamais « OGN 2/298 »).
   String get label {
     final padded = number.toString().padLeft(total.toString().length, '0');
-    return '${set == null ? '' : '$set '}$padded${star ? '*' : ''}/$total';
+    return '${set == null ? '' : '$set '}$padded$suffix/$total';
   }
 
   @override
@@ -85,10 +91,10 @@ class CollectorCode {
       other.set == set &&
       other.number == number &&
       other.total == total &&
-      other.star == star;
+      other.suffix == suffix;
 
   @override
-  int get hashCode => Object.hash(set, number, total, star);
+  int get hashCode => Object.hash(set, number, total, suffix);
 
   @override
   String toString() => 'CollectorCode($label)';
@@ -167,11 +173,11 @@ CollectorCode? parseCollectorCode(String? text, Set<int> knownTotals) {
   final set = _setPattern.firstMatch(cleaned)?.group(1);
   final runs = _digitRuns(cleaned);
 
-  CollectorCode? accept(int number, int total, bool star) =>
+  CollectorCode? accept(int number, int total, String suffix) =>
       knownTotals.contains(total) &&
           number >= 1 &&
           number <= total + kOvernumberMargin
-      ? CollectorCode(set: set, number: number, total: total, star: star)
+      ? CollectorCode(set: set, number: number, total: total, suffix: suffix)
       : null;
 
   // Cas normal : deux groupes distincts. Parcours à l'envers, le code est en
@@ -181,26 +187,40 @@ CollectorCode? parseCollectorCode(String? text, Set<int> knownTotals) {
     final hit = accept(
       int.parse(runs[i].text),
       int.parse(runs[i + 1].text),
-      between.contains('*'),
+      _suffixOf(between),
     );
     if (hit != null) return hit;
   }
 
   // Repli : le séparateur a disparu et les deux nombres sont collés
-  // (« 229219 ») — les totaux connus donnent le point de coupure. L'étoile est
-  // alors indétectable.
+  // (« 229219 ») — les totaux connus donnent le point de coupure. Le suffixe
+  // est alors indétectable.
   for (var i = runs.length - 1; i >= 0; i--) {
     final digits = runs[i].text;
     for (var cut = 1; cut < digits.length; cut++) {
       final hit = accept(
         int.parse(digits.substring(0, cut)),
         int.parse(digits.substring(cut)),
-        false,
+        '',
       );
       if (hit != null) return hit;
     }
   }
   return null;
+}
+
+final RegExp _suffixLetterPattern = RegExp(r'[A-Z]');
+
+/// Suffixe de variante lu entre le numéro et le total (« 007a/298 » →
+/// « a », « 229*/219 » → « * »). La lettre n'est retenue que si elle est seule
+/// devant le séparateur : au-delà, c'est du texte parasite, pas un suffixe
+/// d'impression.
+String _suffixOf(String between) {
+  final head = between.split('/').first.trim();
+  final letter = head.length <= 1
+      ? _suffixLetterPattern.firstMatch(head)?.group(0)
+      : null;
+  return '${letter?.toLowerCase() ?? ''}${between.contains('*') ? '*' : ''}';
 }
 
 /// Même parsing, mais ligne par ligne, jamais sur le texte complet.
@@ -223,9 +243,11 @@ CollectorCode? parseCollectorCodeFromLines(
 
 /// Cartes de l'index compatibles avec un code lu.
 ///
-/// L'étoile imprimée fait quelques pixels sur la photo : la lire est un coup de
-/// dé. Toutes les variantes du même numéro sont donc retournées ensemble, la
-/// variante dont l'étoile correspond passant devant (préférence, jamais filtre).
+/// Le suffixe imprimé (lettre d'alt-art, étoile de signature) fait quelques
+/// pixels sur la photo : le lire est un coup de dé. Toutes les variantes du
+/// même numéro sont donc retournées ensemble, celle dont le suffixe correspond
+/// exactement passant devant (préférence, jamais filtre) — une lecture
+/// « 007a » désigne l'art alternatif, « 007 » la carte de base.
 List<ScanIndexEntry> matchByCode(
   CollectorCode? code,
   Iterable<ScanIndexEntry> entries,
@@ -249,16 +271,23 @@ List<ScanIndexEntry> matchByCode(
   var items = code.set == null ? <ScanIndexEntry>[] : collect(useSet: true);
   if (items.isEmpty) items = collect(useSet: false);
 
-  // Tri stable : les variantes dont l'étoile correspond d'abord.
+  // Tri stable : suffixe identique d'abord (l'alt « a » devant quand « a » a
+  // été lu, la base devant quand rien ne suit le numéro), puis l'étoile seule
+  // en repli (la lettre a pu être manquée, pas l'étoile).
+  int scoreOf(ScanIndexEntry entry) {
+    final suffix = parseRiftboundId(entry.rid)?.suffix ?? '';
+    if (suffix == code.suffix) return 0;
+    if (suffix.contains('*') == code.star) return 1;
+    return 2;
+  }
+
   final ranked = List.generate(
     items.length,
-    (rank) => (entry: items[rank], rank: rank),
+    (rank) => (entry: items[rank], rank: rank, score: scoreOf(items[rank])),
   );
   ranked.sort((a, b) {
-    final aStar = parseRiftboundId(a.entry.rid)?.star == code.star;
-    final bStar = parseRiftboundId(b.entry.rid)?.star == code.star;
-    if (aStar == bStar) return a.rank.compareTo(b.rank);
-    return aStar ? -1 : 1;
+    if (a.score != b.score) return a.score.compareTo(b.score);
+    return a.rank.compareTo(b.rank);
   });
   return [for (final item in ranked) item.entry];
 }

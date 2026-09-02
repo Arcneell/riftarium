@@ -9,6 +9,10 @@ void main() {
   const index = [
     ScanIndexEntry(id: 'OGN-209', rid: 'ogn-209-298'),
     ScanIndexEntry(id: 'OGN-209s', rid: 'ogn-209*-298'),
+    // L'alt-art déclaré avant la base : la préférence de suffixe doit primer
+    // sur l'ordre de l'index.
+    ScanIndexEntry(id: 'OGN-007a', rid: 'ogn-007a-298'),
+    ScanIndexEntry(id: 'OGN-007', rid: 'ogn-007-298'),
     ScanIndexEntry(id: 'UNL-229', rid: 'unl-229-219'),
     ScanIndexEntry(id: 'PROMO', rid: 'sans-forme-connue'),
   ];
@@ -75,6 +79,23 @@ void main() {
       final code = parseCollectorCode('OGN 209*/298', totals)!;
       expect(code.star, isTrue);
       expect(code.label, 'OGN 209*/298');
+    });
+
+    test('lettre d’alt-art lue entre le numéro et le total', () {
+      final code = parseCollectorCode('OGN 007A/298', totals)!;
+      expect(code.number, 7);
+      expect(code.suffix, 'a');
+      expect(code.star, isFalse);
+      expect(code.label, 'OGN 007a/298');
+
+      // Lettre séparée par des espaces : toujours un suffixe.
+      final spaced = parseCollectorCode('OGN 007 A 298', totals)!;
+      expect(spaced.suffix, 'a');
+    });
+
+    test('un mot entre les nombres n’est pas un suffixe', () {
+      final code = parseCollectorCode('OGN 209 RARE 298', totals)!;
+      expect(code.suffix, '');
     });
 
     test('nombres collés : les totaux connus donnent la coupure', () {
@@ -147,10 +168,27 @@ void main() {
 
     test('étoile lue : la variante étoilée passe devant, sans filtrer', () {
       final matches = matchByCode(
-        const CollectorCode(set: 'OGN', number: 209, total: 298, star: true),
+        const CollectorCode(set: 'OGN', number: 209, total: 298, suffix: '*'),
         index,
       );
       expect(matches.map((entry) => entry.id), ['OGN-209s', 'OGN-209']);
+    });
+
+    test('lettre lue : l’art alternatif passe devant la base', () {
+      final matches = matchByCode(
+        const CollectorCode(set: 'OGN', number: 7, total: 298, suffix: 'a'),
+        index,
+      );
+      expect(matches.map((entry) => entry.id), ['OGN-007a', 'OGN-007']);
+    });
+
+    test('sans suffixe lu : la base passe devant l’alt, quel que soit l’ordre '
+        'de l’index', () {
+      final matches = matchByCode(
+        const CollectorCode(set: 'OGN', number: 7, total: 298),
+        index,
+      );
+      expect(matches.map((entry) => entry.id), ['OGN-007', 'OGN-007a']);
     });
 
     test('sans étoile : l’ordre de l’index est conservé', () {
@@ -171,7 +209,7 @@ void main() {
 
     test('code inconnu : aucune carte', () {
       expect(
-        matchByCode(const CollectorCode(number: 7, total: 298), index),
+        matchByCode(const CollectorCode(number: 8, total: 298), index),
         isEmpty,
       );
       expect(matchByCode(null, index), isEmpty);
