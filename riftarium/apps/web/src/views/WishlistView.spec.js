@@ -98,6 +98,40 @@ describe("WishlistView", () => {
     wrapper.unmount()
   })
 
+  it("pendant une requête en vol, tous les steppers sont désactivés", async () => {
+    const { wrapper } = await mountView()
+    /* La requête reste en attente : on observe l'état « occupé » de la page. */
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/wishlist/card-1" && options.method === "PUT") {
+        return new Promise((resolve) => {
+          release = () => resolve(null)
+        })
+      }
+      if (path === "/api/wishlist" && !options.method) {
+        return Promise.resolve({ total: 2, value_eur: 12.25, items: [wishItem(1, 2), wishItem(2, 1)] })
+      }
+      return Promise.resolve(null)
+    })
+
+    await wrapper.get('.wish-cell .wish-stepper button[aria-label="Un exemplaire de plus"]').trigger("click")
+    await flushPromises()
+
+    /* Une seule requête modifie la liste entière : aucune action ne doit rester
+       cliquable sur les autres cartes non plus. */
+    for (const button of wrapper.findAll(".wish-cell button")) {
+      expect(button.attributes("disabled")).toBeDefined()
+    }
+    for (const input of wrapper.findAll(".wish-cell .wish-stepper input")) {
+      expect(input.attributes("disabled")).toBeDefined()
+    }
+
+    release()
+    await flushPromises()
+    expect(wrapper.get('.wish-cell button[aria-label="Un exemplaire de plus"]').attributes("disabled")).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it("le bouton − est désactivé à 1 exemplaire", async () => {
     const { wrapper } = await mountView()
     const cells = wrapper.findAll(".wish-cell")

@@ -67,11 +67,17 @@ function toggleLiked() {
   setFilter("liked", !state.liked)
 }
 
+/* Un like par deck à la fois : sans cette garde, deux clics rapides envoyaient
+   deux POST qui s'annulaient l'un l'autre. */
+const likeBusy = ref(new Set())
+
 async function toggleLike(deck) {
   if (!session.token) {
     router.push({ path: "/connexion", query: { suite: "/communaute" } })
     return
   }
+  if (likeBusy.value.has(deck.id)) return
+  likeBusy.value = new Set(likeBusy.value).add(deck.id)
   try {
     const payload = await api(`/api/decks/${deck.id}/like`, { method: "POST" })
     deck.likes = payload.likes
@@ -82,6 +88,10 @@ async function toggleLike(deck) {
     }
   } catch (e) {
     error.value = e.message
+  } finally {
+    const next = new Set(likeBusy.value)
+    next.delete(deck.id)
+    likeBusy.value = next
   }
 }
 
@@ -175,6 +185,7 @@ onMounted(async () => {
           v-reveal="i"
           community
           :deck="deck"
+          :like-busy="likeBusy.has(deck.id)"
           :to="`/decks/${deck.id}`"
           @like="toggleLike"
         />

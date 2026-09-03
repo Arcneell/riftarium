@@ -117,6 +117,34 @@ describe("CardsView", () => {
     expect(smallSize).toBeGreaterThanOrEqual(8)
   })
 
+  it("aucun résultat : la page le dit et propose de réinitialiser les filtres", async () => {
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN", name: "Origins" }])
+      return Promise.resolve({ total: 0, page: 1, size: 30, items: [] })
+    })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/cartes", component: CardsView },
+        { path: "/cartes/:id", component: { template: "<div />" } }
+      ]
+    })
+    router.push("/cartes?q=zzz")
+    await router.isReady()
+    const wrapper = mount(CardsView, {
+      global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } },
+      attachTo: document.body
+    })
+    await flushPromises()
+
+    const empty = wrapper.get(".col-empty")
+    expect(empty.text()).toContain("Aucune carte ne correspond")
+    await empty.get(".col-empty-actions button").trigger("click")
+    await flushPromises()
+    expect(wrapper.find(".filter-search input").element.value).toBe("")
+    wrapper.unmount()
+  })
+
   it("répercute les filtres choisis dans l'URL et dans la requête", async () => {
     const { wrapper, router } = await mountView()
     await wrapper.findAll(".fsel-btn")[0].trigger("click")

@@ -10,7 +10,7 @@ import {
 } from "../cardText.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
-import { useScrollMemory } from "../useScrollMemory.js"
+import { useScrollMemory } from "../composables/useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
@@ -135,6 +135,15 @@ onMounted(async () => {
 
       <div ref="grid" class="grid-cards" :style="{ '--tile-min': `${tileMin}px` }">
         <CardTile v-for="card in result.items" :key="card.id" :card="card" />
+      </div>
+
+      <!-- Même état vide que l'inventaire de la collection : dire pourquoi la
+           grille est vide, et proposer la sortie. -->
+      <div v-if="!loading && !error && !result.items.length" class="col-empty">
+        <p class="col-empty-title">Aucune carte ne correspond aux filtres</p>
+        <div v-if="activeCount" class="col-empty-actions">
+          <button class="btn btn-ghost" @click="reset">Réinitialiser les filtres</button>
+        </div>
       </div>
 
       <div class="pager" v-if="pageCount > 1">

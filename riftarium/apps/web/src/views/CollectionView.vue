@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { api, cardThumb, session, CONDITIONS, LANGS } from "../api.js"
 import {
   cardsQuery,
@@ -12,7 +12,7 @@ import {
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
-import { useScrollMemory } from "../useScrollMemory.js"
+import { useScrollMemory } from "../composables/useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
@@ -22,7 +22,7 @@ import PageBanner from "../components/PageBanner.vue"
 const { restoreScroll } = useScrollMemory()
 
 const grid = ref(null)
-const { tileMin, size } = useGridMeasure(grid)
+const { tileMin, size, measure, observe } = useGridMeasure(grid)
 
 let firstLoad = true
 
@@ -45,6 +45,10 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
       fetcher: (filters) => api(`/api/collection?${cardsQuery(filters, size.value)}`),
       initialResult: { total: 0, total_cards: 0, unique_cards: 0, value_eur: null, items: [] },
       pageSize: size,
+      /* La grille filtrée n'existe qu'en mode inventaire : en classeur, les
+         filtres sont hors écran et un rechargement débouncé serait un GET perdu
+         (les statistiques du haut viennent du chargement initial). */
+      enabled: () => state.vue === "inventaire",
       onLoaded: (data) => {
         if (state.page > 1 && !data.items.length) state.page = 1
         if (firstLoad) {
@@ -135,12 +139,22 @@ async function loadBinder() {
 }
 
 watch([binderSet, binderPage, binderOwned], loadBinder)
-/* Retour au classeur : charge la double page si elle n'existe pas encore. */
 watch(
   () => state.vue,
-  (mode) => {
-    if (mode === "classeur" && !spread.value) loadBinder()
-  }
+  async (mode) => {
+    /* Retour au classeur : charge la double page si elle n'existe pas encore. */
+    if (mode === "classeur") {
+      if (!spread.value) loadBinder()
+      return
+    }
+    /* La grille de l'inventaire n'est dans le DOM que dans cette branche du
+       template : sans mesure ni ResizeObserver posés à son apparition, la taille
+       de page resterait celle du repli (le classeur est l'affichage par défaut). */
+    await nextTick()
+    measure()
+    observe()
+  },
+  { immediate: true }
 )
 
 const currentSet = computed(() => progress.value?.sets.find((row) => row.set_id === binderSet.value) || null)
@@ -169,7 +183,8 @@ function turnPage(delta) {
 /* Flèches gauche/droite : on feuillette le classeur au clavier, sauf quand
    le focus est dans un champ de saisie. */
 function onBinderKeydown(event) {
-  if (state.vue !== "classeur" || !spread.value) return
+  /* Modale de retrait ouverte : les flèches appartiennent à la modale, pas au classeur. */
+  if (state.vue !== "classeur" || !spread.value || pendingRemove.value) return
   if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return
   const target = event.target
   if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
@@ -431,7 +446,7 @@ onMounted(async () => {
                       />
                       <span v-if="card.owned_qty" class="pocket-qty">×{{ card.owned_qty }}</span>
                       <template v-else>
-                        <span class="pocket-num">{{ card.riftbound_id.toUpperCase() }}</span>
+                        <span class="pocket-num">{{ (card.riftbound_id || "").toUpperCase() }}</span>
                         <span v-if="formatEur(card.price_eur)" class="pocket-price" :title="PRICE_NOTE">
                           {{ formatEur(card.price_eur) }}
                         </span>
@@ -464,7 +479,7 @@ onMounted(async () => {
                       />
                       <span v-if="card.owned_qty" class="pocket-qty">×{{ card.owned_qty }}</span>
                       <template v-else>
-                        <span class="pocket-num">{{ card.riftbound_id.toUpperCase() }}</span>
+                        <span class="pocket-num">{{ (card.riftbound_id || "").toUpperCase() }}</span>
                         <span v-if="formatEur(card.price_eur)" class="pocket-price" :title="PRICE_NOTE">
                           {{ formatEur(card.price_eur) }}
                         </span>

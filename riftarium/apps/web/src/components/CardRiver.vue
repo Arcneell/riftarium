@@ -11,9 +11,12 @@ const RESUME_DELAY = 1200 // ms avant reprise après un appui, le temps de viser
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches
+/* Seuls `cards` et `held` sont rendus : la position de la piste est écrite
+   directement sur le DOM (voir advance), elle changeait à chaque frame et n'a
+   rien à faire dans un objet réactif. */
 const rows = reactive([
-  { cards: [], offset: 0, held: false },
-  { cards: [], offset: 0, held: false }
+  { cards: [], held: false },
+  { cards: [], held: false }
 ])
 /* État non rendu, gardé hors de la réactivité pour ne pas proxifier les réserves ni le DOM. */
 const state = [row(72), row(56)]
@@ -24,7 +27,27 @@ let last = 0
 let observer
 
 function row(speed) {
-  return { speed, pool: [], seen: [], track: null, width: 0, loading: false, hovered: false, resume: 0 }
+  return {
+    speed,
+    pool: [],
+    seen: [],
+    track: null,
+    width: 0,
+    offset: 0,
+    loading: false,
+    hovered: false,
+    resume: 0
+  }
+}
+
+/* Fisher-Yates : `sort(() => Math.random() - 0.5)` ne produit pas un tirage
+   uniforme (les premières cartes restaient statistiquement devant). */
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[list[i], list[j]] = [list[j], list[i]]
+  }
+  return list
 }
 
 async function refill(i) {
@@ -44,7 +67,7 @@ async function refill(i) {
 function draw(i) {
   const own = state[i]
   if (own.pool.length <= REFILL) refill(i)
-  if (!own.pool.length) own.pool = own.seen.splice(0).sort(() => Math.random() - 0.5)
+  if (!own.pool.length) own.pool = shuffle(own.seen.splice(0))
   const card = own.pool.shift()
   return card ? { key: ++seq, card } : null
 }
@@ -68,12 +91,13 @@ function advance(i, dt) {
     own.width = first.offsetWidth + parseFloat(getComputedStyle(own.track).columnGap || 0)
   }
 
-  rows[i].offset += own.speed * dt
-  if (rows[i].offset < own.width) return
+  own.offset += own.speed * dt
+  own.track.style.transform = `translateX(${-own.offset}px)`
+  if (own.offset < own.width) return
 
-  /* La carte de tête est sortie : on la remplace en fin de piste et on rattrape la position.
-     Vue applique la liste et la translation dans le même flush, le défilement reste continu. */
-  rows[i].offset -= own.width
+  /* La carte de tête est sortie : on la remplace en fin de piste et on rattrape la position. */
+  own.offset -= own.width
+  own.track.style.transform = `translateX(${-own.offset}px)`
   own.width = 0
   const gone = rows[i].cards.shift()
   rows[i].cards.push(draw(i) || { key: ++seq, card: gone.card })
@@ -175,11 +199,7 @@ onUnmounted(() => {
       @focusin="hold(i)"
       @focusout="release(i, 0)"
     >
-      <div
-        class="river-track"
-        :ref="(el) => (state[i].track = el)"
-        :style="{ transform: `translateX(${-line.offset}px)` }"
-      >
+      <div class="river-track" :ref="(el) => (state[i].track = el)">
         <RouterLink
           v-for="entry in line.cards"
           :key="entry.key"

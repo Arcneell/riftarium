@@ -6,11 +6,19 @@ import { BANNERS } from "../banners.js"
 describe("PageBanner", () => {
   it("applique l'illustration officielle et crédite Riot", () => {
     const wrapper = mount(PageBanner, {
-      props: { art: BANNERS.cards, eyebrow: "Cartothèque", title: "Toutes les cartes du jeu" }
+      props: { art: BANNERS.cards, title: "Toutes les cartes du jeu" },
+      slots: { eyebrow: "Cartothèque" }
     })
     expect(wrapper.get(".page-banner").attributes("style")).toContain(BANNERS.cards)
     expect(wrapper.get(".splash-credit").text()).toContain("© Riot Games")
     expect(wrapper.get(".eyebrow").text()).toBe("Cartothèque")
+  })
+
+  it("sans fil d'Ariane, aucun surtitre vide n'est rendu", () => {
+    const wrapper = mount(PageBanner, {
+      props: { art: BANNERS.cards, title: "Toutes les cartes du jeu" }
+    })
+    expect(wrapper.find(".eyebrow").exists()).toBe(false)
   })
 
   it("garde le titre pour les lecteurs d'écran mais le sort de la mise en page", () => {

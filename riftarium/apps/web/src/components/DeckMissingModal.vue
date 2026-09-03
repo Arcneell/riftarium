@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed, onUnmounted, ref } from "vue"
 import { api, cardThumb, session } from "../api.js"
+import { copyText } from "../deckExport.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import ModalDialog from "./ModalDialog.vue"
 
@@ -16,20 +17,46 @@ defineEmits(["close", "preview", "hide-preview"])
 
 const missingCost = computed(() => formatEur(props.missingEur))
 
-const copyLabel = ref("Copier la liste")
+const COPY_LABEL = "Copier la liste"
+const WISH_LABEL = "Ajouter les manquantes à ma wishlist"
+
+const copyLabel = ref(COPY_LABEL)
 
 /* Toutes les manquantes en un clic : l'API remplit la wishlist depuis le deck. */
-const wishLabel = ref("Ajouter les manquantes à ma wishlist")
+const wishLabel = ref(WISH_LABEL)
 const wishBusy = ref(false)
+
+/* Les deux boutons annoncent leur résultat puis reprennent leur intitulé : sans
+   ce retour, « Copié » restait figé et le bouton ne disait plus ce qu'il fait. */
+const FLASH_DELAY = 3000
+let copyTimer = 0
+let wishTimer = 0
+
+function flashCopy(message) {
+  copyLabel.value = message
+  clearTimeout(copyTimer)
+  copyTimer = window.setTimeout(() => (copyLabel.value = COPY_LABEL), FLASH_DELAY)
+}
+
+function flashWish(message) {
+  wishLabel.value = message
+  clearTimeout(wishTimer)
+  wishTimer = window.setTimeout(() => (wishLabel.value = WISH_LABEL), FLASH_DELAY)
+}
+
+onUnmounted(() => {
+  clearTimeout(copyTimer)
+  clearTimeout(wishTimer)
+})
 
 async function addMissingToWishlist() {
   if (wishBusy.value || !props.deckId) return
   wishBusy.value = true
   try {
     const payload = await api(`/api/wishlist/from-deck/${props.deckId}`, { method: "POST" })
-    wishLabel.value = `${payload.added} ajoutée(s)`
+    flashWish(`${payload.added} ajoutée(s)`)
   } catch (e) {
-    wishLabel.value = e.message
+    flashWish(e.message)
   } finally {
     wishBusy.value = false
   }
@@ -38,13 +65,14 @@ async function addMissingToWishlist() {
 async function copyMissing() {
   if (!props.missing?.items.length) return
   const lines = props.missing.items.map(
-    (item) => `${item.missing}× ${item.card.name} (${item.card.riftbound_id.toUpperCase()})`
+    (item) => `${item.missing}× ${item.card.name} (${(item.card.riftbound_id || "").toUpperCase()})`
   )
   try {
-    await navigator.clipboard.writeText(lines.join("\n"))
-    copyLabel.value = "Copié"
-  } catch {
-    copyLabel.value = "Copie impossible"
+    /* Même chemin de copie que la barre d'export (message d'erreur unifié). */
+    await copyText(lines.join("\n"))
+    flashCopy("Copié")
+  } catch (e) {
+    flashCopy(e.message || "Copie impossible")
   }
 }
 </script>
@@ -97,7 +125,7 @@ async function copyMissing() {
             >
               <RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
               <span class="muted mono" style="font-size: 0.68rem; display: block">{{
-                item.card.riftbound_id.toUpperCase()
+                (item.card.riftbound_id || "").toUpperCase()
               }}</span>
             </td>
             <td class="num" data-label="Requis">{{ item.needed }}</td>

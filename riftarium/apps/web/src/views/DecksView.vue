@@ -71,6 +71,13 @@ async function createExample(mode) {
   }
 }
 
+/* La modale ne se ferme pas sous une création en cours (Échap, clic sur le fond) :
+   la requête est partie, la navigation vers l'éditeur suivra. */
+function closeCreate() {
+  if (creating.value || generating.value) return
+  showCreate.value = false
+}
+
 function askRemove(deck) {
   pendingDelete.value = deck
   deleteError.value = ""
@@ -122,11 +129,12 @@ onMounted(load)
           @remove="askRemove"
         />
       </div>
-      <p v-if="!decks.length" class="muted">Aucun deck. Créez-en un avec « Nouveau deck ».</p>
+      <!-- Un échec de chargement n'est pas une collection vide : un seul message à la fois. -->
+      <p v-if="!decks.length && !error" class="muted">Aucun deck. Créez-en un avec « Nouveau deck ».</p>
     </div>
   </section>
 
-  <ModalDialog v-if="showCreate" title="Nouveau deck" @close="showCreate = false">
+  <ModalDialog v-if="showCreate" title="Nouveau deck" @close="closeCreate">
     <form class="modal-form" @submit.prevent="createDeck">
       <label>
         Nom du deck
@@ -157,7 +165,9 @@ onMounted(load)
       <label class="switch"> <input type="checkbox" v-model="draft.is_public" /><i></i> Rendre ce deck public </label>
       <p v-if="createError" class="error">{{ createError }}</p>
       <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" @click="showCreate = false">Annuler</button>
+        <button type="button" class="btn btn-ghost" :disabled="creating || generating" @click="closeCreate">
+          Annuler
+        </button>
         <button type="submit" class="btn btn-gold" :disabled="!draft.name.trim() || creating">
           {{ creating ? "Création…" : "Créer et ouvrir l'éditeur" }}
         </button>
