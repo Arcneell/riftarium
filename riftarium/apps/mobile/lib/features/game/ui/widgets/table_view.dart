@@ -180,15 +180,19 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
         ],
       );
     }
+    // La rangée du haut est tournée de 180° : son premier enfant finit à
+    // DROITE de l'écran. Sièges 2 puis 3 pour que l'ordre des tours fasse le
+    // tour de la table (bas-gauche → bas-droite → haut-droite → haut-gauche)
+    // au lieu de zigzaguer en diagonale.
     return Column(
       children: [
         Expanded(
           child: _rotated(
             Row(
               children: [
-                Expanded(child: _panel(players[3])),
-                const SizedBox(width: 8),
                 Expanded(child: _panel(players[2])),
+                const SizedBox(width: 8),
+                Expanded(child: _panel(players[3])),
               ],
             ),
           ),

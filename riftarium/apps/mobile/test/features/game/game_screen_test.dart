@@ -256,6 +256,17 @@ void main() {
     expect(find.byType(XpBar), findsNWidgets(4));
     expect(find.byTooltip('Gagner 1 XP'), findsNWidgets(4));
 
+    // L'ordre des tours fait le tour de la table : J1 bas-gauche, J2
+    // bas-droite, J3 haut-droite, J4 haut-gauche — pas de diagonale.
+    final j1 = tester.getCenter(panelOf('Joueur 1'));
+    final j2 = tester.getCenter(panelOf('Joueur 2'));
+    final j3 = tester.getCenter(panelOf('Joueur 3'));
+    final j4 = tester.getCenter(panelOf('Joueur 4'));
+    expect(j1.dy, greaterThan(j3.dy));
+    expect(j2.dy, greaterThan(j4.dy));
+    expect(j1.dx, lessThan(j2.dx));
+    expect(j3.dx, greaterThan(j4.dx));
+
     // Même exigence en 2c2, où les panneaux sont encore plus étroits.
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
