@@ -6,15 +6,36 @@ import { CATEGORIES, TOPICS } from "../rules/topics.js"
 
 const query = ref("")
 
-const normalize = (value) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+/* Plage des diacritiques combinants, écrite en points de code : les caractères
+   littéraux étaient invisibles dans l'éditeur et impossibles à relire. */
+const normalize = (value) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
+/* Texte cherchable de chaque sujet, calculé une fois au chargement du module :
+   le recomposer à chaque frappe refaisait un `normalize` sur tout le catalogue.
+   `details` et `cases` sont facultatifs dans topics.js. */
+const HAYSTACKS = new Map(
+  TOPICS.map((topic) => [
+    topic.slug,
+    normalize(
+      [
+        topic.title,
+        topic.summary,
+        ...(topic.details ?? []),
+        ...(topic.cases ?? []).map((item) => `${item.q} ${item.a}`)
+      ].join(" ")
+    )
+  ])
+)
 
 const filtered = computed(() => {
   const tokens = normalize(query.value.trim()).split(/\s+/).filter(Boolean)
   if (!tokens.length) return TOPICS
   return TOPICS.filter((topic) => {
-    const haystack = normalize(
-      `${topic.title} ${topic.summary} ${topic.details.join(" ")} ${topic.cases.map((c) => c.q + " " + c.a).join(" ")}`
-    )
+    const haystack = HAYSTACKS.get(topic.slug) ?? ""
     return tokens.every((token) => haystack.includes(token))
   })
 })

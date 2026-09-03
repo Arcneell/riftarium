@@ -1,11 +1,18 @@
 <script setup>
-import { onMounted, ref } from "vue"
-import { useRoute } from "vue-router"
+import { onBeforeUnmount, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { api, session } from "../api.js"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
+const router = useRouter()
+
+/* Composant démonté pendant l'appel : on n'écrit plus dans state/error après coup. */
+let alive = true
+onBeforeUnmount(() => {
+  alive = false
+})
 
 /* loading → vérification en cours ; ok → adresse confirmée ; fail → jeton absent, invalide ou expiré. */
 const state = ref("loading")
@@ -15,18 +22,23 @@ const resending = ref(false)
 const resendOk = ref("")
 const resendError = ref("")
 
+/* Jeton lu une fois : il ne doit pas rester dans la barre d'adresse ni l'historique. */
+const token = ref(typeof route.query.token === "string" ? route.query.token : "")
+
 onMounted(async () => {
-  const token = typeof route.query.token === "string" ? route.query.token : ""
-  if (!token) {
+  if (token.value) router.replace({ query: {} })
+  if (!token.value) {
     state.value = "fail"
     error.value = "Ce lien de vérification est incomplet : le jeton est manquant. Ouvrez le lien reçu par e-mail."
     return
   }
   try {
-    await api("/api/auth/verify-email", { method: "POST", body: { token } })
+    await api("/api/auth/verify-email", { method: "POST", body: { token: token.value } })
+    if (!alive) return
     state.value = "ok"
     if (session.token) session.emailVerified = true
   } catch (e) {
+    if (!alive) return
     state.value = "fail"
     error.value = e.status === 400 ? "Ce lien de vérification est invalide ou a expiré." : e.message
   }

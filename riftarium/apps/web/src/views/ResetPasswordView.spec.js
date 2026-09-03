@@ -49,6 +49,20 @@ describe("ResetPasswordView", () => {
     expect(api).not.toHaveBeenCalled()
   })
 
+  it("retire le jeton de l'adresse au montage tout en le gardant pour l'envoi", async () => {
+    const { wrapper, router } = await mountView()
+    expect(router.currentRoute.value.query.token).toBeUndefined()
+    expect(wrapper.find("form").exists()).toBe(true)
+    await wrapper.get("#reset-password").setValue("nouveausecret")
+    await wrapper.get("#reset-confirm").setValue("nouveausecret")
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/auth/reset-password", {
+      method: "POST",
+      body: { token: "jeton-mail", new_password: "nouveausecret" }
+    })
+  })
+
   it("refuse un nouveau mot de passe non confirmé, sans appeler l'API", async () => {
     const { wrapper } = await mountView()
     await wrapper.get("#reset-password").setValue("nouveausecret")

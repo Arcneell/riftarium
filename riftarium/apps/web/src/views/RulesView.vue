@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
 import { useOnline } from "../composables/useOnline.js"
 import { escapeHtml } from "../htmlText.js"
+import { loadRulesDocuments } from "../rules/rulesStore.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
@@ -58,14 +59,17 @@ function backToToc() {
 }
 
 /* --- utilitaires du lecteur de règles --- */
+/* Repli des accents sur la chaîne entière : la version caractère par caractère
+   bloquait le thread au montage (une décomposition NFD et une expression
+   régulière par lettre, sur des dizaines de milliers de règles indexées).
+   La longueur est conservée tant que la source est en NFC sans signe combinant
+   (c'est le cas de rules-fr.json) : excerpt() s'appuie dessus pour surligner
+   le texte d'origine à partir d'une position trouvée dans le texte replié. */
 const normalize = (value) =>
-  value.replace(/./gu, (char) => {
-    const folded = char
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-    return folded.length === char.length ? folded : char.toLowerCase()
-  })
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
 const bare = (number) => number.replace(/\.$/, "")
 
 const TOKEN_COLORS = {
@@ -158,8 +162,10 @@ function followRef(number) {
 }
 
 function onMainClick(event) {
-  const ref = event.target.closest("[data-ref]")
-  if (ref) followRef(ref.dataset.ref)
+  /* Nommé `refEl` et pas `ref` : masquer l'import de Vue dans un fichier `script setup`
+     est un piège pour la prochaine modification. */
+  const refEl = event.target.closest("[data-ref]")
+  if (refEl) followRef(refEl.dataset.ref)
 }
 
 /* --- recherche --- */
@@ -200,8 +206,10 @@ function pickHit(hit) {
 }
 
 function toggleChapter(chapterId) {
-  openChapters.value.has(chapterId) ? openChapters.value.delete(chapterId) : openChapters.value.add(chapterId)
-  openChapters.value = new Set(openChapters.value)
+  /* `ref` enveloppe le Set dans un proxy réactif : `add` / `delete` déclenchent
+     eux-mêmes le rendu, inutile de recréer le Set à chaque clic. */
+  if (openChapters.value.has(chapterId)) openChapters.value.delete(chapterId)
+  else openChapters.value.add(chapterId)
 }
 
 onBeforeUnmount(() => {
@@ -215,9 +223,7 @@ onMounted(async () => {
   mobileTocQuery?.addEventListener?.("change", onMobileTocChange)
   window.addEventListener("scroll", onScroll, { passive: true })
   try {
-    const response = await fetch("/data/rules-fr.json")
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    documents.value = await response.json()
+    documents.value = await loadRulesDocuments()
     buildIndex()
     const q = route.query
     const docKey = documents.value[q.doc] ? q.doc : "core"
@@ -318,7 +324,7 @@ onMounted(async () => {
                 v-for="section in chapter.sections"
                 :key="section.id"
                 class="toc-section"
-                :aria-current="section.id === sectionId"
+                :aria-current="section.id === sectionId ? 'true' : undefined"
                 @click="go(doc, section.id)"
               >
                 <b>{{ bare(section.number) }}</b> {{ section.title }}
@@ -347,9 +353,11 @@ onMounted(async () => {
           >
             <span class="rule-num mono">{{ entry.number }}</span>
             <div class="rule-body">
+              <!-- eslint-disable-next-line vue/no-v-html -->
               <p v-html="formatText(entry.text)"></p>
               <div class="rule-example" v-for="(example, i) in entry.examples" :key="i">
                 <b>Exemple</b>
+                <!-- eslint-disable-next-line vue/no-v-html -->
                 <p v-html="formatText(example.text)"></p>
               </div>
               <div v-if="entry.refs.length" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px">

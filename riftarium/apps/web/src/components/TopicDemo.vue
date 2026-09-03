@@ -10,7 +10,11 @@ const props = defineProps({
 })
 
 const frameIndex = ref(0)
-const frame = computed(() => props.demo.frames[frameIndex.value])
+/* Une démo sans image (données incomplètes) ne doit pas faire exploser le rendu
+   sur `frame.items` : on retombe sur une scène vide. */
+const EMPTY_FRAME = { items: [], caption: "" }
+const frames = computed(() => props.demo.frames ?? [])
+const frame = computed(() => frames.value[frameIndex.value] ?? EMPTY_FRAME)
 let timer = null
 
 const DELAY = 2600
@@ -24,7 +28,8 @@ const playing = ref(!reducedMotion)
 const playLabel = computed(() => (playing.value ? "Mettre l'animation en pause" : "Lire l'animation"))
 
 function next() {
-  frameIndex.value = (frameIndex.value + 1) % props.demo.frames.length
+  if (!frames.value.length) return
+  frameIndex.value = (frameIndex.value + 1) % frames.value.length
 }
 function goTo(i) {
   frameIndex.value = i
@@ -54,7 +59,11 @@ onBeforeUnmount(() => clearInterval(timer))
           v-for="item in frame.items"
           :key="item.k"
           class="demo-item"
-          :class="[item.type, item.side, { tapped: item.tapped, dead: item.dead, glow: item.glow }]"
+          :class="[
+            item.type,
+            item.side,
+            { tapped: item.tapped, dead: item.dead, glow: item.glow, ok: item.ok, hot: item.hot }
+          ]"
           :style="{ left: item.x + '%', top: item.y + '%' }"
         >
           <template v-if="item.type === 'unit'">
@@ -66,7 +75,9 @@ onBeforeUnmount(() => clearInterval(timer))
       </TransitionGroup>
     </div>
     <div class="demo-bar">
-      <p class="demo-caption">{{ frame.caption }}</p>
+      <!-- La légende change avec l'image : annoncée, sinon le changement de scène
+           est muet pour qui n'en voit pas le rendu. -->
+      <p class="demo-caption" aria-live="polite">{{ frame.caption }}</p>
       <div class="demo-dots">
         <button
           type="button"
@@ -79,10 +90,12 @@ onBeforeUnmount(() => clearInterval(timer))
           {{ playing ? "❚❚" : "▶" }}
         </button>
         <button
-          v-for="(f, i) in demo.frames"
+          v-for="(_, i) in frames"
           :key="i"
+          type="button"
           class="demo-dot"
           :class="{ active: i === frameIndex }"
+          :aria-current="i === frameIndex ? 'true' : undefined"
           :aria-label="`Image ${i + 1}`"
           @click="goTo(i)"
         ></button>

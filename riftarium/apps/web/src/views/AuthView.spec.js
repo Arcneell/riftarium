@@ -2,14 +2,14 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import AuthView from "./AuthView.vue"
-import { api } from "../api.js"
+import { api, ApiError } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, api: vi.fn() }
 })
 
-async function mountView() {
+async function mountView(path = "/connexion") {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -17,10 +17,11 @@ async function mountView() {
       { path: "/", component: { template: "<div />" } },
       { path: "/cgu", component: { template: "<div />" } },
       { path: "/confidentialite", component: { template: "<div />" } },
-      { path: "/mot-de-passe-oublie", component: { template: "<div />" } }
+      { path: "/mot-de-passe-oublie", component: { template: "<div />" } },
+      { path: "/collection", component: { template: "<div />" } }
     ]
   })
-  router.push("/connexion")
+  router.push(path)
   await router.isReady()
   const wrapper = mount(AuthView, {
     global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
@@ -83,6 +84,42 @@ describe("AuthView", () => {
     expect(wrapper.text()).toContain("Accès sur invitation")
     await wrapper.get(".filters .filter:last-child").trigger("click")
     expect(wrapper.findAll("a").some((a) => a.attributes("href") === "/mot-de-passe-oublie")).toBe(false)
+  })
+
+  it("suit ?suite= quand c'est un chemin interne", async () => {
+    const { wrapper, router } = await mountView("/connexion?suite=/collection")
+    await wrapper.get("#email").setValue("nyra@example.org")
+    await wrapper.get("#password").setValue("motdepasse123")
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/collection")
+  })
+
+  it("ignore un ?suite= externe ou protocole-relatif (pas de redirection ouverte)", async () => {
+    for (const suite of ["https://evil.example/x", "//evil.example/x", "javascript:alert(1)"]) {
+      const { wrapper, router } = await mountView(`/connexion?suite=${encodeURIComponent(suite)}`)
+      await wrapper.get("#email").setValue("nyra@example.org")
+      await wrapper.get("#password").setValue("motdepasse123")
+      await wrapper.get("form").trigger("submit")
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe("/")
+      wrapper.unmount()
+    }
+  })
+
+  it("basculer entre connexion et inscription vide l'erreur et le mot de passe", async () => {
+    api.mockRejectedValue(new ApiError(401, "Identifiants invalides"))
+    const { wrapper } = await mountView()
+    await wrapper.get("#email").setValue("nyra@example.org")
+    await wrapper.get("#password").setValue("motdepasse123")
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(wrapper.get(".error").text()).toContain("Identifiants invalides")
+
+    await wrapper.get(".filters .filter:last-child").trigger("click")
+    expect(wrapper.find(".error").exists()).toBe(false)
+    expect(wrapper.get("#password").element.value).toBe("")
+    expect(wrapper.get("#email").element.value).toBe("nyra@example.org")
   })
 
   it("désactive le bouton et ignore les doubles soumissions pendant la requête", async () => {

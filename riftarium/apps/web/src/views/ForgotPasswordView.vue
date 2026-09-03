@@ -22,8 +22,12 @@ async function submit() {
   } catch (e) {
     if (e.status === 429) {
       error.value = "Trop de demandes. Réessayez dans quelques minutes."
+    } else if (!e.status || e.status >= 500) {
+      /* Réseau coupé ou panne serveur : la demande n'est pas partie, il faut le dire
+         (annoncer « e-mail envoyé » ferait attendre en vain). */
+      error.value = "La demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez."
     } else {
-      /* Même message neutre en cas d'erreur : ne jamais révéler si l'adresse est connue. */
+      /* Réponse 4xx de l'API : même message neutre, ne jamais révéler si l'adresse est connue. */
       sent.value = true
     }
   } finally {

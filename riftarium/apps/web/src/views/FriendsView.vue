@@ -10,11 +10,15 @@ import { followUser, getFollows, profilePath, searchUsers, unfollowUser } from "
 const SEARCH_DEBOUNCE_MS = 300
 /* L'API refuse les requêtes plus courtes : inutile de les envoyer. */
 const MIN_QUERY = 2
+/* Durée d'affichage de l'accusé « Lien copié ». */
+const COPIED_RESET_MS = 2000
 
 const following = ref([])
 const followers = ref([])
 const loading = ref(true)
 const error = ref("")
+/* Pseudo en cours d'action ; toutes les actions sont désactivées pendant ce temps
+   (une seule requête sociale à la fois, la liste est rafraîchie après). */
 const busy = ref("")
 
 const query = ref("")
@@ -26,6 +30,8 @@ const invite = ref({ handle: "", code: "", link: "", copied: false, error: "" })
 const inviting = ref(false)
 
 let searchTimer = null
+let searchSeq = 0
+let copiedTimer = null
 
 const followedHandles = computed(() => new Set(following.value.map((user) => user.handle)))
 const empty = computed(() => !loading.value && !error.value && !following.value.length && !followers.value.length)
@@ -46,16 +52,20 @@ async function load() {
   }
 }
 
+/* Jeton de séquence : une réponse lente ne doit pas écraser le résultat d'une
+   frappe plus récente (ni rallumer « Recherche… » après coup). */
 async function runSearch(term) {
+  const seq = ++searchSeq
   searching.value = true
   try {
     const payload = await searchUsers(term)
+    if (seq !== searchSeq) return
     results.value = Array.isArray(payload) ? payload : payload?.items || []
   } catch {
     /* Recherche indisponible (429 compris) : la liste reste vide, sans message alarmant. */
-    results.value = []
+    if (seq === searchSeq) results.value = []
   } finally {
-    searching.value = false
+    if (seq === searchSeq) searching.value = false
   }
 }
 
@@ -63,6 +73,8 @@ watch(query, (value) => {
   clearTimeout(searchTimer)
   const term = value.trim()
   if (term.length < MIN_QUERY) {
+    /* Requête abandonnée : la réponse d'une recherche encore en vol est périmée. */
+    searchSeq += 1
     results.value = []
     searching.value = false
     return
@@ -121,13 +133,22 @@ async function copyInvite() {
   try {
     await navigator.clipboard.writeText(invite.value.link)
     invite.value.copied = true
+    /* « Lien copié » est un accusé de réception, pas un état : il s'effface au bout
+       de deux secondes pour que le bouton redevienne cliquable dans sa forme normale. */
+    clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => {
+      invite.value.copied = false
+    }, COPIED_RESET_MS)
   } catch {
     invite.value.error = "Copie impossible : sélectionnez le lien à la main."
   }
 }
 
 onMounted(load)
-onBeforeUnmount(() => clearTimeout(searchTimer))
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(copiedTimer)
+})
 </script>
 
 <template>
@@ -148,7 +169,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
             autocapitalize="none"
             autocorrect="off"
             spellcheck="false"
-            placeholder="Pseudo (2 caractères minimum)…"
+            :placeholder="`Pseudo (${MIN_QUERY} caractères minimum)…`"
             aria-label="Rechercher un joueur par pseudo"
           />
         </label>
@@ -161,23 +182,17 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
               v-if="followedHandles.has(user.handle)"
               type="button"
               class="btn btn-ghost btn-sm"
-              :disabled="busy === user.handle"
+              :disabled="Boolean(busy)"
               @click="unfollow(user)"
             >
               Ne plus suivre
             </button>
-            <button
-              v-else
-              type="button"
-              class="btn btn-gold btn-sm"
-              :disabled="busy === user.handle"
-              @click="follow(user)"
-            >
+            <button v-else type="button" class="btn btn-gold btn-sm" :disabled="Boolean(busy)" @click="follow(user)">
               Suivre
             </button>
           </li>
         </ul>
-        <p v-else-if="query.trim().length >= 2" class="muted mono">Aucun joueur à ce pseudo.</p>
+        <p v-else-if="query.trim().length >= MIN_QUERY" class="muted mono">Aucun joueur à ce pseudo.</p>
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
@@ -200,12 +215,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
               <button type="button" class="btn btn-gold btn-sm" :disabled="inviting" @click="inviteToRoom(user)">
                 Inviter dans un salon
               </button>
-              <button
-                type="button"
-                class="btn btn-ghost btn-sm"
-                :disabled="busy === user.handle"
-                @click="unfollow(user)"
-              >
+              <button type="button" class="btn btn-ghost btn-sm" :disabled="Boolean(busy)" @click="unfollow(user)">
                 Ne plus suivre
               </button>
             </li>
@@ -224,9 +234,8 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
             <p class="muted">Transmettez ce code (ou le lien) à {{ invite.handle }}.</p>
             <div class="friends-invite-actions">
               <RouterLink class="btn btn-gold btn-sm" :to="`/salon/${invite.code}`">Ouvrir le salon</RouterLink>
-              <button type="button" class="btn btn-ghost btn-sm" @click="copyInvite">
-                {{ invite.copied ? "Lien copié" : "Copier le lien" }}
-              </button>
+              <button type="button" class="btn btn-ghost btn-sm" @click="copyInvite">Copier le lien</button>
+              <span v-if="invite.copied" class="mono muted" role="status">Lien copié</span>
             </div>
             <p class="mono muted friends-invite-link">{{ invite.link }}</p>
           </template>
@@ -245,7 +254,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
                 v-if="!followedHandles.has(user.handle)"
                 type="button"
                 class="btn btn-ghost btn-sm"
-                :disabled="busy === user.handle"
+                :disabled="Boolean(busy)"
                 @click="follow(user)"
               >
                 Suivre en retour

@@ -77,6 +77,7 @@ const tooltipStyle = computed(() => {
           <rect x="0" :y="BAR_TOP" :width="plotWidth" :height="BAR_HEIGHT" rx="5" />
         </clipPath>
         <g :clip-path="`url(#${clipId})`">
+          <!-- `chart-segment` : sans règle CSS, point d'accroche des tests. -->
           <rect
             v-for="(rect, i) in rects"
             :key="rect.label"
@@ -91,7 +92,9 @@ const tooltipStyle = computed(() => {
         </g>
       </svg>
 
-      <div v-if="hovered >= 0 && rects[hovered]" class="chart-tooltip" :style="tooltipStyle" role="status">
+      <!-- aria-hidden : infobulle de survol sans équivalent clavier, doublon du
+           tableau « Voir les données » (voir ColumnChart). -->
+      <div v-if="hovered >= 0 && rects[hovered]" class="chart-tooltip" :style="tooltipStyle" aria-hidden="true">
         <span class="chart-tooltip-row">
           <i class="chart-dot" :style="{ background: rects[hovered].color }"></i>{{ rects[hovered].label }}
           <b>{{ rects[hovered].value }}</b> ({{ rects[hovered].share }} %)
