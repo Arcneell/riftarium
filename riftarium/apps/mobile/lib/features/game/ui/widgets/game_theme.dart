@@ -73,10 +73,10 @@ class ScoreGems extends StatelessWidget {
   }
 }
 
-/// Liseré lumineux autour de l'élément actif : un trait net et saturé, pas un
-/// halo diffus — le joueur dont c'est le tour doit se voir de l'autre bout de
-/// la table. La respiration joue sur la luminosité du trait, jamais sur du
-/// flou. Statique quand le système demande moins de mouvement.
+/// Contour opaque autour de l'élément actif : un trait plein à la couleur du
+/// joueur, sans transparence ni dégradé — le joueur dont c'est le tour doit se
+/// voir de l'autre bout de la table. Seul le halo serré derrière le trait
+/// respire ; statique quand le système demande moins de mouvement.
 class ActiveGlow extends StatefulWidget {
   const ActiveGlow({
     super.key,
@@ -150,25 +150,26 @@ class _ActiveGlowState extends State<ActiveGlow>
   }
 
   Widget _frame(double intensity, Widget child) {
-    // Inactif : simple filet discret. Actif : trait de 3 px pleine saturation
-    // qui respire entre 70 % et 100 % de luminosité, doublé d'un halo très
-    // serré (7 px) qui le fait « briller » sans jamais baver.
-    final tint = Color.lerp(widget.color, Colors.white, 0.22 * intensity)!;
+    // Inactif : simple filet discret. Actif : contour de 4 px totalement
+    // opaque à la couleur du joueur — jamais de transparence ni de dégradé
+    // sur le trait lui-même, il doit se lire d'un coup d'œil sur n'importe
+    // quelle illustration. Seul le petit halo derrière respire.
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(widget.borderRadius),
         border: Border.all(
           color: intensity == 0
               ? RiftColors.gold.withValues(alpha: 0.12)
-              : tint.withValues(alpha: 0.7 + 0.3 * intensity),
-          width: intensity == 0 ? 1 : 3,
+              : widget.color,
+          width: intensity == 0 ? 1 : 4,
         ),
         boxShadow: intensity == 0
             ? null
             : [
                 BoxShadow(
-                  color: tint.withValues(alpha: 0.35 + 0.35 * intensity),
-                  blurRadius: 7,
+                  color: widget.color.withValues(alpha: 0.35 + 0.4 * intensity),
+                  blurRadius: 6,
+                  spreadRadius: 1,
                 ),
               ],
       ),
