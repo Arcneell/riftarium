@@ -53,74 +53,106 @@ class PlayerPanel extends StatelessWidget {
       active: active,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(RiftRadius.md),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _Backdrop(player: player, color: color),
-            // Zones tactiles : elles occupent tout le panneau, le contenu est
-            // posé par-dessus sans intercepter les touchers.
-            Column(
+        // Le panneau s'adapte à sa place : plein écran en duel, un quart
+        // d'écran à quatre, un sixième de largeur en 2c2. Tout se met à
+        // l'échelle plutôt que de déborder — la barre d'XP en premier, elle
+        // doit rester visible et tapable quelle que soit la taille.
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final height = constraints.maxHeight;
+            final compact = width < 190 || height < 300;
+            final scoreSize = (height * 0.24).clamp(38.0, 78.0);
+            final haloSize = (scoreSize * 2.3).clamp(
+              76.0,
+              width < 176 + 12 ? width - 12 : 176.0,
+            );
+            final xpHeight = compact ? 32.0 : 38.0;
+            final showGems = height >= 250;
+            return Stack(
+              fit: StackFit.expand,
               children: [
-                Expanded(
-                  child: _TapZone(
-                    icon: Icons.add,
-                    align: Alignment.centerRight,
-                    onTap: onAdd,
-                    onLongPress: onSheet,
+                _Backdrop(player: player, color: color),
+                // Zones tactiles : elles occupent tout le panneau, le contenu
+                // est posé par-dessus sans intercepter les touchers.
+                Column(
+                  children: [
+                    Expanded(
+                      child: _TapZone(
+                        icon: Icons.add,
+                        align: Alignment.centerRight,
+                        onTap: onAdd,
+                        onLongPress: onSheet,
+                      ),
+                    ),
+                    Expanded(
+                      child: _TapZone(
+                        icon: Icons.remove,
+                        align: Alignment.centerRight,
+                        onTap: onRemove,
+                        onLongPress: onSheet,
+                      ),
+                    ),
+                  ],
+                ),
+                IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 8 : 12,
+                      compact ? 8 : 10,
+                      compact ? 8 : 12,
+                      // La colonne s'arrête au-dessus de la barre d'XP : plus
+                      // aucun chevauchement possible, quelle que soit la taille.
+                      xpHeight + 14,
+                    ),
+                    child: Column(
+                      children: [
+                        _Identity(
+                          player: player,
+                          state: state,
+                          compact: compact,
+                        ),
+                        if (showScore)
+                          Expanded(
+                            child: Center(
+                              child: ScoreHalo(
+                                diameter: haloSize,
+                                child: BigScore(
+                                  value: state.scoreOf(player),
+                                  color: color,
+                                  size: scoreSize,
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        if (showScore && showGems)
+                          ScoreGems(
+                            score: state.scoreOf(player),
+                            target: state.mode.victoryScore,
+                            color: color,
+                            size: compact ? 7 : 10,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: _TapZone(
-                    icon: Icons.remove,
-                    align: Alignment.centerRight,
-                    onTap: onRemove,
-                    onLongPress: onSheet,
+                Positioned(
+                  left: compact ? 6 : 10,
+                  right: compact ? 6 : 10,
+                  bottom: compact ? 6 : 8,
+                  child: XpBar(
+                    xp: state.xpOf(player),
+                    color: color,
+                    height: xpHeight,
+                    onAdd: onAddXp,
+                    onSpend: onSpendXp,
                   ),
                 ),
               ],
-            ),
-            IgnorePointer(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                child: Column(
-                  children: [
-                    _Identity(player: player, state: state),
-                    if (showScore)
-                      Expanded(
-                        child: Center(
-                          child: ScoreHalo(
-                            child: BigScore(
-                              value: state.scoreOf(player),
-                              color: color,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      const Spacer(),
-                    if (showScore)
-                      ScoreGems(
-                        score: state.scoreOf(player),
-                        target: state.mode.victoryScore,
-                        color: color,
-                      ),
-                    const SizedBox(height: 46),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 8,
-              child: XpBar(
-                xp: state.xpOf(player),
-                color: color,
-                onAdd: onAddXp,
-                onSpend: onSpendXp,
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -214,10 +246,18 @@ class LegendArt extends StatelessWidget {
 }
 
 class _Identity extends StatelessWidget {
-  const _Identity({required this.player, required this.state});
+  const _Identity({
+    required this.player,
+    required this.state,
+    this.compact = false,
+  });
 
   final Player player;
   final GameState state;
+
+  /// Panneau serré (2c2, quatre joueurs sur petit écran) : vignette et nom de
+  /// légende s'effacent, le nom du joueur garde la place.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +265,7 @@ class _Identity extends StatelessWidget {
     final legend = player.legend;
     return Row(
       children: [
-        if (legend != null) ...[
+        if (legend != null && !compact) ...[
           SizedBox(
             width: 26,
             child: CardImage(card: legend, thumbWidth: CardArtSize.tile),
@@ -241,13 +281,13 @@ class _Identity extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: text.bodyStrong.copyWith(
-                  fontSize: 14,
+                  fontSize: compact ? 12.5 : 14,
                   shadows: const [
                     Shadow(color: RiftColors.night, blurRadius: 8),
                   ],
                 ),
               ),
-              if (legend != null)
+              if (legend != null && !compact)
                 Text(
                   legend.name,
                   maxLines: 1,
@@ -344,6 +384,10 @@ class ScoreHalo extends StatelessWidget {
 
 /// Réserve d'XP (729) : le chiffre, six repères de niveau (824) et deux
 /// boutons compacts. L'XP n'est jamais partagée, même en 2c2.
+///
+/// La barre se dégrade proprement selon la place : libellé « XP » et repères
+/// de niveau sur un panneau large, repères seuls sur un panneau serré, le
+/// chiffre nu sur un panneau de 2c2 — mais jamais un bloc écrasé illisible.
 class XpBar extends StatelessWidget {
   const XpBar({
     super.key,
@@ -351,57 +395,75 @@ class XpBar extends StatelessWidget {
     required this.color,
     required this.onAdd,
     required this.onSpend,
+    this.height = 38,
   });
 
   final int xp;
   final Color color;
   final VoidCallback onAdd;
   final VoidCallback onSpend;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
     return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
         color: RiftColors.night.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(RiftRadius.full),
         border: Border.all(color: RiftColors.goldSoft.withValues(alpha: 0.28)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _XpButton(
-            icon: Icons.remove,
-            onTap: onSpend,
-            tooltip: 'Dépenser 1 XP',
-          ),
-          // Le bloc se resserre plutôt que de déborder : un panneau de 2c2
-          // fait la moitié de la largeur de celui d'un duel.
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('XP', style: text.eyebrow.copyWith(fontSize: 9)),
-                  const SizedBox(width: 5),
-                  Text(
-                    '$xp',
-                    style: text.monoStrong.copyWith(
-                      fontSize: 16,
-                      color: RiftColors.darkInk,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  LevelMarkers(xp: xp, color: color),
-                ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final showLabel = width >= 200;
+          final showMarkers = width >= 150;
+          final buttonSize = width < 150 ? 28.0 : 34.0;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _XpButton(
+                icon: Icons.remove,
+                onTap: onSpend,
+                tooltip: 'Dépenser 1 XP',
+                size: buttonSize,
               ),
-            ),
-          ),
-          _XpButton(icon: Icons.add, onTap: onAdd, tooltip: 'Gagner 1 XP'),
-        ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (showLabel) ...[
+                        Text('XP', style: text.eyebrow.copyWith(fontSize: 9)),
+                        const SizedBox(width: 5),
+                      ],
+                      Text(
+                        '$xp',
+                        style: text.monoStrong.copyWith(
+                          fontSize: 16,
+                          color: RiftColors.darkInk,
+                        ),
+                      ),
+                      if (showMarkers) ...[
+                        const SizedBox(width: 8),
+                        LevelMarkers(xp: xp, color: color),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              _XpButton(
+                icon: Icons.add,
+                onTap: onAdd,
+                tooltip: 'Gagner 1 XP',
+                size: buttonSize,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -512,11 +574,13 @@ class _XpButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.tooltip,
+    this.size = 34,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -527,11 +591,11 @@ class _XpButton extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        radius: 22,
+        radius: size * 0.65,
         child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(icon, size: 17, color: RiftColors.goldSoft),
+          width: size,
+          height: size,
+          child: Icon(icon, size: size * 0.5, color: RiftColors.goldSoft),
         ),
       ),
     );

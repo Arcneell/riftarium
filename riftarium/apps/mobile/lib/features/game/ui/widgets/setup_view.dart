@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -56,6 +57,10 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   bool _spinning = false;
   bool _resumeDismissed = false;
 
+  /// L'utilisateur a déjà touché à la configuration : la dernière table
+  /// sauvegardée ne vient plus écraser ses choix.
+  bool _touched = false;
+
   /// Faux : le compteur libre. Vrai : le salon d'une partie suivie.
   bool _tracked = false;
 
@@ -70,6 +75,28 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
+    // Dernière table jouée : les joueurs, leurs légendes et le format sont
+    // préremplis — on relance en changeant juste ce qui doit l'être.
+    unawaited(_restoreLastTable());
+  }
+
+  Future<void> _restoreLastTable() async {
+    final table = await ref.read(gameStoreProvider).readTable();
+    if (!mounted || _touched || table == null) return;
+    final players = [
+      for (final player in table.players)
+        if (player.seat >= 0 && player.seat < _maxPlayers) player,
+    ];
+    if (players.length != table.mode.playerCount) return;
+    setState(() {
+      _mode = table.mode;
+      _players = players;
+      for (final player in players) {
+        _names[player.seat].text = player.name;
+      }
+      _firstPlayerId = null;
+      _spotlight = null;
+    });
   }
 
   @override
@@ -83,6 +110,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
 
   void _selectMode(GameMode mode) {
     if (mode == _mode) return;
+    _touched = true;
     final previous = {for (final player in _players) player.seat: player};
     setState(() {
       _mode = mode;
@@ -162,6 +190,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   }
 
   Future<void> _pickLegend(Player player) async {
+    _touched = true;
     final legend = await showLegendPicker(context);
     if (legend == null || !mounted) return;
     setState(() {
@@ -173,6 +202,7 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   }
 
   void _setTeam(Player player, int team) {
+    _touched = true;
     setState(() {
       _players = [
         for (final item in _players)

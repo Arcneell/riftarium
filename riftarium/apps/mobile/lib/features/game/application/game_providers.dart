@@ -12,6 +12,7 @@ import '../domain/game_engine.dart';
 import '../domain/game_mode.dart';
 import '../domain/game_state.dart';
 import '../domain/player.dart';
+import '../domain/saved_table.dart';
 
 /// Maintien de l'écran allumé pendant une partie. Passe par une interface :
 /// le plugin natif n'existe pas sous `flutter test`, où l'on injecte
@@ -98,13 +99,18 @@ class GameController extends Notifier<GameState?> implements GameActions {
     required GameMode mode,
     required List<Player> players,
     String? firstPlayerId,
-  }) => _apply(
-    GameEngine.start(
-      mode: mode,
-      players: players,
-      firstPlayerId: firstPlayerId,
-    ),
-  );
+  }) {
+    _apply(
+      GameEngine.start(
+        mode: mode,
+        players: players,
+        firstPlayerId: firstPlayerId,
+      ),
+    );
+    // La table est retenue au-delà de la partie : quitter n'efface que la
+    // sauvegarde de reprise, la prochaine configuration retrouve les joueurs.
+    unawaited(_store.writeTable(SavedTable(mode: mode, players: players)));
+  }
 
   /// Reprend une partie relue depuis la sauvegarde.
   void resume(GameState saved) => _apply(saved);
