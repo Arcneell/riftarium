@@ -19,10 +19,17 @@ const SHORT_TOKENS = {
   M: ":rb_might:"
 }
 
+/* Glyphes d'énergie publiés par Riot : de 0 à 12. Le texte officiel ne va pas
+   plus haut (`[0]` à `[8]` et `[12]` dans data/rules-fr.json) et au-delà aucun
+   fichier n'existe : mieux vaut laisser « [42] » en clair qu'une image cassée. */
+const MAX_ENERGY_GLYPH = 12
+
 const expand = (text) =>
-  text.replace(/\[([RGBOPYCEM]|\d{1,2})\]/g, (raw, token) =>
-    /^\d/.test(token) ? `:rb_energy_${token}:` : SHORT_TOKENS[token]
-  )
+  text.replace(/\[([RGBOPYCEM]|\d{1,2})\]/g, (raw, token) => {
+    if (SHORT_TOKENS[token]) return SHORT_TOKENS[token]
+    const amount = Number(token)
+    return Number.isInteger(amount) && amount <= MAX_ENERGY_GLYPH ? `:rb_energy_${amount}:` : raw
+  })
 
 const segments = computed(() => {
   const out = []
@@ -35,7 +42,7 @@ const segments = computed(() => {
 </script>
 
 <template>
-  <span class="rule-rich">
+  <span>
     <component :is="segment.bold ? 'b' : 'span'" v-for="(segment, s) in segments" :key="s">
       <template v-for="(part, i) in segment.parts" :key="i">
         <span v-if="part.type === 'text'">{{ part.value }}</span>

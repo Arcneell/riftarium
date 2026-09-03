@@ -125,6 +125,38 @@ describe("useQuerySyncedFilters", () => {
     wrapper.unmount()
   })
 
+  it("query équivalente dans un autre ordre : aucun replace (donc aucune entrée d'historique)", async () => {
+    const { wrapper, router, filters } = await mountFilters({ path: "/liste?domain=Fury&q=jinx" })
+    const replace = vi.spyOn(router, "replace")
+    /* Même état, réécrit dans un ordre différent de celui de toQuery(). */
+    filters.state.q = "jinx2"
+    filters.state.q = "jinx"
+    await flushPromises()
+    expect(replace).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("pageCount reste un nombre fini quand pageSize n'est pas fourni (plus de NaN)", async () => {
+    const { wrapper, filters } = await mountFilters({
+      options: { pageSize: undefined, fetcher: async () => ({ total: 42, items: [] }) }
+    })
+    await filters.load()
+    expect(filters.result.value.total).toBe(42)
+    expect(Number.isFinite(filters.pageCount.value)).toBe(true)
+    expect(filters.pageCount.value).toBe(42) // repli pageSize = 1
+    expect(filters.pageCount.value).not.toBeNaN()
+    wrapper.unmount()
+  })
+
+  it("setFilter n'invente pas de page quand le schéma n'en a pas", async () => {
+    const schema = { q: { kind: "text" }, domain: { kind: "list" } }
+    const { wrapper, filters } = await mountFilters({ schema })
+    filters.setFilter("domain", ["Fury"])
+    expect("page" in filters.state).toBe(false)
+    expect(filters.toQuery()).toEqual({ domain: "Fury" })
+    wrapper.unmount()
+  })
+
   it("enabled : la garde bloque le chargement débouncé", async () => {
     const fetcher = vi.fn(async () => ({ total: 0, items: [] }))
     const { wrapper, filters } = await mountFilters({ options: { fetcher, enabled: () => false } })

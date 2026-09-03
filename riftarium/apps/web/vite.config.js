@@ -38,6 +38,23 @@ const serveRulesData = {
 // `.wasm` séparés pèseraient 8,5 Mo d'image Docker pour rien. Le modèle de langue
 // vient de 4.0.0_best_int (2,9 Mo) et non de 4.0.0 (10,9 Mo) : ce dernier embarque en plus
 // le moteur historique, inutile en OEM.LSTM_ONLY.
+//
+// Le chemin porte la version de tesseract.js (`/ocr/<version>/`) : ces fichiers ne sont pas
+// fingerprintés alors que nginx les sert en `expires 30d` et que le service worker les met en
+// cache-first (donc sans expiration). Sans version, une mise à jour du moteur laisserait des
+// navigateurs mélanger pendant un mois un worker neuf et un cœur wasm périmé. La base est
+// injectée dans le bundle via `__OCR_BASE__` (voir `define` plus bas et src/scanOcr.js).
+function readOcrVersion() {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(here, "node_modules/tesseract.js/package.json"), "utf8")).version
+  } catch {
+    /* Dépendances absentes (dev sans install complet, vitest isolé) : seul le build
+       a besoin de la vraie version, copyOcrAssets échouera alors de lui-même. */
+    return "dev"
+  }
+}
+const ocrVersion = readOcrVersion()
+const ocrBase = `/ocr/${ocrVersion}`
 const ocrCoreVariants = ["tesseract-core-lstm", "tesseract-core-simd-lstm", "tesseract-core-relaxedsimd-lstm"]
 const ocrFiles = {
   "worker.min.js": "tesseract.js/dist/worker.min.js",
@@ -52,6 +69,9 @@ const ocrContentType = (name) => {
   if (name.endsWith(".gz")) return "application/gzip"
   return "text/javascript; charset=utf-8"
 }
+// Le middleware ne retient que le nom du fichier : il sert donc indifféremment /ocr/<nom>
+// (dev et vitest, où __OCR_BASE__ n'est pas défini) et /ocr/<version>/<nom> (bundle de
+// production rejoué par `vite preview`).
 const ocrMiddleware = (req, res, next) => {
   const name = path.basename(req.url.split("?")[0])
   if (!ocrFiles[name]) return next()
@@ -71,7 +91,7 @@ const copyOcrAssets = {
   name: "copy-ocr-assets",
   apply: "build",
   closeBundle() {
-    const target = path.resolve(here, "dist/ocr")
+    const target = path.resolve(here, `dist${ocrBase}`)
     fs.mkdirSync(target, { recursive: true })
     for (const name of Object.keys(ocrFiles)) {
       const source = ocrSourcePath(name)
@@ -83,28 +103,78 @@ const copyOcrAssets = {
   }
 }
 
-// Injecte dans dist/sw.js la liste des bundles fingerprintés émis, pour que le
-// service worker les précache : les chunks des routes chargées à la demande
-// (dont le lecteur de règles) restent disponibles hors ligne.
+// Injecte dans dist/sw.js la liste des bundles à précacher, pour que les routes des
+// règles restent consultables hors ligne (chargées à la demande par le routeur, elles
+// manqueraient sinon dès la première coupure).
+//
+// On ne précache PAS tout /assets/ : la cartothèque, les decks, le scan et les statistiques
+// n'ont aucun sens sans réseau, et leurs chunks coûtaient l'essentiel du précache. La liste
+// est le sous-graphe RÉEL — chunk d'entrée + chunks des routes ci-dessous + leurs imports
+// statiques transitifs — et non une liste de noms à maintenir à la main.
+const OFFLINE_ROUTES = [
+  "views/RulesView.vue", // texte officiel des règles
+  "views/RulesHubView.vue",
+  "views/BeginnerGuideView.vue",
+  "views/AdvancedHelpView.vue",
+  "views/AdvancedTopicView.vue"
+]
+// Polices : seul le sous-ensemble « latin » est précaché. Le « latin-ext » ne couvre que
+// quelques glyphes (œ, caractères d'Europe centrale) : hors ligne, ils retombent sur la
+// police système plutôt que de doubler le poids embarqué.
+const OFFLINE_FONT = /-latin-(?!ext)[^/]*\.woff2$/
+
+/* Variable de closure et non propriété du plugin : `this` diffère d'un hook à l'autre
+   (contexte de plugin recréé), la liste calculée en generateBundle s'y perdrait. */
+let swPrecache = []
 const injectSwPrecache = {
   name: "inject-sw-precache",
   apply: "build",
+  generateBundle(_options, bundle) {
+    const outputs = Object.values(bundle)
+    const chunks = new Map(outputs.filter((out) => out.type === "chunk").map((chunk) => [chunk.fileName, chunk]))
+    const isRoute = (chunk) => {
+      const id = chunk.facadeModuleId?.replaceAll("\\", "/")
+      return Boolean(id) && OFFLINE_ROUTES.some((route) => id.endsWith(route))
+    }
+    const keep = new Set()
+    // Seuls les imports STATIQUES sont suivis : les imports dynamiques sont justement les
+    // autres routes, qu'on ne veut pas embarquer.
+    const walk = (chunk) => {
+      if (!chunk || keep.has(chunk.fileName)) return
+      keep.add(chunk.fileName)
+      for (const css of chunk.viteMetadata?.importedCss || []) keep.add(css)
+      for (const imported of chunk.imports || []) walk(chunks.get(imported))
+    }
+    for (const chunk of chunks.values()) {
+      if (chunk.isEntry || isRoute(chunk)) walk(chunk)
+    }
+    for (const output of outputs) {
+      // La feuille de style est indispensable au shell ; les polices ne sont référencées
+      // que depuis le CSS, donc absentes du graphe des imports.
+      /* Feuille du shell (index-*.css) et polices latines : le CSS d'une future route
+         hors règles n'a rien à faire dans le précache. */
+      if (/^assets\/index-[^/]*\.css$/.test(output.fileName) || OFFLINE_FONT.test(output.fileName)) {
+        keep.add(output.fileName)
+      }
+    }
+    if (!keep.size) throw new Error("sw.js : aucun bundle à précacher (graphe de sortie vide ?)")
+    swPrecache = [...keep].sort().map((file) => `/${file}`)
+  },
   closeBundle() {
-    const dist = path.resolve(here, "dist")
-    const assets = fs
-      .readdirSync(path.join(dist, "assets"))
-      .sort()
-      .map((file) => `/assets/${file}`)
-    const swFile = path.join(dist, "sw.js")
+    const swFile = path.resolve(here, "dist/sw.js")
     const source = fs.readFileSync(swFile, "utf8")
     const marker = "const ASSETS = []"
     if (!source.includes(marker)) throw new Error("sw.js : marqueur de précache introuvable")
-    fs.writeFileSync(swFile, source.replace(marker, `const ASSETS = ${JSON.stringify(assets)}`))
+    if (!swPrecache.length) throw new Error("sw.js : liste de précache vide (generateBundle non exécuté ?)")
+    fs.writeFileSync(swFile, source.replace(marker, `const ASSETS = ${JSON.stringify(swPrecache)}`))
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue(), serveRulesData, serveOcrAssets, copyOcrAssets, injectSwPrecache],
+  // __OCR_BASE__ n'est injecté qu'au build : en dev, en preview du code source et sous
+  // vitest, src/scanOcr.js retombe sur /ocr, que le middleware ci-dessus sert aussi.
+  define: command === "build" ? { __OCR_BASE__: JSON.stringify(ocrBase) } : {},
   server: {
     host: true,
     // Les bind mounts Windows/Docker ne propagent pas les événements de fichiers : polling.
@@ -121,4 +191,4 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "src/test/setup.js"
   }
-})
+}))

@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { cardThumb } from "../api.js"
 import { BANNERS } from "../banners.js"
 import { escapeHtml } from "../htmlText.js"
 import PageBanner from "../components/PageBanner.vue"
@@ -9,9 +10,26 @@ import { CARDS, SPOTS, STEPS } from "../rules/guide.js"
 const route = useRoute()
 const router = useRouter()
 
-const initial = Number.parseInt(route.query.etape, 10)
-const stepIndex = ref(initial >= 1 && initial <= STEPS.length ? initial - 1 : 0)
-watch(stepIndex, (value) => router.replace({ query: value ? { etape: value + 1 } : {} }))
+/* `?etape=` est la seule mémoire de la progression : elle doit suivre les boutons
+   du guide, et le guide doit suivre les boutons Précédent / Suivant du navigateur. */
+const stepFromQuery = (value) => {
+  const parsed = Number.parseInt(value, 10)
+  return parsed >= 1 && parsed <= STEPS.length ? parsed - 1 : 0
+}
+
+const stepIndex = ref(stepFromQuery(route.query.etape))
+watch(stepIndex, (value) => {
+  /* Garde anti-boucle : ne rien écrire si l'adresse dit déjà la même étape. */
+  if (stepFromQuery(route.query.etape) === value) return
+  router.replace({ query: value ? { etape: value + 1 } : {} })
+})
+watch(
+  () => route.query.etape,
+  (value) => {
+    const next = stepFromQuery(value)
+    if (next !== stepIndex.value) stepIndex.value = next
+  }
+)
 
 const step = computed(() => STEPS[stepIndex.value])
 const scene = computed(() => step.value.scene)
@@ -45,7 +63,25 @@ function onKeydown(event) {
 
 /* Zoom : cliquer une carte pour la lire en grand. */
 const zoomCard = ref(null)
-const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w=1024")
+const zoomUrl = (card) => cardThumb(card.img, 1024)
+
+/* Le zoom se présente comme un dialogue : Échap doit le fermer où que soit le
+   focus, et le panneau doit être atteignable au clavier dès son ouverture. */
+const zoomEl = ref(null)
+
+function onZoomKey(event) {
+  if (event.key === "Escape") zoomCard.value = null
+}
+
+watch(zoomCard, async (card) => {
+  if (card) {
+    document.addEventListener("keydown", onZoomKey)
+    await nextTick()
+    zoomEl.value?.focus()
+  } else {
+    document.removeEventListener("keydown", onZoomKey)
+  }
+})
 
 /* Plein écran : API Fullscreen quand elle existe, sinon simple superposition. */
 const fullscreen = ref(false)
@@ -64,7 +100,13 @@ const syncFullscreen = () => {
   if (!document.fullscreenElement) fullscreen.value = false
 }
 onMounted(() => document.addEventListener("fullscreenchange", syncFullscreen))
-onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFullscreen))
+onBeforeUnmount(() => {
+  document.removeEventListener("fullscreenchange", syncFullscreen)
+  document.removeEventListener("keydown", onZoomKey)
+  /* Quitter la page en plein écran laissait le navigateur bloqué sur un élément
+     démonté : on rend la main explicitement. */
+  if (document.fullscreenElement) document.exitFullscreen?.()
+})
 </script>
 
 <template>
@@ -180,10 +222,16 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
 
             <!-- Cartes -->
             <TransitionGroup name="tb">
-              <div
+              <!-- Une carte face visible s'agrandit au clic : c'est un bouton, pas un div
+                   cliquable (clavier, lecteurs d'écran). Les cartes face cachée ne sont
+                   pas interactives et restent des div. -->
+              <component
+                :is="placed.facedown ? 'div' : 'button'"
                 v-for="placed in scene.cards"
                 :key="placed.key"
                 class="tb-card"
+                :type="placed.facedown ? undefined : 'button'"
+                :aria-label="placed.facedown ? undefined : `Agrandir ${placed.card.name}`"
                 @click="!placed.facedown && (zoomCard = placed.card)"
                 :class="{
                   tapped: placed.tapped,
@@ -205,11 +253,17 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
                 <span v-if="placed.might && placed.card.might" class="tb-might">{{ placed.card.might }}</span>
                 <span v-if="placed.dmg" class="tb-dmg">−{{ placed.dmg }}</span>
                 <span v-if="placed.label" class="tb-slot-label mono">{{ placed.label }}</span>
-              </div>
+              </component>
             </TransitionGroup>
 
             <!-- Gros plan annoté : lire une carte -->
-            <div v-if="scene.focus" class="tb-focus" @click="zoomCard = scene.focus.card">
+            <button
+              v-if="scene.focus"
+              type="button"
+              class="tb-focus"
+              :aria-label="`Agrandir ${scene.focus.card.name}`"
+              @click="zoomCard = scene.focus.card"
+            >
               <img :src="zoomUrl(scene.focus.card)" :alt="scene.focus.card.name" />
               <span
                 v-for="note in scene.focus.notes"
@@ -219,7 +273,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               >
                 {{ note.n }}
               </span>
-            </div>
+            </button>
 
             <!-- Réserve runique -->
             <div v-if="scene.chips" class="tb-pool" aria-label="Réserve runique">
@@ -228,7 +282,16 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
               <i class="mono">Réserve runique</i>
             </div>
             <!-- Carte en grand au clic -->
-            <div v-if="zoomCard" class="tb-zoom" role="dialog" aria-label="Carte en grand" @click="zoomCard = null">
+            <div
+              v-if="zoomCard"
+              ref="zoomEl"
+              class="tb-zoom"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Carte en grand"
+              tabindex="-1"
+              @click="zoomCard = null"
+            >
               <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
               <p class="mono">{{ zoomCard.name }} — cliquez pour fermer</p>
             </div>
@@ -246,13 +309,15 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
             </button>
             <RouterLink v-else class="btn btn-gold" to="/regles/avancee">Passer à l'aide avancée →</RouterLink>
           </div>
-          <div class="guide-dots" role="tablist" aria-label="Étapes du guide">
+          <!-- Ni tablist ni tab : aucun panneau d'onglets n'est associé, et le motif
+               ARIA imposerait alors une navigation aux flèches qui n'existe pas ici. -->
+          <div class="guide-dots" aria-label="Étapes du guide">
             <button
               v-for="(s, i) in STEPS"
               :key="s.key"
+              type="button"
               class="guide-dot"
-              role="tab"
-              :aria-selected="i === stepIndex"
+              :aria-current="i === stepIndex ? 'true' : undefined"
               :aria-label="s.title"
               :class="{ active: i === stepIndex, done: i < stepIndex }"
               @click="goTo(i)"
@@ -267,6 +332,7 @@ onBeforeUnmount(() => document.removeEventListener("fullscreenchange", syncFulls
           </div>
           <Transition name="guide-text" mode="out-in">
             <ul class="guide-text" :key="step.key">
+              <!-- eslint-disable-next-line vue/no-v-html -->
               <li v-for="(line, i) in step.text" :key="i" v-html="strong(line)"></li>
             </ul>
           </Transition>

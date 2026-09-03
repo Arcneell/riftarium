@@ -89,9 +89,11 @@ onBeforeUnmount(() => {
       :class="{ open, active: modelValue.length > 0 }"
       :disabled="empty"
       :aria-expanded="open"
-      :aria-label="`Filtrer par ${label.toLowerCase()}`"
+      aria-haspopup="true"
       @click="open = !open"
     >
+      <!-- Pas d'aria-label : il remplaçait le nom calculé du bouton, et le
+           compteur (ou les glyphes sélectionnés) n'était plus annoncé. -->
       {{ label }}
       <span v-if="selectedGlyphs.length" class="fsel-glyphs">
         <img

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
 import { cardThumb, session } from "../api.js"
 import { BANNERS } from "../banners.js"
@@ -126,8 +126,17 @@ async function load() {
     if (shows("show_stats")) loadHistory(1)
   } catch (e) {
     profile.value = null
-    if (e.status === 404) notFound.value = true
-    else error.value = e.message
+    if (e.status === 404) {
+      notFound.value = true
+      /* La page rendue est la 404 du site : le titre et les métadonnées doivent le
+         dire, sinon le profil précédent reste inscrit dans l'onglet et l'historique. */
+      applySeo({
+        title: "Profil introuvable",
+        description: "Ce profil de joueur n'existe pas ou n'est pas public.",
+        path: route.path,
+        noindex: true
+      })
+    } else error.value = e.message
   } finally {
     loading.value = false
   }
@@ -154,7 +163,8 @@ async function toggleFollow() {
   }
 }
 
-watch(handle, load)
+/* Pas de `watch` sur le pseudo : App.vue clef la RouterView sur le chemin, donc
+   passer d'un profil à l'autre remonte le composant (onMounted refait le travail). */
 onMounted(load)
 </script>
 

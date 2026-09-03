@@ -32,6 +32,26 @@ function sample(extras = {}) {
   }
 }
 
+/* Monte la fiche avec le mock d'API déjà en place (les tests « collection »
+   règlent eux-mêmes les réponses route par route). */
+async function mountMocked(id) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/cartes", component: { template: "<div />" } },
+      { path: "/cartes/:id", component: CardView },
+      { path: "/connexion", component: { template: "<div />" } }
+    ]
+  })
+  router.push(`/cartes/${id}`)
+  await router.isReady()
+  const wrapper = mount(CardView, {
+    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
+  })
+  await flushPromises()
+  return { wrapper, router }
+}
+
 async function mountView(id, card, meta = null) {
   if (meta) api.mockImplementation((path) => Promise.resolve(path === "/api/prices/meta" ? meta : card))
   else api.mockResolvedValue(card)
@@ -147,19 +167,7 @@ describe("CardView", () => {
       if (path === "/api/collection/ogn-037-298") return Promise.resolve({ entries: [], total_qty: 0 })
       return Promise.resolve(options.method ? null : {})
     })
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: "/cartes", component: { template: "<div />" } },
-        { path: "/cartes/:id", component: CardView }
-      ]
-    })
-    router.push("/cartes/ogn-037-298")
-    await router.isReady()
-    const wrapper = mount(CardView, {
-      global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
-    })
-    await flushPromises()
+    const { wrapper } = await mountMocked("ogn-037-298")
 
     const toggle = wrapper.get(".wish-toggle")
     expect(toggle.text()).toContain("Ajouter à la wishlist")
@@ -182,6 +190,77 @@ describe("CardView", () => {
     ).toBe(true)
     expect(toggle.text()).toContain("Ajouter à la wishlist")
     expect(toggle.attributes("aria-pressed")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("ajoute un lot : POST puis remise à 1 de la quantité saisie", async () => {
+    session.token = "jeton"
+    session.handle = "visiteur"
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
+      if (path === "/api/collection/ogn-037-298" && !options.method) {
+        return Promise.resolve({ entries: [], total_qty: 0 })
+      }
+      if (path === "/api/collection/ogn-037-298/entries" && options.method === "POST") {
+        return Promise.resolve({ entries: [{ id: 1, qty: 3, condition: "NM", lang: "EN" }], total_qty: 3 })
+      }
+      return Promise.resolve({})
+    })
+    const { wrapper } = await mountMocked("ogn-037-298")
+
+    const qty = wrapper.get(".sheet-add input[type=number]")
+    await qty.setValue(3)
+    await wrapper.get(".sheet-add button").trigger("click")
+    await flushPromises()
+
+    const post = api.mock.calls.find(
+      ([path, options]) => path === "/api/collection/ogn-037-298/entries" && options?.method === "POST"
+    )
+    expect(post[1].body).toEqual({ qty: 3, condition: "NM", lang: "EN" })
+    expect(wrapper.get(".sheet-add input[type=number]").element.value).toBe("1")
+    expect(wrapper.text()).toContain("Lot ajouté.")
+    wrapper.unmount()
+  })
+
+  it("ajout en échec : la saisie est conservée et l'erreur affichée", async () => {
+    session.token = "jeton"
+    session.handle = "visiteur"
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
+      if (path === "/api/collection/ogn-037-298" && !options.method) {
+        return Promise.resolve({ entries: [], total_qty: 0 })
+      }
+      if (path === "/api/collection/ogn-037-298/entries" && options.method === "POST") {
+        return Promise.reject(new Error("Collection indisponible"))
+      }
+      return Promise.resolve({})
+    })
+    const { wrapper } = await mountMocked("ogn-037-298")
+
+    await wrapper.get(".sheet-add input[type=number]").setValue(4)
+    await wrapper.get(".sheet-add button").trigger("click")
+    await flushPromises()
+
+    expect(wrapper.get(".error").text()).toContain("Collection indisponible")
+    expect(wrapper.get(".sheet-add input[type=number]").element.value).toBe("4")
+    wrapper.unmount()
+  })
+
+  it("les lots indisponibles ne masquent pas la fiche", async () => {
+    session.token = "jeton"
+    session.handle = "visiteur"
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
+      if (path === "/api/collection/ogn-037-298" && !options.method) {
+        return Promise.reject(new Error("Collection indisponible"))
+      }
+      return Promise.resolve({})
+    })
+    const { wrapper } = await mountMocked("ogn-037-298")
+
+    expect(wrapper.get("h1").text()).toBe("Immortal Phoenix")
+    expect(wrapper.find(".error").exists()).toBe(false)
+    expect(document.title).toContain("Immortal Phoenix")
     wrapper.unmount()
   })
 

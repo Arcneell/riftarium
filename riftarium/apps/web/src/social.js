@@ -112,7 +112,7 @@ const FAMILIES = { duels: "Duels", collection: "Collection", decks: "Decks", soc
 /* Ordre d'affichage des familles ; une famille inconnue passe à la fin. */
 const FAMILY_ORDER = Object.keys(FAMILIES)
 
-export function familyLabel(family) {
+function familyLabel(family) {
   return FAMILIES[family] || "Autres"
 }
 
@@ -137,7 +137,10 @@ export function achievementPercent(item) {
 export function achievementProgress(item) {
   const current = Math.max(0, Number(item?.current) || 0)
   const threshold = Number(item?.threshold) || 0
-  return `${Math.min(current, threshold || current)} / ${threshold}`
+  /* Haut fait sans seuil (compteur ouvert, ou seuil manquant côté API) : « 3 / 0 »
+     n'a aucun sens, on n'affiche que le compteur. */
+  if (threshold <= 0) return String(current)
+  return `${Math.min(current, threshold)} / ${threshold}`
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" })

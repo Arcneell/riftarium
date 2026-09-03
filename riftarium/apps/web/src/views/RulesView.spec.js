@@ -3,6 +3,7 @@ import { nextTick } from "vue"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import RulesView from "./RulesView.vue"
+import { resetRulesCache } from "../rules/rulesStore.js"
 
 const stub = { template: "<div />" }
 
@@ -84,6 +85,9 @@ function restoreOnLine() {
 
 describe("RulesView — bandeau hors ligne", () => {
   beforeEach(() => {
+    /* Le magasin de règles met le document en cache pour la session : on repart
+       d'un cache vide à chaque cas, sinon le `fetch` mocké n'est jamais appelé. */
+    resetRulesCache()
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(RULES) }))
     vi.stubGlobal("requestAnimationFrame", (callback) => {
       callback()
@@ -138,6 +142,9 @@ describe("RulesView — bandeau hors ligne", () => {
 
 describe("RulesView — sommaire repliable sur mobile", () => {
   beforeEach(() => {
+    /* Le magasin de règles met le document en cache pour la session : on repart
+       d'un cache vide à chaque cas, sinon le `fetch` mocké n'est jamais appelé. */
+    resetRulesCache()
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(RULES) }))
     vi.stubGlobal("requestAnimationFrame", (callback) => {
       callback()

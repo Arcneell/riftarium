@@ -208,8 +208,18 @@ export function formatCode(code) {
 
 /* Auto-hébergement obligatoire : la CSP du site interdit tout script tiers, et
    workerBlobURL créerait une URL blob: elle aussi bloquée. Les fichiers sont copiés
-   dans dist/ocr/ au build (plugin copyOcrAssets de vite.config.js). */
-const OCR_BASE = "/ocr"
+   dans dist/ocr/<version de tesseract.js>/ au build (plugin copyOcrAssets de
+   vite.config.js), qui injecte ce chemin dans __OCR_BASE__.
+
+   Pourquoi une version dans le chemin : ces fichiers ne sont pas fingerprintés, or
+   nginx les sert en `expires 30d` et le service worker les met en cache-first (donc
+   sans expiration). Sans version, une mise à jour de tesseract.js laisserait des
+   navigateurs mélanger un worker neuf et un cœur wasm périmé pendant un mois.
+
+   __OCR_BASE__ n'est défini qu'au build : en dev, en preview et sous vitest on retombe
+   sur /ocr, que le middleware serveOcrAssets sert quelle que soit la forme du chemin. */
+/* global __OCR_BASE__ */
+const OCR_BASE = typeof __OCR_BASE__ !== "undefined" ? __OCR_BASE__ : "/ocr"
 
 /** Erreur d'OCR portant son étage : un moteur qui ne charge pas est définitif (on bascule
     sur l'empreinte pour la session), une reconnaissance ratée est transitoire (image floue,
@@ -337,5 +347,7 @@ export async function terminateOcrWorker() {
   } catch {
     return // chargement déjà en échec ou abandonné : rien à arrêter
   }
-  await active.terminate()
+  /* Un terminate qui jette (worker déjà mort, contexte détruit par la navigation) ne doit
+     pas remonter : l'appelant n'a rien à en faire et le rejet ferait échouer shutdown(). */
+  await active.terminate().catch(() => {})
 }

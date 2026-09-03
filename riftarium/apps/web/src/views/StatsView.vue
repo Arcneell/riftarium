@@ -34,9 +34,9 @@ const byFormat = computed(() => stats.value?.by_format || [])
 /* Le contrat ne chiffre le taux que par deck : ailleurs il se déduit de J / G. */
 const rateOf = (row) => (row.played ? row.won / row.played : null)
 
-/* `current_streak` peut être négatif (série de défaites) : on n'affiche que la
-   valeur absolue, la nature de la série passe dans la légende sous le chiffre. */
-const currentStreak = computed(() => Number(totals.value.current_streak || 0))
+/* Contrat (docs/suivi-des-matchs.md) : `current_streak` compte les victoires
+   consécutives finissant au dernier match compté — jamais négatif. */
+const currentStreak = computed(() => Math.max(0, Number(totals.value.current_streak || 0)))
 
 async function load() {
   loading.value = true
@@ -82,8 +82,8 @@ onMounted(load)
           </div>
           <div class="stat">
             Série en cours
-            <b>{{ currentStreak ? Math.abs(currentStreak) : "—" }}</b>
-            <span class="stat-delta">{{ currentStreak < 0 ? "défaites d'affilée" : "victoires d'affilée" }}</span>
+            <b>{{ currentStreak || "—" }}</b>
+            <span class="stat-delta">victoires d'affilée</span>
           </div>
           <div class="stat">
             Meilleure série

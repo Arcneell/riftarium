@@ -1,6 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import CardHoverPreview from "./CardHoverPreview.vue"
 
 function matchMedia({ reduced = false, fine = true } = {}) {
   window.matchMedia = (query) => ({
@@ -20,6 +19,15 @@ function matchMedia({ reduced = false, fine = true } = {}) {
   })
 }
 
+/* Les deux préférences sont lues une seule fois, à l'évaluation du module (une
+   grille monte des centaines de tuiles) : chaque scénario recharge donc le
+   composant après avoir posé son matchMedia. */
+async function loadComponent(preferences) {
+  matchMedia(preferences)
+  vi.resetModules()
+  return (await import("./CardHoverPreview.vue")).default
+}
+
 const card = {
   id: "ogn-037a-298",
   name: "Immortal Phoenix",
@@ -30,7 +38,6 @@ const card = {
 
 describe("CardHoverPreview", () => {
   beforeEach(() => {
-    matchMedia()
     vi.useFakeTimers()
   })
 
@@ -40,7 +47,8 @@ describe("CardHoverPreview", () => {
   })
 
   it("ouvre un aperçu zoom après un court survol et l'annule à la sortie", async () => {
-    const wrapper = mount(CardHoverPreview, {
+    const Component = await loadComponent()
+    const wrapper = mount(Component, {
       props: { card },
       slots: { default: "<a href='/cartes/ogn-037a-298'>tuile</a>" },
       attachTo: document.body
@@ -57,6 +65,8 @@ describe("CardHoverPreview", () => {
     expect(preview).not.toBeNull()
     expect(preview.textContent).toContain("Immortal Phoenix")
     expect(preview.querySelector(".card-foil")).not.toBeNull()
+    /* Infobulle et non dialogue : rien à fermer, aucun focus à piéger. */
+    expect(preview.getAttribute("role")).toBe("tooltip")
     expect(wrapper.get("a").attributes("href")).toBe("/cartes/ogn-037a-298")
 
     await wrapper.get(".card-hover").trigger("mouseleave")
@@ -66,8 +76,8 @@ describe("CardHoverPreview", () => {
   })
 
   it("apparaît tout de suite si le mouvement réduit est demandé", async () => {
-    matchMedia({ reduced: true, fine: true })
-    const wrapper = mount(CardHoverPreview, {
+    const Component = await loadComponent({ reduced: true, fine: true })
+    const wrapper = mount(Component, {
       props: { card },
       slots: { default: "<span>tuile</span>" },
       attachTo: document.body
@@ -80,8 +90,8 @@ describe("CardHoverPreview", () => {
   })
 
   it("n'affiche rien sans pointeur fin", async () => {
-    matchMedia({ fine: false })
-    const wrapper = mount(CardHoverPreview, {
+    const Component = await loadComponent({ fine: false })
+    const wrapper = mount(Component, {
       props: { card },
       slots: { default: "<span>tuile</span>" },
       attachTo: document.body

@@ -36,11 +36,23 @@ const barLength = (row) => round((row.value / maxValue.value) * (plotWidth.value
    sortaient du viewBox par la gauche sur un écran de 360 px (illisibles et
    rognés). Largeur moyenne d'un caractère du corps de texte à 12,5 px. */
 const CHAR_PX = 6.4
+/* Longueur et bout de barre inclus dans le computed : le template les demandait
+   par appels de fonction (`barPath(i)`, `barLength(row)`), donc recalculés à
+   chaque rendu pour chaque ligne. */
 const shownRows = computed(() => {
   const max = Math.floor((gutter.value - 12) / CHAR_PX)
-  return props.rows.map((row) => {
+  return props.rows.map((row, i) => {
     const clipped = row.label.length > max
-    return { ...row, short: clipped ? `${row.label.slice(0, Math.max(1, max - 1))}…` : row.label, clipped }
+    const length = barLength(row)
+    return {
+      ...row,
+      short: clipped ? `${row.label.slice(0, Math.max(1, max - 1))}…` : row.label,
+      clipped,
+      length,
+      end: round(gutter.value + length),
+      d: barPath(i),
+      top: rowTop(i)
+    }
   })
 })
 const rowTop = (index) => 4 + ROW_HEIGHT * index
@@ -97,22 +109,18 @@ const tooltipStyle = computed(() => {
         <g v-for="(row, i) in shownRows" :key="row.label">
           <!-- Le nom entier reste accessible : <title> au survol, infobulle, tableau des données. -->
           <title v-if="row.clipped">{{ row.label }}</title>
-          <text class="chart-row-label" :x="gutter - 10" :y="rowTop(i) + ROW_HEIGHT / 2 + 4" text-anchor="end">
+          <text class="chart-row-label" :x="gutter - 10" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="end">
             {{ row.short }}
           </text>
-          <path class="chart-bar" :d="barPath(i)" :fill="color" />
-          <text
-            class="chart-value-text"
-            :x="gutter + barLength(row) + 7"
-            :y="rowTop(i) + ROW_HEIGHT / 2 + 4"
-            text-anchor="start"
-          >
+          <!-- `chart-bar` et `chart-band` : sans règle CSS, point d'accroche des tests. -->
+          <path class="chart-bar" :d="row.d" :fill="color" />
+          <text class="chart-value-text" :x="row.end + 7" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="start">
             {{ row.value }}
           </text>
           <rect
             class="chart-band"
             :x="0"
-            :y="rowTop(i)"
+            :y="row.top"
             :width="plotWidth"
             :height="ROW_HEIGHT"
             fill="transparent"
@@ -121,7 +129,9 @@ const tooltipStyle = computed(() => {
         </g>
       </svg>
 
-      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" role="status">
+      <!-- aria-hidden : infobulle de survol sans équivalent clavier, doublon du
+           tableau « Voir les données » (voir ColumnChart). -->
+      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" aria-hidden="true">
         <span class="chart-tooltip-row">
           <i class="chart-dot" :style="{ background: color }"></i>{{ rows[hovered].label }} — {{ valueLabel }}
           <b>{{ rows[hovered].value }}</b>

@@ -51,10 +51,15 @@ export function setSession(token, handle, avatarUrl = null) {
       localStorage.removeItem(SESSION_FLAG_KEY)
       localStorage.removeItem(HANDLE_KEY)
       localStorage.removeItem(AVATAR_KEY)
-      localStorage.removeItem(LEGACY_TOKEN_KEY)
     }
   } catch {
     /* ignore */
+  }
+  /* Session fermée (déconnexion volontaire ou 401) : les caches de module qui
+     gardent des données de compte (usePlayStats…) s'y raccrochent pour se vider,
+     sans que api.js ait besoin de les importer. */
+  if (!loggedIn && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("riftarium:session-closed"))
   }
 }
 
@@ -62,6 +67,7 @@ export function setSession(token, handle, avatarUrl = null) {
 function readableDetail(detail, status) {
   if (typeof detail === "string" && detail) return detail
   if (Array.isArray(detail)) return detail[0]?.msg || "Requête invalide"
+  if (detail && typeof detail === "object") return detail.msg || detail.message || "Requête invalide"
   if (detail) return "Requête invalide"
   if (status === 405) return "Action bloquée par le pare-feu du site"
   if (status === 429) return "Trop de requêtes, réessayez dans une minute"
@@ -69,7 +75,21 @@ function readableDetail(detail, status) {
   return "Erreur inattendue"
 }
 
-export async function api(path, { method = "GET", body } = {}) {
+/* Un 401 veut dire « mot de passe incorrect », pas « session expirée », quand la
+   requête elle-même portait un mot de passe à vérifier : connexion, inscription,
+   changement de mot de passe, modification ou suppression du compte
+   (`_require_password` / « Identifiants invalides » côté auth_routes.py). Fermer la
+   session et rediriger sur ces réponses déconnecterait l'utilisateur à la moindre
+   faute de frappe : on laisse remonter le message du serveur. Le critère est le
+   corps envoyé, pas la route : un PATCH /api/auth/me sans mot de passe (portrait,
+   confidentialité) qui reçoit 401 est bien une session périmée. */
+const PASSWORD_FIELDS = ["password", "current_password"]
+
+function isCredentialCheck(body) {
+  return body !== null && typeof body === "object" && PASSWORD_FIELDS.some((key) => key in body)
+}
+
+export async function api(path, { method = "GET", body, signal } = {}) {
   const headers = {}
   if (body !== undefined) headers["Content-Type"] = "application/json"
 
@@ -77,10 +97,11 @@ export async function api(path, { method = "GET", body } = {}) {
     method,
     headers,
     credentials: "include",
+    signal,
     body: body !== undefined ? JSON.stringify(body) : undefined
   })
 
-  if (response.status === 401) {
+  if (response.status === 401 && !isCredentialCheck(body)) {
     setSession(null, null)
     /* Prévient l'application (App.vue redirige vers la connexion) sans coupler api.js au routeur. */
     if (typeof window !== "undefined") {

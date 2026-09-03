@@ -80,6 +80,28 @@ describe("DecksView", () => {
     wrapper.unmount()
   })
 
+  it("création en échec : le message s'affiche et la modale reste ouverte", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") return Promise.reject(new Error("Nom déjà pris"))
+      return Promise.resolve(null)
+    })
+    const { wrapper, router } = await mountView()
+    await wrapper.get(".toolbar .btn-gold").trigger("click")
+    const modal = document.body.querySelector(".modal")
+
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+
+    expect(document.body.querySelector(".modal")).not.toBeNull()
+    expect(document.body.querySelector(".modal .error").textContent).toContain("Nom déjà pris")
+    expect(router.currentRoute.value.path).toBe("/decks")
+    wrapper.unmount()
+  })
+
   it("la modale se ferme avec Échap sans créer de deck", async () => {
     const { wrapper } = await mountView()
     await wrapper.get(".toolbar .btn-gold").trigger("click")

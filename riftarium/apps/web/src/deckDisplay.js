@@ -11,7 +11,9 @@ export const DECK_ZONES = [
 const NAMED_ZONES = { Legend: true, Battlefield: true, Rune: true }
 
 export function zoneOf(card) {
-  return card?.type in NAMED_ZONES ? card.type : "main"
+  /* `in` traverse la chaîne de prototypes : un type "constructor" ou "toString"
+     venu des données aurait été pris pour une zone nommée. */
+  return Object.hasOwn(NAMED_ZONES, card?.type) ? card.type : "main"
 }
 
 export function groupDeck(deck) {
@@ -50,9 +52,20 @@ export function runesOf(deck) {
     }))
 }
 
-export function coverStyle(deck) {
+/* Une URL entre dans une variable CSS consommée par `background-image: var(--cover)`.
+   Sans guillemets ni échappement, une URL contenant `"`, `'`, `)`, `\` ou une espace
+   fermerait le `url()` et laisserait injecter de la déclaration CSS. Les hôtes
+   d'images sont filtrés côté API, mais le chemin ne l'est pas : on encode. */
+const CSS_URL_ESCAPE = { '"': "%22", "'": "%27", "(": "%28", ")": "%29", "\\": "%5C" }
+
+function cssUrl(url) {
+  const safe = String(url).replace(/["'()\\\s]/g, (char) => CSS_URL_ESCAPE[char] ?? "%20")
+  return `url("${safe}")`
+}
+
+function coverStyle(deck) {
   const art = legendOf(deck)?.image_url || deck?.cards?.[0]?.card.image_url
-  return art ? { "--cover": `url(${cardThumb(art, 480)})` } : {}
+  return art ? { "--cover": cssUrl(cardThumb(art, 480)) } : {}
 }
 
 /* Identité visuelle d'une boîte de deck : l'illustration de la légende plus les
@@ -62,10 +75,6 @@ export function deckIdentity(deck) {
   const first = DOMAINS[domains[0]]?.color || "var(--gold)"
   const second = DOMAINS[domains[1]]?.color || first
   return { ...coverStyle(deck), "--d1": first, "--d2": second }
-}
-
-export function okCount(deck) {
-  return deck?.checks?.filter((check) => check.ok).length ?? 0
 }
 
 /* « Légal » = conforme aux règles officielles de construction, « Illégal » = tout le reste

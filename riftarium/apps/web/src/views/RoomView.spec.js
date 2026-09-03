@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import RoomView from "./RoomView.vue"
-import { api } from "../api.js"
+import { api, ApiError } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -86,6 +86,13 @@ async function mountView(path = "/salon/ABC234") {
 
 const buttonWith = (wrapper, label) => wrapper.findAll("button").find((button) => button.text().includes(label))
 
+/* Le sondage se réarme par setTimeout : on retrouve le tour programmé à son délai
+   (5 s de base, doublé à chaque échec). 300 ms = la recherche de légende débrayée. */
+function pollTick(spy, delay) {
+  const call = [...spy.mock.calls].reverse().find(([, ms]) => (delay ? ms === delay : ms >= 5000))
+  return call?.[0]
+}
+
 describe("RoomView", () => {
   beforeEach(() => {
     api.mockReset()
@@ -97,7 +104,7 @@ describe("RoomView", () => {
   })
 
   it("affiche le salon lu par son code et sonde toutes les 5 secondes", async () => {
-    const intervalSpy = vi.spyOn(globalThis, "setInterval")
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
     setupApi({ room: makeRoom({ players: [seat(HOST, { ready: true }), seat(GUEST)] }) })
     const { wrapper } = await mountView()
 
@@ -109,12 +116,120 @@ describe("RoomView", () => {
     expect(wrapper.text()).toContain("nova")
     expect(wrapper.text()).toContain("Prêt ✓")
 
-    const tick = intervalSpy.mock.calls.find(([, delay]) => delay === 5000)
+    const tick = pollTick(timeoutSpy)
     expect(tick).toBeTruthy()
     api.mockClear()
-    tick[0]()
+    tick()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/play/rooms/ABC234")
+    wrapper.unmount()
+  })
+
+  it("plus aucun appel après démontage, même si un tour de sondage traînait", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    const { wrapper } = await mountView()
+    const tick = pollTick(timeoutSpy)
+    expect(tick).toBeTruthy()
+
+    wrapper.unmount()
+    api.mockClear()
+    /* Le minuteur est annulé ; même déclenché à la main, il ne sonde plus rien. */
+    tick()
+    await flushPromises()
+    expect(api).not.toHaveBeenCalled()
+  })
+
+  it("démontage pendant le chargement initial : aucun minuteur installé", async () => {
+    let resolveRoom
+    api.mockImplementation((path) => {
+      if (path === "/api/auth/me") return Promise.resolve(ME)
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path.startsWith("/api/play/rooms/")) return new Promise((resolve) => (resolveRoom = resolve))
+      return Promise.resolve(null)
+    })
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    const { wrapper } = await mountView()
+    /* Le salon n'a pas encore répondu : la page part avant la fin du chargement. */
+    wrapper.unmount()
+    resolveRoom(makeRoom())
+    await flushPromises()
+    expect(pollTick(timeoutSpy)).toBeUndefined()
+  })
+
+  it("salon introuvable (404) : message dédié et sondage arrêté", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    api.mockImplementation((path) => {
+      if (path === "/api/auth/me") return Promise.resolve(ME)
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path.startsWith("/api/play/rooms/")) return Promise.reject(new ApiError(404, "Salon inconnu"))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.get(".error").text()).toContain("Salon introuvable")
+    expect(pollTick(timeoutSpy)).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("un hoquet du sondage n'efface pas l'erreur d'une action et espace les tentatives", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    setupApi({ room: makeRoom({ host_id: GUEST.id, players: [seat(GUEST)] }) })
+    const { wrapper } = await mountView()
+
+    /* Échec d'action : le message doit rester affiché. */
+    api.mockImplementation((path) => {
+      if (path === "/api/play/rooms/ABC234/join") return Promise.reject(new ApiError(409, "Salon complet"))
+      if (path === "/api/auth/me") return Promise.resolve(ME)
+      if (path.startsWith("/api/play/rooms/")) return Promise.reject(new Error("Réseau coupé"))
+      return Promise.resolve(null)
+    })
+    await buttonWith(wrapper, "Rejoindre").trigger("click")
+    await flushPromises()
+    expect(wrapper.get(".error").text()).toContain("Salon complet")
+
+    const tick = pollTick(timeoutSpy, 5000)
+    timeoutSpy.mockClear()
+    tick()
+    await flushPromises()
+    /* Le salon reste affiché, l'erreur d'action aussi, et un avis de sondage s'ajoute. */
+    expect(wrapper.get(".error").text()).toContain("Salon complet")
+    expect(wrapper.find(".play-seat").exists()).toBe(true)
+    expect(wrapper.text()).toContain("Mise à jour interrompue")
+    /* Backoff : la tentative suivante est repoussée à 10 s. */
+    expect(pollTick(timeoutSpy, 10000)).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it("un salon annulé arrête le sondage", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    setupApi({ room: makeRoom({ status: "cancelled" }) })
+    const { wrapper } = await mountView()
+    expect(pollTick(timeoutSpy)).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("choix de deck refusé par l'API : le select revient à sa valeur précédente", async () => {
+    setupApi({
+      room: makeRoom({ players: [seat(HOST, { deck: { id: 7, name: "Fureur" } })] }),
+      decks: [
+        { id: 7, name: "Fureur" },
+        { id: 9, name: "Calme" }
+      ]
+    })
+    const { wrapper } = await mountView()
+    const select = wrapper.get("#room-deck")
+    expect(select.element.value).toBe("7")
+
+    api.mockImplementation((path, options) => {
+      if (path === "/api/play/rooms/ABC234/me" && options?.method === "PUT") {
+        return Promise.reject(new ApiError(409, "Salon verrouillé"))
+      }
+      if (path.startsWith("/api/decks/")) return Promise.resolve(DECK_7)
+      return Promise.resolve(null)
+    })
+    await select.setValue("9")
+    await flushPromises()
+    expect(wrapper.get(".error").text()).toContain("Salon verrouillé")
+    expect(select.element.value).toBe("7")
     wrapper.unmount()
   })
 

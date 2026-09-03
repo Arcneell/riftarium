@@ -77,6 +77,32 @@ describe("ModalDialog", () => {
     expect(document.body.classList.contains("nav-locked")).toBe(false)
   })
 
+  it("Échap ne ferme que la modale du dessus", async () => {
+    const first = await openModal()
+    const second = await openModal()
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+    await nextTick()
+    expect(second.vm.open).toBe(false)
+    expect(first.vm.open).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+    await nextTick()
+    expect(first.vm.open).toBe(false)
+    first.unmount()
+    second.unmount()
+  })
+
+  it("relie le dialogue à son titre plutôt qu'à un aria-label", async () => {
+    const wrapper = await openModal()
+    const dialog = document.querySelector(".modal")
+    const labelledBy = dialog.getAttribute("aria-labelledby")
+    expect(dialog.getAttribute("aria-label")).toBeNull()
+    expect(labelledBy).toBeTruthy()
+    expect(document.getElementById(labelledBy).textContent).toBe("Test")
+    wrapper.unmount()
+  })
+
   it("le fond ferme au clic complet, pas au premier contact du doigt", async () => {
     const wrapper = await openModal()
     const overlay = document.querySelector(".modal-overlay")

@@ -1,14 +1,22 @@
 <script setup>
-import { computed, ref } from "vue"
-import { useRoute } from "vue-router"
+import { onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
 
 const route = useRoute()
+const router = useRouter()
 
-/* Jeton transmis dans le lien reçu par e-mail (?token=…). */
-const token = computed(() => (typeof route.query.token === "string" ? route.query.token : ""))
+/* Jeton transmis dans le lien reçu par e-mail (?token=…) : lu une fois puis gardé
+   en mémoire seulement. */
+const token = ref(typeof route.query.token === "string" ? route.query.token : "")
+
+/* On efface aussitôt le jeton de l'adresse et de l'historique : il ne doit pas rester
+   dans la barre d'adresse, un partage de lien ou un journal de navigation. */
+onMounted(() => {
+  if (token.value) router.replace({ query: {} })
+})
 
 const password = ref("")
 const confirm = ref("")

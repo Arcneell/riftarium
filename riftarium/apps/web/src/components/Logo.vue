@@ -1,7 +1,19 @@
+<script setup>
+import { useId } from "vue"
+
+/* Le logo est rendu deux fois par page (en-tête et pied) : des identifiants de
+   dégradé figés se dupliquaient dans le document, et le second SVG reprenait les
+   `defs` du premier. Un suffixe par instance rend chaque dégradé unique. */
+const uid = useId()
+const prism = `lg-prism-${uid}`
+const gold = `lg-gold-${uid}`
+const glow = `lg-glow-${uid}`
+</script>
+
 <template>
   <svg viewBox="0 0 240 240" class="logo" aria-hidden="true">
     <defs>
-      <linearGradient id="lg-prism" x1="0" y1="0" x2="1" y2="1">
+      <linearGradient :id="prism" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#cf4437" />
         <stop offset=".2" stop-color="#ab7c1a" />
         <stop offset=".4" stop-color="#3f8f50" />
@@ -9,32 +21,32 @@
         <stop offset=".8" stop-color="#7355cf" />
         <stop offset="1" stop-color="#c2439b" />
       </linearGradient>
-      <linearGradient id="lg-gold" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient :id="gold" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#d9bd82" />
         <stop offset=".5" stop-color="#b08a3e" />
         <stop offset="1" stop-color="#8a6a2f" />
       </linearGradient>
-      <radialGradient id="lg-glow" cx=".5" cy=".5" r=".5">
+      <radialGradient :id="glow" cx=".5" cy=".5" r=".5">
         <stop offset="0" stop-color="#35e0d0" stop-opacity=".2" />
         <stop offset="1" stop-color="#35e0d0" stop-opacity="0" />
       </radialGradient>
     </defs>
     <circle cx="120" cy="120" r="112" fill="#0e1c34" />
-    <circle cx="120" cy="120" r="112" fill="none" stroke="url(#lg-gold)" stroke-width="5" />
+    <circle cx="120" cy="120" r="112" fill="none" :stroke="`url(#${gold})`" stroke-width="5" />
     <circle cx="120" cy="120" r="100" fill="none" stroke="#d9bd82" stroke-width="1" opacity=".35" />
     <path
       d="M 120 34 A 86 86 0 1 1 119.9 34"
       fill="none"
-      stroke="url(#lg-prism)"
+      :stroke="`url(#${prism})`"
       stroke-width="7"
       stroke-linecap="round"
       stroke-dasharray="460 80"
       stroke-dashoffset="-30"
       transform="rotate(118 120 120)"
     />
-    <circle cx="120" cy="120" r="62" fill="url(#lg-glow)" />
+    <circle cx="120" cy="120" r="62" :fill="`url(#${glow})`" />
     <g transform="rotate(-12 120 120)">
-      <rect x="92" y="76" width="56" height="82" rx="9" fill="#ffffff" stroke="url(#lg-gold)" stroke-width="3.5" />
+      <rect x="92" y="76" width="56" height="82" rx="9" fill="#ffffff" :stroke="`url(#${gold})`" stroke-width="3.5" />
       <rect x="99" y="83" width="42" height="42" rx="6" fill="none" stroke="#b08a3e" stroke-width="1.4" opacity=".45" />
       <circle cx="120" cy="104" r="10" fill="#0da496" />
       <circle cx="120" cy="104" r="15" fill="none" stroke="#0da496" stroke-width="1.2" opacity=".45" />

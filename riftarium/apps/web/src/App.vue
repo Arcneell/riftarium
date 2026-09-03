@@ -6,6 +6,7 @@ import Logo from "./components/Logo.vue"
 import UserAvatar from "./components/UserAvatar.vue"
 import TraceursNotice from "./components/TraceursNotice.vue"
 import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
+import { useOnline } from "./composables/useOnline.js"
 import {
   LEGAL_NAV,
   CLOSED_BETA,
@@ -64,6 +65,17 @@ function onKeydown(event) {
   }
 }
 
+/* Page dont le code n'est pas en cache et qu'on ouvre sans réseau (router.onError) :
+   le bandeau s'efface au retour du réseau ou à la navigation suivante. */
+const online = useOnline()
+const offlinePage = ref(false)
+function onOfflinePage() {
+  offlinePage.value = true
+}
+watch([online, () => route.path], () => {
+  offlinePage.value = false
+})
+
 /* Session expirée (401 renvoyé par l'API) : direction la connexion, en gardant la page en cours. */
 function onSessionExpired() {
   if (route.path === "/connexion") return
@@ -72,12 +84,15 @@ function onSessionExpired() {
 
 onMounted(async () => {
   window.addEventListener("riftarium:session-expired", onSessionExpired)
+  window.addEventListener("riftarium:offline-page", onOfflinePage)
   window.addEventListener("keydown", onKeydown)
   window.addEventListener("pointerdown", onPointerDown)
   drawerQuery?.addEventListener("change", onDrawerQuery)
   if (!session.token) return
   try {
     const me = await api("/api/auth/me")
+    /* Déconnexion (ou 401) survenue pendant l'appel : ne pas ressusciter la session. */
+    if (!session.token) return
     setSession("1", me.handle, me.avatar_url)
     session.emailVerified = me.email_verified ?? null
     session.isAdmin = me.is_admin ?? false
@@ -88,19 +103,27 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("riftarium:session-expired", onSessionExpired)
+  window.removeEventListener("riftarium:offline-page", onOfflinePage)
   window.removeEventListener("keydown", onKeydown)
   window.removeEventListener("pointerdown", onPointerDown)
   drawerQuery?.removeEventListener("change", onDrawerQuery)
   document.body.classList.remove("nav-locked")
 })
 
+/* Garde de réentrance : deux clics rapides enverraient deux POST /logout et
+   deux router.push. Le bouton est désactivé le temps de l'appel. */
+const loggingOut = ref(false)
+
 async function logout() {
+  if (loggingOut.value) return
+  loggingOut.value = true
   try {
     await api("/api/auth/logout", { method: "POST" })
   } catch {
     /* on ferme la session locale même si le cookie a déjà expiré */
   }
   setSession(null, null)
+  loggingOut.value = false
   router.push("/")
 }
 </script>
@@ -147,7 +170,7 @@ async function logout() {
               <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
               <span>{{ session.handle }}</span>
             </RouterLink>
-            <button class="btn btn-ghost btn-sm" @click="logout">Déconnexion</button>
+            <button class="btn btn-ghost btn-sm" :disabled="loggingOut" @click="logout">Déconnexion</button>
           </template>
           <!-- Desktop : un seul bouton (avatar + pseudo) qui déroule les entrées de compte. -->
           <div v-else-if="session.token" ref="accountRef" class="account">
@@ -175,7 +198,7 @@ async function logout() {
                 <RouterLink v-if="session.isAdmin" role="menuitem" class="nav-admin" to="/admin"
                   >Administration</RouterLink
                 >
-                <button role="menuitem" type="button" @click="logout">Déconnexion</button>
+                <button role="menuitem" type="button" :disabled="loggingOut" @click="logout">Déconnexion</button>
               </div>
             </Transition>
           </div>
@@ -189,6 +212,9 @@ async function logout() {
   </header>
   <div class="prism"></div>
   <EmailVerifyNotice />
+  <div v-if="offlinePage" class="verify-notice" role="status">
+    <p>Hors ligne : cette page n'est pas disponible sans connexion. Les règles restent consultables.</p>
+  </div>
 
   <main>
     <RouterView v-slot="{ Component, route: viewRoute }">

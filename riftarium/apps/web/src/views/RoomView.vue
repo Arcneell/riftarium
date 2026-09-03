@@ -22,8 +22,12 @@ import {
   updateMe
 } from "../play.js"
 
-/* Temps réel par sondage : 5 s côté web (2 s sur mobile, où vit le compteur). */
+/* Temps réel par sondage : 5 s côté web (2 s sur mobile, où vit le compteur).
+   Le minuteur est réarmé après chaque réponse — jamais deux requêtes en vol — et
+   le délai double à chaque échec consécutif jusqu'à une minute, pour ne pas
+   marteler une API en panne. */
 const POLL_MS = 5000
+const POLL_MAX_MS = 60000
 const SEARCH_DEBOUNCE_MS = 300
 
 const route = useRoute()
@@ -37,7 +41,12 @@ const room = ref(null)
 const match = ref(null)
 const current = ref(null)
 const loading = ref(true)
+/* `error` = échec d'une action de l'utilisateur (rejoindre, se déclarer prêt…) ou
+   du chargement initial ; `pollError` = hoquet du sondage silencieux. Deux refs
+   distinctes : un sondage raté ne doit jamais effacer le message d'une action. */
 const error = ref("")
+const pollError = ref("")
+const notFound = ref(false)
 const busy = ref(false)
 
 const codeDraft = ref("")
@@ -46,8 +55,15 @@ const legendQuery = ref("")
 const legendResults = ref([])
 const legendSearching = ref(false)
 
-let poller = null
+let pollTimer = null
+/* Passe à true au démontage : garde-fou pour tout code qui reprend la main après
+   un await (le composant peut disparaître pendant le chargement initial). */
+let stopped = false
+/* Requête de sondage en vol : évite le chevauchement de deux lectures du salon. */
+let polling = false
+let pollFailures = 0
 let legendTimer = null
+let legendSeq = 0
 
 const players = computed(() => [...(room.value?.players || [])].sort((a, b) => (a.seat ?? 0) - (b.seat ?? 0)))
 const myPlayer = computed(() => players.value.find((player) => player.user?.id === me.value?.id) || null)
@@ -84,12 +100,26 @@ async function loadRoom({ silent = false } = {}) {
   if (!silent) loading.value = true
   try {
     room.value = await getRoom(code.value)
-    error.value = ""
     if (room.value.match_id) await loadMatch(room.value.match_id)
     else match.value = null
+    pollFailures = 0
+    pollError.value = ""
+    if (!silent) error.value = ""
   } catch (e) {
-    /* Sondage : on garde le dernier état connu plutôt que de vider la page sur un hoquet réseau. */
-    if (!silent) {
+    pollFailures += 1
+    if (e.status === 404) {
+      /* Le salon n'existe plus (expiré, annulé) ou le code est faux : rien à
+         attendre, on coupe le sondage au lieu de boucler sur un 404. */
+      notFound.value = true
+      stopPolling()
+      room.value = null
+      match.value = null
+      pollError.value = ""
+      error.value = "Salon introuvable : ce code n'existe plus (salon expiré ou annulé)."
+    } else if (silent) {
+      /* Sondage : on garde le dernier état connu plutôt que de vider la page sur un hoquet réseau. */
+      pollError.value = "Mise à jour interrompue — dernier état connu affiché."
+    } else {
       error.value = e.message
       room.value = null
     }
@@ -98,10 +128,52 @@ async function loadRoom({ silent = false } = {}) {
   }
 }
 
+function stopPolling() {
+  clearTimeout(pollTimer)
+  pollTimer = null
+}
+
+/* Délai courant : 5 s, puis 10, 20, 40, plafonné à 60 s tant que ça échoue. */
+function pollDelay() {
+  return Math.min(POLL_MAX_MS, POLL_MS * 2 ** Math.max(0, pollFailures))
+}
+
+function schedulePoll() {
+  stopPolling()
+  if (stopped || notFound.value || settled.value) return
+  pollTimer = setTimeout(poll, pollDelay())
+}
+
+async function poll() {
+  if (stopped || notFound.value || settled.value) return
+  /* Onglet en arrière-plan : on saute le tour (aucune requête) sans perdre le minuteur. */
+  if (polling || (typeof document !== "undefined" && document.hidden)) {
+    schedulePoll()
+    return
+  }
+  polling = true
+  try {
+    await loadRoom({ silent: true })
+  } finally {
+    polling = false
+  }
+  schedulePoll()
+}
+
+/* Retour au premier plan : on rafraîchit sans attendre la fin du minuteur. */
+function onVisibilityChange() {
+  if (typeof document !== "undefined" && !document.hidden && pollTimer) poll()
+}
+
+/* Salon annulé ou partie close : plus rien ne bougera, on arrête net. */
+watch(settled, (value) => {
+  if (value) stopPolling()
+})
+
 /* Le serveur reste seul juge de l'état : join / leave / cancel / me renvoient le
    RoomOut à jour, on le prend tel quel ; sinon (confirm, dispute) on relit. */
 async function run(action) {
-  if (busy.value) return
+  if (busy.value) return false
   busy.value = true
   error.value = ""
   try {
@@ -113,8 +185,10 @@ async function run(action) {
     } else {
       await loadRoom({ silent: true })
     }
+    return true
   } catch (e) {
     error.value = e.message
+    return false
   } finally {
     busy.value = false
   }
@@ -150,14 +224,19 @@ async function legendIdOfDeck(deckId) {
   }
 }
 
-function pickDeck(event) {
-  const value = event.target.value
-  return run(async () => {
+async function pickDeck(event) {
+  const select = event.target
+  const value = select.value
+  /* Le <select> est piloté par le serveur (`:value`) : si le PUT échoue, l'état
+     affiché ne bouge pas et Vue ne repatche rien — on remet la valeur à la main. */
+  const previous = myPlayer.value?.deck?.id ?? ""
+  const ok = await run(async () => {
     const deckId = value ? Number(value) : null
-    const current = myPlayer.value?.legend?.id ?? null
-    const legendId = deckId ? ((await legendIdOfDeck(deckId)) ?? current) : current
+    const currentLegendId = myPlayer.value?.legend?.id ?? null
+    const legendId = deckId ? ((await legendIdOfDeck(deckId)) ?? currentLegendId) : currentLegendId
     await updateMe(code.value, { legend_card_id: legendId, deck_id: deckId, ready: false })
   })
+  if (!ok) select.value = String(previous)
 }
 
 function toggleReady() {
@@ -170,16 +249,20 @@ function toggleReady() {
   )
 }
 
+/* Jeton de séquence : seule la dernière recherche lancée a le droit d'écrire le
+   résultat, sinon une réponse lente écraserait celle d'une frappe plus récente. */
 async function searchLegends(query) {
+  const seq = ++legendSeq
   legendSearching.value = true
   try {
     const payload = await api(`/api/cards?type=Legend&q=${encodeURIComponent(query)}`)
+    if (seq !== legendSeq) return
     const list = Array.isArray(payload) ? payload : payload?.items || []
     legendResults.value = list.slice(0, 12)
   } catch {
-    legendResults.value = []
+    if (seq === legendSeq) legendResults.value = []
   } finally {
-    legendSearching.value = false
+    if (seq === legendSeq) legendSearching.value = false
   }
 }
 
@@ -187,7 +270,10 @@ watch(legendQuery, (value) => {
   clearTimeout(legendTimer)
   const query = value.trim()
   if (!query) {
+    /* Champ vidé : la réponse d'une recherche encore en vol est périmée. */
+    legendSeq += 1
     legendResults.value = []
+    legendSearching.value = false
     return
   }
   legendTimer = setTimeout(() => searchLegends(query), SEARCH_DEBOUNCE_MS)
@@ -199,10 +285,14 @@ function openCode() {
 }
 
 onMounted(async () => {
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange)
+  }
   try {
     me.value = await api("/api/auth/me")
   } catch {
-    /* 401 déjà traité par api() ; sans identité, la page reste en lecture */
+    /* Un 401 est déjà traité par api() (session fermée, App.vue redirige vers la
+       connexion) ; toute autre panne laisse la page en lecture seule. */
   }
   if (!code.value) {
     try {
@@ -210,7 +300,7 @@ onMounted(async () => {
     } catch {
       /* reprise indisponible : la saisie du code suffit */
     }
-    loading.value = false
+    if (!stopped) loading.value = false
     return
   }
   await loadRoom()
@@ -219,14 +309,18 @@ onMounted(async () => {
   } catch {
     /* sans liste de decks, le choix de légende reste possible */
   }
-  poller = setInterval(() => {
-    if (!settled.value) loadRoom({ silent: true })
-  }, POLL_MS)
+  /* Démonté pendant ces attentes : surtout ne pas laisser un minuteur orphelin. */
+  if (stopped) return
+  schedulePoll()
 })
 
 onBeforeUnmount(() => {
-  clearInterval(poller)
+  stopped = true
+  stopPolling()
   clearTimeout(legendTimer)
+  if (typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", onVisibilityChange)
+  }
 })
 </script>
 
@@ -278,6 +372,7 @@ onBeforeUnmount(() => {
           </div>
 
           <p v-if="error" class="error">{{ error }}</p>
+          <p v-if="pollError" class="muted mono" role="status">{{ pollError }}</p>
 
           <ul class="play-seats">
             <li v-for="player in players" :key="player.seat" class="panel play-seat" :class="{ ready: player.ready }">

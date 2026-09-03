@@ -1,3 +1,12 @@
+<script>
+/* Portée module : une grille monte des centaines de tuiles, et ces deux
+   préférences ne changent pas d'une tuile à l'autre — inutile d'interroger
+   matchMedia à chaque instance. */
+const hasMatchMedia = typeof window !== "undefined" && Boolean(window.matchMedia)
+const REDUCED_MOTION = hasMatchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+const FINE_POINTER = hasMatchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches
+</script>
+
 <script setup>
 import { computed, onUnmounted, ref } from "vue"
 import { cardThumb } from "../api.js"
@@ -12,18 +21,19 @@ const props = defineProps({
 const HOVER_DELAY = 450
 
 const visible = ref(false)
-const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches
+/* Les constantes du bloc <script> ne sont pas exposées au template : on les
+   reprend ici pour la classe « instant ». */
+const instant = REDUCED_MOTION
 let timer = 0
 
 function show() {
-  if (props.disabled || !fine) return
+  if (props.disabled || !FINE_POINTER) return
   clearTimeout(timer)
   timer = window.setTimeout(
     () => {
       visible.value = true
     },
-    reduced ? 0 : HOVER_DELAY
+    REDUCED_MOTION ? 0 : HOVER_DELAY
   )
 }
 
@@ -51,9 +61,8 @@ const foil = computed(() => isFoil(props.card))
       <div
         v-if="visible"
         class="card-preview"
-        :class="{ instant: reduced, landscape: card.orientation === 'landscape' }"
-        role="dialog"
-        :aria-label="card.name"
+        :class="{ instant, landscape: card.orientation === 'landscape' }"
+        role="tooltip"
       >
         <div class="card-art" :class="{ foil }">
           <img :src="cardThumb(card.image_url, 460)" :alt="`Aperçu : ${card.name}`" />

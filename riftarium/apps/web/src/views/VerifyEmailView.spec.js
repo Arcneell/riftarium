@@ -64,6 +64,27 @@ describe("VerifyEmailView", () => {
     expect(session.emailVerified).toBe(true)
   })
 
+  it("retire le jeton de l'adresse au montage tout en l'envoyant à l'API", async () => {
+    const { router } = await mountView()
+    expect(api).toHaveBeenCalledWith("/api/auth/verify-email", {
+      method: "POST",
+      body: { token: "jeton-mail" }
+    })
+    expect(router.currentRoute.value.query.token).toBeUndefined()
+  })
+
+  it("n'écrit plus rien après démontage pendant la vérification", async () => {
+    let rejectVerify
+    api.mockImplementation(() => new Promise((resolve, reject) => (rejectVerify = reject)))
+    const { wrapper } = await mountView()
+    expect(wrapper.text()).toContain("Vérification en cours")
+    wrapper.unmount()
+    rejectVerify(new ApiError(400, "Jeton invalide ou expiré"))
+    await flushPromises()
+    /* Aucun warning Vue ni écriture d'état : le composant n'existe plus. */
+    expect(wrapper.vm.state).toBe("loading")
+  })
+
   it("sans jeton dans l'adresse : erreur immédiate, aucun appel à l'API", async () => {
     const { wrapper } = await mountView("/verification-email")
     expect(api).not.toHaveBeenCalled()

@@ -22,6 +22,9 @@ export function useGridMeasure(gridRef, options = {}) {
   const size = ref(config.size)
   let timer = null
   let observer = null
+  /* Nœud réellement observé : la grille peut être remplacée (v-if de la galerie,
+     changement de route réutilisant le composant) et l'observer suivrait l'ancien. */
+  let observed = null
 
   function measure() {
     const viewport = window.innerWidth || 1280
@@ -39,12 +42,16 @@ export function useGridMeasure(gridRef, options = {}) {
     timer = setTimeout(measure, config.debounce)
   }
 
-  /* À rappeler si la grille apparaît après le montage (galerie affichée quand on devient éditeur). */
+  /* À rappeler si la grille apparaît après le montage (galerie affichée quand on devient éditeur).
+     Si le nœud a changé depuis la dernière fois, on se rebranche dessus. */
   function observe() {
-    if (typeof ResizeObserver !== "undefined" && gridRef.value && !observer) {
-      observer = new ResizeObserver(scheduleMeasure)
-      observer.observe(gridRef.value)
-    }
+    if (typeof ResizeObserver === "undefined") return
+    const node = gridRef.value
+    if (!node || node === observed) return
+    observer?.disconnect()
+    observer = new ResizeObserver(scheduleMeasure)
+    observer.observe(node)
+    observed = node
   }
 
   onMounted(() => {
@@ -57,6 +64,7 @@ export function useGridMeasure(gridRef, options = {}) {
     clearTimeout(timer)
     window.removeEventListener("resize", scheduleMeasure)
     observer?.disconnect()
+    observed = null
   })
 
   return { tileMin, size, measure, scheduleMeasure, observe }

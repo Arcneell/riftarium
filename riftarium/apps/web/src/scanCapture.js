@@ -11,29 +11,68 @@ import { enhanceCodeBand } from "./scanOcr.js"
 const TARGET_W = 68
 const TARGET_H = 64
 
-function makeCanvas(width, height) {
-  const canvas = document.createElement("canvas")
+/** Dimensionne (ou redimensionne) un canvas de travail et remet son contexte à neuf.
+    Réaffecter width/height vide le bitmap ET réinitialise l'état du contexte (lissage,
+    transformation), même quand la taille ne change pas : c'est l'idiome canvas. */
+function sizeCanvas({ canvas, ctx }, width, height) {
   canvas.width = Math.max(1, Math.round(width))
   canvas.height = Math.max(1, Math.round(height))
-  const ctx = canvas.getContext("2d")
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
-  return { canvas, ctx }
+}
+
+function makeCanvas(width, height) {
+  const canvas = document.createElement("canvas")
+  const target = { canvas, ctx: canvas.getContext("2d") }
+  sizeCanvas(target, width, height)
+  return target
+}
+
+/* Canvas de travail recyclés. La boucle caméra en demandait ~220 par seconde (17 empreintes
+   × 4 images/s, chacune avec sa réduction en cascade) : autant de canvas et de contextes 2D
+   alloués puis abandonnés au ramasse-miettes, en plein scan, sur mobile.
+   Chaque étape du pipeline a son slot, parce que leurs rôles ne se recouvrent jamais dans
+   une même passe : la région de travail survit aux 17 étapes, la réduction alterne entre
+   deux slots (la cible d'une étape est la source de la suivante), et la sortie est toujours
+   68×64. Un canvas RENDU à l'appelant, lui, n'est jamais recyclé (cf. codeBandImage : la
+   lecture OCR est asynchrone et le relit longtemps après). */
+const pool = new Map()
+
+/** Rend la mémoire des canvas de travail (jusqu'à 560×560 pour la région) une fois le
+    scan quitté : le pool est un singleton de module, rien ne le libérerait sinon. */
+export function releaseCanvasPool() {
+  for (const target of pool.values()) sizeCanvas(target, 1, 1)
+  pool.clear()
+}
+
+function workCanvas(slot, width, height) {
+  const existing = pool.get(slot)
+  if (!existing) {
+    const created = makeCanvas(width, height)
+    pool.set(slot, created)
+    return created
+  }
+  sizeCanvas(existing, width, height)
+  return existing
 }
 
 /** Découpe (sx, sy, sw, sh) de `source`, réduite en étapes successives (÷2 jusqu'à proche de la
     cible, puis taille finale) pour se rapprocher d'un rééchantillonnage propre type Pillow. */
 export function imageDataFromRegion(source, sx, sy, sw, sh) {
-  let { canvas, ctx } = makeCanvas(sw, sh)
+  /* Deux slots alternés : la cible d'une étape devient la source de la suivante, dont la
+     cible est l'autre slot — jamais celui qu'on est en train de lire. */
+  let slot = 0
+  let { canvas, ctx } = workCanvas("down0", sw, sh)
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
 
   while (canvas.width >= TARGET_W * 2 && canvas.height >= TARGET_H * 2) {
-    const step = makeCanvas(canvas.width / 2, canvas.height / 2)
+    slot = 1 - slot
+    const step = workCanvas(`down${slot}`, canvas.width / 2, canvas.height / 2)
     step.ctx.drawImage(canvas, 0, 0, step.canvas.width, step.canvas.height)
     canvas = step.canvas
   }
 
-  const final = makeCanvas(TARGET_W, TARGET_H)
+  const final = workCanvas("out", TARGET_W, TARGET_H)
   final.ctx.drawImage(canvas, 0, 0, TARGET_W, TARGET_H)
   return final.ctx.getImageData(0, 0, TARGET_W, TARGET_H)
 }
@@ -79,6 +118,8 @@ export function codeBandImage(source, cardRect) {
   const band = codeBandRect(cardRect)
   const height = CODE_BAND_PIXELS
   const width = Math.max(1, Math.round((band.sw / band.sh) * height))
+  /* Canvas neuf, hors pool : il repart chez tesseract, qui le relit de façon asynchrone
+     pendant que la boucle caméra continue de capturer. */
   const { canvas, ctx } = makeCanvas(width, height)
   ctx.drawImage(source, band.sx, band.sy, band.sw, band.sh, 0, 0, width, height)
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height)
@@ -190,7 +231,7 @@ const REGION_MAX = 560
 /** Copie la région dans un canvas de travail (dimensions bornées) + facteur d'échelle appliqué. */
 function regionToCanvas(source, { sx, sy, sw, sh }) {
   const scale = Math.min(1, REGION_MAX / Math.max(sw, sh))
-  const { canvas, ctx } = makeCanvas(sw * scale, sh * scale)
+  const { canvas, ctx } = workCanvas("region", sw * scale, sh * scale)
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
   return { canvas, scale: canvas.width / sw }
 }
@@ -199,7 +240,7 @@ function regionToCanvas(source, { sx, sy, sw, sh }) {
 function rotateCanvas(source, quarterTurns) {
   if (quarterTurns % 4 === 0) return source
   const swap = quarterTurns % 2 === 1
-  const { canvas, ctx } = makeCanvas(swap ? source.height : source.width, swap ? source.width : source.height)
+  const { canvas, ctx } = workCanvas("rotate", swap ? source.height : source.width, swap ? source.width : source.height)
   ctx.translate(canvas.width / 2, canvas.height / 2)
   ctx.rotate((quarterTurns * Math.PI) / 2)
   ctx.drawImage(source, -source.width / 2, -source.height / 2)
@@ -209,7 +250,7 @@ function rotateCanvas(source, quarterTurns) {
 /** Sous-canvas d'une région (utilisé seulement avant rotation : la fenêtre d'illustration
     n'est calculable qu'une fois la carte remise à l'endroit). */
 function cropCanvas(source, { sx, sy, sw, sh }) {
-  const { canvas, ctx } = makeCanvas(sw, sh)
+  const { canvas, ctx } = workCanvas("crop", sw, sh)
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
   return canvas
 }

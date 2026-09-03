@@ -20,7 +20,19 @@ const submitting = ref(false)
 const registered = ref(false)
 
 function proceed() {
-  router.push(route.query.suite || "/")
+  /* Seul un chemin interne est accepté (`/…` mais pas `//…`) : une valeur forgée
+     dans ?suite= ne doit jamais servir de redirection ouverte. */
+  const next = String(route.query.suite ?? "")
+  router.push(/^\/(?!\/)/.test(next) ? next : "/")
+}
+
+/* Changer de mode repart d'une ardoise propre : ni erreur de l'autre formulaire,
+   ni mot de passe saisi (le champ change d'autocomplete). */
+function switchMode(next) {
+  if (mode.value === next) return
+  mode.value = next
+  error.value = ""
+  password.value = ""
 }
 
 async function submit() {
@@ -89,8 +101,10 @@ async function submit() {
           <a href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener">GitHub</a>.
         </p>
         <div class="filters" style="margin: 0 0 26px">
-          <button class="filter" :aria-pressed="mode === 'login'" @click="mode = 'login'">Connexion</button>
-          <button class="filter" :aria-pressed="mode === 'register'" @click="mode = 'register'">Inscription</button>
+          <button class="filter" :aria-pressed="mode === 'login'" @click="switchMode('login')">Connexion</button>
+          <button class="filter" :aria-pressed="mode === 'register'" @click="switchMode('register')">
+            Inscription
+          </button>
         </div>
 
         <form class="panel" @submit.prevent="submit">

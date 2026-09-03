@@ -62,6 +62,19 @@ function columnPath(index) {
   ].join(" ")
 }
 
+/* Tout ce dont le template a besoin par jour, calculé une fois : appeler
+   `columnPath(i)`, `xCenter(i)` et `xLabelAnchor(i)` depuis le template les
+   réexécutait à chaque rendu, pour chacun des 30 jours. */
+const columns = computed(() =>
+  props.days.map((day, i) => ({
+    day,
+    d: columnPath(i),
+    x: xCenter(i),
+    label: formatDayShort(day),
+    anchor: xLabelAnchor(i)
+  }))
+)
+
 const linePoints = computed(() =>
   hasLine.value ? props.days.map((_, i) => `${xCenter(i)},${yFor(props.lineValues[i] || 0)}`).join(" ") : ""
 )
@@ -136,13 +149,13 @@ const tooltipRows = computed(() => {
           <text class="chart-axis-text" :x="x0 - 8" :y="yFor(tick) + 3.5" text-anchor="end">{{ tick }}</text>
         </g>
 
-        <!-- Colonnes -->
-        <path v-for="(day, i) in days" :key="day" class="chart-col" :d="columnPath(i)" :fill="color" />
+        <!-- Colonnes. `chart-col` et `chart-band` n'ont aucune règle CSS : ces deux
+             classes servent de point d'accroche aux tests du composant. -->
+        <path v-for="column in columns" :key="column.day" class="chart-col" :d="column.d" :fill="color" />
 
         <!-- Ligne superposée (même axe) -->
         <polyline
           v-if="hasLine"
-          class="chart-line"
           :points="linePoints"
           fill="none"
           :stroke="lineColor"
@@ -174,13 +187,13 @@ const tooltipRows = computed(() => {
         <!-- Étiquettes de dates espacées -->
         <text
           v-for="i in labeledIndexes"
-          :key="`x-${days[i]}`"
+          :key="`x-${columns[i].day}`"
           class="chart-axis-text"
-          :x="xCenter(i)"
+          :x="columns[i].x"
           :y="HEIGHT - 7"
-          :text-anchor="xLabelAnchor(i)"
+          :text-anchor="columns[i].anchor"
         >
-          {{ formatDayShort(days[i]) }}
+          {{ columns[i].label }}
         </text>
 
         <!-- Cibles de survol : toute la bande verticale du jour -->
@@ -197,7 +210,10 @@ const tooltipRows = computed(() => {
         />
       </svg>
 
-      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" role="status">
+      <!-- Infobulle de survol : aria-hidden, pas role="status". Elle change à chaque
+           mouvement de souris et n'a pas d'équivalent clavier : annoncée, elle noyait
+           le lecteur d'écran, qui dispose du tableau « Voir les données ». -->
+      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" aria-hidden="true">
         <span class="chart-tooltip-date">{{ formatDayLong(days[hovered]) }}</span>
         <span v-for="row in tooltipRows" :key="row.label" class="chart-tooltip-row">
           <i class="chart-dot" :style="{ background: row.color }"></i>{{ row.label }} <b>{{ row.value }}</b>

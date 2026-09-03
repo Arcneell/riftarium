@@ -2,7 +2,18 @@
 import { ref, useId } from "vue"
 import { TRACEURS_ACK_KEY } from "../legal.js"
 
-const visible = ref(typeof localStorage !== "undefined" && !localStorage.getItem(TRACEURS_ACK_KEY))
+/* `localStorage.getItem` lève en navigation privée ou stockage bloqué : sans ce
+   try/catch, le bandeau faisait planter le rendu de toute l'application. */
+function acknowledged() {
+  try {
+    return Boolean(localStorage.getItem(TRACEURS_ACK_KEY))
+  } catch {
+    /* stockage indisponible : on montre le bandeau, sans pouvoir le mémoriser */
+    return false
+  }
+}
+
+const visible = ref(!acknowledged())
 
 /* Sur téléphone, le bandeau n'affiche qu'une phrase : en entier il occupait le
    cinquième bas de chaque écran tant qu'il n'était pas fermé. Le texte complet
@@ -25,7 +36,7 @@ function dismiss() {
     v-if="visible"
     class="traceurs-notice"
     :class="{ expanded }"
-    role="dialog"
+    role="region"
     aria-label="Information sur les traceurs"
   >
     <div class="traceurs-copy">
