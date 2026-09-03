@@ -1,7 +1,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { api, cardThumb } from "../api.js"
+import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
 import { RULE_COUNTS } from "../stats.js"
 import CardRiver from "../components/CardRiver.vue"
@@ -9,15 +9,26 @@ import CardRiver from "../components/CardRiver.vue"
 const cardCount = ref(null)
 const setCount = ref(null)
 
-/* Éventail héros : trois cartes portrait chargées depuis l'API pour éviter
-   de coder en dur des hashes CDN qui peuvent changer côté Riot.
+/* Trois cartes « Overnumbered » (numéro au-delà de la taille du set), sans
+   signature ajoutée : Ahri - Nine-Tailed Fox, Lee Sin - Blind Monk,
+   Kai'Sa - Daughter of the Void.
    --halo : chaque carte émet la lumière de son illustration. */
-const FAN_STYLES = [
-  "left:2%; top:60px; rotate:-9deg; z-index:1; --halo:var(--fury)",
-  "left:30%; top:18px; rotate:1deg; z-index:2; --halo:var(--gold)",
-  "left:58%; top:52px; rotate:9deg; z-index:1; --halo:var(--mind)"
+const FAN = [
+  {
+    hash: "e5fe571a8f09c0a9e76345ec32b446480f54617c-1488x2078.png",
+    style: "left:2%; top:60px; rotate:-9deg; z-index:1; --halo:var(--fury)"
+  },
+  {
+    hash: "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
+    style: "left:30%; top:18px; rotate:1deg; z-index:2; --halo:var(--gold)"
+  },
+  {
+    hash: "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png",
+    style: "left:58%; top:52px; rotate:9deg; z-index:1; --halo:var(--mind)"
+  }
 ]
-const fanCards = ref([])
+const cardImg = (hash) =>
+  `https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/${hash}?auto=format&fit=max&w=460&accountingTag=RB`
 
 /* L'éventail du héros est masqué par le CSS sous 761 px : sans ce v-if, le
    téléphone téléchargerait quand même trois visuels de 460 px de large pour rien.
@@ -98,16 +109,9 @@ onMounted(async () => {
     document.head.appendChild(preload)
   }
   try {
-    const [sets, cards, fan] = await Promise.all([
-      api("/api/sets"),
-      api("/api/cards?size=1"),
-      api("/api/cards?size=12&sort=random")
-    ])
+    const [sets, cards] = await Promise.all([api("/api/sets"), api("/api/cards?size=1")])
     setCount.value = sets.length
     cardCount.value = cards.total
-    /* On garde uniquement les cartes portrait (pas de champs de bataille) pour
-       l'éventail héros : les cartes landscape brisent le ratio de la pochette. */
-    fanCards.value = fan.items.filter((c) => c.orientation !== "landscape" && c.image_url).slice(0, 3)
   } catch {
     /* les chiffres arriveront au prochain chargement */
   }
@@ -147,11 +151,11 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-      <div v-if="showFan && fanCards.length" class="hero-fan" aria-hidden="true">
-        <div v-for="(card, i) in fanCards" :key="card.id" v-tilt class="fan-card" :style="FAN_STYLES[i]">
+      <div v-if="showFan" class="hero-fan" aria-hidden="true">
+        <div v-for="card in FAN" :key="card.hash" v-tilt class="fan-card" :style="card.style">
           <div class="card-art">
             <!-- Décoratives : priorité basse pour laisser la bande passante à la cinématique (LCP). -->
-            <img :src="cardThumb(card.image_url, 460)" alt="" loading="eager" fetchpriority="low" />
+            <img :src="cardImg(card.hash)" alt="" loading="eager" fetchpriority="low" />
             <span class="fan-foil"></span>
           </div>
         </div>
