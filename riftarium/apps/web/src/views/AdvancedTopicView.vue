@@ -25,9 +25,12 @@ const related = computed(() =>
   TOPICS.filter((t) => t.category === topic.value?.category && t.slug !== topic.value?.slug).slice(0, 4)
 )
 
-/* Texte officiel : les sections référencées, chargées depuis les règles embarquées. */
+/* Texte officiel : les sections référencées, chargées depuis les règles embarquées.
+   `doc` choisit le document (règles du jeu par défaut, règles de tournoi pour la
+   catégorie Tournoi) : les numéros de section se recoupent d'un document à l'autre. */
 const officialSections = ref([])
 let documents = null
+const officialDoc = computed(() => topic.value?.doc ?? "core")
 
 async function loadOfficial() {
   officialSections.value = []
@@ -38,11 +41,10 @@ async function loadOfficial() {
       documents = await response.json()
     }
     const sections = []
-    for (const document of Object.values(documents)) {
-      for (const chapter of document.chapters) {
-        for (const section of chapter.sections) {
-          if (topic.value.sections?.includes(section.id)) sections.push(section)
-        }
+    const document = documents[officialDoc.value]
+    for (const chapter of document?.chapters ?? []) {
+      for (const section of chapter.sections) {
+        if (topic.value.sections?.includes(section.id)) sections.push(section)
       }
     }
     officialSections.value = topic.value.sections.map((id) => sections.find((s) => s.id === id)).filter(Boolean)
@@ -115,7 +117,7 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
           <template v-if="officialSections.length">
             <h3 class="topic-part">Le texte officiel, en intégralité</h3>
             <p class="muted" style="font-size: 0.8rem; margin-bottom: 16px">
-              <RouterLink :to="`/regles/officielles?doc=core&section=${topic.sections[0]}`"
+              <RouterLink :to="`/regles/officielles?doc=${officialDoc}&section=${topic.sections[0]}`"
                 >Ouvrir dans le lecteur</RouterLink
               >.
             </p>
