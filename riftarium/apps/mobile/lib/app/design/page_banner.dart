@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// En-tête de page comme sur le site : illustration officielle qui se fond dans
-/// le parchemin, sur-titre en capitales, titre Marcellus. Sliver : se rétracte
+/// la nuit, sur-titre en capitales, titre Cinzel. Sliver : se rétracte
 /// au défilement, l'image s'étire au tirage (iOS) et glisse en parallaxe.
 class PageBanner extends StatelessWidget {
   const PageBanner({

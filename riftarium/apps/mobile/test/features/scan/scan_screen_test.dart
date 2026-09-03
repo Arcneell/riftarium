@@ -7,6 +7,7 @@ import 'package:riftarium_mobile/app/theme.dart';
 import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
+import 'package:riftarium_mobile/features/collection/ui/widgets/quantity_stepper.dart';
 import 'package:riftarium_mobile/features/scan/application/scan_controller.dart';
 import 'package:riftarium_mobile/features/scan/ui/scan_result_sheet.dart';
 import 'package:riftarium_mobile/main.dart';
@@ -208,9 +209,15 @@ void main() {
       expect(find.text('1 exemplaire ajouté.'), findsOneWidget);
 
       // Le stepper monte la quantité : le bouton et l'appel la suivent.
-      await tester.tap(find.byTooltip('Un exemplaire de plus'));
+      // (Le même QuantityStepper que la collection : son « + » se trouve
+      // dedans, pas par l'icône seule — le bouton doré en porte une aussi.)
+      final plus = find.descendant(
+        of: find.byType(QuantityStepper),
+        matching: find.byIcon(Icons.add),
+      );
+      await tester.tap(plus);
       await tester.pump();
-      await tester.tap(find.byTooltip('Un exemplaire de plus'));
+      await tester.tap(plus);
       await tester.pumpAndSettle();
       // Le prix suit la quantité : sous-total affiché à côté de l'unitaire.
       expect(find.text('Prix estimé 12,34 € · ×3 ≈ 37,02 €'), findsOneWidget);
@@ -257,7 +264,7 @@ void main() {
     Widget sheet(Widget child) => MediaQuery(
       data: const MediaQueryData(disableAnimations: true),
       child: MaterialApp(
-        theme: buildTheme(Brightness.light),
+        theme: buildTheme(),
         home: Scaffold(
           body: Align(alignment: Alignment.bottomCenter, child: child),
         ),

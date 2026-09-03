@@ -10,9 +10,28 @@ abstract class TokenStore {
 /// Keychain (iOS) / Keystore (Android) via flutter_secure_storage.
 class SecureTokenStore implements TokenStore {
   SecureTokenStore([FlutterSecureStorage? storage])
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? _defaultStorage;
 
   static const _key = 'riftarium_session_token';
+
+  static const _defaultStorage = FlutterSecureStorage(
+    aOptions: androidOptions,
+    iOptions: iosOptions,
+  );
+
+  /// Android : AES-GCM adossé au Keystore, et remise à zéro du conteneur si
+  /// le déchiffrement échoue (Keystore réinitialisé) — mieux vaut redemander
+  /// la connexion qu'une erreur fatale au démarrage.
+  static const androidOptions = AndroidOptions(
+    storageCipherAlgorithm: StorageCipherAlgorithm.AES_GCM_NoPadding,
+    resetOnError: true,
+  );
+
+  /// iOS : jeton lisible seulement après le premier déverrouillage, jamais
+  /// recopié vers un autre appareil (donc ni iCloud ni restauration).
+  static const iosOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
 
   final FlutterSecureStorage _storage;
 

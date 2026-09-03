@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../cards/domain/card.dart';
 import 'game_mode.dart';
 import 'game_state.dart';
@@ -96,6 +98,7 @@ abstract final class GameEngine {
   }) {
     if (state.timedOut) return state;
     final player = state.playerById(playerId);
+    if (player == null) return state;
     final current = state.scoreOfTeam(player.team);
     final next = current + delta;
     if (next < 0) return state;
@@ -115,6 +118,7 @@ abstract final class GameEngine {
   }) {
     final from = state.playerById(fromPlayerId);
     final to = state.playerById(toPlayerId);
+    if (from == null || to == null) return state;
     if (from.team == to.team) return state;
     return addPoint(state, playerId: to.id);
   }
@@ -127,6 +131,7 @@ abstract final class GameEngine {
     int amount = 1,
   }) {
     final player = state.playerById(playerId);
+    if (player == null) return state;
     final next = state.xpOf(player) + amount;
     if (next < 0) return state;
     return state.copyWith(
@@ -151,7 +156,7 @@ abstract final class GameEngine {
   }) {
     if (value < 0) return state;
     final player = state.playerById(playerId);
-    if (state.xpOf(player) == value) return state;
+    if (player == null || state.xpOf(player) == value) return state;
     return state.copyWith(
       xp: Map<String, int>.from(state.xp)..[player.id] = value,
       history: _pushed(state),
@@ -164,7 +169,9 @@ abstract final class GameEngine {
   /// tours supplémentaires ; au bout du dernier, la manche s'arrête. Deux
   /// points d'avance ou plus l'emportent, sinon égalité.
   static GameState nextTurn(GameState state) {
-    if (state.drawn) return state;
+    // Manche finie (victoire ou égalité) : le compte est acquis, l'écran de
+    // fin de manche a la main. Rien ne passe plus.
+    if (state.isOver) return state;
     if (state.timeCalled) {
       final left = state.overtimeTurnsLeft - 1;
       if (left <= 0) return _timeOut(state);
@@ -215,6 +222,7 @@ abstract final class GameEngine {
       return state.copyWith(
         overtimeTurnsLeft: 0,
         drawn: true,
+        endedOnTime: true,
         history: _pushed(state),
       );
     }
@@ -224,6 +232,7 @@ abstract final class GameEngine {
       overtimeTurnsLeft: 0,
       winnerTeam: leader,
       roundsWon: rounds,
+      endedOnTime: true,
       history: _pushed(state),
     );
   }
@@ -251,20 +260,40 @@ abstract final class GameEngine {
 
   /// Manche suivante : les scores et l'XP repartent de zéro, les manches
   /// gagnées et les joueurs restent. L'historique est vidé (on n'annule pas
-  /// au-delà d'une manche). `firstPlayerId` (tournoi : le choix du perdant,
-  /// RT 407.4) fait commencer ce joueur ; sinon l'ordre reste celui de la
-  /// manche précédente. Une fois le temps annoncé, plus de nouvelle manche.
-  static GameState newRound(GameState state, {String? firstPlayerId}) {
-    if (state.mode.isTournament && state.timeCalled) return state;
+  /// au-delà d'une manche).
+  ///
+  /// Ne fait rien tant que la manche en cours n'est pas finie, ni quand la
+  /// rencontre est jouée (deux manches gagnées, ou temps annoncé entre deux
+  /// manches, RT 408.2.d).
+  ///
+  /// `firstPlayerId` fait commencer ce joueur : en tournoi c'est le choix du
+  /// perdant (RT 407.4). Sans choix, le premier joueur est **retiré au sort**
+  /// en mode Match : la manche suivante refait toute la mise en place (486.6),
+  /// tirage compris. Ailleurs, l'ordre reste celui de la manche précédente.
+  /// `random` sert aux tests.
+  static GameState newRound(
+    GameState state, {
+    String? firstPlayerId,
+    Random? random,
+  }) {
+    if (!state.isOver || state.isMatchOver) return state;
+    var first = firstPlayerId;
+    if (first == null &&
+        state.mode == GameMode.match &&
+        state.turnOrder.isNotEmpty) {
+      final draw = random ?? Random();
+      first = state.turnOrder[draw.nextInt(state.turnOrder.length)];
+    }
     return state.copyWith(
       scores: {for (final team in state.teams) team: 0},
       xp: {for (final player in state.players) player.id: 0},
-      turnOrder: _rotated(state.turnOrder, firstPlayerId),
+      turnOrder: _rotated(state.turnOrder, first),
       turnIndex: 0,
       turnNumber: 1,
       round: state.round + 1,
       clearWinner: true,
       drawn: false,
+      endedOnTime: false,
       history: const [],
     );
   }
@@ -289,21 +318,30 @@ abstract final class GameEngine {
           ? moment.overtimeTurnsLeft
           : state.overtimeTurnsLeft,
       drawn: moment.drawn,
+      // Revenir avant la fin au temps rend la manche en cours : elle ne
+      // s'est plus terminée au temps.
+      endedOnTime:
+          state.endedOnTime && (moment.drawn || moment.winnerTeam != null),
       history: history,
     );
   }
 
   /// Remet la partie à zéro sans quitter la table : mêmes joueurs, même mode,
-  /// même limite de temps ; l'horloge de la ronde repart.
+  /// même limite de temps, même premier joueur. En tournoi, l'horloge de la
+  /// ronde **ne repart pas** : le temps court sur la ronde, pas sur la partie
+  /// (RT 604.1). Le rappel du premier tour reste vu s'il l'était.
   static GameState reset(GameState state, {DateTime? startedAt}) => start(
     mode: state.mode,
     players: state.players,
-    firstPlayerId: state.turnOrder.first,
-    startedAt: startedAt,
+    firstPlayerId: state.turnOrder.isEmpty ? null : state.turnOrder.first,
+    startedAt: state.mode.isTournament
+        ? state.startedAt
+        : (startedAt ?? DateTime.now()),
     roundLimit: state.roundLimit,
-  );
+  ).copyWith(hintSeen: state.hintSeen);
 
   /// Renomme un joueur ou lui change sa légende, sans toucher au compte.
+  /// Identifiant inconnu : la liste ressort telle quelle.
   static GameState updatePlayer(
     GameState state, {
     required String playerId,

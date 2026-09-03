@@ -183,7 +183,9 @@ void main() {
     await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
     expect(find.byType(DeckEditorScreen), findsOneWidget);
-    expect(find.text('Mon deck (4)'), findsOneWidget);
+    // 1 légende + 1 champ de bataille + 12 runes + 3 unités : des exemplaires,
+    // pas des lignes.
+    expect(find.text('Mon deck (17)'), findsOneWidget);
   });
 
   testWidgets('un visiteur peut copier le deck et l’aimer', (tester) async {

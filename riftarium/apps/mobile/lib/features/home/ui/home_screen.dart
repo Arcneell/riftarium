@@ -11,17 +11,8 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/profile_action.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../cards/data/cards_api.dart';
-import '../../cards/domain/card.dart';
-
-/// Une carte au hasard à chaque ouverture : le geste du site (« la
-/// cartothèque complète ») ramené à un seul visuel qui brille.
-final randomCardProvider = FutureProvider.autoDispose<RiftCard?>((ref) async {
-  final page = await ref
-      .read(cardsApiProvider)
-      .list(filters: const CardFilters(sort: 'random'), size: 1);
-  return page.items.isEmpty ? null : page.items.first;
-});
+import '../../cards/domain/card_labels.dart';
+import '../application/random_card.dart';
 
 /// Accueil : bannière cinématique, raccourcis vers ce qu'on fait le plus
 /// souvent (scanner, communauté, guides), carte du moment, état du compte.
@@ -116,8 +107,8 @@ class HomeScreen extends ConsumerWidget {
           const SliverToBoxAdapter(
             child: SectionTitle(title: 'Carte du moment'),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+          const SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 18),
             sliver: SliverToBoxAdapter(child: _RandomCard()),
           ),
           if (signedIn && profile != null && profile.stats.isNotEmpty) ...[
@@ -252,6 +243,8 @@ class _QuickTile extends StatelessWidget {
 }
 
 class _RandomCard extends ConsumerWidget {
+  const _RandomCard();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = riftText(context);
@@ -312,8 +305,13 @@ class _RandomCard extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 10),
+                      // Libellés français, comme partout ailleurs : les
+                      // valeurs de l'API sont en anglais.
                       Text(
-                        '${card.type}${card.rarity.isEmpty ? '' : ' · ${card.rarity}'}',
+                        card.rarity.isEmpty
+                            ? typeLabel(card.type)
+                            : '${typeLabel(card.type)} · '
+                                  '${rarityLabel(card.rarity)}',
                         style: text.small,
                       ),
                       const SizedBox(height: 12),

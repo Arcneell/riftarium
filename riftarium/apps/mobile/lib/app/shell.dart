@@ -77,8 +77,8 @@ class AppTab {
   static const barSlots = <int?>[0, 1, null, 4, 5];
 }
 
-/// Tous les onglets indexés comme les branches du routeur.
-List<AppTab> get _allTabs => [...AppTab.values, AppTab.profile];
+/// Tous les onglets, indexés comme les branches du routeur.
+const _allTabs = [...AppTab.values, AppTab.profile];
 
 /// Coque à onglets : barre translucide parchemin, quatre onglets (Accueil,
 /// Cartes · Règles, Profil) et, exactement au centre, le bouton « Jouer »
@@ -133,10 +133,12 @@ class _RiftBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final barColor = RiftColors.paper2.withValues(alpha: 0.96);
+    final barColor = theme.colorScheme.surfaceContainerHighest.withValues(
+      alpha: 0.96,
+    );
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final tabs = _allTabs;
+    const tabs = _allTabs;
     final slots = <Widget>[
       for (final index in AppTab.barSlots)
         Expanded(

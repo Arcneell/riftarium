@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,7 +55,9 @@ class _TrackedStartPanelState extends ConsumerState<TrackedStartPanel> {
       final code = await action();
       if (!mounted) return;
       ref.invalidate(currentPlayProvider);
-      context.push(AppRoutes.room(code));
+      // Le salon se ferme par la navigation, pas par ce panneau : on n'attend
+      // pas la valeur de retour de la route.
+      unawaited(context.push(AppRoutes.room(code)));
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {

@@ -160,6 +160,48 @@ void main() {
     );
   });
 
+  testWidgets('la remise à zéro vide la recherche et annule la frappe', (
+    tester,
+  ) async {
+    final server = DecksFakeApi({
+      'GET /community/legends': legends,
+      'GET /community/decks': communityPageJson(
+        items: [communityDeckJson(id: 1)],
+      ),
+    });
+    await tester.pumpWidget(app(server));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'ahri');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(
+      server.on('GET', '/community/decks').last.queryParameters['q'],
+      'ahri',
+    );
+
+    // Une nouvelle frappe est encore en attente quand on remet à zéro : elle
+    // ne doit pas réappliquer le texte effacé.
+    await tester.enterText(find.byType(TextField).first, 'zed');
+    final reset = find.textContaining('Réinitialiser (');
+    await tester.drag(find.byType(ListView).first, const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(reset);
+    await tester.pumpAndSettle();
+    await tester.tap(reset);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      isEmpty,
+    );
+    expect(
+      server.on('GET', '/community/decks').last.queryParameters['q'],
+      isNull,
+    );
+  });
+
   testWidgets('sans compte, aimer un deck invite à se connecter', (
     tester,
   ) async {

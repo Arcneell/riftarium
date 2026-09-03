@@ -10,6 +10,9 @@ import '../domain/public_profile.dart';
 /// Taille de page de la collection d'un profil public.
 const profileCollectionPageSize = 60;
 
+/// Taille de page de l'historique d'un profil public.
+const profileHistoryPageSize = 20;
+
 /// Deux caractères au minimum, comme côté API (`GET /users/search`).
 const userSearchMinLength = 2;
 
@@ -47,12 +50,55 @@ final userSearchProvider = FutureProvider.autoDispose
       return ref.watch(socialApiProvider).search(trimmed);
     });
 
-/// Historique public d'un joueur (chargé seulement quand la section est
-/// visible).
-final profileHistoryProvider = FutureProvider.autoDispose
-    .family<HistoryPage, String>(
-      (ref, handle) => ref.watch(socialApiProvider).history(handle, size: 20),
+final profileHistoryProvider = AsyncNotifierProvider.autoDispose
+    .family<ProfileHistoryController, HistoryFeed, String>(
+      ProfileHistoryController.new,
     );
+
+/// Historique public d'un joueur (chargé seulement quand la section est
+/// visible) : première page au chargement, les suivantes à la demande.
+class ProfileHistoryController
+    extends AutoDisposeFamilyAsyncNotifier<HistoryFeed, String> {
+  bool _disposed = false;
+
+  String get handle => arg;
+
+  @override
+  Future<HistoryFeed> build(String arg) async {
+    ref.onDispose(() => _disposed = true);
+    final page = await ref
+        .watch(socialApiProvider)
+        .history(arg, size: profileHistoryPageSize);
+    return HistoryFeed(items: page.items, total: page.total, page: page.page);
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.loadingMore || !current.hasMore) return;
+    state = AsyncData(current.copyWith(loadingMore: true));
+    try {
+      final next = await ref
+          .read(socialApiProvider)
+          .history(
+            handle,
+            page: current.page + 1,
+            size: profileHistoryPageSize,
+          );
+      if (_disposed) return;
+      state = AsyncData(
+        current.copyWith(
+          items: [...current.items, ...next.items],
+          page: next.page,
+          total: next.total,
+          loadingMore: false,
+        ),
+      );
+    } catch (_) {
+      if (!_disposed) state = AsyncData(current.copyWith(loadingMore: false));
+      rethrow;
+    }
+  }
+}
 
 final publicProfileProvider = AsyncNotifierProvider.autoDispose
     .family<PublicProfileController, PublicProfile, String>(
@@ -82,7 +128,7 @@ class PublicProfileController
   Future<void> toggleFollow() async {
     final current = state.valueOrNull;
     if (current == null || current.isMe) return;
-    final next = !current.isFollowed;
+    final next = !(current.isFollowed ?? false);
     state = AsyncData(
       current.copyWith(
         isFollowed: next,

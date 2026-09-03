@@ -442,8 +442,8 @@ int _compareNumbers(String a, String b) {
   final rankA = _numberRank(a);
   final rankB = _numberRank(b);
   if (rankA != rankB) return rankA - rankB;
-  final valueA = int.parse(a.substring(rankA == 2 ? 2 : rankA));
-  final valueB = int.parse(b.substring(rankB == 2 ? 2 : rankB));
+  final valueA = int.parse(a.substring(rankA));
+  final valueB = int.parse(b.substring(rankB));
   if (valueA != valueB) return valueA - valueB;
   return a.compareTo(b);
 }

@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../app/design/reveal.dart';
+import '../../../app/design/rich_text.dart';
 import '../../../app/theme.dart';
 import '../domain/rules.dart';
-import 'rule_rich_text.dart';
 
 /// Rendu d'une règle : numéro doré, indentation selon `depth`, texte enrichi
 /// (glyphes et mots-clés comme sur les cartes), exemples en encart et renvois
@@ -54,7 +54,13 @@ class RuleEntryView extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                ...ruleTextSpans(context, entry.text, style: text.body),
+                ...riftRichSpans(
+                  context,
+                  entry.text,
+                  style: text.body,
+                  markdownBold: true,
+                  shortTokens: true,
+                ),
               ],
             ),
             style: text.body,
@@ -111,7 +117,12 @@ class _ExampleBox extends StatelessWidget {
         children: [
           Text('Exemple'.toUpperCase(), style: styles.eyebrow),
           const SizedBox(height: 4),
-          RuleRichText(text, style: styles.small.copyWith(color: styles.ink)),
+          RiftRichText(
+            text,
+            style: styles.small.copyWith(color: styles.ink),
+            markdownBold: true,
+            shortTokens: true,
+          ),
         ],
       ),
     );
@@ -128,24 +139,30 @@ class _ReferenceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
+    // Sans action (règle affichée hors de sa section), le renvoi n'est qu'un
+    // libellé : il doit se voir comme tel plutôt que comme un lien mort.
+    final enabled = onTap != null;
     return PressScale(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: RiftColors.hex.withValues(alpha: 0.5)),
-          color: RiftColors.hex.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(RiftRadius.full),
-        ),
-        // Le renvoi tient sur une ligne : dans un `Wrap`, un libellé long
-        // pousserait la puce au-delà de la largeur de l'écran.
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 260),
-          child: Text(
-            '→ ${reference.number} ${reference.label}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: text.mono.copyWith(color: RiftColors.calmText),
+      child: Opacity(
+        opacity: enabled ? 1 : 0.45,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: RiftColors.hex.withValues(alpha: 0.5)),
+            color: RiftColors.hex.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(RiftRadius.full),
+          ),
+          // Le renvoi tient sur une ligne : dans un `Wrap`, un libellé long
+          // pousserait la puce au-delà de la largeur de l'écran.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260),
+            child: Text(
+              '→ ${reference.number} ${reference.label}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.mono.copyWith(color: RiftColors.calmText),
+            ),
           ),
         ),
       ),

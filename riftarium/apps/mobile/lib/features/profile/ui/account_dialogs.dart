@@ -7,38 +7,36 @@ import '../../../app/design/reveal.dart';
 import '../../../app/theme.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../../app/widgets/auth_widgets.dart' show AuthError;
 
 /// Changement de mot de passe. En cas de succès, la session locale est fermée
 /// (jeton révoqué par l'API) et un message invite à se reconnecter.
-Future<void> showChangePasswordDialog(BuildContext context, WidgetRef ref) {
+Future<void> showChangePasswordDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
-    builder: (_) => _ChangePasswordDialog(ref: ref),
+    builder: (_) => const _ChangePasswordDialog(),
   );
 }
 
 /// Suppression du compte : mot de passe et pseudo exigés, comme sur le site.
-Future<void> showDeleteAccountDialog(
-  BuildContext context,
-  WidgetRef ref,
-  String handle,
-) {
+Future<void> showDeleteAccountDialog(BuildContext context, String handle) {
   return showDialog<void>(
     context: context,
-    builder: (_) => _DeleteAccountDialog(ref: ref, handle: handle),
+    builder: (_) => _DeleteAccountDialog(handle: handle),
   );
 }
 
-class _ChangePasswordDialog extends StatefulWidget {
-  const _ChangePasswordDialog({required this.ref});
-
-  final WidgetRef ref;
+class _ChangePasswordDialog extends ConsumerStatefulWidget {
+  const _ChangePasswordDialog();
 
   @override
-  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+  ConsumerState<_ChangePasswordDialog> createState() =>
+      _ChangePasswordDialogState();
 }
 
-class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+/// Le dialogue tient son propre `ref` : garder celui de l'écran appelant
+/// revenait à s'en servir après la disparition de ce widget.
+class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   final _current = TextEditingController();
   final _next = TextEditingController();
   final _confirm = TextEditingController();
@@ -70,7 +68,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     });
     final navigator = Navigator.of(context);
     try {
-      await widget.ref
+      await ref
           .read(authControllerProvider.notifier)
           .changePassword(
             currentPassword: _current.text,
@@ -133,17 +131,17 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   }
 }
 
-class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog({required this.ref, required this.handle});
+class _DeleteAccountDialog extends ConsumerStatefulWidget {
+  const _DeleteAccountDialog({required this.handle});
 
-  final WidgetRef ref;
   final String handle;
 
   @override
-  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+  ConsumerState<_DeleteAccountDialog> createState() =>
+      _DeleteAccountDialogState();
 }
 
-class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
   final _password = TextEditingController();
   final _handle = TextEditingController();
   bool _busy = false;
@@ -167,7 +165,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     });
     final navigator = Navigator.of(context);
     try {
-      await widget.ref
+      await ref
           .read(authControllerProvider.notifier)
           .deleteAccount(password: _password.text, handle: _handle.text.trim());
       if (!mounted) return;
@@ -264,7 +262,7 @@ class _ParchmentDialog extends StatelessWidget {
                 ...children,
                 if (error != null) ...[
                   const SizedBox(height: 14),
-                  _DialogError(message: error!),
+                  AuthError(message: error!),
                 ],
                 const SizedBox(height: 20),
                 Row(
@@ -280,29 +278,6 @@ class _ParchmentDialog extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DialogError extends StatelessWidget {
-  const _DialogError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = riftText(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: RiftColors.fury.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(RiftRadius.sm),
-        border: Border.all(color: RiftColors.fury.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        message,
-        style: text.small.copyWith(color: RiftColors.furyText),
       ),
     );
   }

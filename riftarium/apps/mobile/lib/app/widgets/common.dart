@@ -19,7 +19,6 @@ class SignInRequired extends StatelessWidget {
     this.returnTo,
     this.art,
     this.eyebrow,
-    this.extra,
   });
 
   final String title;
@@ -31,9 +30,6 @@ class SignInRequired extends StatelessWidget {
   /// Illustration de la bannière (`RiftBanners.*`) ; cinématique par défaut.
   final String? art;
   final String? eyebrow;
-
-  /// Contenu supplémentaire sous l'invitation (ex. lien vers la communauté).
-  final Widget? extra;
 
   @override
   Widget build(BuildContext context) {
@@ -52,45 +48,33 @@ class SignInRequired extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
             sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Reveal(
-                    child: RiftPanel(
-                      raised: true,
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Compte requis'.toUpperCase(),
-                            style: text.eyebrow,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(message, style: text.body),
-                          const SizedBox(height: 18),
-                          GoldButton(
-                            label: 'Se connecter',
-                            icon: Icons.login,
-                            onPressed: () =>
-                                context.push(AppRoutes.loginFrom(from)),
-                          ),
-                          const SizedBox(height: 4),
-                          Center(
-                            child: TextButton(
-                              onPressed: () => context.push(AppRoutes.register),
-                              child: const Text('Créer un compte'),
-                            ),
-                          ),
-                        ],
+              child: Reveal(
+                child: RiftPanel(
+                  raised: true,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Compte requis'.toUpperCase(), style: text.eyebrow),
+                      const SizedBox(height: 6),
+                      Text(message, style: text.body),
+                      const SizedBox(height: 18),
+                      GoldButton(
+                        label: 'Se connecter',
+                        icon: Icons.login,
+                        onPressed: () =>
+                            context.push(AppRoutes.loginFrom(from)),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.push(AppRoutes.register),
+                          child: const Text('Créer un compte'),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (extra != null) ...[
-                    const SizedBox(height: 16),
-                    Reveal(index: 1, child: extra!),
-                  ],
-                ],
+                ),
               ),
             ),
           ),

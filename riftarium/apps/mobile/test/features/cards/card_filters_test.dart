@@ -89,16 +89,13 @@ void main() {
       expect(sets, hasLength(2));
       expect(sets.first.setId, 'OGN');
       expect(sets.first.label, 'Origines');
-      expect(sets.first.cardCount, 298);
-      expect(sets.first.publishedOn, '2025-10-31');
+      expect(sets.last.setId, 'UNL');
     });
 
     test('/prices/meta porte la fraîcheur et l’origine des prix', () {
       final meta = PricesMeta.fromJson(pricesMetaJson);
 
-      expect(meta.source, 'tcgplayer');
-      expect(meta.rate, 0.92);
-      expect(meta.pricedCards, 512);
+      expect(meta.updatedDay, '2026-08-20');
       expect(meta.note, contains('TCGplayer'));
       expect(meta.note, contains('20/08/2026'));
     });

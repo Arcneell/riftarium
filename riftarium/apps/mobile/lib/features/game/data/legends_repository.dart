@@ -18,10 +18,8 @@ const Duration kLegendsCacheMaxAge = Duration(days: 7);
 /// Une légende et ses variantes (même nom canonique : normale, alt-art,
 /// overnumbered, signature).
 class LegendGroup {
-  LegendGroup({required this.riftboundId, required List<RiftCard> variants})
+  LegendGroup({required List<RiftCard> variants})
     : variants = List.unmodifiable(variants);
-
-  final String riftboundId;
 
   /// Version normale d'abord, puis alt-art, overnumbered, signature.
   final List<RiftCard> variants;
@@ -173,7 +171,7 @@ List<LegendGroup> groupLegends(List<RiftCard> cards) {
   final groups = <LegendGroup>[];
   for (final entry in byId.entries) {
     final variants = entry.value..sort(_byVariant);
-    groups.add(LegendGroup(riftboundId: entry.key, variants: variants));
+    groups.add(LegendGroup(variants: variants));
   }
   groups.sort((a, b) => _fold(a.name).compareTo(_fold(b.name)));
   return groups;

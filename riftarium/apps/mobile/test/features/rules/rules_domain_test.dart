@@ -147,4 +147,58 @@ void main() {
     expect(foldForSearch('Cœur'), 'coeur');
     expect(foldForSearch('l’unité'), "l'unite");
   });
+
+  test('le repliage garde la trace des index d’origine', () {
+    final folded = foldForSearchWithOffsets('Cœur');
+    expect(folded.folded, 'coeur');
+    // « œ » (index 1) produit deux lettres qui renvoient toutes deux vers lui.
+    expect(folded.offsets, [0, 1, 1, 2, 3]);
+  });
+
+  test('l’extrait reste aligné sur le texte malgré une ligature', () {
+    // « cœur » se replie en cinq lettres pour quatre : sans correspondance
+    // d'index, l'extrait démarrerait un caractère trop loin.
+    final text = 'cœur B${'a' * 59}MOTCLE${'z' * 200}';
+    final hit = searchRules(
+      RulesDocument.fromJson({
+        'core': {
+          'chapters': [
+            {
+              'title': 'Chapitre',
+              'sections': [
+                {
+                  'title': 'Section',
+                  'entries': [
+                    {'number': '900.', 'id': '900', 'text': text},
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      'motcle',
+    ).single;
+
+    expect(hit.snippet, startsWith('… B${'a' * 10}'));
+  });
+
+  test('parseRuleDate lit les dates françaises du document', () {
+    expect(parseRuleDate('16 juillet 2026'), DateTime.utc(2026, 7, 16));
+    expect(parseRuleDate('5 août 2026'), DateTime.utc(2026, 8, 5));
+    expect(parseRuleDate('bientôt'), isNull);
+  });
+
+  test('peekRulesUpdatedAt lit la date sans décoder le document', () {
+    expect(peekRulesUpdatedAt(kRulesFixtureSource), DateTime.utc(2026, 7, 16));
+    // La plus récente des deux dates l'emporte.
+    expect(
+      peekRulesUpdatedAt(
+        '{"a":{"updated":"1 mai 2026"},'
+        '"b":{"updated":"3 juin 2026"}}',
+      ),
+      DateTime.utc(2026, 6, 3),
+    );
+    expect(peekRulesUpdatedAt('{}'), isNull);
+  });
 }

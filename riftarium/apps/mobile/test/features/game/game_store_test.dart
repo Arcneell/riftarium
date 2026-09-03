@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riftarium_mobile/features/cards/domain/card.dart';
 import 'package:riftarium_mobile/features/game/data/game_store.dart';
 import 'package:riftarium_mobile/features/game/domain/game_engine.dart';
-import 'package:riftarium_mobile/features/game/domain/saved_table.dart';
 import 'package:riftarium_mobile/features/game/domain/game_mode.dart';
+import 'package:riftarium_mobile/features/game/domain/player.dart';
+import 'package:riftarium_mobile/features/game/domain/saved_table.dart';
+
+import 'support/in_memory_game_store.dart';
 
 void main() {
   makeGame() => GameEngine.start(
@@ -26,7 +31,7 @@ void main() {
     expect(restored, isNotNull);
     expect(restored!.mode, GameMode.match);
     expect(restored.scoreOfTeam(0), 1);
-    expect(restored.xpOf(restored.playerById('p1')), 2);
+    expect(restored.xpOf(restored.playerById('p1')!), 2);
 
     await store.clear();
     expect(await store.read(), isNull);
@@ -67,6 +72,49 @@ void main() {
       expect(await store.read(), isNull);
     },
   );
+
+  test('la table retient légendes, équipes et durée de ronde', () {
+    const legend = RiftCard(
+      id: 'OGN-001',
+      riftboundId: 'RB-JINX',
+      name: 'Jinx',
+      setId: 'OGN',
+      type: 'Legend',
+      rarity: 'Épique',
+      domains: ['Chaos'],
+      tags: [],
+      collectorNumber: 12,
+      alternateArt: true,
+    );
+    final table = SavedTable(
+      mode: GameMode.magmaChamber,
+      players: [
+        for (var seat = 0; seat < 4; seat++)
+          Player(
+            id: 'p\$seat',
+            name: 'Joueur \${seat + 1}',
+            seat: seat,
+            // Équipes croisées : ce n'est pas la répartition par défaut.
+            team: seat.isEven ? 1 : 0,
+            legend: seat == 0 ? legend : null,
+          ),
+      ],
+      roundLimit: const Duration(minutes: 45),
+    );
+
+    final back = SavedTable.fromJson(jsonDecode(jsonEncode(table.toJson())))!;
+    expect(back.mode, GameMode.magmaChamber);
+    expect(back.players.map((player) => player.team), [1, 0, 1, 0]);
+    expect(back.players.first.legend?.name, 'Jinx');
+    expect(back.players.first.legend?.alternateArt, isTrue);
+    expect(back.players.last.legend, isNull);
+    expect(back.roundLimit, const Duration(minutes: 45));
+
+    // Table d'avant ce champ : la durée repart de la valeur par défaut.
+    final old = Map<String, dynamic>.from(table.toJson())
+      ..remove('round_limit_s');
+    expect(SavedTable.fromJson(old)!.roundLimit, isNull);
+  });
 
   test('la dernière table survit à l’effacement de la partie', () async {
     final directory = await Directory.systemTemp.createTemp('riftarium-game');

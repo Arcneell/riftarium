@@ -2,6 +2,7 @@ import '../../cards/domain/card.dart';
 import '../../game/domain/card_codec.dart';
 import '../../play/domain/play_stats.dart';
 import 'achievement.dart';
+import 'api_date.dart';
 
 /// Ce que le joueur accepte de montrer (`PublicProfileOut.visibility`).
 /// Valeurs par défaut du contrat : tout est fermé sauf les decks et les hauts
@@ -128,7 +129,7 @@ class SocialUser {
     id: (json['id'] as num?)?.toInt() ?? 0,
     handle: (json['handle'] as String?) ?? '',
     avatarUrl: json['avatar_url'] as String?,
-    lastMatchAt: DateTime.tryParse('${json['last_match_at']}'),
+    lastMatchAt: parseApiDate(json['last_match_at']),
   );
 
   static List<SocialUser> listFrom(Object? source) =>
@@ -141,7 +142,8 @@ class SocialUser {
   final String handle;
   final String? avatarUrl;
 
-  /// Dernier match suivi (liste des suivis) : null si aucun.
+  /// Dernier match suivi de ce joueur, quel qu'en soit l'adversaire (liste des
+  /// suivis seulement) : null s'il n'en a aucun.
   final DateTime? lastMatchAt;
 
   String get initial =>
@@ -174,7 +176,7 @@ class PublicProfile {
     this.avatarUrl,
     this.createdAt,
     this.isMe = false,
-    this.isFollowed = false,
+    this.isFollowed,
     this.followersCount = 0,
     this.followingCount = 0,
     this.stats,
@@ -192,9 +194,11 @@ class PublicProfile {
       handle: (json['handle'] as String?) ?? '',
       bio: (json['bio'] as String?) ?? '',
       avatarUrl: json['avatar_url'] as String?,
-      createdAt: DateTime.tryParse('${json['created_at']}'),
+      createdAt: parseApiDate(json['created_at']),
       isMe: json['is_me'] == true,
-      isFollowed: json['is_followed'] == true,
+      isFollowed: json['is_followed'] is bool
+          ? json['is_followed'] as bool
+          : null,
       followersCount: (json['followers_count'] as num?)?.toInt() ?? 0,
       followingCount: (json['following_count'] as num?)?.toInt() ?? 0,
       visibility: ProfileVisibility.fromJson(json['visibility']),
@@ -224,7 +228,10 @@ class PublicProfile {
   final String? avatarUrl;
   final DateTime? createdAt;
   final bool isMe;
-  final bool isFollowed;
+
+  /// Null hors session : l'API ne répond `is_followed` qu'à un visiteur
+  /// connecté. « Suivre » ne veut rien dire pour un anonyme.
+  final bool? isFollowed;
   final int followersCount;
   final int followingCount;
   final ProfileVisibility visibility;

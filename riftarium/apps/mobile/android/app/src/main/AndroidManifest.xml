@@ -11,9 +11,14 @@
     <!-- Le plugin camera déclare camera.any sans required : on le rend optionnel
          pour ne pas exclure les appareils sans caméra (le scan est facultatif). -->
     <uses-feature android:name="android.hardware.camera.any" android:required="false" tools:replace="android:required" />
+    <!-- allowBackup="false" : le jeton de session vit dans le Keystore, qu'une
+         sauvegarde Android ne peut pas restaurer sur un autre appareil ; une
+         restauration rendrait la session illisible plutôt qu'absente. Le reste
+         des données locales vient de l'API et se retélécharge. -->
     <application
         android:label="Riftarium"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -42,6 +47,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/cartes" />
                 <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/decks" />
+                <!-- Salon de partie suivie : même chemin que le site. -->
+                <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/salon" />
+                <!-- Profil public : le site le publie sous /u/<pseudo>, chemin
+                     que le routeur mobile sert en plus de /joueur/<pseudo>. -->
+                <data android:scheme="https" android:host="riftarium.re" android:pathPrefix="/u/" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

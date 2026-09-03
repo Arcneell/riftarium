@@ -1,14 +1,14 @@
-/// Les cinq formats officiels (règles 481 à 489), plus le match de tournoi
-/// (règles de tournoi 404 à 408, 604).
+/// Les cinq formats officiels (section 481 « Modes de jeu », règles 485 à
+/// 489), plus le match de tournoi (règles de tournoi 404 à 408, 604).
 ///
 /// Chaque mode fixe le nombre de joueurs, le score de victoire, le nombre de
 /// manches gagnantes, l'ordre des tours et les ajustements du premier tour
 /// rappelés en début de partie.
 enum GameMode {
-  /// 481 — 1 contre 1, une manche sèche.
+  /// 485 — 1 contre 1, une manche sèche.
   duel,
 
-  /// 482 — 1 contre 1 en deux manches gagnantes.
+  /// 486 — 1 contre 1 en deux manches gagnantes.
   match,
 
   /// Tournoi (RT 404) — 1 contre 1 en deux manches gagnantes, ronde
@@ -16,10 +16,10 @@ enum GameMode {
   /// choisit ensuite, fin de match au temps.
   tournament,
 
-  /// 486 — chacun pour soi à trois.
+  /// 487 — chacun pour soi à trois.
   skirmish,
 
-  /// 487 — chacun pour soi à quatre.
+  /// 488 — chacun pour soi à quatre.
   war,
 
   /// 489 — deux équipes de deux, points partagés.
@@ -70,7 +70,9 @@ enum GameMode {
   /// Score à atteindre lors d'un nettoyage pour l'emporter (472).
   int get victoryScore => this == GameMode.magmaChamber ? 11 : 8;
 
-  /// Manches à gagner pour remporter la rencontre.
+  /// Manches à gagner pour remporter la rencontre. Le format à trois manches
+  /// gagnantes (grands tournois, RT 404.2.a) n'est pas offert : deux manches
+  /// couvrent le match du commerce et la ronde suisse.
   int get roundsToWin =>
       this == GameMode.match || this == GameMode.tournament ? 2 : 1;
 
@@ -97,13 +99,24 @@ enum GameMode {
       'Pas de réserve en première partie. Chaque changement de score '
           's’annonce et s’approuve à deux.',
     ],
-    GameMode.skirmish || GameMode.war => const [
+    GameMode.skirmish => const [
       'Le premier joueur ne pioche pas à sa première pioche.',
       'Le dernier joueur canalise une rune de plus à sa première canalisation.',
     ],
+    // Guerre : quatre joueurs pour trois champs de bataille, ceux du premier
+    // joueur sont retirés (488.4.b), et il ne pioche pas (488.7).
+    GameMode.war => const [
+      'Le premier joueur retire ses champs de bataille.',
+      'Le premier joueur ne pioche pas à sa première pioche.',
+      'Le dernier joueur canalise une rune de plus à sa première canalisation.',
+    ],
+    // Chambre magmatique : mêmes ajustements qu'à quatre (489.7), en plus de
+    // l'alternance des équipes (489.5.c).
     GameMode.magmaChamber => const [
       'Les tours alternent entre les deux équipes.',
       'Les coéquipiers marquent, gagnent et perdent ensemble.',
+      'Le premier joueur ne pioche pas à sa première pioche.',
+      'Le dernier joueur canalise une rune de plus à sa première canalisation.',
     ],
   };
 }

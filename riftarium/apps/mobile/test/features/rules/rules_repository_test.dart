@@ -24,10 +24,14 @@ class _FakeAssets implements RulesAssetLoader {
 
 /// Cache en mémoire à la place du dossier documents.
 class _MemoryCache implements RulesCacheStore {
-  _MemoryCache([this.stored]);
+  _MemoryCache([this.stored, this.writable = true]);
 
   String? stored;
+
+  /// Simule un disque plein : l'écriture échoue.
+  final bool writable;
   int writes = 0;
+  int clears = 0;
 
   @override
   Future<String?> read() async => stored;
@@ -35,8 +39,15 @@ class _MemoryCache implements RulesCacheStore {
   @override
   Future<bool> write(String source) async {
     writes++;
+    if (!writable) return false;
     stored = source;
     return true;
+  }
+
+  @override
+  Future<void> clear() async {
+    clears++;
+    stored = null;
   }
 }
 
@@ -70,13 +81,42 @@ void main() {
     expect(document.core?.updated, '16 juillet 2026');
   });
 
-  test('le fichier du dossier documents est prioritaire sur l’asset', () async {
+  test('cache plus récent que l’asset : le cache gagne', () async {
     final assets = _FakeAssets(kRulesFixtureSource);
     final cache = _MemoryCache(jsonEncode(rulesFixtureUpdated()));
     final document = await build(assets: assets, cache: cache).load();
 
-    expect(assets.loaded, isEmpty);
     expect(document.core?.updated, '20 août 2026');
+    // Le fichier téléchargé reste en place.
+    expect(cache.clears, 0);
+    expect(cache.stored, isNotNull);
+  });
+
+  test('asset plus récent que le cache : le cache périmé est jeté', () async {
+    // L'application a été mise à jour avec un texte plus récent que celui
+    // téléchargé la dernière fois.
+    final assets = _FakeAssets(
+      jsonEncode(rulesFixtureUpdated(updated: '5 septembre 2026')),
+    );
+    final cache = _MemoryCache(
+      jsonEncode(rulesFixtureUpdated(updated: '20 août 2026')),
+    );
+    final document = await build(assets: assets, cache: cache).load();
+
+    expect(document.core?.updated, '5 septembre 2026');
+    expect(cache.clears, 1);
+    expect(cache.stored, isNull);
+  });
+
+  test('même date des deux côtés : le cache est conservé', () async {
+    final assets = _FakeAssets(kRulesFixtureSource);
+    final cache = _MemoryCache(
+      jsonEncode(rulesFixtureUpdated(updated: '16 juillet 2026', ruleCount: 9)),
+    );
+    final document = await build(assets: assets, cache: cache).load();
+
+    expect(document.core?.ruleCount, 9);
+    expect(cache.clears, 0);
   });
 
   test('un cache illisible ne bloque pas : retour à l’asset', () async {
@@ -118,9 +158,10 @@ void main() {
       );
 
       final current = await repository.load();
-      final fresh = await repository.fetchUpdate(current);
+      final update = await repository.fetchUpdate(current);
 
-      expect(fresh?.core?.updated, '20 août 2026');
+      expect(update?.document.core?.updated, '20 août 2026');
+      expect(update?.stored, isTrue);
       expect(cache.writes, 1);
 
       // Au démarrage suivant, c'est la version enregistrée qui est lue.
@@ -128,6 +169,26 @@ void main() {
       expect(next.core?.updated, '20 août 2026');
     },
   );
+
+  test('écriture du cache impossible : `stored` est faux', () async {
+    final assets = _FakeAssets(kRulesFixtureSource);
+    final cache = _MemoryCache(null, false);
+    final repository = build(
+      assets: assets,
+      cache: cache,
+      adapter: FakeHttpAdapter({
+        routeKey: FakeResponse(200, rulesFixtureUpdated()),
+      }),
+    );
+
+    final current = await repository.load();
+    final update = await repository.fetchUpdate(current);
+
+    // Le document est servi (l'écran se met à jour) mais rien n'est conservé.
+    expect(update?.document.core?.updated, '20 août 2026');
+    expect(update?.stored, isFalse);
+    expect(cache.stored, isNull);
+  });
 
   test('réseau absent : l’erreur remonte, la version locale reste', () async {
     final assets = _FakeAssets(kRulesFixtureSource);

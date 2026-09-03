@@ -25,7 +25,7 @@ Future<DeckChoice?> showDeckPicker(BuildContext context) =>
       useSafeArea: true,
       backgroundColor: RiftColors.night,
       builder: (context) => Theme(
-        data: buildTheme(Brightness.dark),
+        data: buildTheme(),
         child: const FractionallySizedBox(
           heightFactor: 0.8,
           child: _DeckPickerSheet(),

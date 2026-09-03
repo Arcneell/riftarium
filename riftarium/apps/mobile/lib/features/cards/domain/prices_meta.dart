@@ -1,32 +1,16 @@
 /// Météo des prix (`GET /api/prices/meta`).
 ///
-/// Réponse de l'API : `{updated_day, rate, rate_date, priced_cards, source,
-/// currency_note}`. `updated_day` et `rate_date` sont des jours `AAAA-MM-JJ`.
+/// L'API renvoie aussi `rate`, `rate_date`, `priced_cards`, `source` et
+/// `currency_note` : la note affichée sous le prix ne s'en sert pas (la source
+/// et le taux y sont écrits en clair), seul `updated_day` est lu — un jour
+/// `AAAA-MM-JJ`.
 class PricesMeta {
-  const PricesMeta({
-    this.updatedDay,
-    this.rate,
-    this.rateDate,
-    this.pricedCards = 0,
-    this.source,
-    this.currencyNote,
-  });
+  const PricesMeta({this.updatedDay});
 
-  factory PricesMeta.fromJson(Map<String, dynamic> json) => PricesMeta(
-    updatedDay: json['updated_day']?.toString(),
-    rate: (json['rate'] as num?)?.toDouble(),
-    rateDate: json['rate_date']?.toString(),
-    pricedCards: (json['priced_cards'] as num?)?.toInt() ?? 0,
-    source: json['source'] as String?,
-    currencyNote: json['currency_note'] as String?,
-  );
+  factory PricesMeta.fromJson(Map<String, dynamic> json) =>
+      PricesMeta(updatedDay: json['updated_day']?.toString());
 
   final String? updatedDay;
-  final double? rate;
-  final String? rateDate;
-  final int pricedCards;
-  final String? source;
-  final String? currencyNote;
 
   /// Note affichée sous le prix, en une ligne : source, conversion, fraîcheur.
   /// Le libellé « Prix indicatif » de la fiche dit déjà le reste.

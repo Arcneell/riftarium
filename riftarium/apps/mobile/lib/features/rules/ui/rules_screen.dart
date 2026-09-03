@@ -139,10 +139,8 @@ class _RulesScreenState extends ConsumerState<RulesScreen> {
               index: 1,
               child: _TierPanel(
                 step: 2,
-                // Encre sur parchemin, parchemin doré sur encre en mode sombre.
-                accent: Theme.of(context).brightness == Brightness.dark
-                    ? RiftColors.goldSoft
-                    : RiftColors.ink,
+                // Parchemin doré sur la nuit : le dernier recours reste sobre.
+                accent: RiftColors.goldSoft,
                 kicker: 'Dernier recours',
                 title: 'Règles officielles',
                 meta: core == 0

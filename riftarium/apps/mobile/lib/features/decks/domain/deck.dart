@@ -67,7 +67,7 @@ class Deck {
       description: json['description'] as String?,
       format: (json['format'] as String?) ?? 'tournament',
       isPublic: json['is_public'] == true,
-      moderationStatus: (json['moderation_status'] as String?) ?? 'published',
+      moderationStatus: (json['moderation_status'] as String?) ?? 'pending',
       likes: (json['likes'] as num?)?.toInt() ?? 0,
       likedByMe: json['liked_by_me'] == true,
       views: (json['views'] as num?)?.toInt() ?? 0,
@@ -114,6 +114,9 @@ class Deck {
   bool get isShareable => isPublic && moderationStatus == 'published';
 
   bool get isPending => moderationStatus == 'pending';
+
+  /// Refusé par la modération : ni partageable, ni visible en communauté.
+  bool get isRejected => moderationStatus == 'rejected';
 
   /// Légal = format officiel *et* tous les contrôles au vert.
   bool get isLegal => isTournament && checks.every((check) => check.ok);

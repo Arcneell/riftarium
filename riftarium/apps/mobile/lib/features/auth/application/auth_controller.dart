@@ -13,7 +13,18 @@ final tokenStoreProvider = Provider<TokenStore>((ref) => SecureTokenStore());
 
 final dioProvider = Provider<Dio>((ref) {
   final store = ref.watch(tokenStoreProvider);
-  return createApiClient(readToken: store.read);
+  return createApiClient(
+    readToken: store.read,
+    // Jeton refusé par l'API (expiré, révoqué ailleurs) : le jeton est oublié
+    // et la session locale se ferme, sinon l'application resterait « connectée »
+    // avec un jeton mort. `ref.read` est différé au moment de l'erreur : le
+    // contrôleur dépend de ce provider, le lire ici tout de suite ferait un
+    // cycle.
+    onUnauthorized: () async {
+      await store.clear();
+      ref.read(authControllerProvider.notifier).forceSignOut();
+    },
+  );
 });
 
 final authApiProvider = Provider<AuthApi>(
@@ -70,12 +81,18 @@ class AuthController extends Notifier<AuthState> {
   AuthApi get _api => ref.read(authApiProvider);
 
   Future<void> restore() async {
-    final token = await _store.read();
-    if (token == null) {
+    try {
+      final token = await _store.read();
+      if (token == null) {
+        state = const AuthState.signedOut();
+        return;
+      }
+      await _loadProfile();
+    } catch (_) {
+      // Stockage sécurisé illisible (Keystore réinitialisé, plugin absent) :
+      // on repart déconnecté plutôt que de rester sur l'écran d'attente.
       state = const AuthState.signedOut();
-      return;
     }
-    await _loadProfile();
   }
 
   Future<void> signIn({required String email, required String password}) async {
@@ -138,6 +155,14 @@ class AuthController extends Notifier<AuthState> {
     await _api.deleteAccount(password: password, handle: handle);
     await _store.clear();
     state = const AuthState.signedOut();
+  }
+
+  /// Ferme la session sans appel réseau : le jeton vient d'être refusé par
+  /// l'API (voir `onUnauthorized` de [createApiClient]).
+  void forceSignOut() {
+    if (state.status != AuthStatus.signedOut) {
+      state = const AuthState.signedOut();
+    }
   }
 
   Future<void> resendVerification() => _api.resendVerification();

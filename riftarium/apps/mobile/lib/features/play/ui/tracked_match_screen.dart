@@ -178,7 +178,8 @@ class _TrackedMatchScreenState extends ConsumerState<TrackedMatchScreen> {
             allowNewGame: false,
             finishLabel: 'Envoyer le résultat',
             onNewRound: _controller.newRound,
-            onNewGame: _controller.newRound,
+            // Pas de relance en partie suivie : une rencontre enregistrée se
+            // termine, elle ne se rejoue pas.
             onFinish: () => _act(_controller.finishMatch),
           ),
       ],

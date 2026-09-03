@@ -13,24 +13,15 @@ import '../../../app/widgets/rift_avatar.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
-import '../../auth/ui/login_screen.dart' show AuthError, BannerBackButton;
+import '../../../app/widgets/auth_widgets.dart'
+    show AuthError, BannerBackButton;
+import '../application/avatar_options.dart';
 
 /// Longueur maximale de la biographie (`ProfilePatch.bio`, côté API).
 const int kBioMaxLength = 280;
 
 /// Longueur minimale d'un pseudo (`ProfilePatch.handle`).
 const int kHandleMinLength = 3;
-
-/// Légendes proposées comme avatar (`GET /api/auth/avatars`).
-final avatarOptionsProvider = FutureProvider.autoDispose<List<AvatarOption>>((
-  ref,
-) async {
-  final signedIn = ref.watch(
-    authControllerProvider.select((state) => state.isSignedIn),
-  );
-  if (!signedIn) return const [];
-  return ref.watch(authApiProvider).avatars();
-});
 
 /// Modifier mon profil : pseudo, biographie, avatar et confidentialité.
 ///
@@ -54,10 +45,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String? _error;
 
   String? _avatarCardId;
-  late bool _showStats;
-  late bool _showCollection;
-  late bool _showDecks;
-  late bool _showAchievements;
+
+  // Valeurs par défaut du contrat (stats et collection fermées, decks et hauts
+  // faits ouverts) : le formulaire est constructible avant le profil.
+  bool _showStats = false;
+  bool _showCollection = false;
+  bool _showDecks = true;
+  bool _showAchievements = true;
 
   @override
   void dispose() {
@@ -101,8 +95,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
 
     final bioChanged = bio != profile.bio;
-    final avatarChanged =
-        _avatarCardId != null && _avatarCardId != profile.avatarCardId;
+    // Un avatar retiré (`null`) est un changement comme un autre : l'API
+    // efface le portrait quand `avatar_card_id` arrive vide (`apply_profile`).
+    final avatarChanged = _avatarCardId != profile.avatarCardId;
     final privacyChanged =
         _showStats != profile.showStats ||
         _showCollection != profile.showCollection ||
@@ -126,7 +121,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           .updateMe(
             handle: handleChanged ? handle : null,
             bio: bioChanged ? bio : null,
-            avatarCardId: avatarChanged ? _avatarCardId : null,
+            avatarCardId: avatarChanged ? (_avatarCardId ?? '') : null,
             showStats: privacyChanged ? _showStats : null,
             showCollection: privacyChanged ? _showCollection : null,
             showDecks: privacyChanged ? _showDecks : null,
@@ -192,7 +187,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     _load(profile);
 
-    final handleChanged = _handle.text.trim() != profile.handle;
     return Scaffold(
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -211,25 +205,32 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     TextField(
                       controller: _handle,
                       autocorrect: false,
-                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(labelText: 'Pseudo'),
                     ),
-                    if (handleChanged) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _password,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Mot de passe actuel',
-                        ),
-                      ),
-                    ],
+                    // Le champ « mot de passe actuel » n'apparaît qu'au
+                    // changement de pseudo : ce seul bout d'écran écoute la
+                    // frappe, plutôt que de reconstruire toute la page.
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _handle,
+                      builder: (context, value, _) =>
+                          value.text.trim() == profile.handle
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: TextField(
+                                controller: _password,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Mot de passe actuel',
+                                ),
+                              ),
+                            ),
+                    ),
                     const SizedBox(height: 14),
                     TextField(
                       controller: _bio,
                       maxLength: kBioMaxLength,
                       maxLines: 4,
-                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
                         labelText: 'Biographie',
                         alignLabelWithHint: true,
@@ -329,7 +330,9 @@ class _AvatarPicker extends ConsumerWidget {
   const _AvatarPicker({required this.selected, required this.onSelect});
 
   final String? selected;
-  final void Function(String cardId) onSelect;
+
+  /// `null` retire le portrait (l'API remet `avatar_card_id` à vide).
+  final void Function(String? cardId) onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -352,6 +355,39 @@ class _AvatarPicker extends ConsumerWidget {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
+                  SizedBox(
+                    width: 64,
+                    child: Semantics(
+                      button: true,
+                      selected: selected == null,
+                      label: 'Aucun avatar',
+                      child: PressScale(
+                        onTap: () => onSelect(null),
+                        child: Column(
+                          children: [
+                            RiftAvatar(
+                              url: null,
+                              initial: '—',
+                              size: 56,
+                              borderWidth: selected == null ? 3 : 1.5,
+                              borderColor: selected == null
+                                  ? RiftColors.gold
+                                  : null,
+                              shadow: selected == null,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Aucun',
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.small.copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   for (final option in options)
                     SizedBox(
                       width: 64,

@@ -11,6 +11,7 @@ import 'package:riftarium_mobile/features/game/domain/game_state.dart';
 import 'package:riftarium_mobile/main.dart';
 
 import '../../../support/fakes.dart';
+import 'in_memory_game_store.dart';
 
 /// Compteur de partie câblé sur une sauvegarde en mémoire et sans plugin de
 /// veille : la table de jeu se teste entièrement hors ligne.
@@ -24,6 +25,8 @@ import '../../../support/fakes.dart';
 Widget gameApp({
   required WidgetTester tester,
   GameStore? store,
+  ScreenAwake? awake,
+  DateTime Function()? now,
   Size size = const Size(520, 2600),
 }) {
   tester.view.physicalSize = size;
@@ -45,7 +48,8 @@ Widget gameApp({
         ),
         initialLocationProvider.overrideWithValue(AppRoutes.game),
         gameStoreProvider.overrideWithValue(store ?? InMemoryGameStore()),
-        screenAwakeProvider.overrideWithValue(const NoScreenAwake()),
+        screenAwakeProvider.overrideWithValue(awake ?? const NoScreenAwake()),
+        if (now != null) nowProvider.overrideWithValue(now),
       ],
       child: const RiftariumApp(),
     ),
@@ -56,6 +60,18 @@ Widget gameApp({
 GameState? gameOf(WidgetTester tester) {
   final element = tester.element(find.byType(RiftariumApp));
   return ProviderScope.containerOf(element).read(gameControllerProvider);
+}
+
+/// Veille de l'écran comptée : « la table allume, quitter rend la main ».
+class FakeScreenAwake implements ScreenAwake {
+  int enables = 0;
+  int disables = 0;
+
+  @override
+  Future<void> enable() async => enables++;
+
+  @override
+  Future<void> disable() async => disables++;
 }
 
 /// Passe la configuration : tirage du premier joueur, fermeture de la roue,

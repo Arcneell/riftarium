@@ -185,6 +185,39 @@ void main() {
       expect(GameEngine.newRound(state, firstPlayerId: 'p1'), same(state));
     });
 
+    test('à une manche partout, le temps annoncé donne un match nul', () {
+      // Manche 1 à p1, manche 2 à p0 : 1–1. Le temps est annoncé entre deux
+      // manches (RT 408.2.d) : on compte les manches, pas les points de la
+      // dernière — match nul (RT 404.5).
+      var state = score(fresh(), 'p1', 8);
+      state = GameEngine.newRound(state, firstPlayerId: 'p1');
+      state = score(state, 'p0', 8);
+      expect(state.roundsWonBy(0), 1);
+      expect(state.roundsWonBy(1), 1);
+
+      state = GameEngine.callTime(state);
+      expect(state.timeCalled, isTrue);
+      expect(state.overtimeTurnsLeft, 0);
+      expect(
+        state.endedOnTime,
+        isFalse,
+        reason: 'la manche n’a pas fini au temps',
+      );
+      expect(state.timedOut, isFalse);
+      expect(state.isMatchOver, isTrue);
+      expect(state.matchWinnerTeam, isNull);
+      expect(state.isMatchDrawn, isTrue);
+    });
+
+    test('deux manches gagnées l’emportent même au temps', () {
+      var state = score(fresh(), 'p0', 8);
+      state = GameEngine.newRound(state, firstPlayerId: 'p1');
+      state = score(state, 'p0', 8);
+      state = GameEngine.callTime(state);
+      expect(state.matchWinnerTeam, 0);
+      expect(state.isMatchDrawn, isFalse);
+    });
+
     test('hors tournoi, l’annonce du temps ne fait rien', () {
       final duel = GameEngine.start(
         mode: GameMode.match,
@@ -238,6 +271,8 @@ void main() {
       expect(back.timeCalled, isTrue);
       expect(back.overtimeTurnsLeft, 0);
       expect(back.drawn, isTrue);
+      expect(back.endedOnTime, isTrue);
+      expect(back.timedOut, isTrue);
       expect(back.isMatchDrawn, isTrue);
       expect(back.remainingTime(later), const Duration(minutes: 30));
       expect(back.history.last.timeCalled, isTrue);
@@ -254,12 +289,15 @@ void main() {
               'time_called',
               'overtime_turns_left',
               'drawn',
+              'ended_on_time',
             }.contains(key),
           );
       final back = GameState.fromJson(json)!;
       expect(back.roundLimit, isNull);
       expect(back.timeCalled, isFalse);
       expect(back.drawn, isFalse);
+      expect(back.endedOnTime, isFalse);
+      expect(back.timedOut, isFalse);
     });
   });
 }

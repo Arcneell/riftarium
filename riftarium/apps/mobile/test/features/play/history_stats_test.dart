@@ -89,6 +89,43 @@ void main() {
       expect(find.text('Boum.'), findsOneWidget);
     });
 
+    testWidgets('« Charger la suite » demande la page suivante', (
+      tester,
+    ) async {
+      final server = PlayFakeApi({
+        'GET /play/history': PlayFakeSequence([
+          historyPageJson(items: [historyItemJson()], total: 2),
+          historyPageJson(
+            items: [historyItemJson(matchId: 2, handle: 'vi', outcome: 'loss')],
+            total: 2,
+            page: 2,
+          ),
+        ]),
+      });
+      await tester.pumpWidget(
+        playApp(
+          tester: tester,
+          server: server,
+          location: '/profil/historique',
+          size: tall,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Charger la suite'), findsOneWidget);
+      // La première page ne demande que 20 lignes : plus de `size: 50`.
+      expect(server.last('GET', '/play/history')!.query['size'], 20);
+
+      await tester.tap(find.text('Charger la suite'));
+      await tester.pumpAndSettle();
+
+      expect(server.on('GET', '/play/history').length, 2);
+      expect(server.last('GET', '/play/history')!.query['page'], 2);
+      expect(find.text('vi'), findsWidgets);
+      // Les deux lignes sont là : plus rien à charger.
+      expect(find.text('Charger la suite'), findsNothing);
+    });
+
     testWidgets('sans partie, l’écran invite à en lancer une', (tester) async {
       final server = PlayFakeApi({
         'GET /play/history': historyPageJson(items: [], total: 0),

@@ -32,6 +32,7 @@ import '../features/social/ui/achievements_screen.dart';
 import '../features/social/ui/friends_screen.dart';
 import '../features/social/ui/public_profile_screen.dart';
 import 'shell.dart';
+import 'widgets/not_found_screen.dart';
 
 /// Chemins de l'application. Alignés sur le site quand un équivalent existe
 /// (liens profonds `riftarium.re/cartes/:id`, `/decks/:id`, `/regles/...`).
@@ -64,8 +65,10 @@ abstract final class AppRoutes {
   static const friends = '/profil/amis';
   static const achievements = '/profil/hauts-faits';
 
-  /// Profil public d'un joueur, lisible sans compte.
+  /// Profil public d'un joueur, lisible sans compte. Le site publie le même
+  /// écran sous `/u/:handle` : ce chemin reste servi pour les liens partagés.
   static String player(String handle) => '/joueur/$handle';
+  static const webPlayerPrefix = '/u';
 
   static const scan = '/scan';
   static const game = '/partie';
@@ -82,19 +85,6 @@ abstract final class AppRoutes {
       Uri(path: login, queryParameters: {'from': from}).toString();
 
   static const _entry = {splash, login, register};
-
-  /// Préfixes réservés aux comptes connectés.
-  static const _gatedPrefixes = [
-    collection,
-    decks,
-    profile,
-    scan,
-    trackedPlay,
-    '/salon',
-  ];
-
-  static bool isGated(String location) =>
-      _gatedPrefixes.any((p) => location == p || location.startsWith('$p/'));
 }
 
 /// Emplacement de départ ; surchargeable dans les tests.
@@ -106,10 +96,15 @@ class _AuthRefresh extends ChangeNotifier {
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefresh();
-  ref.listen(authControllerProvider, (_, _) => refresh.refresh());
+  // Seul le statut change la navigation : le profil qui arrive de `/auth/me`
+  // ne doit pas relancer une redirection.
+  ref.listen(
+    authControllerProvider.select((s) => s.status),
+    (_, _) => refresh.refresh(),
+  );
   ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: ref.read(initialLocationProvider),
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -141,6 +136,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return from ?? AppRoutes.home;
       }
     },
+    errorBuilder: (context, state) => NotFoundScreen(location: state.uri.path),
     routes: [
       GoRoute(
         path: AppRoutes.splash,
@@ -170,16 +166,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'match/:id',
-            builder: (context, state) => TrackedMatchScreen(
-              matchId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
-            ),
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return id == null
+                  ? NotFoundScreen(
+                      location: state.uri.path,
+                      message:
+                          'Ce lien de match est invalide : '
+                          '« ${state.pathParameters['id']} » n’est pas un '
+                          'numéro de match.',
+                    )
+                  : TrackedMatchScreen(matchId: id);
+            },
           ),
         ],
       ),
       // Profil public : atteignable depuis un salon, l'historique ou la
-      // recherche, avec ou sans compte.
+      // recherche, avec ou sans compte. Deux chemins pour un seul écran :
+      // celui de l'application et celui du site (`riftarium.re/u/:handle`),
+      // qui arrive par lien profond.
       GoRoute(
         path: '/joueur/:handle',
+        builder: (context, state) =>
+            PublicProfileScreen(handle: state.pathParameters['handle']!),
+      ),
+      GoRoute(
+        path: '${AppRoutes.webPlayerPrefix}/:handle',
         builder: (context, state) =>
             PublicProfileScreen(handle: state.pathParameters['handle']!),
       ),
@@ -246,9 +258,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: ':id',
-                    builder: (context, state) => DeckDetailScreen(
-                      deckId: int.tryParse(state.pathParameters['id']!) ?? 0,
-                    ),
+                    builder: (context, state) {
+                      final raw = state.pathParameters['id']!;
+                      final id = int.tryParse(raw);
+                      return id == null
+                          ? NotFoundScreen(
+                              location: state.uri.path,
+                              message:
+                                  'Ce lien de deck est invalide : '
+                                  '« $raw » n’est pas un numéro de deck.',
+                            )
+                          : DeckDetailScreen(deckId: id);
+                    },
                   ),
                 ],
               ),
@@ -315,4 +336,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  // Le routeur retient des écouteurs (refreshListenable, navigateurs des
+  // branches) : sans ce dispose, un ProviderScope recréé en fuit un par test.
+  ref.onDispose(router.dispose);
+  return router;
 });

@@ -1,3 +1,5 @@
+import '../../../core/api_exception.dart';
+
 /// Carte telle que renvoyée par `card_out` (`apps/api/app/routers/cards.py`).
 ///
 /// `ownedQty` / `wishedQty` ne sont présents que pour un utilisateur connecté.
@@ -29,11 +31,18 @@ class RiftCard {
     this.priceFoilEur,
     this.ownedQty,
     this.wishedQty,
+    this.variants = const [],
   });
 
   factory RiftCard.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    if (id is! String || id.isEmpty) {
+      // Une carte sans identifiant n'est pas affichable (ni lien, ni
+      // collection) : mieux vaut le dire que propager une coquille vide.
+      throw const ApiException('Carte illisible : identifiant absent.');
+    }
     return RiftCard(
-      id: json['id'] as String,
+      id: id,
       riftboundId: (json['riftbound_id'] as String?) ?? '',
       name: (json['name'] as String?) ?? '',
       setId: (json['set_id'] as String?) ?? '',
@@ -59,6 +68,12 @@ class RiftCard {
       priceFoilEur: (json['price_foil_eur'] as num?)?.toDouble(),
       ownedQty: (json['owned_qty'] as num?)?.toInt(),
       wishedQty: (json['wished_qty'] as num?)?.toInt(),
+      // Seul `GET /cards/{id}` renvoie la famille de variantes ; les items de
+      // liste n'ont pas la clé, la récursion s'arrête donc au premier niveau.
+      variants: (json['variants'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(RiftCard.fromJson)
+          .toList(),
     );
   }
 
@@ -90,6 +105,10 @@ class RiftCard {
   final double? priceFoilEur;
   final int? ownedQty;
   final int? wishedQty;
+
+  /// Autres impressions de la même carte (alt-art, signature, overnumbered),
+  /// telles que renvoyées par la fiche. Vide ailleurs.
+  final List<RiftCard> variants;
 
   bool get isLandscape => orientation == 'landscape';
   bool get isOwned => (ownedQty ?? 0) > 0;
@@ -128,6 +147,7 @@ class RiftCard {
     priceFoilEur: priceFoilEur,
     ownedQty: ownedQty ?? this.ownedQty,
     wishedQty: wishedQty ?? this.wishedQty,
+    variants: variants,
   );
 
   static List<String> _strings(Object? value) =>
@@ -158,5 +178,7 @@ class CardPage {
   final int size;
   final List<RiftCard> items;
 
-  bool get hasMore => page * size < total;
+  /// `size` peut manquer d'une réponse abîmée : on retombe sur la taille de
+  /// page demandée, sinon `page * 0 < total` boucle indéfiniment.
+  bool get hasMore => page * (size > 0 ? size : items.length) < total;
 }

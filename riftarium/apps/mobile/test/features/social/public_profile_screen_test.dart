@@ -106,6 +106,65 @@ void main() {
     expect(find.text('Suivre'), findsOneWidget);
   });
 
+  testWidgets('mon profil me montre tout, même ce que je masque', (
+    tester,
+  ) async {
+    final server = PlayFakeApi({
+      'GET /users/ezreal': publicProfileJson(
+        handle: 'ezreal',
+        visible: false,
+        isMe: true,
+      ),
+      'GET /users/ezreal/collection': profileCollectionJson(),
+      'GET /users/ezreal/history': historyPageJson(),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/joueur/ezreal',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Masqué par ce joueur.'), findsNothing);
+    expect(find.text('Premier sang'), findsOneWidget);
+    expect(find.text('10'), findsWidgets); // parties jouées
+    expect(
+      find.text('120 cartes différentes · 300 exemplaires'),
+      findsOneWidget,
+    );
+    expect(find.text('Ahri contrôle'), findsOneWidget);
+    // Les chargements associés partent aussi pour mon propre profil.
+    expect(server.paths, contains('GET /users/ezreal/collection'));
+    expect(server.paths, contains('GET /users/ezreal/history'));
+    // On ne se suit pas soi-même.
+    expect(find.text('Suivre'), findsNothing);
+  });
+
+  testWidgets('hors session, pas de bouton « Suivre »', (tester) async {
+    final server = PlayFakeApi({
+      'GET /users/jinx': publicProfileJson(isFollowed: null),
+      'GET /users/jinx/collection': profileCollectionJson(),
+      'GET /users/jinx/history': historyPageJson(),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/joueur/jinx',
+        size: tall,
+        signedIn: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Boum.'), findsOneWidget);
+    expect(find.text('Suivre'), findsNothing);
+    expect(find.text('Ne plus suivre'), findsNothing);
+  });
+
   testWidgets('un joueur inconnu affiche le message de l’API', (tester) async {
     final server = PlayFakeApi({
       'GET /users/zed': const PlayFakeError(404, 'Joueur introuvable.'),

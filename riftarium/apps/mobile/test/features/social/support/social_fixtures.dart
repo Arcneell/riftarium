@@ -105,53 +105,58 @@ Map<String, dynamic> profileCollectionJson({int total = 1}) => {
 };
 
 /// Profil public. Par défaut tout est ouvert ; passer `visible: false` ferme
-/// les quatre sections et coupe leurs contenus, comme le fait l'API.
+/// les quatre sections. Comme l'API, le contenu reste présent pour le
+/// propriétaire du profil (`visible || is_me`) et `is_followed` vaut null hors
+/// session.
 Map<String, dynamic> publicProfileJson({
   String handle = 'jinx',
   bool visible = true,
-  bool isFollowed = false,
+  bool? isFollowed = false,
   bool isMe = false,
   int followersCount = 4,
   int followingCount = 2,
-}) => {
-  'id': 8,
-  'handle': handle,
-  'avatar_url': null,
-  'bio': 'Boum.',
-  'created_at': '2026-01-15T10:00:00Z',
-  'is_me': isMe,
-  'is_followed': isFollowed,
-  'followers_count': followersCount,
-  'following_count': followingCount,
-  'visibility': {
-    'show_stats': visible,
-    'show_collection': visible,
-    'show_decks': visible,
-    'show_achievements': visible,
-  },
-  'stats': visible
-      ? {
-          'totals': {
-            'played': 10,
-            'won': 6,
-            'lost': 4,
-            'win_rate': 0.6,
-            'current_streak': 2,
-            'best_streak': 4,
-          },
-          'by_legend': [
-            {
-              'card_id': 'OGN-002',
-              'name': 'Jinx',
-              'image_url': null,
-              'played': 5,
-              'won': 3,
-              'lost': 2,
+}) {
+  final content = visible || isMe;
+  return {
+    'id': 8,
+    'handle': handle,
+    'avatar_url': null,
+    'bio': 'Boum.',
+    'created_at': '2026-01-15T10:00:00Z',
+    'is_me': isMe,
+    'is_followed': isFollowed,
+    'followers_count': followersCount,
+    'following_count': followingCount,
+    'visibility': {
+      'show_stats': visible,
+      'show_collection': visible,
+      'show_decks': visible,
+      'show_achievements': visible,
+    },
+    'stats': content
+        ? {
+            'totals': {
+              'played': 10,
+              'won': 6,
+              'lost': 4,
+              'win_rate': 0.6,
+              'current_streak': 2,
+              'best_streak': 4,
             },
-          ],
-        }
-      : null,
-  'achievements': visible ? [achievementJson()] : null,
-  'collection_summary': visible ? collectionSummaryJson() : null,
-  'decks': visible ? [profileDeckJson()] : null,
-};
+            'by_legend': [
+              {
+                'card_id': 'OGN-002',
+                'name': 'Jinx',
+                'image_url': null,
+                'played': 5,
+                'won': 3,
+                'lost': 2,
+              },
+            ],
+          }
+        : null,
+    'achievements': content ? [achievementJson()] : null,
+    'collection_summary': content ? collectionSummaryJson() : null,
+    'decks': content ? [profileDeckJson()] : null,
+  };
+}

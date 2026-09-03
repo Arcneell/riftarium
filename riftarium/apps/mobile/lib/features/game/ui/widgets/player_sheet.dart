@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import '../../../../app/widgets/card_image.dart';
 import '../../application/game_providers.dart';
 import '../../domain/game_engine.dart';
 import '../../domain/player.dart';
+import 'game_theme.dart';
 import 'legend_picker_sheet.dart';
 
 /// Feuille d'un joueur (appui long sur son panneau) : renommer, changer de
@@ -18,10 +21,7 @@ Future<void> showPlayerSheet(BuildContext context, {required Player player}) =>
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: RiftColors.night,
-      builder: (context) => Theme(
-        data: buildTheme(Brightness.dark),
-        child: _PlayerSheet(playerId: player.id),
-      ),
+      builder: (context) => gameTheme(child: _PlayerSheet(playerId: player.id)),
     );
 
 class _PlayerSheet extends ConsumerStatefulWidget {
@@ -37,6 +37,11 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
   late final TextEditingController _name;
   late final TextEditingController _xp;
 
+  /// Le nom n'est appliqué qu'une fois la frappe posée : renommer à chaque
+  /// caractère pousserait une sauvegarde par lettre.
+  Timer? _rename;
+  static const _renameDelay = Duration(milliseconds: 400);
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +55,7 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
 
   @override
   void dispose() {
+    _rename?.cancel();
     _name.dispose();
     _xp.dispose();
     super.dispose();
@@ -61,13 +67,40 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
     HapticFeedback.selectionClick();
     _game.addXp(widget.playerId, amount);
     final state = ref.read(gameControllerProvider);
-    if (state == null) return;
-    _xp.text = '${state.xpOf(state.playerById(widget.playerId))}';
+    final player = state?.playerById(widget.playerId);
+    if (state == null || player == null) return;
+    _xp.text = '${state.xpOf(player)}';
+  }
+
+  /// Frappe en cours : on attend une pause avant de renommer.
+  void _scheduleRename(String value) {
+    _rename?.cancel();
+    _rename = Timer(_renameDelay, () => _applyName(value));
+  }
+
+  /// Nom posé (validation, fermeture) : appliqué tout de suite.
+  void _applyName(String value) {
+    _rename?.cancel();
+    if (!mounted) return;
+    final state = ref.read(gameControllerProvider);
+    final player = state?.playerById(widget.playerId);
+    if (player == null) return;
+    final typed = value.trim();
+    _game.renamePlayer(
+      player.id,
+      typed.isEmpty ? 'Joueur ${player.seat + 1}' : typed,
+    );
+  }
+
+  /// Ferme la feuille en gardant le nom saisi.
+  void _close() {
+    _applyName(_name.text);
+    Navigator.of(context).pop();
   }
 
   Future<void> _changeLegend() async {
     final legend = await showLegendPicker(context);
-    if (legend == null) return;
+    if (!mounted || legend == null) return;
     _game.setLegend(widget.playerId, legend);
   }
 
@@ -75,8 +108,10 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
   Widget build(BuildContext context) {
     final text = riftText(context);
     final state = ref.watch(gameControllerProvider);
-    if (state == null) return const SizedBox.shrink();
-    final player = state.playerById(widget.playerId);
+    final player = state?.playerById(widget.playerId);
+    // Partie quittée pendant que la feuille était ouverte : plus rien à
+    // régler, la feuille se vide sans faire de bruit.
+    if (state == null || player == null) return const SizedBox.shrink();
     final legend = player.legend;
     final xp = state.xpOf(player);
     final opponents = state.players
@@ -128,12 +163,9 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
             TextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
-              onChanged: (value) => _game.renamePlayer(
-                player.id,
-                value.trim().isEmpty
-                    ? 'Joueur ${player.seat + 1}'
-                    : value.trim(),
-              ),
+              onChanged: _scheduleRename,
+              onSubmitted: _applyName,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(labelText: 'Nom'),
             ),
             const SizedBox(height: 18),
@@ -208,17 +240,14 @@ class _PlayerSheetState extends ConsumerState<_PlayerSheet> {
                           fromPlayerId: player.id,
                           toPlayerId: opponent.id,
                         );
-                        Navigator.of(context).pop();
+                        _close();
                       },
                     ),
                 ],
               ),
             ],
             const SizedBox(height: 18),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fermer'),
-            ),
+            TextButton(onPressed: _close, child: const Text('Fermer')),
           ],
         ),
       ),

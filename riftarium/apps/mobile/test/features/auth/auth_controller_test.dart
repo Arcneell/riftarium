@@ -21,6 +21,11 @@ void main() {
             readToken: store.read,
             baseUrl: 'https://api.test/api',
             adapter: adapter,
+            // Même câblage que le provider de production.
+            onUnauthorized: () async {
+              await store.clear();
+              ref.read(authControllerProvider.notifier).forceSignOut();
+            },
           ),
         ),
       ],
@@ -34,6 +39,61 @@ void main() {
       container.read(authControllerProvider.notifier).whenRestored;
 
   group('restauration au démarrage', () {
+    test('stockage illisible : déconnecté, pas d’attente sans fin', () async {
+      adapter = FakeHttpAdapter({});
+      store = _BrokenTokenStore();
+      container = makeContainer();
+      await settle();
+
+      expect(
+        container.read(authControllerProvider).status,
+        AuthStatus.signedOut,
+      );
+    });
+
+    test('forceSignOut ferme la session sans appel réseau', () async {
+      adapter = FakeHttpAdapter({
+        'GET /auth/me': const FakeResponse(200, profileJson),
+      });
+      store = InMemoryTokenStore('jwt');
+      container = makeContainer();
+      await settle();
+      expect(container.read(authControllerProvider).isSignedIn, isTrue);
+
+      final before = adapter.requests.length;
+      container.read(authControllerProvider.notifier).forceSignOut();
+
+      expect(
+        container.read(authControllerProvider).status,
+        AuthStatus.signedOut,
+      );
+      expect(adapter.requests.length, before);
+    });
+
+    test('un 401 ailleurs qu’au démarrage ferme la session', () async {
+      adapter = FakeHttpAdapter({
+        'GET /auth/me': const FakeResponse(200, profileJson),
+        'GET /collection': const FakeResponse(401, {'detail': 'Non autorisé'}),
+      });
+      store = InMemoryTokenStore('jwt');
+      container = makeContainer();
+      await settle();
+
+      final dio = container.read(dioProvider);
+      await expectLater(
+        dio.get<Map<String, dynamic>>('/collection'),
+        throwsA(anything),
+      );
+      // Le rappel est asynchrone : on laisse la micro-tâche se dérouler.
+      await Future<void>.delayed(Duration.zero);
+
+      expect(await store.read(), isNull);
+      expect(
+        container.read(authControllerProvider).status,
+        AuthStatus.signedOut,
+      );
+    });
+
     test('sans jeton : déconnecté, aucun appel réseau', () async {
       adapter = FakeHttpAdapter({});
       store = InMemoryTokenStore();
@@ -228,4 +288,10 @@ void main() {
     expect(state.profile?.handle, 'ezreal');
     expect(state.profileError, isNull);
   });
+}
+
+/// Stockage sécurisé en panne (Keystore réinitialisé, plugin absent).
+class _BrokenTokenStore extends InMemoryTokenStore {
+  @override
+  Future<String?> read() async => throw StateError('Keystore illisible');
 }

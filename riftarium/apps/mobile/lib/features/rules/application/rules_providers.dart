@@ -13,7 +13,18 @@ final rulesRepositoryProvider = Provider<RulesRepository>(
 /// Issue d'un rafraîchissement manuel, avec le message affiché à l'écran.
 enum RulesRefreshOutcome {
   updated('Règles mises à jour depuis riftarium.re.'),
+
+  /// Version en ligne affichée, mais impossible à enregistrer (disque plein…) :
+  /// elle sera retéléchargée au prochain lancement.
+  updatedNotStored(
+    'Règles mises à jour pour cette session. '
+    'Impossible de les enregistrer pour la consultation hors ligne.',
+  ),
   upToDate('Les règles sont déjà à jour.'),
+
+  /// Rien en mémoire : le document est en cours de chargement, il n'y a
+  /// aucune mise à jour à annoncer.
+  reloading('Chargement des règles…'),
   failed(
     'Mise à jour impossible. '
     'Les règles enregistrées restent consultables hors ligne.',
@@ -45,10 +56,10 @@ class RulesController extends AsyncNotifier<RulesDocument> {
 
   Future<void> _checkForUpdate(RulesDocument current) async {
     try {
-      final fresh = await ref
+      final update = await ref
           .read(rulesRepositoryProvider)
           .fetchUpdate(current);
-      if (fresh != null && !_disposed) state = AsyncData(fresh);
+      if (update != null && !_disposed) state = AsyncData(update.document);
     } on Object {
       // Hors ligne ou site injoignable : la version locale suffit.
       return;
@@ -59,16 +70,20 @@ class RulesController extends AsyncNotifier<RulesDocument> {
   Future<RulesRefreshOutcome> refresh() async {
     final current = state.valueOrNull;
     if (current == null) {
+      // Aucun document à comparer : on relance le chargement local, sans rien
+      // promettre sur une mise à jour.
       ref.invalidateSelf();
-      return RulesRefreshOutcome.updated;
+      return RulesRefreshOutcome.reloading;
     }
     try {
-      final fresh = await ref
+      final update = await ref
           .read(rulesRepositoryProvider)
           .fetchUpdate(current);
-      if (fresh == null) return RulesRefreshOutcome.upToDate;
-      if (!_disposed) state = AsyncData(fresh);
-      return RulesRefreshOutcome.updated;
+      if (update == null) return RulesRefreshOutcome.upToDate;
+      if (!_disposed) state = AsyncData(update.document);
+      return update.stored
+          ? RulesRefreshOutcome.updated
+          : RulesRefreshOutcome.updatedNotStored;
     } on Object {
       return RulesRefreshOutcome.failed;
     }

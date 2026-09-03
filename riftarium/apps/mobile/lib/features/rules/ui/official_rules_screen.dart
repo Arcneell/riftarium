@@ -78,7 +78,9 @@ class _OfficialRulesScreenState extends ConsumerState<OfficialRulesScreen> {
   Future<void> _openSource(String url) async {
     final uri = Uri.tryParse(url);
     var opened = false;
-    if (uri != null) {
+    // Le lien vient du document : on n'ouvre que du web, jamais un `file:`
+    // ou un schéma applicatif recopié dans le JSON.
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
       try {
         opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       } on Object {
@@ -196,7 +198,12 @@ class _OfficialRulesScreenState extends ConsumerState<OfficialRulesScreen> {
   }
 
   List<Widget> _searchSlivers(RuleBook book) {
-    final hits = ref.watch(ruleSearchProvider(_query));
+    // La recherche parcourt les deux documents : l'écran n'affiche que les
+    // résultats du livre sélectionné, comme la liste des chapitres.
+    final hits = [
+      for (final hit in ref.watch(ruleSearchProvider(_query)))
+        if (hit.book.key == book.key) hit,
+    ];
     if (hits.isEmpty) {
       return const [
         SliverToBoxAdapter(

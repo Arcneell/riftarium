@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +14,7 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
+import '../../../app/widgets/rift_avatar.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/decks_controller.dart';
@@ -46,6 +46,14 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     _debounce?.cancel();
     _search.dispose();
     super.dispose();
+  }
+
+  /// Remise à zéro complète : la barre de recherche se vide elle aussi, et la
+  /// frappe en attente ne doit pas réappliquer le texte effacé.
+  void _resetFilters() {
+    _debounce?.cancel();
+    _search.clear();
+    ref.read(communityQueryProvider.notifier).reset();
   }
 
   void _onSearchChanged(String value) {
@@ -80,8 +88,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // La page suivante se précharge dès que celle-ci arrive : plus de squelette
-    // pendant le défilement.
+    // Les visuels des légendes de la page reçue sont mis en cache dès son
+    // arrivée : revenir sur une page déjà vue ne repasse pas par le réseau.
     ref.listen(communityDecksProvider, (previous, next) {
       final legends = next.valueOrNull?.items
           .map((deck) => deck.legend)
@@ -104,7 +112,11 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
           ),
           const DecksSegment(current: DecksTab.community),
           SliverToBoxAdapter(
-            child: _Filters(search: _search, onSearchChanged: _onSearchChanged),
+            child: _Filters(
+              search: _search,
+              onSearchChanged: _onSearchChanged,
+              onReset: _resetFilters,
+            ),
           ),
           page.when(
             loading: () => const SliverFillRemaining(
@@ -132,7 +144,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                         action: GhostButton(
                           label: 'Réinitialiser les filtres',
                           icon: Icons.filter_alt_off_outlined,
-                          onPressed: controller.reset,
+                          onPressed: _resetFilters,
                         ),
                       ),
                     ),
@@ -192,10 +204,15 @@ class _DeckList extends StatelessWidget {
 
 /// Recherche, tri, légendes, format et domaines : tout en puces.
 class _Filters extends ConsumerWidget {
-  const _Filters({required this.search, required this.onSearchChanged});
+  const _Filters({
+    required this.search,
+    required this.onSearchChanged,
+    required this.onReset,
+  });
 
   final TextEditingController search;
   final ValueChanged<String> onSearchChanged;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -260,7 +277,7 @@ class _Filters extends ConsumerWidget {
                   label: 'Réinitialiser (${filters.activeCount})',
                   icon: Icons.filter_alt_off_outlined,
                   selected: false,
-                  onTap: controller.reset,
+                  onTap: onReset,
                 ),
               ],
             ],
@@ -308,7 +325,9 @@ class _LegendPill extends ConsumerWidget {
       label: label,
       selected: selected.isNotEmpty,
       menu: true,
-      leading: first == null ? null : LegendAvatar(legend: first, size: 22),
+      leading: first == null
+          ? null
+          : RiftAvatar(url: first.imageUrl, initial: first.name, size: 22),
       onTap: legends.isEmpty ? null : () => _open(context, ref, legends),
     );
   }
@@ -359,7 +378,11 @@ class _LegendsSheet extends ConsumerWidget {
                   final legend = legends[index];
                   final on = selected.contains(legend.id);
                   return ListTile(
-                    leading: LegendAvatar(legend: legend, size: 38),
+                    leading: RiftAvatar(
+                      url: legend.imageUrl,
+                      initial: legend.name,
+                      size: 38,
+                    ),
                     title: Text(legend.name, style: text.body),
                     subtitle: Text(
                       '${legend.deckCount} deck(s)',
@@ -384,49 +407,6 @@ class _LegendsSheet extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Vignette ronde d'une légende du filtre.
-class LegendAvatar extends StatelessWidget {
-  const LegendAvatar({super.key, required this.legend, this.size = 32});
-
-  final CommunityLegend legend;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = legend.imageUrl;
-    final initial = legend.name.isEmpty ? '?' : legend.name[0].toUpperCase();
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RiftColors.goldGradient,
-      ),
-      clipBehavior: Clip.antiAlias,
-      alignment: Alignment.center,
-      child: url == null || url.isEmpty
-          ? Text(
-              initial,
-              style: TextStyle(
-                fontFamily: RiftFonts.display,
-                fontSize: size * 0.45,
-                color: RiftColors.paper,
-              ),
-            )
-          : CachedNetworkImage(
-              imageUrl: cardThumb(url, width: 160),
-              cacheManager: riftImageCache,
-              fit: BoxFit.cover,
-              // Le visuel d'une carte est un portrait : on cadre le buste.
-              alignment: Alignment.topCenter,
-              width: size,
-              height: size,
-              errorWidget: (context, url, error) => const SizedBox.shrink(),
-            ),
     );
   }
 }

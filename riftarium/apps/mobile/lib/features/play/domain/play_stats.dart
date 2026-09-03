@@ -29,7 +29,8 @@ class PlayTotals {
   final int won;
   final int lost;
 
-  /// Taux de victoire, de 0 à 1 (l'API peut aussi le donner en pourcentage).
+  /// Taux de victoire tel que l'API le renvoie : une fraction de 0 à 1
+  /// (`round(won / played, 3)`, 0 s'il n'y a aucune partie).
   final double winRate;
   final int currentStreak;
   final int bestStreak;
@@ -42,15 +43,6 @@ class PlayTotals {
   }
 
   String get winRateLabel => '${(winRatio * 100).round()} %';
-
-  Map<String, dynamic> toJson() => {
-    'played': played,
-    'won': won,
-    'lost': lost,
-    'win_rate': winRate,
-    'current_streak': currentStreak,
-    'best_streak': bestStreak,
-  };
 }
 
 /// Une ligne « par format » (`StatsOut.by_format`).
@@ -75,13 +67,6 @@ class FormatStat {
   final int lost;
 
   String get label => (GameMode.byId(mode) ?? GameMode.duel).label;
-
-  Map<String, dynamic> toJson() => {
-    'mode': mode,
-    'played': played,
-    'won': won,
-    'lost': lost,
-  };
 }
 
 /// Une ligne « par deck » (`StatsOut.by_deck`).
@@ -119,16 +104,6 @@ class DeckStat {
     if (rate > 0) return rate.clamp(0.0, 1.0);
     return played == 0 ? 0 : won / played;
   }
-
-  Map<String, dynamic> toJson() => {
-    'deck_id': deckId,
-    'name': name,
-    'format': format,
-    'played': played,
-    'won': won,
-    'lost': lost,
-    'win_rate': winRate,
-  };
 }
 
 /// Une ligne « par légende » (`by_legend` et `by_opponent_legend`).
@@ -159,15 +134,6 @@ class LegendStat {
   final int lost;
 
   double get winRatio => played == 0 ? 0 : won / played;
-
-  Map<String, dynamic> toJson() => {
-    'card_id': cardId,
-    'name': name,
-    'image_url': imageUrl,
-    'played': played,
-    'won': won,
-    'lost': lost,
-  };
 }
 
 /// Un jour des trente derniers (`StatsOut.recent`).
@@ -186,8 +152,6 @@ class DayStat {
   final int won;
 
   DateTime? get date => DateTime.tryParse(day);
-
-  Map<String, dynamic> toJson() => {'day': day, 'played': played, 'won': won};
 }
 
 /// Statistiques de mes parties suivies (`GET /api/play/stats`).
@@ -218,17 +182,6 @@ class PlayStats {
   final List<DayStat> recent;
 
   bool get isEmpty => totals.played == 0;
-
-  Map<String, dynamic> toJson() => {
-    'totals': totals.toJson(),
-    'by_format': byFormat.map((item) => item.toJson()).toList(),
-    'by_deck': byDeck.map((item) => item.toJson()).toList(),
-    'by_legend': byLegend.map((item) => item.toJson()).toList(),
-    'by_opponent_legend': byOpponentLegend
-        .map((item) => item.toJson())
-        .toList(),
-    'recent': recent.map((item) => item.toJson()).toList(),
-  };
 }
 
 List<T> _list<T>(Object? source, T Function(Map<String, dynamic>) build) =>

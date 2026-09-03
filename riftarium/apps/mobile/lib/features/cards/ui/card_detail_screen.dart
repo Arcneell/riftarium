@@ -7,13 +7,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/adaptive.dart';
 import '../../../app/design/components.dart';
+import '../../../app/design/glyphs.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/design/rich_text.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
-import '../../../core/api_exception.dart';
+import '../../../app/widgets/api_messages.dart';
 import '../../../core/config.dart';
 import '../../collection/ui/widgets/card_collection_actions.dart';
 import '../application/cards_controller.dart';
@@ -21,8 +23,6 @@ import '../domain/card.dart';
 import '../domain/card_labels.dart';
 import '../domain/card_text.dart';
 import '../domain/prices_meta.dart';
-import 'widgets/card_glyph.dart';
-import 'widgets/card_text_view.dart';
 
 /// Fiche d'une carte : on l'ouvre sur son visuel, posé dans la lueur de son
 /// domaine ; les caractéristiques se déroulent dessous.
@@ -40,9 +40,8 @@ class CardDetailScreen extends ConsumerWidget {
     if (card != null) {
       body = _CardSheet(card: card);
     } else if (detail.hasError) {
-      final error = detail.error;
       body = ErrorView(
-        message: error is ApiException ? error.message : 'Erreur inattendue.',
+        message: messageOf(detail.error),
         onRetry: () => ref.invalidate(cardDetailProvider(cardId)),
       );
     } else {
@@ -238,7 +237,12 @@ class _CardSheet extends ConsumerWidget {
                     if (card.text.isNotEmpty)
                       _Block(
                         index: 2,
-                        child: RiftPanel(child: CardTextView(text: card.text)),
+                        child: RiftPanel(
+                          child: RiftRichText(
+                            card.text,
+                            breakGluedAbilities: true,
+                          ),
+                        ),
                       ),
                     if (card.flavour != null && card.flavour!.isNotEmpty)
                       _Block(
@@ -401,11 +405,12 @@ class _StatsRow extends StatelessWidget {
       if (card.energy != null)
         (
           'Énergie',
-          CardGlyph(
-            glyph: CardTextGlyph(
+          RiftGlyph(
+            glyph: RiftGlyphSpec(
               token: 'energy_${card.energy}',
               label: 'Énergie ${card.energy}',
               kind: GlyphKind.energy,
+              short: '[${card.energy}]',
             ),
             size: 30,
           ),
@@ -416,11 +421,12 @@ class _StatsRow extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CardGlyph(
-                glyph: const CardTextGlyph(
+              RiftGlyph(
+                glyph: const RiftGlyphSpec(
                   token: 'might',
                   label: 'Puissance',
                   kind: GlyphKind.ink,
+                  short: '[M]',
                 ),
                 size: 22,
                 color: RiftColors.gold,
@@ -445,7 +451,7 @@ class _StatsRow extends StatelessWidget {
               for (final (index, rune) in runes.indexed)
                 Padding(
                   padding: EdgeInsets.only(left: index == 0 ? 0 : 3),
-                  child: CardGlyph(glyph: rune, size: 22),
+                  child: RiftGlyph(glyph: rune, size: 22),
                 ),
             ],
           ),
@@ -572,7 +578,10 @@ Future<void> _openCardmarket(BuildContext context, String name) async {
 }
 
 /// Autres impressions de la même carte (alt-art, signature, overnumbered).
-class _VariantsCarousel extends ConsumerWidget {
+///
+/// Elles arrivent avec la fiche (`GET /cards/{id}` renvoie `variants`) : aucun
+/// appel supplémentaire.
+class _VariantsCarousel extends StatelessWidget {
   const _VariantsCarousel({required this.card});
 
   final RiftCard card;
@@ -580,11 +589,9 @@ class _VariantsCarousel extends ConsumerWidget {
   static const double _tileWidth = 96;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final variants = ref.watch(cardVariantsProvider(card.id)).valueOrNull;
-    if (variants == null || variants.length < 2) {
-      return const SizedBox.shrink();
-    }
+  Widget build(BuildContext context) {
+    final variants = card.variants;
+    if (variants.length < 2) return const SizedBox.shrink();
     final text = riftText(context);
     // Le reflet de l'impression courante ne tourne pas en mouvement réduit.
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -767,7 +774,9 @@ class _FullScreenCardImageState extends State<_FullScreenCardImage> {
 
 /// Ouvre la fiche du site dans le navigateur.
 Future<void> _openOnWeb(BuildContext context, String cardId) async {
-  final uri = Uri.parse('${AppConfig.webBaseUrl}/cartes/$cardId');
+  final uri = Uri.parse(
+    '${AppConfig.webBaseUrl}/cartes/${Uri.encodeComponent(cardId)}',
+  );
   final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
   if (opened || !context.mounted) return;
   await showAdaptiveMessage(

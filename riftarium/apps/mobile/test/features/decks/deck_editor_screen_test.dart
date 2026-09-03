@@ -105,7 +105,8 @@ void main() {
     );
     await openEditor(tester, api);
 
-    await tester.tap(find.text('Mon deck (2)'));
+    // Le libellé compte les exemplaires (1 légende + 2 unités), pas les lignes.
+    await tester.tap(find.text('Mon deck (3)'));
     await tester.pumpAndSettle();
 
     expect(find.text('Légende · 1/1'), findsOneWidget);
@@ -114,6 +115,7 @@ void main() {
     await tester.tap(find.byTooltip('Ajouter un exemplaire').last);
     await tester.pumpAndSettle();
     expect(find.text('Deck principal · 3/40+'), findsOneWidget);
+    expect(find.text('Mon deck (4)'), findsOneWidget);
 
     // Le plafond de 3 exemplaires est respecté.
     await tester.tap(find.byTooltip('Ajouter un exemplaire').last);
@@ -123,6 +125,38 @@ void main() {
     await tester.tap(find.byTooltip('Retirer un exemplaire').last);
     await tester.pumpAndSettle();
     expect(find.text('Deck principal · 2/40+'), findsOneWidget);
+  });
+
+  testWidgets('quitter un deck modifié demande confirmation', (tester) async {
+    final api = server();
+    await openEditor(tester, api);
+
+    // Rien de changé : le retour sort tout de suite.
+    await tester.tap(find.byTooltip('Retour'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DeckEditorScreen), findsNothing);
+
+    await tester.tap(find.text('Modifier'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ahri, Légende').first);
+    await tester.pumpAndSettle();
+
+    // Une carte ajoutée : le retour prévient avant de perdre le travail.
+    await tester.tap(find.byTooltip('Retour'));
+    await tester.pumpAndSettle();
+    expect(find.text('Quitter sans enregistrer ?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Rester'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DeckEditorScreen), findsOneWidget);
+    expect(find.text('Mon deck (1)'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Retour'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Quitter'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DeckEditorScreen), findsNothing);
+    expect(api.on('PUT', '/decks/1'), isEmpty);
   });
 
   testWidgets('l’enregistrement envoie le deck et referme l’éditeur', (

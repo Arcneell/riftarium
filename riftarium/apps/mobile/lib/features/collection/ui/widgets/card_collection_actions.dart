@@ -35,10 +35,6 @@ class _CardCollectionActionsState extends ConsumerState<CardCollectionActions> {
   String? _error;
   bool _busy = false;
 
-  /// Quantité souhaitée après action locale ; null tant qu'on n'a pas touché à
-  /// la wishlist (la valeur vient alors de la carte).
-  int? _wished;
-
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() {
@@ -54,15 +50,16 @@ class _CardCollectionActionsState extends ConsumerState<CardCollectionActions> {
     }
   }
 
-  Future<void> _toggleWish(bool wished) => _run(() async {
+  /// Fait entrer la carte dans la wishlist, ou l'en sort. L'état du cœur n'est
+  /// pas mémorisé ici : il est relu de la wishlist, seule source de vérité.
+  Future<void> _setWished(bool wanted) => _run(() async {
     final api = ref.read(collectionApiProvider);
-    if (wished) {
-      await api.removeWish(widget.card.id);
-    } else {
+    if (wanted) {
       await api.setWish(cardId: widget.card.id, qty: 1);
+    } else {
+      await api.removeWish(widget.card.id);
     }
     if (!mounted) return;
-    setState(() => _wished = wished ? 0 : 1);
     ref.invalidate(wishlistControllerProvider);
   });
 
@@ -96,7 +93,12 @@ class _CardCollectionActionsState extends ConsumerState<CardCollectionActions> {
     final collection = ref.watch(cardCollectionProvider(widget.card.id));
     final state = collection.valueOrNull;
     final owned = state?.totalQty ?? widget.card.ownedQty ?? 0;
-    final wished = (_wished ?? widget.card.wishedQty ?? 0) > 0;
+    // Le cœur suit la wishlist du compte ; tant qu'elle charge, on se rabat sur
+    // ce que disait la fiche (`wished_qty`).
+    final wishlist = ref.watch(wishlistControllerProvider).valueOrNull;
+    final wished = wishlist == null
+        ? (widget.card.wishedQty ?? 0) > 0
+        : wishlist.items.any((item) => item.card.id == widget.card.id);
     final controller = ref.read(
       cardCollectionProvider(widget.card.id).notifier,
     );
@@ -148,7 +150,7 @@ class _CardCollectionActionsState extends ConsumerState<CardCollectionActions> {
           _WishButton(
             wished: wished,
             enabled: !_busy,
-            onPressed: () => _toggleWish(wished),
+            onPressed: () => _setWished(!wished),
           ),
           if (_error != null) ...[
             const SizedBox(height: 10),

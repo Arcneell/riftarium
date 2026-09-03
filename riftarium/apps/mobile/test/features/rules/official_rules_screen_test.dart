@@ -75,6 +75,21 @@ void main() {
     expect(find.textContaining('un autre emplacement'), findsWidgets);
   });
 
+  testWidgets('la recherche ne montre que le livre affiché', (tester) async {
+    await pumpOfficial(tester);
+
+    // « arbitre » n'existe que dans les règles de tournoi.
+    await tester.enterText(find.byType(TextField).first, 'arbitre');
+    await tester.pump(const Duration(milliseconds: 300));
+    await settle(tester);
+    expect(find.text('Aucune règle trouvée'), findsOneWidget);
+
+    await tester.tap(find.text('Règles de tournoi'));
+    await settle(tester);
+    expect(find.text('1 règle pour « arbitre »'), findsOneWidget);
+    expect(find.text('802.'), findsOneWidget);
+  });
+
   testWidgets('la bascule affiche les règles de tournoi', (tester) async {
     await pumpOfficial(tester);
 

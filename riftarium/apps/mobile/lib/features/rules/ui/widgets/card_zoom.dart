@@ -45,7 +45,9 @@ class _CardZoom extends StatelessWidget {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         card.name,
-                        style: text.displaySmall.copyWith(color: Colors.white),
+                        style: text.displaySmall.copyWith(
+                          color: RiftColors.onAccent,
+                        ),
                       ),
                     ),
                   ),

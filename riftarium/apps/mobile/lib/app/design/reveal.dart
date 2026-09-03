@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'tokens.dart';
@@ -11,7 +13,6 @@ class Reveal extends StatefulWidget {
     required this.child,
     this.index = 0,
     this.maxStaggered = 12,
-    this.offset = 14,
   });
 
   final Widget child;
@@ -20,7 +21,9 @@ class Reveal extends StatefulWidget {
   /// Au-delà de ce rang, plus de décalage : les tuiles chargées plus tard
   /// (pagination) apparaissent sans attendre.
   final int maxStaggered;
-  final double offset;
+
+  /// Hauteur de la montée, en pixels logiques.
+  static const rise = 14.0;
 
   @override
   State<Reveal> createState() => _RevealState();
@@ -37,6 +40,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
   );
 
   bool _scheduled = false;
+  Timer? _stagger;
 
   @override
   void didChangeDependencies() {
@@ -54,13 +58,14 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
       _controller.forward();
       return;
     }
-    Future<void>.delayed(RiftMotion.stagger * rank, () {
-      if (mounted) _controller.forward();
-    });
+    // Minuteur retenu puis annulé au démontage : une tuile détruite pendant
+    // son décalage réveillerait sinon un contrôleur déjà libéré.
+    _stagger = Timer(RiftMotion.stagger * rank, _controller.forward);
   }
 
   @override
   void dispose() {
+    _stagger?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -73,7 +78,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
       builder: (context, child) => Opacity(
         opacity: _curve.value,
         child: Transform.translate(
-          offset: Offset(0, widget.offset * (1 - _curve.value)),
+          offset: Offset(0, Reveal.rise * (1 - _curve.value)),
           child: child,
         ),
       ),

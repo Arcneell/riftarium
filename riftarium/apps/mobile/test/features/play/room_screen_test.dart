@@ -182,6 +182,99 @@ void main() {
     expect(find.text('Boum.'), findsOneWidget);
   });
 
+  testWidgets('une place libre se prend depuis le salon', (tester) async {
+    final open = roomJson(
+      hostId: 8,
+      players: [
+        roomPlayerJson(userId: 8, handle: 'jinx', seat: 0, ready: true),
+      ],
+    );
+    final server = PlayFakeApi({
+      'GET /play/rooms/ABC234': open,
+      'POST /play/rooms/ABC234/join': roomJson(
+        hostId: 8,
+        version: 2,
+        players: [
+          roomPlayerJson(userId: 8, handle: 'jinx', seat: 0, ready: true),
+          roomPlayerJson(seat: 1),
+        ],
+      ),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/salon/ABC234',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rejoindre ce salon'), findsOneWidget);
+
+    await tester.tap(find.text('Rejoindre ce salon'));
+    await tester.pumpAndSettle();
+
+    expect(server.paths, contains('POST /play/rooms/ABC234/join'));
+    // Assis au siège de l'invité : plus d'invitation, mais de quoi repartir.
+    expect(find.text('Rejoindre ce salon'), findsNothing);
+    expect(find.text('Quitter le salon'), findsOneWidget);
+  });
+
+  testWidgets('un salon complet se consulte en spectateur', (tester) async {
+    final server = PlayFakeApi({
+      'GET /play/rooms/ABC234': roomJson(
+        hostId: 8,
+        players: [
+          roomPlayerJson(userId: 8, handle: 'jinx', seat: 0),
+          roomPlayerJson(userId: 9, handle: 'vi', seat: 1),
+        ],
+      ),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/salon/ABC234',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Salon complet : tu le consultes en spectateur.'),
+      findsOneWidget,
+    );
+    expect(find.text('Rejoindre ce salon'), findsNothing);
+    expect(find.text('Revenir au jeu'), findsOneWidget);
+  });
+
+  testWidgets('un salon déjà lancé mène droit au compteur', (tester) async {
+    final server = PlayFakeApi({
+      'GET /play/rooms/ABC234': roomJson(
+        status: 'playing',
+        matchId: 1,
+        players: [
+          roomPlayerJson(ready: true),
+          roomPlayerJson(userId: 8, handle: 'jinx', seat: 1, ready: true),
+        ],
+      ),
+      'GET /play/matches/1': matchJson(),
+    });
+    await tester.pumpWidget(
+      playApp(
+        tester: tester,
+        server: server,
+        location: '/salon/ABC234',
+        size: tall,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(server.paths, contains('GET /play/matches/1'));
+    expect(find.text('CODE DU SALON'), findsNothing);
+  });
+
   testWidgets('un salon expiré le dit et renvoie au jeu', (tester) async {
     final server = PlayFakeApi({
       'GET /play/rooms/ABC234': roomJson(

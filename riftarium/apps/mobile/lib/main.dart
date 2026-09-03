@@ -18,8 +18,10 @@ class RiftariumApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Riftarium',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
+      // Thème unique, nuit de Piltover (mémoïsé dans `buildTheme`) : le
+      // réglage clair du système ne doit pas repeindre l'application.
+      theme: buildTheme(),
+      themeMode: ThemeMode.dark,
       routerConfig: router,
       // Les écrans iOS vivent dans des CupertinoPageScaffold : sans ancêtre
       // Material, les Text prennent le style de secours (jaune, doublement

@@ -7,6 +7,7 @@ import '../../../app/design/banners.dart';
 import '../../../app/design/components.dart';
 import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/design/rich_text.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
@@ -16,7 +17,6 @@ import '../application/rules_providers.dart';
 import '../domain/guides.dart';
 import '../domain/rules.dart';
 import 'rule_entry_view.dart';
-import 'rule_rich_text.dart';
 import 'rule_section_screen.dart';
 import 'rules_navigation.dart';
 import 'widgets/card_zoom.dart';
@@ -158,7 +158,13 @@ class _TopicBody extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Expanded(child: RuleRichText(detail)),
+                  Expanded(
+                    child: RiftRichText(
+                      detail,
+                      markdownBold: true,
+                      shortTokens: true,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -252,7 +258,7 @@ class _KeywordBadge extends StatelessWidget {
           fontStyle: FontStyle.italic,
           fontSize: 12.5,
           letterSpacing: 0.6,
-          color: Colors.white,
+          color: RiftColors.onAccent,
         ),
       ),
     );
@@ -284,9 +290,11 @@ class _CaseTileState extends State<_CaseTile> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: RuleRichText(
+                child: RiftRichText(
                   widget.item.question,
                   style: text.displaySmall.copyWith(fontSize: 17, height: 1.35),
+                  markdownBold: true,
+                  shortTokens: true,
                 ),
               ),
               const SizedBox(width: 8),
@@ -308,7 +316,11 @@ class _CaseTileState extends State<_CaseTile> {
             child: _open
                 ? Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: RuleRichText(widget.item.answer),
+                    child: RiftRichText(
+                      widget.item.answer,
+                      markdownBold: true,
+                      shortTokens: true,
+                    ),
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -417,12 +429,12 @@ class _OfficialSectionsState extends ConsumerState<_OfficialSections> {
     ];
 
     if (!_open) {
+      final count = located.isEmpty ? widget.sections.length : located.length;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${located.isEmpty ? widget.sections.length : located.length} '
-            'section${located.length > 1 ? 's' : ''} du document officiel.',
+            '$count section${count > 1 ? 's' : ''} du document officiel.',
             style: text.small,
           ),
           const SizedBox(height: 10),

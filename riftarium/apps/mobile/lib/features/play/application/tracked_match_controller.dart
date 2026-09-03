@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_exception.dart';
+import '../../../core/poller.dart';
 import '../../cards/domain/card.dart';
 import '../../game/domain/game_actions.dart';
 import '../../game/domain/game_engine.dart';
@@ -15,6 +17,14 @@ import 'play_providers.dart';
 /// Délai avant l'envoi de l'instantané : plusieurs gestes rapprochés (trois
 /// points de suite) ne font qu'un seul `PUT state`.
 const Duration kPlaySyncDebounce = Duration(milliseconds: 300);
+
+/// Première attente avant de retenter un envoi refusé par le réseau. Chaque
+/// échec suivant double l'attente, jusqu'à [kPlaySyncRetryMax] : le bandeau
+/// « le compte repartira tout seul » tient sa promesse sans marteler l'API.
+const Duration kPlaySyncRetry = Duration(seconds: 2);
+
+/// Attente maximale entre deux tentatives d'envoi.
+const Duration kPlaySyncRetryMax = Duration(seconds: 30);
 
 /// État de la synchronisation, affiché discrètement sur la table de l'hôte.
 enum PlaySync {
@@ -64,11 +74,15 @@ final trackedMatchControllerProvider = AsyncNotifierProvider.autoDispose
 class TrackedMatchController
     extends AutoDisposeFamilyAsyncNotifier<TrackedMatch, int>
     implements GameActions {
-  Timer? _poll;
+  Poller? _poller;
+  AppLifecycleListener? _lifecycle;
   Timer? _debounce;
   bool _disposed = false;
   bool _sending = false;
   bool _again = false;
+
+  /// Attente courante avant une nouvelle tentative d'envoi (0 : aucun échec).
+  Duration _retry = Duration.zero;
 
   int get matchId => arg;
 
@@ -83,26 +97,43 @@ class TrackedMatchController
   @override
   Future<TrackedMatch> build(int arg) async {
     final interval = ref.watch(playPollIntervalProvider);
+    final poller = Poller(tick: _tick, interval: interval);
+    _poller = poller;
+    if (interval > Duration.zero) {
+      // En arrière-plan, plus de battement ; au retour, un battement part
+      // aussitôt. Aucun minuteur dans les tests (intervalle nul) : pas de
+      // binding requis pour écouter le cycle de vie.
+      _lifecycle = AppLifecycleListener(
+        onStateChange: (value) => value == AppLifecycleState.resumed
+            ? poller.resume()
+            : poller.pause(),
+      );
+    }
     ref.onDispose(() {
       _disposed = true;
-      _poll?.cancel();
+      poller.dispose();
+      _lifecycle?.dispose();
+      _lifecycle = null;
+      _poller = null;
       _debounce?.cancel();
-      _poll = null;
       _debounce = null;
     });
     final match = await _api.match(arg);
-    if (interval > Duration.zero) {
-      _poll = Timer.periodic(interval, (_) => refresh());
-    }
+    if (_awaited(match)) poller.start();
     return TrackedMatch(match: match, board: boardOfMatch(match));
   }
 
   /// Un battement de sondage. Côté hôte, la table locale fait foi tant que le
   /// match est en cours : seul le statut du match est repris.
+  Future<void> _tick() async {
+    final match = await _api.match(matchId);
+    _adopt(match, keepBoard: isHost && match.isLive);
+  }
+
+  /// Battement déclenché à la main (écran, tests) : silencieux en cas d'erreur.
   Future<void> refresh() async {
     try {
-      final match = await _api.match(matchId);
-      _adopt(match, keepBoard: isHost && match.isLive);
+      await _tick();
     } on ApiException {
       // Réseau capricieux : le prochain battement réessaie.
     }
@@ -110,10 +141,18 @@ class TrackedMatchController
 
   Future<void> reload() async {
     state = const AsyncLoading<TrackedMatch>().copyWithPrevious(state);
-    state = await AsyncValue.guard(() async {
+    final next = await AsyncValue.guard(() async {
       final match = await _api.match(matchId);
       return TrackedMatch(match: match, board: boardOfMatch(match));
     });
+    state = next;
+    final match = next.valueOrNull?.match;
+    if (match == null) return;
+    if (_awaited(match)) {
+      _poller?.start();
+    } else {
+      _poller?.stop();
+    }
   }
 
   // --- Gestes de la table (GameActions) -----------------------------------
@@ -223,9 +262,16 @@ class TrackedMatchController
     _schedule();
   }
 
-  void _schedule() {
+  void _schedule([Duration delay = kPlaySyncDebounce]) {
     _debounce?.cancel();
-    _debounce = Timer(kPlaySyncDebounce, _send);
+    _debounce = Timer(delay, _send);
+  }
+
+  /// Prochaine attente après un échec : 2 s, puis le double à chaque fois.
+  Duration _nextRetry() {
+    if (_retry <= Duration.zero) return kPlaySyncRetry;
+    final next = _retry * 2;
+    return next > kPlaySyncRetryMax ? kPlaySyncRetryMax : next;
   }
 
   /// Envoie l'instantané courant. Un 409 = le serveur a une autre version :
@@ -250,6 +296,7 @@ class TrackedMatchController
             version: version,
             state: stateOfBoard(current.board, current.match),
           );
+          _retry = Duration.zero;
           _adopt(updated, keepBoard: true, sync: PlaySync.synced);
           break;
         } on ApiException catch (error) {
@@ -259,7 +306,11 @@ class TrackedMatchController
             version = fresh.version;
             continue;
           }
+          // Le bandeau promet que le compte repartira tout seul : on
+          // replanifie l'envoi, de plus en plus espacé tant que ça rate.
           _mark(PlaySync.offline);
+          _retry = _nextRetry();
+          if (!_disposed) _schedule(_retry);
           break;
         }
       }
@@ -286,7 +337,14 @@ class TrackedMatchController
         sync: sync ?? current?.sync ?? PlaySync.synced,
       ),
     );
+    if (!_awaited(match)) _poller?.stop();
   }
+
+  /// Il reste quelque chose à attendre du serveur : la partie court, ou le
+  /// résultat attend la confirmation de l'adversaire. Confirmé, contesté ou
+  /// abandonné, le match ne bougera plus : inutile de continuer à sonder.
+  static bool _awaited(Match match) =>
+      match.isLive || match.isAwaitingConfirmation;
 
   void _mark(PlaySync sync) {
     final current = state.valueOrNull;

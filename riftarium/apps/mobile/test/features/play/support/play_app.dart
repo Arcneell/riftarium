@@ -6,10 +6,10 @@ import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
 import 'package:riftarium_mobile/features/game/application/game_providers.dart';
-import 'package:riftarium_mobile/features/game/data/game_store.dart';
 import 'package:riftarium_mobile/features/play/application/play_providers.dart';
 import 'package:riftarium_mobile/main.dart';
 
+import '../../game/support/in_memory_game_store.dart';
 import 'play_fixtures.dart';
 
 /// Surcharges communes aux tests de partie suivie : faux serveur, session déjà

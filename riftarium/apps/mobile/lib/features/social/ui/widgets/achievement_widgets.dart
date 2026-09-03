@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/design/components.dart';
+import '../../../../app/design/motion_utils.dart';
+import '../../../../app/format.dart';
 import '../../../../app/theme.dart';
 import '../../domain/achievement.dart';
 import 'achievement_icons.dart';
@@ -44,7 +46,7 @@ class AchievementMedallion extends StatelessWidget {
       ink = theme.colorScheme.onSurfaceVariant;
     } else if (prism) {
       rim = const BoxDecoration(gradient: RiftColors.prism);
-      face = _PrismFace(animate: !MediaQuery.disableAnimationsOf(context));
+      face = _PrismFace(animate: !riftReduceMotion(context));
       ink = Colors.white;
     } else {
       rim = BoxDecoration(gradient: material.rim);
@@ -286,12 +288,4 @@ class AchievementTile extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Date courte à la française : `27/08/2026`.
-String formatSocialDate(DateTime date) {
-  final local = date.toLocal();
-  final day = local.day.toString().padLeft(2, '0');
-  final month = local.month.toString().padLeft(2, '0');
-  return '$day/$month/${local.year}';
 }

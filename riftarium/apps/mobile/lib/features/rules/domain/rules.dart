@@ -24,19 +24,34 @@ final Map<int, String> _foldTable = {
 };
 
 /// Minuscules sans accents : la recherche ignore la casse et les diacritiques.
-String foldForSearch(String value) {
+String foldForSearch(String value) => foldForSearchWithOffsets(value).folded;
+
+/// Texte replié et, pour chaque caractère replié, l'index du caractère
+/// d'origine qui l'a produit.
+///
+/// Le repliage n'est pas une bijection (« œ » donne deux lettres) : sans cette
+/// table, un index trouvé dans le texte replié ne désigne pas le même endroit
+/// dans le texte affiché. Utilisé pour découper un extrait de résultat.
+({String folded, List<int> offsets}) foldForSearchWithOffsets(String value) {
+  // `toLowerCase` conserve la longueur pour les caractères du document : les
+  // index de `lower` sont ceux de `value`.
   final lower = value.toLowerCase();
   final buffer = StringBuffer();
+  final offsets = <int>[];
   for (var i = 0; i < lower.length; i++) {
     final unit = lower.codeUnitAt(i);
     final replacement = _foldTable[unit];
     if (replacement == null) {
       buffer.writeCharCode(unit);
+      offsets.add(i);
     } else {
       buffer.write(replacement);
+      for (var j = 0; j < replacement.length; j++) {
+        offsets.add(i);
+      }
     }
   }
-  return buffer.toString();
+  return (folded: buffer.toString(), offsets: offsets);
 }
 
 String _string(Object? value) => value is String ? value : '';
@@ -105,6 +120,12 @@ class RuleEntry {
         ? '$number $text'
         : '$number $text ${examples.map((e) => e.text).join(' ')}',
   );
+
+  /// Force le calcul de [haystack]. Appelé par [parseRulesDocument], donc dans
+  /// l'isolate de décodage : la première recherche ne bloque pas le thread UI.
+  void warmHaystack() {
+    haystack;
+  }
 }
 
 /// Groupe de règles à l'intérieur d'un chapitre.
@@ -195,6 +216,53 @@ class RuleBook {
   /// Signature de version : sert à détecter une mise à jour en ligne.
   String get signature => '$key/$updated/$ruleCount';
 }
+
+/// Mois français tels qu'écrits dans le champ `updated` du document.
+const List<String> _frenchMonths = [
+  'janvier',
+  'fevrier',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'aout',
+  'septembre',
+  'octobre',
+  'novembre',
+  'decembre',
+];
+
+final RegExp _frenchDate = RegExp(r'^(\d{1,2})\s+(\S+)\s+(\d{4})$');
+
+/// Convertit une date de document (« 16 juillet 2026 ») en date comparable.
+/// Renvoie null si le format n'est pas celui attendu : rien ne le garantit,
+/// le champ est recopié tel quel du PDF officiel.
+DateTime? parseRuleDate(String value) {
+  final match = _frenchDate.firstMatch(foldForSearch(value.trim()));
+  if (match == null) return null;
+  final month = _frenchMonths.indexOf(match.group(2)!);
+  if (month < 0) return null;
+  final day = int.tryParse(match.group(1)!);
+  final year = int.tryParse(match.group(3)!);
+  if (day == null || year == null) return null;
+  return DateTime.utc(year, month + 1, day);
+}
+
+/// Date `updated` la plus récente d'un document brut, lue sans le décoder :
+/// comparer le cache et l'asset embarqué au démarrage ne doit pas coûter deux
+/// décodages de 783 Ko.
+DateTime? peekRulesUpdatedAt(String source) {
+  DateTime? latest;
+  for (final match in _updatedField.allMatches(source)) {
+    final date = parseRuleDate(match.group(1)!);
+    if (date == null) continue;
+    if (latest == null || date.isAfter(latest)) latest = date;
+  }
+  return latest;
+}
+
+final RegExp _updatedField = RegExp(r'"updated"\s*:\s*"([^"]*)"');
 
 /// Position d'une règle dans le document : livre › chapitre › section › règle.
 class RuleLocation {
@@ -347,15 +415,18 @@ const int _snippetRadius = 60;
 const int _snippetLength = 190;
 
 String _snippetOf(String text, List<String> tokens) {
-  final folded = foldForSearch(text);
+  final folded = foldForSearchWithOffsets(text);
   var first = -1;
   for (final token in tokens) {
-    final position = folded.indexOf(token);
+    final position = folded.folded.indexOf(token);
     if (position >= 0 && (first < 0 || position < first)) first = position;
   }
-  if (first < 0) first = 0;
-  // Le repliage peut allonger le texte (œ → oe) : on borne l'index.
-  final start = math.min(math.max(first - _snippetRadius, 0), text.length);
+  // Index replié → index d'origine : « œ » se replie en deux lettres, les
+  // deux textes ne se superposent pas.
+  final origin = first <= 0
+      ? 0
+      : (first < folded.offsets.length ? folded.offsets[first] : text.length);
+  final start = math.min(math.max(origin - _snippetRadius, 0), text.length);
   final end = math.min(start + _snippetLength, text.length);
   final slice = text.substring(start, end);
   return '${start > 0 ? '… ' : ''}$slice${end < text.length ? ' …' : ''}';
@@ -447,5 +518,20 @@ List<RuleSearchHit> searchRules(
 
 /// Décode le JSON complet. Fonction de premier niveau : appelée dans une
 /// isolate via `compute` (783 Ko, le thread UI ne doit pas s'arrêter).
-RulesDocument parseRulesDocument(String source) =>
-    RulesDocument.fromJson(jsonDecode(source) as Map<String, dynamic>);
+RulesDocument parseRulesDocument(String source) {
+  final document = RulesDocument.fromJson(
+    jsonDecode(source) as Map<String, dynamic>,
+  );
+  // Repliage de toutes les règles fait ici : sinon la première frappe dans le
+  // champ de recherche le paierait sur le thread UI.
+  for (final book in document.books) {
+    for (final chapter in book.chapters) {
+      for (final section in chapter.sections) {
+        for (final entry in section.entries) {
+          entry.warmHaystack();
+        }
+      }
+    }
+  }
+  return document;
+}

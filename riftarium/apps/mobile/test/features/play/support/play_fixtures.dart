@@ -302,9 +302,16 @@ Map<String, dynamic> historyItemJson({
 Map<String, dynamic> historyPageJson({
   List<Map<String, dynamic>>? items,
   int? total,
+  int page = 1,
+  int size = 20,
 }) {
   final list = items ?? [historyItemJson()];
-  return {'total': total ?? list.length, 'page': 1, 'size': 50, 'items': list};
+  return {
+    'total': total ?? list.length,
+    'page': page,
+    'size': size,
+    'items': list,
+  };
 }
 
 Map<String, dynamic> statsJson({int played = 10, int won = 6, int lost = 4}) =>

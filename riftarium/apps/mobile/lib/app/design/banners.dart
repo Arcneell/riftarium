@@ -42,8 +42,8 @@ abstract final class RiftBanners {
 /// Redimensionne une URL d'illustration du CDN Riot (`w=`) : les visuels de
 /// cartes font 744×1039 px, inutile de les charger en plein format pour une
 /// vignette. Reprise de `cardThumb()` du site.
-String cardThumb(String? url, {int width = 280}) {
-  if (url == null || url.isEmpty) return url ?? '';
+String cardThumb(String url, {int width = 280}) {
+  if (url.isEmpty) return url;
   final existing = RegExp(r'([?&])w=\d+');
   if (existing.hasMatch(url)) {
     return url.replaceFirstMapped(existing, (m) => '${m[1]}w=$width');

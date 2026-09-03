@@ -1,4 +1,6 @@
+import '../../../core/api_exception.dart';
 import '../../cards/domain/card.dart';
+import '../../cards/domain/card_labels.dart';
 
 /// États acceptés par l'API (`_norm_condition`, `apps/api/app/schemas.py`),
 /// du meilleur au plus abîmé. Libellés repris du site.
@@ -31,10 +33,46 @@ const defaultLang = 'EN';
 const maxCollectionQty = 999;
 const maxWishQty = 99;
 
-/// Montant en euros à la française, ou null quand le prix est inconnu.
-String? formatEur(double? value) {
-  if (value == null) return null;
-  return '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
+/// Une ligne dont la carte est illisible est ignorée : une page de collection
+/// ou de wishlist reste consultable même si l'API a renvoyé une ligne abîmée.
+List<T> readableRows<T>(Object? value, T Function(Map<String, dynamic>) build) {
+  final rows = <T>[];
+  for (final row
+      in (value as List? ?? const []).whereType<Map<String, dynamic>>()) {
+    try {
+      rows.add(build(row));
+    } on ApiException {
+      continue;
+    }
+  }
+  return rows;
+}
+
+/// Lots d'une carte une fois la quantité du couple (état, langue) fixée —
+/// 0 retire le lot. Fonction pure, partagée par l'onglet Collection et le
+/// stepper de la fiche carte.
+List<CollectionEntry> entriesWithQuantity(
+  List<CollectionEntry> entries,
+  int qty,
+  String condition,
+  String lang,
+) {
+  final next = <CollectionEntry>[];
+  var found = false;
+  for (final entry in entries) {
+    if (entry.condition == condition && entry.lang == lang) {
+      found = true;
+      if (qty > 0) next.add(entry.copyWith(qty: qty));
+    } else {
+      next.add(entry);
+    }
+  }
+  if (!found && qty > 0) {
+    next.add(
+      CollectionEntry(id: 0, qty: qty, condition: condition, lang: lang),
+    );
+  }
+  return next;
 }
 
 String conditionLabel(String code) => collectionConditions[code] ?? code;
@@ -94,7 +132,7 @@ class CollectionItem {
 
   factory CollectionItem.fromJson(Map<String, dynamic> json) => CollectionItem(
     card: RiftCard.fromJson(
-      (json['card'] as Map<String, dynamic>?) ?? const {'id': ''},
+      (json['card'] as Map<String, dynamic>?) ?? const {},
     ),
     totalQty: (json['total_qty'] as num?)?.toInt() ?? 0,
     entries: CollectionEntry.listFrom(json['entries']),
@@ -156,10 +194,7 @@ class CollectionPage {
     page: (json['page'] as num?)?.toInt() ?? 1,
     size: (json['size'] as num?)?.toInt() ?? 0,
     valueEur: (json['value_eur'] as num?)?.toDouble(),
-    items: (json['items'] as List? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(CollectionItem.fromJson)
-        .toList(),
+    items: readableRows(json['items'], CollectionItem.fromJson),
   );
 
   final int totalCards;
@@ -258,7 +293,7 @@ class SetCompletion {
   /// « il manque 12 cartes (~34,50 €) » ou « set complet ».
   String get missingLabel {
     if (missing == 0) return 'set complet';
-    final cost = formatEur(missingCostEur);
+    final cost = missingCostEur == null ? null : formatEuro(missingCostEur!);
     final plural = missing > 1 ? 's' : '';
     return 'il manque $missing carte$plural${cost == null ? '' : ' (~$cost)'}';
   }
@@ -303,7 +338,7 @@ class WishItem {
 
   factory WishItem.fromJson(Map<String, dynamic> json) => WishItem(
     card: RiftCard.fromJson(
-      (json['card'] as Map<String, dynamic>?) ?? const {'id': ''},
+      (json['card'] as Map<String, dynamic>?) ?? const {},
     ),
     qty: (json['qty'] as num?)?.toInt() ?? 1,
     createdAt: json['created_at'] as String?,
@@ -332,10 +367,7 @@ class Wishlist {
   factory Wishlist.fromJson(Map<String, dynamic> json) => Wishlist(
     total: (json['total'] as num?)?.toInt() ?? 0,
     valueEur: (json['value_eur'] as num?)?.toDouble(),
-    items: (json['items'] as List? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(WishItem.fromJson)
-        .toList(),
+    items: readableRows(json['items'], WishItem.fromJson),
   );
 
   static const empty = Wishlist(total: 0, items: []);

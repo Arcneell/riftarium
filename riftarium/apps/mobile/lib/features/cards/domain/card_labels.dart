@@ -85,6 +85,10 @@ String ownedLabel(String? value) => kOwnedLabels[value] ?? 'Toutes';
 String formatEuro(double value) =>
     '${value.toStringAsFixed(2).replaceAll('.', ',')}\u00A0€';
 
+/// [formatEuro] pour un prix qui peut manquer : null quand il est inconnu.
+String? formatEuroOrNull(double? value) =>
+    value == null ? null : formatEuro(value);
+
 /// « 3 cartes », « 1 carte », « Aucune carte ».
 String cardCountLabel(int total) {
   if (total <= 0) return 'Aucune carte';

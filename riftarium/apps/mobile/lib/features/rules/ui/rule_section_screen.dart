@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -98,10 +99,13 @@ class _RuleSectionScreenState extends ConsumerState<RuleSectionScreen> {
       fromBookKey: widget.book.key,
     );
     if (location == null) {
-      showAdaptiveMessage(
-        context,
-        title: 'Renvoi introuvable',
-        message: 'La règle ${reference.number} n’est pas dans ce document.',
+      // Le message se ferme tout seul : rien à enchaîner derrière.
+      unawaited(
+        showAdaptiveMessage(
+          context,
+          title: 'Renvoi introuvable',
+          message: 'La règle ${reference.number} n’est pas dans ce document.',
+        ),
       );
       return;
     }

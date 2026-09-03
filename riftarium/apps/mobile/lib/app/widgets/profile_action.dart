@@ -18,15 +18,19 @@ class ProfileAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final auth = ref.watch(authControllerProvider);
-        final profile = auth.profile;
-        final avatar = profile?.avatarUrl;
-        final initial = (profile?.handle ?? '').isEmpty
+        // Sélection fine : l'état d'authentification change à chaque
+        // rechargement du profil, l'avatar ne dépend que de ces trois valeurs.
+        final (signedIn, handle, avatar) = ref.watch(
+          authControllerProvider.select(
+            (s) => (s.isSignedIn, s.profile?.handle, s.profile?.avatarUrl),
+          ),
+        );
+        final initial = (handle ?? '').isEmpty
             ? null
-            : profile!.handle[0].toUpperCase();
+            : handle![0].toUpperCase();
         // La bannière ajoute déjà 6 px après ses actions : pas de marge ici.
         return PressScale(
-          onTap: () => auth.isSignedIn
+          onTap: () => signedIn
               ? context.go(AppRoutes.profile)
               : context.push(
                   AppRoutes.loginFrom(
@@ -35,8 +39,8 @@ class ProfileAction extends StatelessWidget {
                 ),
           child: Semantics(
             button: true,
-            label: auth.isSignedIn ? 'Mon profil' : 'Se connecter',
-            child: auth.isSignedIn
+            label: signedIn ? 'Mon profil' : 'Se connecter',
+            child: signedIn
                 ? RiftAvatar(
                     url: avatar,
                     initial: initial ?? '?',

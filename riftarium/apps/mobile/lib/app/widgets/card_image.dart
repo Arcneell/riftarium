@@ -33,18 +33,26 @@ Future<void> precacheCardThumbs(
   Iterable<RiftCard> cards, {
   int width = CardArtSize.tile,
 }) async {
-  for (final card in cards) {
-    final url = card.imageUrl;
-    if (url == null || url.isEmpty) continue;
+  const batchSize = 4;
+  final urls = [
+    for (final card in cards)
+      if ((card.imageUrl ?? '').isNotEmpty) card.imageUrl!,
+  ];
+  // Par lots : quatre requêtes en parallèle remplissent le cache bien plus
+  // vite qu'une file d'attente, sans saturer le réseau ni le décodeur.
+  for (var start = 0; start < urls.length; start += batchSize) {
     if (!context.mounted) return;
-    await precacheImage(
-      CachedNetworkImageProvider(
-        cardThumb(url, width: width),
-        cacheManager: riftImageCache,
-      ),
-      context,
-      onError: (_, _) {},
-    );
+    await Future.wait([
+      for (final url in urls.skip(start).take(batchSize))
+        precacheImage(
+          CachedNetworkImageProvider(
+            cardThumb(url, width: width),
+            cacheManager: riftImageCache,
+          ),
+          context,
+          onError: (_, _) {},
+        ),
+    ]);
   }
 }
 

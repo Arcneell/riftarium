@@ -6,14 +6,16 @@ import '../../../app/design/banners.dart';
 import '../../../app/design/components.dart';
 import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/format.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../core/api_exception.dart';
-import '../../auth/ui/login_screen.dart' show BannerBackButton;
+import '../../../app/widgets/auth_widgets.dart' show BannerBackButton;
 import '../application/play_providers.dart';
 import '../domain/history.dart';
+import 'widgets/history_outcome.dart';
 import 'widgets/play_avatar.dart';
 
 /// Mes parties suivies terminées : l'adversaire, les légendes, les decks, le
@@ -25,6 +27,7 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(historyProvider);
+    final controller = ref.read(historyProvider.notifier);
     return Scaffold(
       body: RefreshIndicator.adaptive(
         onRefresh: () async => ref.invalidate(historyProvider),
@@ -57,7 +60,7 @@ class HistoryScreen extends ConsumerWidget {
                   ),
                 ),
               ],
-              data: (page) => _content(context, page),
+              data: (feed) => _content(context, feed, controller),
             ),
           ],
         ),
@@ -65,8 +68,12 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  List<Widget> _content(BuildContext context, HistoryPage page) {
-    if (page.items.isEmpty) {
+  List<Widget> _content(
+    BuildContext context,
+    HistoryFeed feed,
+    HistoryController controller,
+  ) {
+    if (feed.items.isEmpty) {
       return [
         SliverFillRemaining(
           hasScrollBody: false,
@@ -85,14 +92,26 @@ class HistoryScreen extends ConsumerWidget {
     }
     return [
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
         sliver: SliverList.separated(
-          itemCount: page.items.length,
+          itemCount: feed.items.length,
           separatorBuilder: (context, index) => const SizedBox(height: 10),
           itemBuilder: (context, index) => Reveal(
             index: index,
-            child: _HistoryTile(item: page.items[index]),
+            child: _HistoryTile(item: feed.items[index]),
           ),
+        ),
+      ),
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
+        sliver: SliverToBoxAdapter(
+          child: feed.hasMore
+              ? GhostButton(
+                  label: feed.loadingMore ? 'Chargement…' : 'Charger la suite',
+                  icon: Icons.expand_more_rounded,
+                  onPressed: feed.loadingMore ? null : controller.loadMore,
+                )
+              : const SizedBox.shrink(),
         ),
       ),
     ];
@@ -106,18 +125,10 @@ class _HistoryTile extends StatelessWidget {
 
   final HistoryItem item;
 
-  /// Vert calme pour une victoire, rouge fureur pour une défaite, gris muet
-  /// pour un résultat contesté (il ne compte pas).
-  Color _color(RiftTextStyles text) => switch (item.outcome) {
-    'win' => RiftColors.calm,
-    'loss' => RiftColors.fury,
-    _ => text.muted,
-  };
-
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final color = _color(text);
+    final color = historyOutcomeColor(context, item.outcome);
     final decks = [
       if (item.myDeck != null) item.myDeck!.name,
       if (item.opponentDeck != null) item.opponentDeck!.name,
@@ -155,7 +166,7 @@ class _HistoryTile extends StatelessWidget {
                               [
                                 item.modeLabel,
                                 if (item.playedAt != null)
-                                  _date(item.playedAt!),
+                                  formatSocialDate(item.playedAt!),
                                 if (item.status == 'abandoned') 'abandon',
                               ].join(' · '),
                               style: text.small.copyWith(fontSize: 12),
@@ -226,12 +237,5 @@ class _HistoryTile extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _date(DateTime value) {
-    final local = value.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    return '$day/$month/${local.year}';
   }
 }

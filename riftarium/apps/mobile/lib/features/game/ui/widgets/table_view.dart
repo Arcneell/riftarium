@@ -60,43 +60,6 @@ class GameTableView extends ConsumerStatefulWidget {
 }
 
 class _GameTableViewState extends ConsumerState<GameTableView> {
-  Timer? _clock;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Le chronomètre bat à la seconde. En mouvement réduit (et donc dans les
-    // tests), aucun minuteur n'est lancé : l'affichage reste figé.
-    final reduce = MediaQuery.disableAnimationsOf(context);
-    if (reduce) {
-      _clock?.cancel();
-      _clock = null;
-    } else {
-      _clock ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-    }
-  }
-
-  /// Battement de l'horloge : rafraîchit l'affichage et, en tournoi, annonce
-  /// la fin du temps quand la ronde est écoulée (RT 408.2). La table qui
-  /// compte le fait ; l'invité en lecture seule attend l'hôte.
-  void _tick() {
-    if (!mounted) return;
-    final state = widget.state;
-    if (!widget.readOnly &&
-        state.mode.isTournament &&
-        !state.timeCalled &&
-        state.remainingTime(DateTime.now()) == Duration.zero) {
-      _game.callTime();
-    }
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _clock?.cancel();
-    super.dispose();
-  }
-
   GameActions get _game =>
       widget.actions ?? ref.read(gameControllerProvider.notifier);
 
@@ -156,6 +119,9 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
   Widget _board() {
     final state = widget.state;
     final players = state.players;
+    // Table sans joueur : impossible en pratique (la configuration et la
+    // relecture en exigent au moins un). On le dit plutôt que de tomber.
+    if (players.isEmpty) return const _EmptyTable();
     if (state.mode.isTeamPlay) {
       final teams = state.teams;
       return Column(
@@ -225,76 +191,107 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
     );
   }
 
-  Widget _bar() => _ControlBar(
-    state: widget.state,
-    readOnly: widget.readOnly,
-    notice: widget.notice,
-    quitLabel: widget.quitLabel,
-    allowRestart: widget.allowRestart,
-    onNextTurn: () {
-      HapticFeedback.selectionClick();
-      _game.nextTurn();
-    },
-    onUndo: widget.state.canUndo ? _game.undo : null,
-    onNewRound: _game.newRound,
-    onReset: _game.reset,
-    onQuit: _confirmQuit,
-    onCallTime: _confirmCallTime,
-    onDismissHint: _game.markHintSeen,
-  );
+  Widget _bar() {
+    final state = widget.state;
+    return _ControlBar(
+      state: state,
+      readOnly: widget.readOnly,
+      notice: widget.notice,
+      quitLabel: widget.quitLabel,
+      allowRestart: widget.allowRestart,
+      now: ref.watch(nowProvider),
+      onNextTurn: () {
+        HapticFeedback.selectionClick();
+        _game.nextTurn();
+      },
+      onUndo: state.canUndo ? _game.undo : null,
+      onReset: _confirmReset,
+      onQuit: _confirmQuit,
+      onCallTime: _confirmCallTime,
+      // Fin de la ronde atteinte : la table qui compte annonce le temps
+      // d'elle-même (RT 408.2) ; l'invité en lecture seule attend l'hôte.
+      onTimeExpired:
+          !widget.readOnly && state.mode.isTournament && !state.timeCalled
+          ? _game.callTime
+          : null,
+      onDismissHint: _game.markHintSeen,
+    );
+  }
 
-  /// L'arbitre annonce la fin du temps : irréversible, on demande confirmation.
-  Future<void> _confirmCallTime() async {
-    final call = await showDialog<bool>(
+  /// Boîte de confirmation de la table : un titre, une phrase, deux boutons.
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    required String cancelLabel,
+  }) async {
+    final answer = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Annoncer la fin du temps ?'),
-        content: const Text(
-          'Le tour en cours s’achève, puis trois tours supplémentaires sont '
-          'joués. Deux points d’avance gagnent le match, sinon égalité. '
-          'Cette annonce ne s’annule pas.',
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Pas encore'),
+            child: Text(cancelLabel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Temps écoulé'),
+            child: Text(confirmLabel),
           ),
         ],
       ),
     );
-    if (call == true) _game.callTime();
+    return answer == true;
+  }
+
+  /// L'arbitre annonce la fin du temps : irréversible, on demande confirmation.
+  Future<void> _confirmCallTime() async {
+    final call = await _confirm(
+      title: 'Annoncer la fin du temps ?',
+      message:
+          'Le tour en cours s’achève, puis trois tours supplémentaires sont '
+          'joués. Deux points d’avance gagnent le match, sinon égalité. '
+          'Cette annonce ne s’annule pas.',
+      confirmLabel: 'Temps écoulé',
+      cancelLabel: 'Pas encore',
+    );
+    if (!mounted || !call) return;
+    _game.callTime();
+  }
+
+  /// Remise à zéro des scores. En tournoi, l'horloge de la ronde ne repart
+  /// pas : le moteur garde son départ.
+  Future<void> _confirmReset() async {
+    final reset = await _confirm(
+      title: 'Réinitialiser les scores ?',
+      message: widget.state.mode.isTournament
+          ? 'Points, XP et manches repartent de zéro. Le chronomètre de la '
+                'ronde continue de tourner.'
+          : 'Points, XP et manches repartent de zéro, avec les mêmes joueurs.',
+      confirmLabel: 'Réinitialiser',
+      cancelLabel: 'Annuler',
+    );
+    if (!mounted || !reset) return;
+    _game.reset();
   }
 
   Future<void> _confirmQuit() async {
     final custom = widget.confirmQuit;
     if (custom != null) {
       if (!await custom()) return;
+      if (!mounted) return;
       _game.quit();
       widget.onQuit?.call();
       return;
     }
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Quitter la partie ?'),
-        content: const Text('Les scores en cours seront effacés.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Rester'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Quitter'),
-          ),
-        ],
-      ),
+    final leave = await _confirm(
+      title: 'Quitter la partie ?',
+      message: 'Les scores en cours seront effacés.',
+      confirmLabel: 'Quitter',
+      cancelLabel: 'Rester',
     );
-    if (leave != true) return;
+    if (!mounted || !leave) return;
     _game.quit();
     widget.onQuit?.call();
   }
@@ -324,7 +321,7 @@ class _TeamScore extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final color = Player.fallbackColors[team % Player.fallbackColors.length];
+    final color = Player.teamColor(team);
     final score = state.scoreOfTeam(team);
     return SizedBox(
       width: width,
@@ -358,23 +355,14 @@ class _TeamScore extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text('ÉQUIPE', style: text.eyebrow.copyWith(fontSize: 9)),
-                ScoreHalo(
+                ScoreDisplay(
+                  score: score,
+                  color: color,
+                  target: state.mode.victoryScore,
                   diameter: width + 16,
-                  child: BigScore(
-                    value: score,
-                    color: color,
-                    size: width * 0.57,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: ScoreGems(
-                    score: score,
-                    target: state.mode.victoryScore,
-                    color: color,
-                    size: width < 100 ? 6.5 : 8,
-                  ),
+                  digitSize: width * 0.57,
+                  gemSize: width < 100 ? 6.5 : 8,
+                  gemPadding: const EdgeInsets.symmetric(horizontal: 6),
                 ),
               ],
             ),
@@ -509,12 +497,13 @@ class _ControlBar extends StatelessWidget {
     required this.notice,
     required this.quitLabel,
     required this.allowRestart,
+    required this.now,
     required this.onNextTurn,
     required this.onUndo,
-    required this.onNewRound,
     required this.onReset,
     required this.onQuit,
     required this.onCallTime,
+    required this.onTimeExpired,
     required this.onDismissHint,
   });
 
@@ -523,20 +512,23 @@ class _ControlBar extends StatelessWidget {
   final Widget? notice;
   final String quitLabel;
   final bool allowRestart;
+
+  /// Horloge de la table, injectable : les tests fixent l'instant courant.
+  final DateTime Function() now;
   final VoidCallback onNextTurn;
   final VoidCallback? onUndo;
-  final VoidCallback onNewRound;
   final VoidCallback onReset;
   final VoidCallback onQuit;
   final VoidCallback onCallTime;
+
+  /// Fin de la ronde atteinte, null si personne n'a à l'annoncer ici.
+  final VoidCallback? onTimeExpired;
   final VoidCallback onDismissHint;
 
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
     final showHint = !state.hintSeen && state.turnNumber == 1;
-    final now = DateTime.now();
-    final elapsed = now.difference(state.startedAt);
     final canCallTime =
         state.mode.isTournament && !state.timeCalled && !readOnly;
     return Padding(
@@ -580,29 +572,11 @@ class _ControlBar extends StatelessWidget {
               // place, c'est elle qui s'ellipse à police agrandie.
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 96),
-                child: state.mode.isTournament
-                    ? _TournamentClock(state: state, now: now)
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            state.mode.roundsToWin > 1
-                                ? 'M${state.round} · TOUR ${state.turnNumber}'
-                                : 'TOUR ${state.turnNumber}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: text.eyebrow.copyWith(fontSize: 9.5),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            formatChrono(elapsed),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: text.monoStrong.copyWith(fontSize: 14),
-                          ),
-                        ],
-                      ),
+                child: _TableClock(
+                  state: state,
+                  now: now,
+                  onExpired: onTimeExpired,
+                ),
               ),
               const SizedBox(width: 10),
               if (!readOnly)
@@ -622,27 +596,25 @@ class _ControlBar extends StatelessWidget {
                 icon: const Icon(Icons.more_vert),
                 tooltip: 'Menu de la partie',
                 onSelected: (value) => switch (value) {
-                  'round' => onNewRound(),
                   'reset' => onReset(),
                   'time' => onCallTime(),
                   _ => onQuit(),
                 },
+                // Pas de « nouvelle manche » ici : le moteur ne l'accepte
+                // qu'une fois la manche finie, et c'est l'écran de fin de
+                // manche qui la lance — avec le choix du premier joueur en
+                // tournoi (RT 407.4).
                 itemBuilder: (context) => [
                   if (canCallTime)
                     const PopupMenuItem(
                       value: 'time',
                       child: Text('Annoncer la fin du temps'),
                     ),
-                  if (allowRestart && !readOnly) ...const [
-                    PopupMenuItem(
-                      value: 'round',
-                      child: Text('Nouvelle manche'),
-                    ),
-                    PopupMenuItem(
+                  if (allowRestart && !readOnly)
+                    const PopupMenuItem(
                       value: 'reset',
                       child: Text('Réinitialiser les scores'),
                     ),
-                  ],
                   PopupMenuItem(value: 'quit', child: Text(quitLabel)),
                 ],
               ),
@@ -650,6 +622,137 @@ class _ControlBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Table sans joueur : le seul état d'erreur possible de la table.
+class _EmptyTable extends StatelessWidget {
+  const _EmptyTable();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Text(
+      'Cette table n’a aucun joueur.',
+      textAlign: TextAlign.center,
+      style: riftText(context).body,
+    ),
+  );
+}
+
+/// Le seul élément qui bat à la seconde : isolé dans son propre widget, son
+/// rafraîchissement ne reconstruit ni les panneaux des joueurs ni le reste de
+/// la barre. Il surveille aussi la fin de la ronde en tournoi (RT 408.2) :
+/// arrivé à zéro, il annonce le temps de lui-même.
+///
+/// En mouvement réduit (et donc dans les tests), aucun minuteur ne tourne :
+/// l'affichage suit les changements de la partie, et une ronde déjà expirée
+/// se voit dès la première image.
+class _TableClock extends StatefulWidget {
+  const _TableClock({
+    required this.state,
+    required this.now,
+    required this.onExpired,
+  });
+
+  final GameState state;
+  final DateTime Function() now;
+  final VoidCallback? onExpired;
+
+  @override
+  State<_TableClock> createState() => _TableClockState();
+}
+
+class _TableClockState extends State<_TableClock> {
+  Timer? _timer;
+  late DateTime _now = widget.now();
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleExpiryCheck();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _syncTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TableClock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _now = widget.now();
+    _syncTimer();
+    _scheduleExpiryCheck();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  /// Manche finie : le compte est acquis, l'horloge s'arrête.
+  void _syncTimer() {
+    final shouldTick = !_reduceMotion && !widget.state.isOver;
+    if (shouldTick) {
+      _timer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    setState(() => _now = widget.now());
+    _checkExpiry();
+  }
+
+  /// Jamais pendant le build : annoncer le temps change l'état de la partie.
+  void _scheduleExpiryCheck() {
+    if (widget.onExpired == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkExpiry();
+    });
+  }
+
+  void _checkExpiry() {
+    if (widget.state.remainingTime(_now) == Duration.zero) {
+      widget.onExpired?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    if (state.mode.isTournament) {
+      return _TournamentClock(state: state, now: _now);
+    }
+    final text = riftText(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          state.mode.roundsToWin > 1
+              ? 'M${state.round} · TOUR ${state.turnNumber}'
+              : 'TOUR ${state.turnNumber}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: text.eyebrow.copyWith(fontSize: 9.5),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          formatChrono(_now.difference(state.startedAt)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: text.monoStrong.copyWith(fontSize: 14),
+        ),
+      ],
     );
   }
 }

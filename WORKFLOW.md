@@ -211,8 +211,8 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   `url_launcher`, `path_provider`. Chaque ajout de plugin natif = `flutter build
   apk --debug` avant push.
 - **Rendu** : la charte du site (`apps/web/src/assets/main.css`) transposée dans
-  `lib/app/design/` (tokens, typographie Marcellus / Outfit / IBM Plex Mono
-  embarquées, thème clair et sombre, bannières d'illustration, reflet foil,
+  `lib/app/design/` (tokens, typographie Cinzel / Outfit / IBM Plex Mono
+  embarquées, thème unique « nuit de Piltover », bannières, reflet foil,
   révélations en cascade, squelettes, boutons or, puces de domaine). **Lire
   `lib/app/design/README.md` avant tout écran.** iOS garde ses gestes et
   transitions ; l'habillage est celui de la marque sur les deux plateformes.
@@ -234,11 +234,11 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   `riftarium/docs/profils-et-hauts-faits.md` (réglages de confidentialité,
   catalogue des hauts faits, suivis). Les hauts faits de duel ne comptent que les
   matchs suivis confirmés, jamais la partie libre.
-- **Dette connue** : le rendu du texte enrichi existe deux fois
-  (`features/cards/domain/card_text.dart` + `ui/widgets/card_glyph.dart`, et
-  `features/rules/ui/rule_rich_text.dart`). À fusionner dans `lib/app/design/`
-  (garder le gras et les abréviations `[R] [1] [E]` de la version règles, le
-  cache mémoire des SVG de la version cartes).
+- **Texte enrichi** : un seul rendu pour les cartes et les règles, dans
+  `lib/app/design/rich_text.dart` (`parseRiftText`, `riftRichSpans`,
+  `RiftRichText` — mots-clés en pastille, `**gras**`, capacités collées) et
+  `lib/app/design/glyphs.dart` (`RiftGlyph`, cache mémoire des SVG, repli
+  `[R] [1] [E]` quand le CDN manque). Aucun écran ne refait ce découpage.
 - **Conventions** : identifiants en anglais (convention Dart), textes d'interface,
   commentaires, commits et documentation en français ; `flutter_lints` +
   `dart format` par défaut (80 colonnes) ; pas de code Kotlin/Swift maison au-delà

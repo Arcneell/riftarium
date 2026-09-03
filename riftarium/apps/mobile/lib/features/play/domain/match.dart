@@ -100,16 +100,6 @@ class MatchPlayer {
   final bool confirmed;
   final RiftCard? legend;
   final PlayDeck? deck;
-
-  Map<String, dynamic> toJson() => {
-    'user': user.toJson(),
-    'seat': seat,
-    'score': score,
-    'rounds_won': roundsWon,
-    'confirmed': confirmed,
-    'legend': legend == null ? null : cardToJson(legend!),
-    'deck': deck?.toJson(),
-  };
 }
 
 /// Match suivi (`MatchOut`). Seul l'hôte écrit `state` ; l'invité le lit.
@@ -123,34 +113,27 @@ class Match {
     required this.players,
     required this.state,
     required this.version,
-    this.roomCode,
     this.startedAt,
-    this.endedAt,
     this.winnerUserId,
-    this.result,
   });
 
   factory Match.fromJson(Map<String, dynamic> json) => Match(
     id: (json['id'] as num?)?.toInt() ?? 0,
-    roomCode: json['room_code'] as String?,
     mode: (json['mode'] as String?) ?? 'duel',
     status: (json['status'] as String?) ?? 'live',
     hostId: (json['host_id'] as num?)?.toInt() ?? 0,
     firstPlayerId: (json['first_player_id'] as num?)?.toInt() ?? 0,
     startedAt: DateTime.tryParse('${json['started_at']}'),
-    endedAt: DateTime.tryParse('${json['ended_at']}'),
     winnerUserId: (json['winner_user_id'] as num?)?.toInt(),
     players: (json['players'] as List? ?? const [])
         .whereType<Map>()
         .map((item) => MatchPlayer.fromJson(item.cast<String, dynamic>()))
         .toList(),
     state: MatchState.fromJson(json['state']),
-    result: (json['result'] as Map?)?.cast<String, dynamic>(),
     version: (json['version'] as num?)?.toInt() ?? 0,
   );
 
   final int id;
-  final String? roomCode;
   final String mode;
 
   /// `live`, `awaiting_confirmation`, `confirmed`, `disputed` ou `abandoned`.
@@ -158,11 +141,9 @@ class Match {
   final int hostId;
   final int firstPlayerId;
   final DateTime? startedAt;
-  final DateTime? endedAt;
   final int? winnerUserId;
   final List<MatchPlayer> players;
   final MatchState state;
-  final Map<String, dynamic>? result;
   final int version;
 
   GameMode get gameMode => GameMode.byId(mode) ?? GameMode.duel;
@@ -213,35 +194,16 @@ class Match {
 
   Match copyWith({MatchState? state, int? version, String? status}) => Match(
     id: id,
-    roomCode: roomCode,
     mode: mode,
     status: status ?? this.status,
     hostId: hostId,
     firstPlayerId: firstPlayerId,
     startedAt: startedAt,
-    endedAt: endedAt,
     winnerUserId: winnerUserId,
     players: players,
     state: state ?? this.state,
-    result: result,
     version: version ?? this.version,
   );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'room_code': roomCode,
-    'mode': mode,
-    'status': status,
-    'host_id': hostId,
-    'first_player_id': firstPlayerId,
-    'started_at': startedAt?.toIso8601String(),
-    'ended_at': endedAt?.toIso8601String(),
-    'winner_user_id': winnerUserId,
-    'players': players.map((player) => player.toJson()).toList(),
-    'state': state.toJson(),
-    'result': result,
-    'version': version,
-  };
 }
 
 /// Réponse de `GET /api/play/current` : ma reprise après fermeture de l'app.
@@ -261,9 +223,4 @@ class CurrentPlay {
   final Match? match;
 
   bool get isEmpty => room == null && match == null;
-
-  Map<String, dynamic> toJson() => {
-    'room': room?.toJson(),
-    'match': match?.toJson(),
-  };
 }

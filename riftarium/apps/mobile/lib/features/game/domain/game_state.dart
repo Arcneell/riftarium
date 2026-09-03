@@ -1,6 +1,10 @@
 import 'game_mode.dart';
 import 'player.dart';
 
+/// Version du format de sauvegarde d'une partie. À incrémenter le jour où un
+/// champ change de sens (un ajout avec repli n'en a pas besoin).
+const int kGameSaveVersion = 1;
+
 /// Cliché d'un instant de la partie : tout ce que le bouton « annuler »
 /// restitue. La liste des joueurs n'y figure pas (renommer ou changer de
 /// légende ne s'annule pas, cela ne fait pas partie du compte).
@@ -75,6 +79,7 @@ class GameState {
     this.timeCalled = false,
     this.overtimeTurnsLeft = 0,
     this.drawn = false,
+    this.endedOnTime = false,
   });
 
   final GameMode mode;
@@ -129,11 +134,29 @@ class GameState {
   /// d'écart, RT 408.2.b). Une égalité ne compte pas comme manche gagnée.
   final bool drawn;
 
-  Player playerById(String id) =>
-      players.firstWhere((player) => player.id == id, orElse: () => players[0]);
+  /// La manche s'est achevée au bout des tours supplémentaires (RT 408.2.b) :
+  /// c'est la seule situation où deux points d'avance emportent le match
+  /// entier. À ne pas confondre avec un temps annoncé *entre deux manches*
+  /// (RT 408.2.d), qui clôt le match sur le compte des manches. Posé par le
+  /// moteur seul, quand le dernier tour supplémentaire s'achève.
+  final bool endedOnTime;
 
-  Player get activePlayer =>
-      playerById(turnOrder[turnIndex % turnOrder.length]);
+  /// Joueur d'un identifiant, ou null s'il n'est pas à cette table : le
+  /// moteur ignore alors le geste plutôt que de le compter au mauvais joueur.
+  Player? playerById(String id) {
+    for (final player in players) {
+      if (player.id == id) return player;
+    }
+    return null;
+  }
+
+  /// Joueur dont c'est le tour. L'ordre des tours n'est jamais vide sur une
+  /// table jouable (la relecture refuse une sauvegarde sans ordre) ; la garde
+  /// évite malgré tout de faire tomber un écran sur un état bancal.
+  Player get activePlayer {
+    if (turnOrder.isEmpty) return players.first;
+    return playerById(turnOrder[turnIndex % turnOrder.length]) ?? players.first;
+  }
 
   int scoreOf(Player player) => scores[player.team] ?? 0;
 
@@ -165,8 +188,10 @@ class GameState {
   /// La manche est finie : un vainqueur, ou une égalité au temps.
   bool get isOver => winnerTeam != null || drawn;
 
-  /// La partie s'est arrêtée au temps, après les tours supplémentaires.
-  bool get timedOut => timeCalled && overtimeTurnsLeft == 0 && isOver;
+  /// La manche s'est arrêtée au temps, après les tours supplémentaires
+  /// (RT 408.2.b). Faux quand le temps a été annoncé entre deux manches :
+  /// là, c'est le compte des manches qui décide (RT 408.2.d).
+  bool get timedOut => endedOnTime && isOver;
 
   /// La rencontre est finie : plus de manche à jouer. En tournoi, la fin du
   /// temps clôt le match dès que la manche en cours s'achève (RT 408.2.d).
@@ -241,9 +266,12 @@ class GameState {
     bool clearWinner = false,
     bool? hintSeen,
     List<GameMoment>? history,
+    Duration? roundLimit,
+    bool clearRoundLimit = false,
     bool? timeCalled,
     int? overtimeTurnsLeft,
     bool? drawn,
+    bool? endedOnTime,
   }) => GameState(
     mode: mode,
     players: players ?? this.players,
@@ -258,17 +286,18 @@ class GameState {
     winnerTeam: clearWinner ? null : (winnerTeam ?? this.winnerTeam),
     hintSeen: hintSeen ?? this.hintSeen,
     history: history ?? this.history,
-    roundLimit: roundLimit,
+    roundLimit: clearRoundLimit ? null : (roundLimit ?? this.roundLimit),
     timeCalled: timeCalled ?? this.timeCalled,
     overtimeTurnsLeft: overtimeTurnsLeft ?? this.overtimeTurnsLeft,
     drawn: drawn ?? this.drawn,
+    endedOnTime: endedOnTime ?? this.endedOnTime,
   );
 
   /// Sérialisation. Le chronomètre est écrit en durée écoulée, pas en date :
   /// une partie reprise plus tard repart de la durée déjà jouée, pas de
   /// l'heure à laquelle l'application a été fermée.
   Map<String, dynamic> toJson({DateTime? now}) => {
-    'version': 1,
+    'version': kGameSaveVersion,
     'mode': mode.id,
     'players': players.map((player) => player.toJson()).toList(),
     'scores': _mapToJson(scores),
@@ -286,6 +315,7 @@ class GameState {
     'time_called': timeCalled,
     'overtime_turns_left': overtimeTurnsLeft,
     'drawn': drawn,
+    'ended_on_time': endedOnTime,
   };
 
   /// Relecture. Renvoie null si le fichier ne décrit pas une partie jouable
@@ -293,6 +323,11 @@ class GameState {
   static GameState? fromJson(Object? source, {DateTime? now}) {
     if (source is! Map) return null;
     final json = Map<String, dynamic>.from(source);
+    // Version du format : aucune migration à ce jour (les champs ajoutés ont
+    // tous un repli). Une sauvegarde plus récente que l'application est
+    // ignorée plutôt que relue de travers.
+    final version = (json['version'] as num?)?.toInt() ?? kGameSaveVersion;
+    if (version > kGameSaveVersion) return null;
     final mode = GameMode.byId(json['mode']);
     if (mode == null) return null;
     final players = (json['players'] as List? ?? const [])
@@ -316,8 +351,10 @@ class GameState {
       roundsWon: _intMap(json['rounds_won']),
       turnOrder: order,
       turnIndex: ((json['turn_index'] as num?)?.toInt() ?? 0) % order.length,
-      turnNumber: (json['turn_number'] as num?)?.toInt() ?? 1,
-      round: (json['round'] as num?)?.toInt() ?? 1,
+      // Un numéro de tour ou de manche à zéro n'existe pas : une sauvegarde
+      // bricolée repart de 1 plutôt que d'afficher « TOUR 0 ».
+      turnNumber: ((json['turn_number'] as num?)?.toInt() ?? 1).clamp(1, 9999),
+      round: ((json['round'] as num?)?.toInt() ?? 1).clamp(1, 999),
       startedAt: (now ?? DateTime.now()).subtract(
         Duration(microseconds: elapsed),
       ),
@@ -333,6 +370,8 @@ class GameState {
       timeCalled: json['time_called'] == true,
       overtimeTurnsLeft: (json['overtime_turns_left'] as num?)?.toInt() ?? 0,
       drawn: json['drawn'] == true,
+      // Sauvegarde d'avant ce champ : la manche n'a pas fini au temps.
+      endedOnTime: json['ended_on_time'] == true,
     );
   }
 }

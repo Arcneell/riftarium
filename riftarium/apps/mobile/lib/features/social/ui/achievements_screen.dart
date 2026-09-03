@@ -8,7 +8,7 @@ import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/common.dart';
-import '../../auth/ui/login_screen.dart' show BannerBackButton;
+import '../../../app/widgets/auth_widgets.dart' show BannerBackButton;
 import '../application/social_providers.dart';
 import '../domain/achievement.dart';
 import 'widgets/achievement_widgets.dart';

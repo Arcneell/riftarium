@@ -14,15 +14,6 @@ final guidesProvider = FutureProvider<GuidesDocument>(
   (ref) => ref.watch(guidesRepositoryProvider).load(),
 );
 
-/// Un sujet de l'aide avancée, ou null s'il n'existe pas.
-final guideTopicProvider = Provider.autoDispose.family<GuideTopic?, String>((
-  ref,
-  slug,
-) {
-  final document = ref.watch(guidesProvider).valueOrNull;
-  return document?.topicBySlug(slug);
-});
-
 /// Recherche dans les sujets. `autoDispose` : une entrée par frappe.
 final guideSearchProvider = Provider.autoDispose
     .family<List<GuideTopic>, String>((ref, query) {

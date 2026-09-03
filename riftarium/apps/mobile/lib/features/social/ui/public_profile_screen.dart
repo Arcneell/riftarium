@@ -8,17 +8,19 @@ import 'package:go_router/go_router.dart';
 import '../../../app/design/banners.dart' show cardThumb;
 import '../../../app/design/components.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/format.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/auth_widgets.dart'
+    show AuthError, BannerBackButton;
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/rift_avatar.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../auth/ui/login_screen.dart' show AuthError, BannerBackButton;
 import '../../collection/domain/collection.dart';
 import '../../decks/ui/deck_widgets.dart' show DeckCover;
 import '../../play/domain/history.dart';
 import '../../play/domain/play_stats.dart';
+import '../../play/ui/widgets/history_outcome.dart';
 import '../application/social_providers.dart';
 import '../domain/achievement.dart';
 import '../domain/public_profile.dart';
@@ -41,12 +43,7 @@ class PublicProfileScreen extends ConsumerStatefulWidget {
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   String? _error;
 
-  Future<void> _toggleFollow(PublicProfile profile) async {
-    final signedIn = ref.read(authControllerProvider).isSignedIn;
-    if (!signedIn) {
-      context.push(AppRoutes.loginFrom(AppRoutes.player(widget.handle)));
-      return;
-    }
+  Future<void> _toggleFollow() async {
     setState(() => _error = null);
     try {
       await ref
@@ -133,15 +130,20 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final stats = profile.stats;
     final collection = profile.collection;
     final decks = profile.decks;
+    // Sur mon propre profil, l'API renvoie tout : un reglage de
+    // confidentialite cache une section aux autres, pas a moi.
+    final visibility = profile.visibility;
+    final me = profile.isMe;
+    final showAchievements = visibility.showAchievements || me;
+    final showStats = visibility.showStats || me;
+    final showCollection = visibility.showCollection || me;
+    final showDecks = visibility.showDecks || me;
     return [
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
         sliver: SliverToBoxAdapter(
           child: Reveal(
-            child: _Identity(
-              profile: profile,
-              onFollow: () => _toggleFollow(profile),
-            ),
+            child: _Identity(profile: profile, onFollow: _toggleFollow),
           ),
         ),
       ),
@@ -155,7 +157,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Palmarès', title: 'Hauts faits'),
       ),
-      if (!profile.visibility.showAchievements || achievements == null)
+      if (!showAchievements || achievements == null)
         const SliverToBoxAdapter(child: HiddenNote())
       else if (achievements.isEmpty)
         SliverPadding(
@@ -179,7 +181,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Parties suivies', title: 'Duels'),
       ),
-      if (!profile.visibility.showStats || stats == null)
+      if (!showStats || stats == null)
         const SliverToBoxAdapter(child: HiddenNote())
       else ...[
         SliverPadding(
@@ -199,7 +201,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Cartes', title: 'Collection'),
       ),
-      if (!profile.visibility.showCollection || collection == null)
+      if (!showCollection || collection == null)
         const SliverToBoxAdapter(child: HiddenNote())
       else ...[
         SliverPadding(
@@ -215,7 +217,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Constructions', title: 'Decks publics'),
       ),
-      if (!profile.visibility.showDecks || decks == null)
+      if (!showDecks || decks == null)
         const SliverToBoxAdapter(child: HiddenNote())
       else if (decks.isEmpty)
         SliverPadding(
@@ -244,7 +246,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Derniers duels', title: 'Historique'),
       ),
-      if (!profile.visibility.showStats)
+      if (!showStats)
         const SliverToBoxAdapter(child: HiddenNote())
       else
         ..._history(),
@@ -305,6 +307,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
   List<Widget> _history() {
     final history = ref.watch(profileHistoryProvider(widget.handle));
+    final notifier = ref.read(profileHistoryProvider(widget.handle).notifier);
     return history.when(
       loading: () => const [
         SliverToBoxAdapter(
@@ -322,7 +325,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           ),
         ),
       ],
-      data: (page) => page.items.isEmpty
+      data: (feed) => feed.items.isEmpty
           ? [
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -338,15 +341,34 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 sliver: SliverList.separated(
-                  itemCount: page.items.length,
+                  itemCount: feed.items.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 10),
                   itemBuilder: (context, index) => Reveal(
                     index: index,
-                    child: _HistoryRow(item: page.items[index]),
+                    child: _HistoryRow(item: feed.items[index]),
                   ),
                 ),
               ),
+              if (feed.hasMore)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 240,
+                        child: GhostButton(
+                          label: feed.loadingMore
+                              ? 'Chargement…'
+                              : 'Charger la suite',
+                          onPressed: feed.loadingMore
+                              ? null
+                              : notifier.loadMore,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
     );
   }
@@ -376,7 +398,9 @@ class _Banner extends StatelessWidget {
             imageFilter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
             child: Image(
               image: CachedNetworkImageProvider(
-                cardThumb(art, width: CardArtSize.detail),
+                // Le visuel passe sous un flou de 26 px : la vignette de
+                // grille suffit, inutile de tirer la pleine resolution.
+                cardThumb(art, width: CardArtSize.tile),
                 cacheManager: riftImageCache,
               ),
               fit: BoxFit.cover,
@@ -427,6 +451,7 @@ class _Identity extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = riftText(context);
     final since = profile.createdAt;
+    final followed = profile.isFollowed;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -456,9 +481,11 @@ class _Identity extends StatelessWidget {
             _Count(value: profile.followingCount, label: 'suivis'),
           ],
         ),
-        if (!profile.isMe) ...[
+        // `isFollowed` est nul hors session : suivre ne veut alors rien
+        // dire, le bouton n'a pas lieu d'etre.
+        if (!profile.isMe && followed != null) ...[
           const SizedBox(height: 16),
-          if (profile.isFollowed)
+          if (followed)
             GhostButton(
               label: 'Ne plus suivre',
               icon: Icons.person_remove_outlined,
@@ -793,11 +820,7 @@ class _HistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final color = switch (item.outcome) {
-      'win' => RiftColors.calm,
-      'loss' => RiftColors.fury,
-      _ => text.muted,
-    };
+    final color = historyOutcomeColor(context, item.outcome);
     final opponent = item.opponent;
     return RiftPanel(
       onTap: opponent == null || opponent.handle.isEmpty

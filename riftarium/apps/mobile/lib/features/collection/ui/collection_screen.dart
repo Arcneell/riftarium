@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,10 +10,11 @@ import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/api_messages.dart';
+import '../../../app/widgets/card_grid_metrics.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
-import '../../../core/api_exception.dart';
 import '../../../app/widgets/search_field.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../cards/domain/card_labels.dart';
@@ -37,9 +37,11 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
   final _search = TextEditingController();
   bool _progressOpen = false;
 
-  /// Nombre de vignettes déjà mises en cache : au-delà, c'est la page qui
-  /// vient d'arriver, on la précharge pour un défilement sans squelette.
-  int _precached = 0;
+  /// Identifiant de la dernière carte déjà mise en cache : tant qu'il ne change
+  /// pas, rien de neuf n'est arrivé (une simple longueur se trompe quand une
+  /// carte sort de la liste en même temps qu'une autre entre).
+  String? _precachedLast;
+  int _precachedCount = 0;
 
   @override
   void initState() {
@@ -61,16 +63,17 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
     await ref.read(collectionControllerProvider.notifier).refresh();
   }
 
-  void _precacheNextPage(List<CollectionItem> items) {
-    if (items.length <= _precached) {
-      _precached = items.length;
-      return;
-    }
-    final arriving = [for (final item in items.sublist(_precached)) item.card];
-    _precached = items.length;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(precacheCardThumbs(context, arriving));
-    });
+  /// Précharge les vignettes qui viennent d'arriver, pour un défilement sans
+  /// squelette. Appelé depuis un `ref.listen`, jamais pendant le build.
+  void _precacheNewCards(List<CollectionItem> items) {
+    final last = items.isEmpty ? null : items.last.card.id;
+    if (last == _precachedLast) return;
+    final from = items.length > _precachedCount ? _precachedCount : 0;
+    _precachedLast = last;
+    _precachedCount = items.length;
+    if (items.length <= from) return;
+    final arriving = [for (final item in items.sublist(from)) item.card];
+    unawaited(precacheCardThumbs(context, arriving));
   }
 
   @override
@@ -87,7 +90,10 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
 
     final collection = ref.watch(collectionControllerProvider);
     final state = collection.valueOrNull;
-    if (state != null) _precacheNextPage(state.items);
+    ref.listen(collectionControllerProvider, (previous, next) {
+      final items = next.valueOrNull?.items;
+      if (items != null) _precacheNewCards(items);
+    });
 
     return Scaffold(
       body: RefreshIndicator.adaptive(
@@ -176,13 +182,21 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
                               : 'Charger la suite',
                           onPressed: state.loadingMore
                               ? null
-                              : () => ref
-                                    .read(collectionControllerProvider.notifier)
-                                    .loadMore(),
+                              : () => unawaited(
+                                  ref
+                                      .read(
+                                        collectionControllerProvider.notifier,
+                                      )
+                                      .loadMore(),
+                                ),
                         ),
                       ),
                     ),
                   ),
+                ),
+              if (state.loadMoreError != null)
+                SliverToBoxAdapter(
+                  child: _InlineNotice(message: state.loadMoreError!),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 40)),
             ],
@@ -193,11 +207,31 @@ class _CollectionScreenState extends ConsumerState<CollectionScreen> {
   }
 }
 
-/// Message affichable d'une erreur de provider : les appels API lèvent des
-/// [ApiException] dont le message est déjà en français.
-String messageOf(Object? error) => error is ApiException
-    ? error.message
-    : 'Chargement impossible. Réessaie plus tard.';
+/// Avertissement discret sous la grille : la page suivante n'est pas arrivée,
+/// mais les cartes déjà chargées restent en place.
+class _InlineNotice extends StatelessWidget {
+  const _InlineNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: RiftColors.fury.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(RiftRadius.sm),
+          border: Border.all(color: RiftColors.fury.withValues(alpha: 0.35)),
+        ),
+        child: Text(message, style: text.small.copyWith(color: text.ink)),
+      ),
+    );
+  }
+}
 
 /// Première lettre en capitale : les libellés du domaine sont écrits en
 /// minuscule pour s'enchaîner, mais ils ouvrent parfois une ligne.
@@ -236,7 +270,7 @@ class _StatsRow extends StatelessWidget {
               _Stat(
                 index: 2,
                 label: 'Valeur estimée',
-                value: formatEur(state.valueEur) ?? '—',
+                value: formatEuroOrNull(state.valueEur) ?? '—',
               ),
             ],
           ),
@@ -305,7 +339,36 @@ class _ProgressSliver extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(collectionProgressProvider).valueOrNull;
+    final async = ref.watch(collectionProgressProvider);
+    final progress = async.valueOrNull;
+    if (progress == null && async.hasError) {
+      // Hors ligne ou API en panne : on le dit, on ne masque pas la section
+      // (charte : jamais de cache silencieux ni d'écran muet).
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+        sliver: SliverToBoxAdapter(
+          child: Reveal(
+            index: 3,
+            child: RiftPanel(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Progression indisponible pour le moment.',
+                      style: riftText(context).small,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => ref.invalidate(collectionProgressProvider),
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     if (progress == null || progress.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -470,29 +533,21 @@ class _CardsGrid extends StatelessWidget {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         const gap = 12.0;
-        // Même règle que la cartothèque : trois colonnes sur un téléphone tenu
-        // droit, deux sur un très petit écran, quatre une fois tourné.
-        final width = constraints.crossAxisExtent;
-        final columns = width < 340
-            ? 2
-            : width >= 640
-            ? 4
-            : 3;
-        final available = math.max(
-          columns * 60.0,
-          width - RiftSpace.page.horizontal,
+        // Même règle que la cartothèque (`cardGridMetrics`).
+        final grid = cardGridMetrics(
+          width: constraints.crossAxisExtent,
+          gap: gap,
         );
-        final tileWidth = (available - gap * (columns - 1)) / columns;
         return SliverPadding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
+              crossAxisCount: grid.columns,
               crossAxisSpacing: gap,
               mainAxisSpacing: 16,
               // Le bloc texte sous le visuel (nom, code, prix, état) tient
               // encore à grande échelle de texte.
-              mainAxisExtent: tileWidth / CardImage.portraitRatio + 80,
+              mainAxisExtent: grid.imageHeight + 80,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) =>
@@ -517,7 +572,7 @@ class _CollectionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final value = formatEur(item.valueEur);
+    final value = formatEuroOrNull(item.valueEur);
     // Quand le système réduit les animations, inutile de monter le reflet :
     // il ne se verrait pas et sa boucle continuerait de tourner.
     final shine = !MediaQuery.disableAnimationsOf(context);

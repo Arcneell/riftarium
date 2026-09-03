@@ -78,25 +78,6 @@ class HistoryItem {
   String get scoreLabel => gameMode.roundsToWin > 1
       ? '$myRounds – $opponentRounds'
       : '$myScore – $opponentScore';
-
-  Map<String, dynamic> toJson() => {
-    'match_id': matchId,
-    'mode': mode,
-    'status': status,
-    'outcome': outcome,
-    'played_at': playedAt?.toIso8601String(),
-    'opponent': opponent?.toJson(),
-    'my_legend': myLegend == null ? null : cardToJson(myLegend!),
-    'opponent_legend': opponentLegend == null
-        ? null
-        : cardToJson(opponentLegend!),
-    'my_deck': myDeck?.toJson(),
-    'opponent_deck': opponentDeck?.toJson(),
-    'my_score': myScore,
-    'opponent_score': opponentScore,
-    'my_rounds': myRounds,
-    'opponent_rounds': opponentRounds,
-  };
 }
 
 /// Page d'historique : `{total, page, size, items}` (`size` ≤ 50). Une liste
@@ -136,13 +117,35 @@ class HistoryPage {
   final int total;
   final int page;
   final int size;
+}
 
-  bool get hasMore => items.length < total && items.isNotEmpty;
+/// Historique chargé, page après page : les matchs déjà lus, ce qu'il en reste
+/// et le chargement en cours de la page suivante. Sert au même titre à mon
+/// historique (`/play/history`) et à celui d'un profil public.
+class HistoryFeed {
+  const HistoryFeed({
+    this.items = const [],
+    this.total = 0,
+    this.page = 1,
+    this.loadingMore = false,
+  });
 
-  Map<String, dynamic> toJson() => {
-    'total': total,
-    'page': page,
-    'size': size,
-    'items': items.map((item) => item.toJson()).toList(),
-  };
+  final List<HistoryItem> items;
+  final int total;
+  final int page;
+  final bool loadingMore;
+
+  bool get hasMore => items.length < total;
+
+  HistoryFeed copyWith({
+    List<HistoryItem>? items,
+    int? total,
+    int? page,
+    bool? loadingMore,
+  }) => HistoryFeed(
+    items: items ?? this.items,
+    total: total ?? this.total,
+    page: page ?? this.page,
+    loadingMore: loadingMore ?? this.loadingMore,
+  );
 }

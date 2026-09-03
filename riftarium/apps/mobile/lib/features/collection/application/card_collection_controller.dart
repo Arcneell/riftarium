@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../cards/application/cards_controller.dart';
 import '../data/collection_api.dart';
 import '../domain/collection.dart';
 import 'collection_controller.dart';
+import 'wishlist_controller.dart';
 
 /// Lots possédés d'une carte donnée : ce qu'affiche le stepper de la fiche.
 final cardCollectionProvider =
@@ -71,12 +73,21 @@ class CardCollectionController
       rethrow;
     }
     if (_disposed) return;
-    // La liste et la progression dépendent de cette carte : elles repartiront
-    // du serveur à leur prochaine lecture.
-    ref.invalidate(collectionControllerProvider);
-    ref.invalidate(collectionProgressProvider);
+    _invalidateDependents();
     final next = await AsyncValue.guard(() => _api.cardState(arg));
     if (!_disposed) state = next;
+  }
+
+  /// Tout ce qui affiche une quantité possédée dépend de cette carte : la
+  /// collection, la progression par set, la cartothèque (`owned_qty` et le
+  /// filtre « possédées ») et la fiche elle-même. Ces vues repartiront du
+  /// serveur à leur prochaine lecture.
+  void _invalidateDependents() {
+    ref.invalidate(collectionControllerProvider);
+    ref.invalidate(collectionProgressProvider);
+    ref.invalidate(cardsListProvider);
+    ref.invalidate(wishlistControllerProvider);
+    ref.invalidate(cardDetailProvider(arg));
   }
 
   CardCollectionState _withQuantity(
@@ -85,21 +96,7 @@ class CardCollectionController
     String condition,
     String lang,
   ) {
-    final entries = <CollectionEntry>[];
-    var found = false;
-    for (final entry in current.entries) {
-      if (entry.condition == condition && entry.lang == lang) {
-        found = true;
-        if (qty > 0) entries.add(entry.copyWith(qty: qty));
-      } else {
-        entries.add(entry);
-      }
-    }
-    if (!found && qty > 0) {
-      entries.add(
-        CollectionEntry(id: 0, qty: qty, condition: condition, lang: lang),
-      );
-    }
+    final entries = entriesWithQuantity(current.entries, qty, condition, lang);
     return current.copyWith(
       entries: entries,
       totalQty: entries.fold<int>(0, (total, entry) => total + entry.qty),

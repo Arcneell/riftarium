@@ -29,6 +29,128 @@ void main() {
       },
     );
 
+    test('un 401 sur une route de session ferme la session', () async {
+      var calls = 0;
+      final adapter = FakeHttpAdapter({
+        'GET /collection': const FakeResponse(401, {'detail': 'Non autorisé'}),
+      });
+      final dio = createApiClient(
+        readToken: () async => 'abc',
+        baseUrl: 'https://api.test/api',
+        adapter: adapter,
+        onUnauthorized: () async => calls++,
+      );
+
+      await expectLater(
+        dio.get<Map<String, dynamic>>('/collection'),
+        throwsA(isA<DioException>()),
+      );
+      expect(calls, 1);
+    });
+
+    test('un 401 de mot de passe ne ferme pas la session', () async {
+      var calls = 0;
+      final adapter = FakeHttpAdapter({
+        'POST /auth/login': const FakeResponse(401, {
+          'detail': 'Identifiants invalides',
+        }),
+        'POST /auth/password': const FakeResponse(401, {
+          'detail': 'Mot de passe actuel incorrect',
+        }),
+        'DELETE /auth/me': const FakeResponse(401, {
+          'detail': 'Mot de passe actuel incorrect',
+        }),
+      });
+      final dio = createApiClient(
+        readToken: () async => 'abc',
+        baseUrl: 'https://api.test/api',
+        adapter: adapter,
+        onUnauthorized: () async => calls++,
+      );
+
+      for (final call in [
+        () => dio.post<Map<String, dynamic>>(
+          '/auth/login',
+          data: {'email': 'n@r.re', 'password': 'oups'},
+        ),
+        () => dio.post<Map<String, dynamic>>(
+          '/auth/password',
+          data: {'current_password': 'oups', 'new_password': 'x'},
+        ),
+        () => dio.delete<Map<String, dynamic>>(
+          '/auth/me',
+          data: {'password': 'oups'},
+        ),
+      ]) {
+        await expectLater(call(), throwsA(isA<DioException>()));
+      }
+      expect(calls, 0);
+    });
+
+    test(
+      'un 401 sur PATCH /auth/me sans mot de passe ferme la session',
+      () async {
+        var calls = 0;
+        final adapter = FakeHttpAdapter({
+          'PATCH /auth/me': const FakeResponse(401, {
+            'detail': 'Jeton invalide ou expiré',
+          }),
+        });
+        final dio = createApiClient(
+          readToken: () async => 'abc',
+          baseUrl: 'https://api.test/api',
+          adapter: adapter,
+          onUnauthorized: () async => calls++,
+        );
+        await expectLater(
+          dio.patch<Map<String, dynamic>>(
+            '/auth/me',
+            data: {'avatar_card_id': 'OGN-001'},
+          ),
+          throwsA(isA<DioException>()),
+        );
+        expect(calls, 1);
+      },
+    );
+
+    test('sans jeton, un 401 ne ferme rien', () async {
+      var calls = 0;
+      final adapter = FakeHttpAdapter({
+        'GET /cards': const FakeResponse(401, {'detail': 'Non autorisé'}),
+      });
+      final dio = createApiClient(
+        readToken: () async => null,
+        baseUrl: 'https://api.test/api',
+        adapter: adapter,
+        onUnauthorized: () async => calls++,
+      );
+
+      await expectLater(
+        dio.get<Map<String, dynamic>>('/cards'),
+        throwsA(isA<DioException>()),
+      );
+      expect(calls, 0);
+    });
+
+    test('une autre erreur ne ferme pas la session', () async {
+      var calls = 0;
+      final adapter = FakeHttpAdapter({
+        'GET /cards': const FakeResponse(500, {'detail': 'Oups'}),
+      });
+      final dio = createApiClient(
+        readToken: () async => 'abc',
+        baseUrl: 'https://api.test/api',
+        adapter: adapter,
+        onUnauthorized: () async => calls++,
+      );
+
+      await expectLater(
+        dio.get<Map<String, dynamic>>('/cards'),
+        throwsA(isA<DioException>()),
+      );
+      expect(calls, 0);
+    });
+
     test('sans jeton, aucun en-tête Authorization', () async {
       final adapter = FakeHttpAdapter({
         'GET /auth/me': const FakeResponse(200, profileJson),

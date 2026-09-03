@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/design/components.dart';
+import '../../../app/design/motion_utils.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
@@ -157,17 +158,25 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
     );
     if (confirmed != true || !mounted) return;
     _leaving = true;
+    var left = false;
     await _guard(() async {
       if (isHost) {
         await _controller.cancel();
       } else {
         await _controller.leave();
       }
+      left = true;
       if (!mounted) return;
       ref.invalidate(currentPlayProvider);
       _close();
     });
+    // Échec (le bandeau l'annonce) : l'écran redevient un salon ordinaire, et
+    // le passage automatique au match doit redevenir possible.
+    if (!left) _leaving = false;
   }
+
+  /// Le spectateur prend le siège libre.
+  Future<void> _join() => _guard(_controller.join);
 
   /// Tirage au sort du premier joueur, puis lancement : le même rituel qu'en
   /// partie libre, la roue en plein écran.
@@ -181,7 +190,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
       _spinSteps = players.length * 3 + target;
       _drawing = true;
     });
-    if (MediaQuery.disableAnimationsOf(context)) return;
+    if (riftReduceMotion(context)) return;
     await _spin.forward(from: 0);
     if (!mounted) return;
     await HapticFeedback.mediumImpact();
@@ -237,6 +246,17 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
       );
     }
 
+    // Le passage au match est un effet, pas un rendu : il s'écoute plutôt
+    // que de partir de `build` (le sondage fera arriver le salon en
+    // « playing », l'écoute déclenchera la navigation).
+    ref.listen(roomControllerProvider(widget.code), (previous, next) {
+      final room = next.valueOrNull;
+      final matchId = room?.matchId;
+      if (room != null && room.isPlaying && matchId != null) {
+        _goToMatch(matchId);
+      }
+    });
+
     final room = ref.watch(roomControllerProvider(widget.code));
     return gameTheme(
       child: Scaffold(
@@ -260,9 +280,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                 DrawOverlay(
                   players: _drawPlayers,
                   nameOf: (player) => player.name,
-                  animation: MediaQuery.disableAnimationsOf(context)
-                      ? kAlwaysCompleteAnimation
-                      : _spin,
+                  animation: riftAnimation(context, _spin),
                   steps: _spinSteps,
                   target: _drawTarget,
                   note: GameMode.duel.firstTurnNotes.first,
@@ -280,9 +298,6 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
     final myId = ref.watch(myUserIdProvider);
     final isHost = room.isHost(myId);
     final me = room.playerOf(myId);
-    final matchId = room.matchId;
-
-    if (room.isPlaying && matchId != null) _goToMatch(matchId);
 
     if (room.isCancelled || room.expired()) {
       return _Closed(
@@ -359,20 +374,41 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                     child: const Text('Annuler le salon'),
                   ),
                 ),
-              ] else ...[
-                if (me == null)
+              ] else if (me == null) ...[
+                if (room.isOpen && room.guest == null) ...[
+                  Text(
+                    'Le siège de l’invité est libre : prends-le pour jouer '
+                    'cette partie.',
+                    textAlign: TextAlign.center,
+                    style: text.small,
+                  ),
+                  const SizedBox(height: 12),
+                  GoldButton(
+                    label: 'Rejoindre ce salon',
+                    icon: Icons.login_rounded,
+                    loading: _busy,
+                    onPressed: _busy ? null : _join,
+                  ),
+                ] else ...[
                   Text(
                     'Salon complet : tu le consultes en spectateur.',
                     textAlign: TextAlign.center,
                     style: text.small,
-                  )
-                else
-                  Text(
-                    'L’hôte lance la partie quand vous êtes prêts tous les '
-                    'deux.',
-                    textAlign: TextAlign.center,
-                    style: text.small,
                   ),
+                  const SizedBox(height: 12),
+                  GhostButton(
+                    label: 'Revenir au jeu',
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: _close,
+                  ),
+                ],
+              ] else ...[
+                Text(
+                  'L’hôte lance la partie quand vous êtes prêts tous les '
+                  'deux.',
+                  textAlign: TextAlign.center,
+                  style: text.small,
+                ),
                 const SizedBox(height: 12),
                 GhostButton(
                   label: 'Quitter le salon',
