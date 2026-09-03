@@ -60,12 +60,29 @@ describe("usePricesMeta", () => {
     expect(api).toHaveBeenCalledTimes(1)
   })
 
-  it("reste muet si la méta est indisponible", async () => {
+  it("reste muet si la méta est indisponible, et ne retente pas à chaque usage", async () => {
     api.mockRejectedValue(new Error("boom"))
     const meta = usePricesMeta()
-    await Promise.resolve()
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(1))
     expect(meta.loaded).toBe(false)
     expect(meta.currency_note).toBe("")
+
+    /* Chaque composant qui affiche un prix appelle usePricesMeta : l'échec est
+       mémorisé, sinon une page de cartes relancerait l'appel des dizaines de fois. */
+    usePricesMeta()
+    usePricesMeta()
+    expect(api).toHaveBeenCalledTimes(1)
+  })
+
+  it("resetPricesMeta rouvre la porte à un nouvel essai après un échec", async () => {
+    api.mockRejectedValue(new Error("boom"))
+    usePricesMeta()
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(1))
+    resetPricesMeta()
+    api.mockResolvedValue({ updated_day: "2026-09-01" })
+    const meta = usePricesMeta()
+    await vi.waitFor(() => expect(meta.loaded).toBe(true))
+    expect(api).toHaveBeenCalledTimes(2)
   })
 })
 

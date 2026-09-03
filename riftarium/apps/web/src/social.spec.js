@@ -141,6 +141,14 @@ describe("social — libellés et progression", () => {
     expect(achievementProgress({ current: 99, threshold: 10 })).toBe("10 / 10")
   })
 
+  it("sans seuil exploitable, n'affiche que le compteur (jamais « 3 / 0 »)", () => {
+    expect(achievementProgress({ current: 3, threshold: 0 })).toBe("3")
+    expect(achievementProgress({ current: 3, threshold: null })).toBe("3")
+    expect(achievementProgress({ current: 3, threshold: -5 })).toBe("3")
+    expect(achievementProgress({})).toBe("0")
+    expect(achievementProgress(null)).toBe("0")
+  })
+
   it("reconnaît un haut fait débloqué à sa date", () => {
     expect(isUnlocked({ unlocked_at: "2026-08-01T10:00:00Z" })).toBe(true)
     expect(isUnlocked({ unlocked_at: null })).toBe(false)

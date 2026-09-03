@@ -39,6 +39,11 @@ const META_DEFAULTS = {
 
 const meta = reactive({ ...META_DEFAULTS })
 let pending = null
+/* Échec mémorisé : sans lui, chaque composant affichant un prix relançait
+   /api/prices/meta (une page de cartes = des dizaines d'appels perdus, et autant
+   de coups dans la limite de débit quand l'API est justement en difficulté).
+   La méta n'est qu'un complément d'affichage : un seul essai par session suffit. */
+let failed = false
 
 async function fetchMeta() {
   try {
@@ -46,6 +51,7 @@ async function fetchMeta() {
     if (data && typeof data === "object") Object.assign(meta, data, { loaded: true })
   } catch {
     /* méta indisponible : les blocs de prix retombent sur PRICE_SOURCE_NOTE */
+    failed = true
   } finally {
     pending = null
   }
@@ -53,12 +59,13 @@ async function fetchMeta() {
 
 /** Méta réactive des prix ; déclenche le chargement au premier usage puis sert le cache. */
 export function usePricesMeta() {
-  if (!meta.loaded && !pending) pending = fetchMeta()
+  if (!meta.loaded && !pending && !failed) pending = fetchMeta()
   return meta
 }
 
-/** Tests uniquement : repart d'un cache module vierge. */
+/** Repart d'un cache module vierge (nouvel essai après échec, tests). */
 export function resetPricesMeta() {
   pending = null
+  failed = false
   Object.assign(meta, META_DEFAULTS)
 }

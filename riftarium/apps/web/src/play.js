@@ -36,7 +36,10 @@ export function cancelRoom(code) {
   return api(roomPath(code), { method: "DELETE" })
 }
 
-/** Lancement réservé à l'hôte (le compteur vit sur son téléphone). */
+/** Lancement réservé à l'hôte (le compteur vit sur son téléphone).
+    Réservé au client mobile — aucune vue web ne l'appelle : le compteur de partie
+    n'existe que dans l'application. Conservé pour la parité de contrat
+    (docs/suivi-des-matchs.md). */
 export function startRoom(code, firstPlayerId) {
   return api(roomPath(code, "/start"), { method: "POST", body: { first_player_id: firstPlayerId } })
 }
@@ -55,6 +58,8 @@ export function disputeMatch(id) {
   return api(matchPath(id, "/dispute"), { method: "POST" })
 }
 
+/** Réservé au client mobile (abandon depuis le compteur de partie) : conservé pour la
+    parité de contrat (docs/suivi-des-matchs.md), aucune vue web ne l'appelle. */
 export function abandonMatch(id) {
   return api(matchPath(id, "/abandon"), { method: "POST" })
 }

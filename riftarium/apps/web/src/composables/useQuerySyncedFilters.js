@@ -97,7 +97,9 @@ export function useQuerySyncedFilters(schema, options) {
     return count
   })
 
-  const pageCount = computed(() => Math.max(1, Math.ceil(result.value.total / unref(pageSize))))
+  /* `pageSize` est facultatif (galerie sans pagination) : sans repli, Math.ceil(x / undefined)
+     vaut NaN et la pagination affiche « page 1 sur NaN ». */
+  const pageCount = computed(() => Math.max(1, Math.ceil(result.value.total / (unref(pageSize) || 1))))
 
   let timer = null
   /* Compteur de séquence : une réponse arrivée après une requête plus récente est ignorée. */
@@ -128,7 +130,10 @@ export function useQuerySyncedFilters(schema, options) {
 
   function setFilter(key, value) {
     state[key] = value
-    state.page = 1
+    /* Retour page 1 seulement si le schéma déclare une page : sinon on ajouterait
+       une clé `page` parasite à l'état (toQuery et signature n'itèrent que les
+       clés du schéma, elle n'irait pas plus loin, mais elle mentirait). */
+    if ("page" in schema) state.page = 1
   }
 
   function reset() {
@@ -141,10 +146,25 @@ export function useQuerySyncedFilters(schema, options) {
   /* Empreinte de l'état : les listes sont comparées jointes, comme dans les vues d'origine. */
   const signature = () => keys.map((key) => (schema[key].kind === "list" ? state[key].join() : state[key]))
 
+  /* Les paramètres du schéma présents dans l'URL correspondent-ils à l'état courant ?
+     Comparaison clé par clé : JSON.stringify dépend de l'ordre d'insertion, donc
+     `?domain=Fury&q=x` face à `?q=x&domain=Fury` déclenchait un replace inutile
+     (et une entrée d'historique de plus). Un paramètre répété arrive en tableau
+     côté vue-router : on le rejoint comme le CSV de toQuery(). Les paramètres
+     étrangers au schéma ne sont pas regardés, et un paramètre vide (`?q=`) vaut
+     un paramètre absent : il reste dans l'URL sans déclencher de replace. */
+  function sameQuery(current, wanted) {
+    return keys.every((key) => {
+      const param = schema[key].param || key
+      const value = current[param]
+      return (Array.isArray(value) ? value.join(",") : (value ?? "")) === (wanted[param] ?? "")
+    })
+  }
+
   watch(signature, () => {
     if (syncUrl) {
       const query = toQuery()
-      if (JSON.stringify(route.query) !== JSON.stringify(query)) router.replace({ query })
+      if (!sameQuery(route.query, query)) router.replace({ query })
     }
     scheduleLoad()
   })

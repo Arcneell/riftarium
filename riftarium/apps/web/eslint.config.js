@@ -1,7 +1,7 @@
-import js from "@eslint/js";
-import eslintConfigPrettier from "eslint-config-prettier";
-import pluginVue from "eslint-plugin-vue";
-import globals from "globals";
+import js from "@eslint/js"
+import eslintConfigPrettier from "eslint-config-prettier"
+import pluginVue from "eslint-plugin-vue"
+import globals from "globals"
 
 export default [
   { ignores: ["dist/**", "coverage/**"] },
@@ -23,7 +23,9 @@ export default [
       "vue/html-closing-bracket-newline": "off",
       "vue/first-attribute-linebreak": "off",
       "vue/attributes-order": "off",
-      "vue/no-v-html": "off",
+      // Les trois v-html du site passent par escapeHtml (BeginnerGuideView, RulesView) :
+      // chaque usage porte un eslint-disable-next-line, tout nouveau v-html est refusé.
+      "vue/no-v-html": "error",
       "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrors: "none" }]
     }
   },
@@ -48,4 +50,4 @@ export default [
       globals: { ...globals.serviceworker }
     }
   }
-];
+]

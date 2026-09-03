@@ -2,8 +2,12 @@ import { computed, toValue } from "vue"
 import { DOMAIN_RUNE, RUNE_LABELS, copyFamily, glyphUrl } from "../cardText.js"
 import { DECK_ZONES, groupDeck, zoneOf } from "../deckDisplay.js"
 
-/* Plafond d'exemplaires par carte pour un deck légal (12 = limite du schéma pour un deck illégal). */
-export const TOURNAMENT_CAPS = { Legend: 1, Battlefield: 1, Rune: 12, main: 3 }
+/* Plafond d'exemplaires par carte hors format officiel (deck illégal) : la limite du
+   schéma en base, la même que celle des runes en tournoi. */
+export const FREE_CAP = 12
+
+/* Plafond d'exemplaires par carte pour un deck légal. */
+export const TOURNAMENT_CAPS = { Legend: 1, Battlefield: 1, Rune: FREE_CAP, main: 3 }
 
 /* Règles de construction d'un deck : zones, plafonds de copies, identité de domaines fixée
    par la légende. Logique métier pure — les retours visuels passent par les callbacks :
@@ -97,8 +101,8 @@ export function useDeckRules(
         )
         return false
       }
-    } else if (inDeckQty(card) >= 12) {
-      onLimit("12 exemplaires maximum.", card.id)
+    } else if (inDeckQty(card) >= FREE_CAP) {
+      onLimit(`${FREE_CAP} exemplaires maximum.`, card.id)
       return false
     }
     const existing = deck.value.cards.find((entry) => entry.card.id === card.id)
@@ -109,7 +113,9 @@ export function useDeckRules(
   }
 
   function setQty(entry, delta) {
-    if (!editable()) return
+    /* `deck.value` peut être null (deck pas encore chargé, ou vidé pendant un clic) :
+       sans cette garde le retrait plantait sur `deck.value.cards`. */
+    if (!editable() || !deck.value) return
     if (delta > 0) {
       addCard(entry.card)
       return

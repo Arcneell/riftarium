@@ -1,7 +1,7 @@
 import { BANNERS } from "./banners.js"
 import { CLOSED_BETA } from "./legal.js"
 
-export const SITE_ORIGIN = "https://riftarium.re"
+const SITE_ORIGIN = "https://riftarium.re"
 export const SITE_NAME = "Riftarium"
 export const DEFAULT_TITLE = "Riftarium — Cartes, decks et règles Riftbound"
 export const DEFAULT_DESCRIPTION =

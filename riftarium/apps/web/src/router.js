@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router"
+import { createRouter, createWebHistory, START_LOCATION } from "vue-router"
 import { session } from "./api.js"
 import { applyRouteSeo, DEFAULT_DESCRIPTION, DEFAULT_TITLE } from "./seo.js"
 import HomeView from "./views/HomeView.vue"
@@ -290,8 +290,9 @@ router.beforeEach((to) => {
 })
 
 /* Fréquentation anonyme : seule la rubrique est comptée, jamais l'URL complète ni la query.
-   null = pas de ping (la console d'administration n'est comptée nulle part). */
-function sectionOf(path) {
+   null = pas de ping (la console d'administration n'est comptée nulle part).
+   Exporté pour les tests : l'ordre des `startsWith` (fiche avant liste) est fragile. */
+export function sectionOf(path) {
   if (path === "/") return "home"
   if (path.startsWith("/admin")) return null
   if (path.startsWith("/cartes/")) return "carte"
@@ -329,21 +330,42 @@ function recordVisit(path) {
   }
 }
 
-router.afterEach((to) => {
-  applyRouteSeo(to)
-  recordVisit(to.path)
-})
-
 /* Chunk de route introuvable (nouveau déploiement pendant la session, node_modules du
    conteneur dev en retard) : sans cela la navigation échoue en silence et la page ne bouge
    pas. On recharge la destination une fois — le nouveau bundle a les bons chunks — et on
    laisse remonter les autres erreurs. Le garde-fou sessionStorage évite une boucle si le
    rechargement lui-même échoue à charger le chunk. */
 const RELOAD_GUARD_KEY = "riftarium.chunkReload"
+
+/* Seul un changement de page compte : les `router.replace({ query })` des filtres et des
+   étapes de guide gardent le même chemin — ni nouveau titre, ni nouveau ping de mesure.
+   Les routes du site n'ont pas de `name` : la première navigation se reconnaît à
+   START_LOCATION (et doit compter, même si la destination est « / »). */
+router.afterEach((to, from) => {
+  if (from !== START_LOCATION && to.path === from.path) return
+  applyRouteSeo(to)
+  recordVisit(to.path)
+  /* Navigation aboutie : le garde-fou anti-boucle de rechargement n'a plus de raison
+     d'être (sinon un vrai second échec de chunk sur la même URL ne rechargerait jamais). */
+  try {
+    sessionStorage.removeItem(RELOAD_GUARD_KEY)
+  } catch {
+    /* stockage indisponible : rien à nettoyer */
+  }
+})
+
 router.onError((error, to) => {
   const message = String(error?.message || "")
   const chunkFailure = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(message)
   if (!chunkFailure || typeof window === "undefined") return
+  /* Hors ligne, le chunk manque parce que le service worker ne précache que le
+     shell et les règles : recharger n'y changerait rien (et la seconde tentative
+     serait bloquée par le garde ci-dessous, page vide sans un mot). On prévient
+     App.vue, qui affiche un bandeau explicite. */
+  if (navigator.onLine === false) {
+    window.dispatchEvent(new CustomEvent("riftarium:offline-page"))
+    return
+  }
   try {
     if (sessionStorage.getItem(RELOAD_GUARD_KEY) === to.fullPath) return
     sessionStorage.setItem(RELOAD_GUARD_KEY, to.fullPath)
