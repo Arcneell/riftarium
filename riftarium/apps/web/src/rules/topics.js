@@ -7,6 +7,7 @@ const CDN = "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live"
 const img = (hash) => `${CDN}/${hash}?auto=format&fit=max&w=560&accountingTag=RB`
 
 export const CATEGORIES = [
+  { key: "modes", label: "Modes de jeu" },
   { key: "tour", label: "Tour & timing" },
   { key: "combat", label: "Combat" },
   { key: "points", label: "Champs de bataille & points" },
@@ -15,6 +16,148 @@ export const CATEGORIES = [
 ]
 
 export const TOPICS = [
+  /* ================= Modes de jeu ================= */
+  {
+    slug: "mode-duel",
+    title: "Duel (1c1)",
+    category: "modes",
+    summary: "Le format de référence : deux joueurs, une manche sèche, premier à 8 points.",
+    details: [
+      "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. C'est le format des parties rapides et de la plupart des tournois.",
+      "**Mise en place.** Chaque joueur apporte trois champs de bataille dans son deck ; il en tire un au hasard, les deux autres sont écartés pour la partie. Les deux champs retenus forment le centre de la table. Chaque joueur mélange son deck principal et son deck de runes, place sa légende et son champion de départ, pioche sa main de départ et peut faire un mulligan. Le premier joueur est tiré au sort.",
+      "**Déroulement d'une partie.** Les joueurs alternent les tours. Chaque tour suit le même squelette : éveil (on prépare tout), étape des scores (+1 point par champ de bataille contrôlé), canalisation (2 runes), pioche (1 carte), puis la phase principale — jouer des cartes, déplacer des unités, déclencher combats et confrontations — et la fin de tour (tout le monde est soigné, la main passe).",
+      "**Premier tour.** Pour compenser l'avantage de jouer en premier, le second joueur canalise **une rune de plus** lors de sa première canalisation (3 au lieu de 2).",
+      "**Victoire : 8 points.** On marque en conquérant un champ de bataille (+1, +2 s'il était tenu par l'adversaire) et en l'occupant à chaque début de tour (+1). Il faut atteindre 8 **et** être strictement devant : une égalité à 8 ne donne pas la victoire — il faudra creuser l'écart."
+    ],
+    cases: [
+      {
+        q: "Nous sommes tous les deux à 8 points. Qui gagne ?",
+        a: "Personne pour l'instant : il faut atteindre le score de victoire et devancer strictement l'adversaire. Le premier qui prend un point d'avance l'emporte."
+      },
+      {
+        q: "Pourquoi mon adversaire canalise 3 runes à son premier tour ?",
+        a: "C'est l'ajustement officiel du premier tour : le joueur qui joue en second canalise une rune supplémentaire à sa première canalisation."
+      },
+      {
+        q: "Mon deck est vide et je dois piocher. Que se passe-t-il ?",
+        a: "C'est l'exténuation : vous ne piochez pas et votre adversaire marque 1 point. Faire durer la partie n'est pas sans risque."
+      }
+    ],
+    sections: ["481", "485"]
+  },
+  {
+    slug: "mode-match",
+    title: "Match (1c1, deux manches gagnantes)",
+    category: "modes",
+    summary: "Le duel en plusieurs manches : premier à deux manches gagnées, champs de bataille choisis.",
+    details: [
+      "Le **match** est un duel joué en **deux manches gagnantes** (parfois trois en tournoi). Même table, mêmes règles de tour et de score que le duel : c'est la structure de la rencontre qui change.",
+      "**Mise en place.** Comme en duel — trois champs de bataille apportés par joueur — à une nuance près : chaque joueur **choisit** le champ de bataille qu'il présente pour la manche (au lieu de le tirer au hasard). Tant qu'aucune manche n'est gagnée, un champ déjà présenté peut resservir.",
+      "**Déroulement.** Chaque manche se joue comme un duel : premier à 8 points en étant strictement devant. Le vainqueur de la manche marque une victoire, puis on remet tout à zéro — decks remélangés, nouveaux champs présentés, nouvelle main — et on enchaîne la manche suivante.",
+      "**Premier tour** de chaque manche : le second joueur canalise une rune de plus à sa première canalisation.",
+      "**Victoire.** Le premier joueur à **2 manches gagnées** remporte le match. En trois manches gagnantes, les manches 4 et 5 autorisent, sous conditions, à représenter un champ de bataille déjà utilisé."
+    ],
+    cases: [
+      {
+        q: "Entre deux manches, est-ce que je garde mes points ou mon XP ?",
+        a: "Non : tout l'état de jeu est réinitialisé. Seul le compte des manches gagnées est conservé."
+      },
+      {
+        q: "Puis-je présenter le même champ de bataille à chaque manche ?",
+        a: "Tant que vous n'avez pas encore gagné de manche, oui. En trois manches gagnantes, il faut avoir présenté chacun de ses trois champs avant d'en réutiliser un, et jamais plus de deux fois."
+      }
+    ],
+    sections: ["481", "486"]
+  },
+  {
+    slug: "mode-escarmouche",
+    title: "Escarmouche (3 joueurs)",
+    category: "modes",
+    summary: "Chacun pour soi à trois : trois champs de bataille, premier à 8 points.",
+    details: [
+      "L'**escarmouche** oppose trois joueurs, chacun pour soi : deux adversaires chacun, pas d'équipe, une seule manche.",
+      "**Mise en place.** Chaque joueur apporte trois champs de bataille et en tire un au hasard — trois champs sont donc en jeu. L'ordre des tours est déterminé au hasard (le compteur de l'application tire le premier joueur, puis on tourne autour de la table).",
+      "**Déroulement.** Les tours s'enchaînent dans l'ordre de la table, avec le squelette habituel : éveil, scores (+1 par champ contrôlé), canalisation, pioche, phase principale, fin de tour. À plusieurs, on peut contester le champ de bataille de son choix : les rapports de force se négocient autant qu'ils se jouent.",
+      "**Premier tour.** Deux ajustements : le joueur qui commence **ne pioche pas** à sa première pioche, et le **dernier** joueur de l'ordre canalise une rune de plus à sa première canalisation.",
+      "**Victoire : 8 points**, en étant strictement devant **tous** les autres. L'exténuation change aussi : piocher dans un deck vide donne 1 point à **un** adversaire (au choix du joueur exténué) — de quoi faire basculer une fin de partie."
+    ],
+    cases: [
+      {
+        q: "Je suis exténué : qui marque le point ?",
+        a: "Vous choisissez lequel de vos adversaires reçoit le point. À trois, ce choix est souvent politique."
+      },
+      {
+        q: "Deux joueurs sont à 8. Le troisième peut-il encore gagner ?",
+        a: "Oui : personne ne gagne tant qu'il n'est pas strictement devant tous les autres. La partie continue jusqu'à ce qu'un joueur se détache."
+      },
+      {
+        q: "Pourquoi le premier joueur ne pioche pas ?",
+        a: "C'est la compensation officielle : commencer donne un temps d'avance, la pioche sautée le rééquilibre — et le dernier joueur canalise une rune de plus."
+      }
+    ],
+    sections: ["481", "487"]
+  },
+  {
+    slug: "mode-guerre",
+    title: "Guerre (4 joueurs)",
+    category: "modes",
+    summary: "Chacun pour soi à quatre : le premier joueur sacrifie ses champs de bataille.",
+    details: [
+      "La **guerre** oppose quatre joueurs, chacun pour soi : trois adversaires chacun, pas d'équipe, une seule manche.",
+      "**Mise en place.** Trois champs de bataille en jeu — mais quatre joueurs : le joueur tiré pour commencer **retire ses champs de bataille**, ils ne serviront pas. Les trois autres joueurs tirent chacun un champ au hasard parmi leurs trois.",
+      "**Déroulement.** L'ordre des tours fait le tour de la table à partir du premier joueur. Chaque tour garde le squelette habituel (éveil, scores, canalisation, pioche, phase principale, fin de tour). Avec quatre joueurs pour trois champs, les alliances de circonstance font partie du jeu.",
+      "**Premier tour.** Le premier joueur **ne pioche pas** à sa première pioche ; le **dernier** canalise une rune de plus à sa première canalisation.",
+      "**Victoire : 8 points**, en devançant strictement les trois adversaires. Comme en escarmouche, l'exténuation donne 1 point à un adversaire au choix."
+    ],
+    cases: [
+      {
+        q: "Pourquoi le premier joueur retire-t-il ses champs de bataille ?",
+        a: "Quatre joueurs, trois champs : le mode retire ceux du premier joueur, en contrepartie de l'avantage de commencer."
+      },
+      {
+        q: "Puis-je contester n'importe quel champ de bataille ?",
+        a: "Oui : tous les champs en jeu sont contestables par tous, y compris ceux que vous n'avez pas fournis."
+      },
+      {
+        q: "Dans quel ordre joue-t-on ?",
+        a: "Dans l'ordre de la table, en boucle, à partir du premier joueur tiré au sort — c'est aussi l'ordre que suit le compteur de l'application."
+      }
+    ],
+    sections: ["481", "488"]
+  },
+  {
+    slug: "mode-chambre-magmatique",
+    title: "Chambre magmatique (2c2)",
+    category: "modes",
+    summary: "Deux équipes de deux : points partagés, tours alternés entre les équipes, premier camp à 11.",
+    details: [
+      "La **chambre magmatique** oppose deux équipes de deux joueurs. Les coéquipiers **marquent, gagnent et perdent ensemble** : le score est commun à l'équipe. Tout le reste — main, decks, runes, XP — reste propre à chaque joueur.",
+      "**Mise en place.** Comme en guerre : trois champs de bataille en jeu, le premier joueur retire les siens, les trois autres joueurs tirent chacun un champ au hasard.",
+      "**Ordre des tours.** Les tours **alternent entre les équipes** : le premier joueur, puis un adversaire, puis le coéquipier du premier joueur, puis le coéquipier de cet adversaire — et on recommence. Jamais deux tours de la même équipe d'affilée.",
+      "**Déroulement.** Chaque tour garde le squelette habituel. Les coéquipiers défendent les champs de bataille l'un de l'autre et coordonnent leurs confrontations, mais chacun joue ses propres cartes avec ses propres ressources.",
+      "**Victoire : 11 points** pour l'équipe, en devançant strictement l'équipe adverse. Conquêtes et occupations alimentent le score commun ; l'exténuation d'un joueur donne 1 point à l'équipe adverse."
+    ],
+    cases: [
+      {
+        q: "Mon coéquipier et moi partageons-nous les runes ou les cartes ?",
+        a: "Non : seul le score est commun. Chacun garde sa main, son deck, ses runes et son XP."
+      },
+      {
+        q: "Qui joue après moi ?",
+        a: "Toujours un adversaire : les tours alternent strictement entre les deux équipes (premier joueur, adversaire, coéquipier, coéquipier de l'adversaire)."
+      },
+      {
+        q: "Pourquoi 11 points et pas 8 ?",
+        a: "Le score de victoire du mode est plus haut parce que deux joueurs alimentent le même compte : la course serait trop courte à 8."
+      },
+      {
+        q: "Un point marqué par mon coéquipier compte-t-il pour moi ?",
+        a: "Oui : le score appartient à l'équipe. Le compteur de l'application affiche d'ailleurs un seul disque de score entre les deux coéquipiers."
+      }
+    ],
+    sections: ["481", "489"]
+  },
+
   /* ================= Tour & timing ================= */
   {
     slug: "deroulement-du-tour",
