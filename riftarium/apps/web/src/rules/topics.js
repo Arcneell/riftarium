@@ -8,6 +8,7 @@ const img = (hash) => `${CDN}/${hash}?auto=format&fit=max&w=560&accountingTag=RB
 
 export const CATEGORIES = [
   { key: "modes", label: "Modes de jeu" },
+  { key: "tournoi", label: "Tournoi" },
   { key: "tour", label: "Tour & timing" },
   { key: "combat", label: "Combat" },
   { key: "points", label: "Champs de bataille & points" },
@@ -23,7 +24,7 @@ export const TOPICS = [
     category: "modes",
     summary: "Le format de référence : deux joueurs, une manche sèche, premier à 8 points.",
     details: [
-      "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. Deux champs de bataille en jeu, victoire à **8 points**. C'est le format des parties rapides et de la plupart des tournois.",
+      "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. Deux champs de bataille en jeu, victoire à **8 points**. C'est le format des parties rapides ; en tournoi, on joue le plus souvent en deux manches gagnantes (voir *Le match en tournoi*).",
       "**Ce que chacun apporte.** Un deck complet : une **légende de champion** (elle fixe l'identité de domaine — toutes vos cartes doivent y correspondre), un **deck principal d'au moins 40 cartes** dont votre **champion élu** (même tag de champion que la légende, maximum 3 exemplaires d'un même nom, maximum 3 cartes signature), un **deck de runes de 12 runes**, et **3 champs de bataille** de noms différents.",
       "**Mise en place, pas à pas.** 1 — Chaque joueur pose sa légende dans sa zone de légende et son champion élu dans sa zone de champion. 2 — Chaque joueur tire **au hasard un** de ses trois champs de bataille ; les deux autres sont écartés pour la partie. Les deux champs retenus sont placés côte à côte au centre. 3 — Chacun mélange son deck principal et son deck de runes, séparément. 4 — Le **premier joueur est tiré au sort** (pile ou face, dé… n'importe quelle méthode acceptée). 5 — Tout le monde pioche **4 cartes**.",
       "**Le mulligan.** Dans l'ordre des tours, chaque joueur peut mettre de côté **jusqu'à 2 cartes** de sa main, piocher autant de nouvelles cartes, puis **recycler** les cartes mises de côté (elles retournent sous le deck, mélangées). Une seule fois par joueur.",
@@ -254,6 +255,141 @@ export const TOPICS = [
       }
     ],
     sections: ["481", "489"]
+  },
+
+  /* ================= Tournoi ================= */
+  {
+    slug: "tournoi-match",
+    title: "Le match en tournoi",
+    category: "tournoi",
+    doc: "tournament",
+    summary:
+      "Deux manches gagnantes, un joueur désigné qui choisit, une ronde de 60 minutes et une fin de match au temps : ce qui change en compétition.",
+    details: [
+      "En tournoi, une **rencontre** oppose deux joueurs en **deux manches gagnantes** (RT 404.2). Chaque manche est un duel ordinaire — mêmes tours, même course à **8 points**, même règle du dernier point — mais tout ce qui l'entoure change : qui commence, la réserve, le temps, la fin du match. Le compteur de l'application Riftarium a un mode **Tournoi** qui applique ce qui suit.",
+      "**Ce que chacun apporte.** Un deck principal d'**exactement 40 cartes** (et non « au moins 40 » comme en partie libre), champion élu compris ; une légende ; **12 runes** ; **3 champs de bataille** de noms différents (RT 402.1). Aux événements de niveau élevé, la liste est **enregistrée** avant la première ronde et ne bouge plus (RT 401). Voir *Deck et formats de compétition*.",
+      "**Qui commence.** Au début de la première manche, une méthode aléatoire acceptée par les deux joueurs (pile ou face, dé…) désigne un **joueur désigné** ; ce joueur **choisit** de jouer en premier ou en second (RT 407.1). Le tirage ne fait donc pas commencer : il donne le choix. Pour les manches suivantes, c'est le **perdant de la manche précédente** qui choisit (RT 407.4). Après une égalité, le premier joueur reste le même.",
+      "**Mise en place.** Comme en duel (règle 110), avec deux ajouts : chaque joueur **présente** son deck principal, son deck de runes et sa réserve à l'adversaire, qui a le droit de les **mélanger** (RT 406.1.d et e). En première manche, la mise en place peut se faire avant le lancement du chronomètre, mais la partie elle-même ne commence qu'une fois la ronde lancée (RT 406.1.f).",
+      "**Entre deux manches.** Si la compétition autorise une **réserve**, les cartes s'échangent **une pour une** avec le deck principal, champion élu compris ; **jamais avant la première manche** (RT 403.4 et 403.5). Légende, runes et champs de bataille ne changent pas. Chaque joueur présente à nouveau le champ de bataille de son choix, comme en mode Match.",
+      "**Le temps.** Une ronde suisse dure **60 minutes** recommandées (RT 604.1). Quand le temps est annoncé, **le joueur en cours termine son tour**, puis **trois tours supplémentaires** sont joués (RT 408.2.a) ; ils ne sont pas chronométrés. Si les joueurs sont entre deux manches à l'annonce, **aucune nouvelle manche** n'est lancée (RT 408.2.d).",
+      "**Fin de la manche au temps.** Après les trois tours supplémentaires, si personne n'a gagné : le joueur qui a **au moins deux points d'avance** remporte **le match** (RT 408.2.b) — pas seulement la manche. Sinon, la manche est une **égalité**, et une égalité ne compte pas comme manche gagnée (RT 404.3).",
+      "**Résultat du match.** Le premier à deux manches gagne (RT 408.3). Si le temps a tout arrêté avant, celui qui a **le plus de manches gagnées** l'emporte ; à égalité de manches, **match nul** (RT 404.4 et 404.5). Le match est clos quand le résultat est remis à l'organisateur (RT 408.1).",
+      "**Élimination directe.** Les phases finales se jouent de préférence **sans limite de temps** (RT 604.2). Si l'organisateur chronomètre malgré tout, une procédure spéciale s'applique (RT 408.4) : le score de la manche en cours désigne son vainqueur, puis les manches gagnées ; si tout est à égalité, le **point suivant** décide. Dans l'application, choisissez « Sans limite » et laissez l'arbitre annoncer le temps.",
+      "**Forfait et nul volontaire.** Un joueur peut déclarer forfait à tout moment ; les deux joueurs peuvent convenir d'un match nul (RT 410.1 et 410.2). Jamais en échange d'une contrepartie, et sans aller consulter les résultats des autres tables (RT 410.3 et 410.4)."
+    ],
+    cases: [
+      {
+        q: "Le temps est annoncé pendant mon tour. Combien de tours reste-t-il exactement ?",
+        a: "Vous terminez votre tour, puis trois tours supplémentaires sont joués : l'adversaire, vous, l'adversaire. La manche s'arrête à la fin de ce troisième tour, même si personne n'a atteint 8 points."
+      },
+      {
+        q: "Au bout des tours supplémentaires, je mène 6 à 5. Qui gagne ?",
+        a: "Personne : il faut deux points d'avance. La manche est une égalité et ne compte pas. Le match est alors décidé aux manches gagnées ; à 1–1 (ou 0–0), c'est un match nul."
+      },
+      {
+        q: "Je mène 7 à 4 quand la manche s'arrête au temps, mais nous sommes à 0–1 aux manches. Ai-je perdu le match ?",
+        a: "Non : avec deux points d'avance ou plus à la fin des tours supplémentaires, vous remportez le match, quel que soit le compte des manches (RT 408.2.b)."
+      },
+      {
+        q: "J'ai gagné la première manche. Qui choisit de commencer la deuxième ?",
+        a: "Votre adversaire, perdant de la manche : il choisit de jouer en premier ou en second. Dans l'application, l'écran de fin de manche lui propose les deux boutons."
+      },
+      {
+        q: "Le tirage m'a désigné. Dois-je commencer ?",
+        a: "Non : le tirage vous donne le choix. Jouer en second, c'est canaliser une rune de plus à la première canalisation ; jouer en premier, c'est le tempo. À vous de voir."
+      },
+      {
+        q: "Puis-je changer de champion élu entre deux manches ?",
+        a: "Oui, si la compétition autorise une réserve : le champion élu peut être remplacé par une carte de la réserve ou du deck principal qui correspond à votre légende (RT 403.4.a). Jamais avant la première manche."
+      },
+      {
+        q: "Le temps est annoncé alors que nous venons de finir une manche. On en lance une autre ?",
+        a: "Non (RT 408.2.d). Le match se termine : le plus de manches gagnées l'emporte, sinon match nul."
+      }
+    ],
+    sections: ["404", "406", "407", "408", "410", "604"]
+  },
+  {
+    slug: "tournoi-deck-formats",
+    title: "Deck et formats de compétition",
+    category: "tournoi",
+    doc: "tournament",
+    summary:
+      "Exactement 40 cartes, réserve de 10, format Standard et cartes bannies, formats limité et 2c2 : les contraintes de deck propres aux tournois.",
+    details: [
+      "**Le deck en compétition.** Le format construit exige un deck principal d'**exactement 40 cartes** (champion élu compris), une légende, **12 runes** et **3 champs de bataille** de noms différents (RT 402.1, 601.1.b). Les règles de base disent « au moins 40 » : en tournoi, pas une carte de plus.",
+      "**Enregistrement.** Aux événements de niveau élevé, chaque joueur remet une **liste de deck** complète (légende, champs, deck principal, runes, réserve) avant la première ronde ; une fois remise, elle ne se modifie plus (RT 401). L'arbitre principal peut aussi l'exiger à petit niveau. La liste est privée, sauf politique de **listes ouvertes** décidée par l'arbitre (habituelle au niveau professionnel).",
+      "**La réserve.** Quand la compétition l'autorise : **jusqu'à 10 cartes**, toutes valides pour le deck principal ; la limite de **3 exemplaires** d'un même nom compte deck et réserve ensemble (RT 601.1.c). Entre deux manches, on échange **une pour une** ; le champion élu peut changer ; légende, runes et champs de bataille sont figés (RT 403.4). Pas de réserve en première manche, ni après une manche nulle ou recommencée (RT 403.5, 403.10, 403.11). Le deck revient à sa forme enregistrée avant chaque nouveau match (RT 403.8).",
+      "**Légalité des cartes.** Une carte est jouable si elle vient d'un set autorisé dans le format, ou porte le même nom qu'une carte d'un set autorisé (RT 601.2.a). Une réimpression hors numérotation normale (par exemple 300/250) ne rend pas la carte légale à elle seule (RT 601.2.c).",
+      "**Standard.** Les 5 à 8 derniers sets : l'année en cours et la précédente (RT 601.3). Aujourd'hui : Origines (OGN) et son set supplémentaire de Premiers pas (OGS), Armes spirituelles (SFD), Déchaînement (UNL), Vendetta (VEN).",
+      "**Cartes bannies.** Une carte bannie dans un format ne peut pas être jouée (RT 601.2.d) — sauf, à petit niveau (Nexus Nights), si vous jouez un **deck préconstruit à l'identique** : ses cartes bannies restent autorisées tant que vous ne modifiez rien et n'ajoutez pas de réserve (RT 601.2.d.2).",
+      "**Format limité.** Tout le matériel est fourni par la compétition : seules ces cartes entrent dans le deck, plus autant de **runes de base** que voulu et des **champs de bataille « vierges »** (sans texte de règles, RT 602.3.d). Construction sans appareil électronique ni aide extérieure aux niveaux élevés. À haut niveau, on enregistre une configuration de départ et le reste des cartes forme la réserve (RT 602.3.e).",
+      "**2c2.** Une équipe s'inscrit ensemble, désigne un joueur A et un joueur B, et s'assoit dans cet ordre (RT 603). L'ordre des tours est fixe : A de la première équipe, A de la seconde, B de la première, B de la seconde (RT 603.7.a). Un tirage décide quelle équipe choisit qui commence ; ensuite, l'équipe perdante choisit (RT 603.7.c). Si un joueur abandonne ou est disqualifié, toute l'équipe l'est (RT 603.3 et 603.4)."
+    ],
+    cases: [
+      {
+        q: "Mon deck fait 42 cartes, il est légal en partie libre. Puis-je le jouer en tournoi ?",
+        a: "Non : le format construit exige exactement 40 cartes dans le deck principal. Retirez-en deux avant l'enregistrement."
+      },
+      {
+        q: "Puis-je avoir 3 exemplaires d'une carte dans le deck et 1 de plus en réserve ?",
+        a: "Non : la limite de 3 exemplaires d'un même nom s'applique au deck principal et à la réserve réunis."
+      },
+      {
+        q: "Puis-je changer de champ de bataille entre deux manches grâce à ma réserve ?",
+        a: "Non : la réserve ne contient que des cartes de deck principal. Légende, runes et champs de bataille sont fixés à l'enregistrement. En revanche, vous choisissez librement lequel de vos trois champs présenter à chaque manche."
+      },
+      {
+        q: "Je joue le deck de champion de Jinx tel quel, avec une carte bannie dedans. C'est autorisé ?",
+        a: "En événement de petit niveau, oui, tant que le deck est strictement identique au produit et sans réserve. Une seule modification, et les cartes bannies doivent sortir."
+      },
+      {
+        q: "En scellé, je n'ai ouvert aucun champ de bataille jouable. Que faire ?",
+        a: "Utilisez des champs de bataille « vierges » : ils fonctionnent comme des champs sans texte. À petit niveau, n'importe quel support convenu ; à haut niveau, une carte Riftbound officielle dans une pochette opaque, dos visible."
+      }
+    ],
+    sections: ["401", "402", "403", "601", "602", "603"]
+  },
+  {
+    slug: "tournoi-table",
+    title: "À la table : scores, notes, arbitre",
+    category: "tournoi",
+    doc: "tournament",
+    summary:
+      "Ce que la compétition impose autour du jeu : tenue des scores, prise de notes, appareils électroniques, mélange, appel à l'arbitre, sanctions.",
+    details: [
+      "**Les scores.** Tous les joueurs sont responsables du suivi de **tous** les scores (RT 415.1). Chaque changement est **annoncé et approuvé** par les deux joueurs (RT 415.2). Les scores doivent être notés **par écrit, lisiblement** ; à petit niveau, un appareil électronique, des dés ou un compteur font l'affaire (RT 415.3.a) — c'est ce que permet le mode Tournoi de l'application. XP, énergie et essence runique se suivent visiblement (dés, compteurs), sans obligation d'écrit (RT 415.4). Un désaccord non résolu : appel à l'arbitre.",
+      "**Les notes.** Autorisées pendant le match, consultables pendant les manches du même match (RT 416.1). Fiches vierges au début de chaque match, visibles par l'adversaire et les officiels (RT 416.2). Pas de notes extérieures à la partie en cours, y compris celles des matchs précédents (RT 416.4).",
+      "**Appareils électroniques.** Autorisés pendant la compétition, **interdits pendant les matchs** (RT 417.1), sauf à petit niveau où ils peuvent remplacer les notes papier et servir de compteur (RT 417.2, 415.3.a). L'arbitre principal peut restreindre ou élargir (RT 417.3).",
+      "**Mélange et présentation.** Chaque joueur mélange ses deux decks, puis les **présente** à l'adversaire, qui peut les mélanger à son tour (RT 406.1.c à e) ; au niveau professionnel, ce mélange par l'adversaire est obligatoire. On peut demander à un arbitre de mélanger à sa place.",
+      "**Communication.** Les joueurs communiquent honnêtement sur l'état de la partie et répondent avec honnêteté à toute question sur une information publique — scores, runes, tour en cours, chaîne d'effets (RT 501, 502) ; personne n'est tenu d'aider l'adversaire à *déduire* quoi que ce soit. Les **raccourcis** (sauter une étape technique d'un commun accord) sont permis s'ils sont annoncés ; chacun peut interrompre un raccourci pour agir (RT 503). Une **boucle** se déclare avec son nombre d'itérations ; sans personne pour la rompre ni la maintenir, la partie est nulle (RT 505).",
+      "**Arbitre et appels.** À tout moment pendant un match, un joueur peut mettre la partie en pause pour appeler un arbitre de salle ; au-delà d'une minute d'intervention, une prolongation est accordée (RT 412). Une décision peut être portée en **appel** auprès de l'arbitre principal, une fois la décision annoncée ; celle de l'arbitre principal est définitive (RT 413).",
+      "**Sanctions.** Les erreurs sont présumées involontaires (RT 701.1.a). L'**avertissement** garde trace d'une erreur ; répété, il devient une **perte de partie** ; la **perte de match** et la **disqualification** répondent aux fautes qui compromettent le match ou l'intégrité de la compétition (RT 701.2). Un oubli de point ou de pioche se corrige sans sanction tant que le cycle de manche n'est pas fini (RT 702.3, 702.4). Le jeu lent est sanctionné même dans les manches sans limite de temps (RT 604.2.a).",
+      "**Abandon et forfait.** On peut quitter la compétition à tout moment en prévenant le marqueur avant l'appariement suivant ; ne pas se présenter à un match vaut élimination (RT 414). Un joueur qui refuse de jouer est déclaré forfait (RT 410.5)."
+    ],
+    cases: [
+      {
+        q: "Puis-je compter les points avec l'application pendant un tournoi ?",
+        a: "À petit niveau (Nexus Nights, magasin), oui : un appareil électronique peut tenir le score, à condition d'annoncer chaque changement et que l'adversaire l'approuve. À haut niveau, les appareils sont interdits pendant le match : papier et compteurs physiques."
+      },
+      {
+        q: "Mon adversaire refuse de me laisser mélanger son deck. Que faire ?",
+        a: "Vous en avez le droit après qu'il l'a présenté. En cas de refus, appelez un arbitre ; au niveau professionnel, ce mélange est même obligatoire."
+      },
+      {
+        q: "Nous ne sommes pas d'accord sur le score. Qui a raison ?",
+        a: "Personne d'office : prévenez tout de suite, tentez de reconstituer la suite des points ensemble ; sans accord, appelez un arbitre. C'est pour cela que chaque point doit être annoncé et approuvé au moment où il est marqué."
+      },
+      {
+        q: "J'ai oublié de marquer un point d'occupation il y a deux tours. Est-il perdu ?",
+        a: "Si le vrai score peut être reconstitué et qu'un cycle de manche complet ne s'est pas écoulé, le point est ajouté, sans sanction. Au-delà, on continue à jouer avec le score tel qu'il est (RT 702.3)."
+      },
+      {
+        q: "Puis-je relire mes notes du match précédent contre le même adversaire ?",
+        a: "Non : pendant une partie, seules les notes de la partie en cours sont consultables. Entre les manches, vous pouvez relire des notes prises avant le match."
+      }
+    ],
+    sections: ["412", "413", "415", "416", "417", "501", "503", "701"]
   },
 
   /* ================= Tour & timing ================= */
