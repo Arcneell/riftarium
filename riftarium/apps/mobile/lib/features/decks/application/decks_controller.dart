@@ -26,9 +26,13 @@ final deckProvider = FutureProvider.autoDispose.family<Deck, int>((
   return ref.watch(decksApiProvider).get(deckId);
 });
 
-/// Cartes manquantes d'un deck (propriétaire uniquement).
+/// Cartes manquantes d'un deck (propriétaire uniquement), rechargées quand la
+/// session change : la liste dépend de la collection du compte connecté.
 final deckMissingProvider = FutureProvider.autoDispose.family<DeckMissing, int>(
-  (ref, deckId) => ref.watch(decksApiProvider).missing(deckId),
+  (ref, deckId) {
+    ref.watch(authControllerProvider.select((state) => state.isSignedIn));
+    return ref.watch(decksApiProvider).missing(deckId);
+  },
 );
 
 /// Légendes proposées par le filtre communautaire.
@@ -220,7 +224,8 @@ class DeckActions {
   /// Crée un deck à partir d'un code partagé.
   ///
   /// Le code est décodé puis chaque carte est retrouvée via `GET /api/cards`.
-  /// Les codes introuvables sont signalés dans [DeckImportOutcome.unresolved].
+  /// Les codes introuvables sont signalés dans [DeckImportOutcome.unresolved],
+  /// les cartes de réserve dans [DeckImportOutcome.sideboardIgnored].
   Future<DeckImportOutcome> importFromCode(
     String code, {
     required String name,
@@ -252,14 +257,26 @@ class DeckActions {
             .toList(),
       ),
     );
-    return DeckImportOutcome(deck: deck, unresolved: resolved.unresolved);
+    return DeckImportOutcome(
+      deck: deck,
+      unresolved: resolved.unresolved,
+      sideboardIgnored: resolved.sideboardIgnored,
+    );
   }
 }
 
 /// Deck créé depuis un code, avec les cartes qui n'ont pas pu être retrouvées.
 class DeckImportOutcome {
-  const DeckImportOutcome({required this.deck, required this.unresolved});
+  const DeckImportOutcome({
+    required this.deck,
+    required this.unresolved,
+    this.sideboardIgnored = 0,
+  });
 
   final Deck deck;
   final List<String> unresolved;
+
+  /// Exemplaires de la réserve du code, écartés : Riftarium ne stocke qu'un
+  /// deck principal. Le compter permet de le dire à l'utilisateur.
+  final int sideboardIgnored;
 }

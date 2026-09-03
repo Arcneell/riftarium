@@ -102,6 +102,92 @@ void main() {
       });
     });
 
+    test('une réponse de version inférieure est ignorée', () async {
+      final server = PlayFakeApi({
+        'GET /play/rooms/ABC234': roomJson(version: 5),
+      });
+      final container = playContainer(server: server);
+      final provider = roomControllerProvider('ABC234');
+      keep(container, provider);
+      await container.read(provider.future);
+
+      // Battement arrivé en retard : plus vieux que ce qui est déjà affiché.
+      server.set(
+        'GET /play/rooms/ABC234',
+        roomJson(version: 4, players: const []),
+      );
+      await container.read(provider.notifier).refresh();
+
+      final room = container.read(provider).requireValue;
+      expect(room.version, 5);
+      expect(room.host?.user.handle, 'ezreal');
+    });
+
+    test('quitter et annuler adoptent le salon renvoyé', () async {
+      final server = PlayFakeApi({
+        'GET /play/rooms/ABC234': roomJson(
+          hostId: 8,
+          players: [
+            roomPlayerJson(userId: 8, handle: 'jinx'),
+            roomPlayerJson(seat: 1),
+          ],
+        ),
+        'POST /play/rooms/ABC234/leave': roomJson(
+          hostId: 8,
+          version: 2,
+          players: [roomPlayerJson(userId: 8, handle: 'jinx')],
+        ),
+        'DELETE /play/rooms/ABC234': roomJson(
+          hostId: 8,
+          version: 3,
+          status: 'cancelled',
+          players: [roomPlayerJson(userId: 8, handle: 'jinx')],
+        ),
+      });
+      final container = playContainer(server: server);
+      final provider = roomControllerProvider('ABC234');
+      keep(container, provider);
+      await container.read(provider.future);
+
+      await container.read(provider.notifier).leave();
+      var room = container.read(provider).requireValue;
+      expect(room.version, 2);
+      expect(room.guest, isNull);
+
+      await container.read(provider.notifier).cancel();
+      room = container.read(provider).requireValue;
+      expect(room.isCancelled, isTrue);
+    });
+
+    test('rejoindre le salon assoit le joueur au siège libre', () async {
+      final server = PlayFakeApi({
+        'GET /play/rooms/ABC234': roomJson(
+          hostId: 8,
+          players: [roomPlayerJson(userId: 8, handle: 'jinx')],
+        ),
+        'POST /play/rooms/ABC234/join': roomJson(
+          hostId: 8,
+          version: 2,
+          players: [
+            roomPlayerJson(userId: 8, handle: 'jinx'),
+            roomPlayerJson(seat: 1),
+          ],
+        ),
+      });
+      final container = playContainer(server: server);
+      final provider = roomControllerProvider('ABC234');
+      keep(container, provider);
+      await container.read(provider.future);
+
+      await container.read(provider.notifier).join();
+
+      expect(server.paths, contains('POST /play/rooms/ABC234/join'));
+      expect(
+        container.read(provider).requireValue.guest?.user.handle,
+        'ezreal',
+      );
+    });
+
     test('une erreur de sondage laisse le salon affiché', () async {
       final server = PlayFakeApi({'GET /play/rooms/ABC234': roomJson()});
       final container = playContainer(server: server);
@@ -198,6 +284,35 @@ void main() {
         expect(tracked.board.scoreOfTeam(0), 1);
       },
     );
+
+    test('un envoi raté repart tout seul', () async {
+      final server = PlayFakeApi({
+        'GET /play/matches/1': matchJson(version: 3),
+        'PUT /play/matches/1/state': PlayFakeSequence([
+          const PlayFakeError(500, 'Panne.'),
+          matchJson(version: 4),
+        ]),
+      });
+      final container = playContainer(server: server);
+      final provider = trackedMatchControllerProvider(1);
+      keep(container, provider);
+      await container.read(provider.future);
+
+      container.read(provider.notifier).addPoint('7');
+      await settle();
+      expect(container.read(provider).requireValue.sync, PlaySync.offline);
+
+      // Le bandeau promet que le compte repartira tout seul : la reprise part
+      // après `kPlaySyncRetry`, sans un geste de plus.
+      await Future<void>.delayed(
+        kPlaySyncRetry + const Duration(milliseconds: 300),
+      );
+
+      expect(server.on('PUT', '/play/matches/1/state').length, 2);
+      final tracked = container.read(provider).requireValue;
+      expect(tracked.sync, PlaySync.synced);
+      expect(tracked.board.scoreOfTeam(0), 1);
+    });
 
     test('l’invité ne compte pas : aucun geste ne part', () async {
       final server = PlayFakeApi({

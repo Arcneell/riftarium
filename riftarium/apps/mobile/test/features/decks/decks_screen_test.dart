@@ -130,6 +130,37 @@ void main() {
     expect(find.text('privé'), findsOneWidget);
   });
 
+  testWidgets('un deck refusé par la modération le dit', (tester) async {
+    await tester.pumpWidget(
+      app(
+        DecksFakeApi({
+          'GET /auth/me': profileJson,
+          'GET /decks/mine': [
+            deckJson(
+              id: 1,
+              name: 'Deck écarté',
+              isPublic: true,
+              moderationStatus: 'rejected',
+            ),
+            deckJson(
+              id: 2,
+              name: 'Deck en attente',
+              moderationStatus: 'pending',
+            ),
+          ],
+        }),
+        token: 'jwt',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('refusé'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Deck en attente'), 200);
+    await tester.pumpAndSettle();
+    expect(find.text('en modération'), findsOneWidget);
+  });
+
   testWidgets('avec session : une erreur propose de réessayer', (tester) async {
     await tester.pumpWidget(
       app(
@@ -233,5 +264,44 @@ void main() {
     expect(body['name'], 'Deck importé');
     expect((body['cards'] as List), hasLength(2));
     expect(server.on('GET', '/decks/21'), hasLength(1));
+  });
+
+  testWidgets('l’import prévient que la réserve du code est ignorée', (
+    tester,
+  ) async {
+    // Code croisé du jeu d'essai : 2× OGN-001 en deck principal, plus une
+    // réserve de 3 exemplaires (OGN-022 ×2, OGN-088 ×1).
+    const code = 'CMAAAAAAAAAAAAAAAAAQCAAAAEAAAAIBAAABMAIBAAAFQAIAAAAQ';
+    final server = DecksFakeApi({
+      'GET /auth/me': profileJson,
+      'GET /decks/mine': const <Map<String, dynamic>>[],
+      'GET /cards': cardPageJson([
+        deckCardJson(
+          id: 'C-001',
+          name: 'Rune de Fureur',
+          riftboundId: 'ogn-001',
+        ),
+      ]),
+      'POST /decks': deckJson(id: 30, name: 'Deck importé'),
+      'GET /decks/30': deckJson(id: 30, name: 'Deck importé'),
+      'POST /decks/30/view': {'deck_id': 30, 'views': 0, 'counted': false},
+    });
+    await tester.pumpWidget(app(server, token: 'jwt'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Importer un code').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, code);
+    await tester.tap(find.widgetWithText(TextButton, 'Importer'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('3 carte(s) de réserve ignorée(s)'),
+      findsOneWidget,
+    );
+    final body = server.on('POST', '/decks').single.data! as Map;
+    expect(body['cards'], [
+      {'card_id': 'C-001', 'qty': 2},
+    ]);
   });
 }

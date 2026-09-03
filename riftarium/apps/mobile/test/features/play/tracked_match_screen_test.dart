@@ -121,6 +121,10 @@ void main() {
     expect(server.on('POST', '/play/matches/1/confirm').length, 1);
     expect(find.text('Résultat confirmé'), findsOneWidget);
     expect(find.text('Voir l’historique'), findsOneWidget);
+
+    // La confirmation invalide « ma partie en cours » : on laisse ce
+    // rafraîchissement de fond finir, sinon sa requête reste en vol.
+    await tester.pumpAndSettle();
   });
 
   testWidgets('l’hôte, déjà confirmé, attend la réponse de l’invité', (

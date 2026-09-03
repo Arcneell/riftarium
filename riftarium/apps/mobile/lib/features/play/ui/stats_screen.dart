@@ -12,7 +12,7 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../core/api_exception.dart';
-import '../../auth/ui/login_screen.dart' show BannerBackButton;
+import '../../../app/widgets/auth_widgets.dart' show BannerBackButton;
 import '../application/play_providers.dart';
 import '../domain/play_stats.dart';
 

@@ -1,8 +1,8 @@
-import 'dart:async';
-
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_exception.dart';
+import '../../../core/poller.dart';
 import '../../cards/domain/card.dart';
 import '../../decks/data/decks_api.dart';
 import '../../decks/domain/deck.dart';
@@ -15,15 +15,20 @@ import 'play_providers.dart';
 ///
 /// Le serveur ne pousse rien : on redemande le salon toutes les deux secondes
 /// tant que l'écran est monté (le provider est `autoDispose`, quitter l'écran
-/// arrête le minuteur). Une erreur réseau pendant un battement ne casse pas
-/// l'affichage : le salon connu reste à l'écran et le prochain battement
-/// réessaie.
+/// arrête le [Poller]). Une erreur réseau pendant un battement ne casse pas
+/// l'affichage : le salon connu reste à l'écran, l'attente double jusqu'au
+/// retour du réseau. Le sondage s'arrête de lui-même dès qu'il n'y a plus rien
+/// à attendre : salon annulé, terminé, expiré, ou partie lancée.
 final roomControllerProvider = AsyncNotifierProvider.autoDispose
     .family<RoomController, Room, String>(RoomController.new);
 
 class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
-  Timer? _timer;
+  Poller? _poller;
+  AppLifecycleListener? _lifecycle;
   bool _disposed = false;
+
+  /// Version du dernier salon adopté : une réponse en retard est ignorée.
+  int _version = -1;
 
   String get code => arg;
 
@@ -32,23 +37,35 @@ class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
   @override
   Future<Room> build(String arg) async {
     final interval = ref.watch(playPollIntervalProvider);
+    final poller = Poller(tick: _tick, interval: interval);
+    _poller = poller;
+    if (interval > Duration.zero) {
+      // En arrière-plan, plus de battement ; au retour, un battement part
+      // aussitôt pour rattraper ce qui s'est passé entre-temps. Le minuteur
+      // n'existe pas dans les tests (intervalle nul) : pas de binding requis.
+      _lifecycle = AppLifecycleListener(
+        onStateChange: (value) => value == AppLifecycleState.resumed
+            ? poller.resume()
+            : poller.pause(),
+      );
+    }
     ref.onDispose(() {
       _disposed = true;
-      _timer?.cancel();
-      _timer = null;
+      poller.dispose();
+      _lifecycle?.dispose();
+      _lifecycle = null;
+      _poller = null;
     });
     final room = await _api.room(arg);
-    if (interval > Duration.zero) {
-      _timer = Timer.periodic(interval, (_) => refresh());
-    }
+    _version = room.version;
+    if (_awaited(room)) poller.start();
     return room;
   }
 
   /// Un battement de sondage : silencieux en cas d'erreur réseau.
   Future<void> refresh() async {
     try {
-      final room = await _api.room(code);
-      _publish(room);
+      await _tick();
     } on ApiException {
       // Le salon affiché reste en place ; le prochain battement réessaie.
     }
@@ -57,7 +74,17 @@ class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
   /// Recharge en laissant remonter l'erreur (bouton « Réessayer »).
   Future<void> reload() async {
     state = const AsyncLoading<Room>().copyWithPrevious(state);
-    state = await AsyncValue.guard(() => _api.room(code));
+    final next = await AsyncValue.guard(() => _api.room(code));
+    state = next;
+    final room = next.valueOrNull;
+    if (room == null) return;
+    // Une reprise explicite fait foi, quelle que soit la version connue.
+    _version = room.version;
+    if (_awaited(room)) {
+      _poller?.start();
+    } else {
+      _poller?.stop();
+    }
   }
 
   Future<void> setReady(bool ready) => _updateMe(ready: ready);
@@ -86,14 +113,21 @@ class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
     await _updateMe(deckId: deck.id, legendCardId: legend?.id, ready: false);
   }
 
-  /// L'invité quitte le salon.
+  /// L'invité quitte le salon. L'API renvoie le salon à jour : on l'adopte.
   Future<void> leave() async {
-    await _api.leaveRoom(code);
+    final room = await _api.leaveRoom(code);
+    if (room != null) _publish(room);
   }
 
-  /// L'hôte annule le salon.
+  /// L'hôte annule le salon (réponse : le salon en `cancelled`).
   Future<void> cancel() async {
-    await _api.cancelRoom(code);
+    final room = await _api.cancelRoom(code);
+    if (room != null) _publish(room);
+  }
+
+  /// L'invité rejoint le siège libre. 409 si le salon s'est rempli entre-temps.
+  Future<void> join() async {
+    _publish(await _api.joinRoom(code));
   }
 
   /// L'hôte lance la partie avec le joueur tiré au sort.
@@ -127,8 +161,22 @@ class RoomController extends AutoDisposeFamilyAsyncNotifier<Room, String> {
     }
   }
 
+  Future<void> _tick() async => _publish(await _api.room(code));
+
   void _publish(Room room) {
     if (_disposed) return;
+    // Réponse arrivée après une plus récente (réseau lent) : on l'oublie.
+    if (room.version < _version) return;
+    _version = room.version;
     state = AsyncData(room);
+    if (!_awaited(room)) _poller?.stop();
   }
+
+  /// Il reste quelque chose à attendre de ce salon. Une fois la partie lancée,
+  /// c'est le match qui se sonde ; un salon fermé ne bougera plus.
+  static bool _awaited(Room room) =>
+      !room.isCancelled &&
+      !room.isFinished &&
+      !room.isPlaying &&
+      !room.expired();
 }

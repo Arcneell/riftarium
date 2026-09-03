@@ -65,7 +65,7 @@ GameState boardOfMatch(Match match, {DateTime? now}) {
         mode.defaultTeam(seat.seat): snapshot.roundsWonBy(seat.user.id),
     },
     turnOrder: rotated,
-    turnIndex: activeIndex < 0 ? 0 : activeIndex,
+    turnIndex: activeIndex,
     turnNumber: snapshot.turn < 1 ? 1 : snapshot.turn,
     round: snapshot.round < 1 ? 1 : snapshot.round,
     startedAt: match.startedAt?.toLocal() ?? now ?? DateTime.now(),

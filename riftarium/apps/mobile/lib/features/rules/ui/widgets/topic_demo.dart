@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/design/motion_utils.dart';
 import '../../../../app/theme.dart';
 import '../../domain/guides.dart';
 
@@ -29,7 +30,7 @@ class _TopicDemoViewState extends State<TopicDemoView> {
     if (index < 0 || index >= widget.demo.frames.length) return;
     _controller.animateToPage(
       index,
-      duration: RiftMotion.base,
+      duration: riftDuration(context, RiftMotion.base),
       curve: RiftMotion.ease,
     );
   }
@@ -75,7 +76,7 @@ class _TopicDemoViewState extends State<TopicDemoView> {
                   child: Padding(
                     padding: const EdgeInsets.all(4),
                     child: AnimatedContainer(
-                      duration: RiftMotion.quick,
+                      duration: riftDuration(context, RiftMotion.quick),
                       width: i == _index ? 18 : 8,
                       height: 8,
                       decoration: BoxDecoration(
@@ -206,7 +207,7 @@ class _DemoItemView extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: item.isFoe ? RiftColors.fury : RiftColors.hex,
-          border: Border.all(color: Colors.white, width: 2),
+          border: Border.all(color: RiftColors.onAccent, width: 2),
           boxShadow: item.glow
               ? [
                   BoxShadow(
@@ -222,7 +223,7 @@ class _DemoItemView extends StatelessWidget {
           style: TextStyle(
             fontFamily: RiftFonts.display,
             fontSize: size * 0.5,
-            color: Colors.white,
+            color: RiftColors.onAccent,
           ),
         ),
       ),
@@ -280,14 +281,14 @@ class _DemoItemView extends StatelessWidget {
       decoration: BoxDecoration(
         color: item.ok ? RiftColors.hex : RiftColors.fury,
         borderRadius: BorderRadius.circular(RiftRadius.full),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: RiftColors.onAccent, width: 1.5),
       ),
       child: Text(
         item.value,
         style: TextStyle(
           fontFamily: RiftFonts.mono,
           fontSize: height * 0.44,
-          color: Colors.white,
+          color: RiftColors.onAccent,
         ),
       ),
     );
@@ -315,7 +316,7 @@ class _DemoItemView extends StatelessWidget {
           fontFamily: RiftFonts.mono,
           fontSize: size,
           letterSpacing: 0.8,
-          color: item.glow ? Colors.white : RiftColors.goldSoft,
+          color: item.glow ? RiftColors.onAccent : RiftColors.goldSoft,
         ),
       ),
     );

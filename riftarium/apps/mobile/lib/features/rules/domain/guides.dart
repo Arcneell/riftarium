@@ -102,7 +102,6 @@ DemoItemType _demoItemType(String value) => switch (value) {
 /// Élément posé sur la mini-scène d'une démonstration, en pourcentage.
 class DemoItem {
   const DemoItem({
-    required this.key,
     required this.type,
     required this.x,
     required this.y,
@@ -117,7 +116,8 @@ class DemoItem {
   });
 
   factory DemoItem.fromJson(Map<String, dynamic> json) => DemoItem(
-    key: _string(json['k']),
+    // Le `k` du fichier (clé de rendu côté web) n'est pas repris : le rendu
+    // Flutter positionne les éléments dans l'ordre de la liste.
     type: _demoItemType(_string(json['type'])),
     x: _number(json['x']),
     y: _number(json['y']),
@@ -131,7 +131,6 @@ class DemoItem {
     tapped: _flag(json['tapped']),
   );
 
-  final String key;
   final DemoItemType type;
   final double x;
   final double y;
@@ -537,8 +536,8 @@ class GuidesDocument {
       if (topic.category == categoryKey) topic,
   ];
 
-  /// Sujet suivant : le voisin de la même catégorie, sinon le suivant de la
-  /// liste. Renvoie null pour le dernier sujet du fichier.
+  /// Sujet suivant dans l'ordre du fichier, quelle que soit sa catégorie.
+  /// Renvoie null pour le dernier sujet du fichier.
   GuideTopic? topicAfter(String slug) {
     final index = topics.indexWhere((topic) => topic.slug == slug);
     if (index < 0 || index + 1 >= topics.length) return null;

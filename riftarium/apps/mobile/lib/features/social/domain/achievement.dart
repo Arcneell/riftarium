@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import 'api_date.dart';
 
 /// Familles du catalogue (`docs/profils-et-hauts-faits.md`), dans l'ordre
 /// d'affichage. Une famille inconnue est rangée à la fin, telle quelle.
@@ -39,16 +40,18 @@ class Achievement {
     family: (json['family'] as String?) ?? '',
     threshold: (json['threshold'] as num?)?.toInt() ?? 1,
     current: (json['current'] as num?)?.toInt() ?? 0,
-    unlockedAt: DateTime.tryParse('${json['unlocked_at']}'),
+    unlockedAt: parseApiDate(json['unlocked_at']),
   );
 
   /// Accepte la liste nue comme l'objet paginé `{items: [...]}`.
   static List<Achievement> listFrom(Object? source) {
     final list = source is Map ? source['items'] : source;
-    return (list as List? ?? const [])
-        .whereType<Map>()
-        .map((item) => Achievement.fromJson(item.cast<String, dynamic>()))
-        .toList();
+    return list is! List
+        ? const []
+        : list
+              .whereType<Map>()
+              .map((item) => Achievement.fromJson(item.cast<String, dynamic>()))
+              .toList();
   }
 
   final String key;
@@ -86,13 +89,6 @@ Color achievementTierColor(String tier) => switch (tier) {
   'gold' => RiftColors.gold,
   'prism' => RiftColors.mind,
   _ => RiftColors.goldDeep,
-};
-
-/// Dégradé du médaillon, ou null pour un aplat de [achievementTierColor].
-Gradient? achievementTierGradient(String tier) => switch (tier) {
-  'gold' => RiftColors.goldGradient,
-  'prism' => RiftColors.prism,
-  _ => null,
 };
 
 String achievementTierLabel(String tier) => switch (tier) {

@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/adaptive.dart';
 import '../../../app/design/components.dart';
+import '../../../app/design/motion_utils.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
@@ -88,6 +90,41 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     setState(() => _cards = removeCardFromDeck(_cards, cardId));
   }
 
+  /// Exemplaires par carte : ce qui compte pour savoir si l'édition diffère du
+  /// deck enregistré (l'ordre des lignes n'a pas de sens pour l'API).
+  static Map<String, int> _quantities(List<DeckCard> cards) => {
+    for (final entry in cards) entry.card.id: entry.qty,
+  };
+
+  /// L'édition en cours diffère du deck enregistré : quitter perdrait le
+  /// travail. Un deck fraîchement créé arrive vide et sans carte : il n'est
+  /// « modifié » qu'une fois une carte ajoutée ou un réglage changé.
+  bool get _dirty {
+    final deck = widget.deck;
+    return _draft.name != deck.name ||
+        _draft.description != (deck.description ?? '') ||
+        _draft.format != deck.format ||
+        _draft.isPublic != deck.isPublic ||
+        !mapEquals(_quantities(_cards), _quantities(deck.cards));
+  }
+
+  /// Sortie de l'éditeur avec des changements non enregistrés.
+  Future<void> _confirmLeave(bool didPop) async {
+    if (didPop || !mounted) return;
+    final leave = await showAdaptiveMessage(
+      context,
+      title: 'Quitter sans enregistrer ?',
+      message:
+          'Les cartes ajoutées et les réglages modifiés seront perdus. '
+          'Enregistre d’abord pour les garder.',
+      closeLabel: 'Rester',
+      confirmLabel: 'Quitter',
+      destructive: true,
+    );
+    if (!leave || !mounted) return;
+    Navigator.of(context).pop();
+  }
+
   Future<void> _editSettings() async {
     final draft = await showDeckDraftDialog(
       context,
@@ -118,69 +155,81 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-    } on ApiException catch (error) {
+    } on Object catch (error) {
       if (!mounted) return;
-      setState(() => _saving = false);
       await showAdaptiveMessage(
         context,
         title: 'Enregistrement impossible',
-        message: error.message,
+        message: error is ApiException
+            ? error.message
+            : 'Le deck n’a pas pu être envoyé. Réessaie dans un instant.',
       );
+    } finally {
+      // Le bouton doit toujours redevenir actif, même après une erreur
+      // inattendue : sinon l'éditeur reste bloqué en « enregistrement ».
+      if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final groups = groupDeck(_cards);
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _EditorBar(name: _draft.name, onSettings: _editSettings),
-            _Counters(groups: groups),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ChoicePill(
-                      label: 'Cartes',
-                      expand: true,
-                      icon: Icons.search,
-                      selected: !_showDeck,
-                      onTap: () => setState(() => _showDeck = false),
+    // Le libellé compte les exemplaires, comme les compteurs de zone.
+    final copies = _cards.fold<int>(0, (total, entry) => total + entry.qty);
+    return PopScope(
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, result) => _confirmLeave(didPop),
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _EditorBar(name: _draft.name, onSettings: _editSettings),
+              _Counters(groups: groups),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ChoicePill(
+                        label: 'Cartes',
+                        expand: true,
+                        icon: Icons.search,
+                        selected: !_showDeck,
+                        onTap: () => setState(() => _showDeck = false),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ChoicePill(
-                      label: 'Mon deck (${_cards.length})',
-                      expand: true,
-                      icon: Icons.layers_outlined,
-                      selected: _showDeck,
-                      onTap: () => setState(() => _showDeck = true),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoicePill(
+                        label: 'Mon deck ($copies)',
+                        expand: true,
+                        icon: Icons.layers_outlined,
+                        selected: _showDeck,
+                        onTap: () => setState(() => _showDeck = true),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: _showDeck
-                  ? _DeckList(groups: groups, onAdd: _add, onRemove: _remove)
-                  : _CardSearch(
-                      controller: _search,
-                      query: _query,
-                      onTextChanged: _onSearchChanged,
-                      onQueryChanged: (query) => setState(() => _query = query),
-                      onAdd: _add,
-                      quantityOf: (card) => inDeckQty(_cards, card),
-                    ),
-            ),
-          ],
+              Expanded(
+                child: _showDeck
+                    ? _DeckList(groups: groups, onAdd: _add, onRemove: _remove)
+                    : _CardSearch(
+                        controller: _search,
+                        query: _query,
+                        onTextChanged: _onSearchChanged,
+                        onQueryChanged: (query) =>
+                            setState(() => _query = query),
+                        onAdd: _add,
+                        quantityOf: (card) => inDeckQty(_cards, card),
+                      ),
+              ),
+            ],
+          ),
         ),
+        bottomNavigationBar: _SaveBar(saving: _saving, onSave: _save),
       ),
-      bottomNavigationBar: _SaveBar(saving: _saving, onSave: _save),
     );
   }
 }
@@ -306,7 +355,8 @@ class _CardSearch extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // La page suivante se précharge dès l'arrivée de celle-ci.
+    // Les visuels de la page reçue sont mis en cache dès son arrivée : le
+    // retour sur une page déjà vue ne repasse pas par le réseau.
     ref.listen(deckCardSearchProvider(query), (previous, next) {
       final items = next.valueOrNull?.items;
       if (items != null) precacheCardThumbs(context, items);
@@ -509,23 +559,32 @@ class _DeckList extends StatelessWidget {
         ),
       );
     }
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
-      children: [
+    // Un sliver par zone : les lignes ne sont construites qu'à l'approche de
+    // l'écran, un deck de 60 cartes reste fluide.
+    return CustomScrollView(
+      slivers: [
         for (final zone in deckZones)
           if (groups[zone.key]!.isNotEmpty) ...[
-            SectionTitle(
-              title:
-                  '${zone.label} · ${zoneCount(groups, zone.key)}'
-                  '/${zone.target}${zone.key == 'main' ? '+' : ''}',
-            ),
-            for (final entry in groups[zone.key]!)
-              _DeckRow(
-                entry: entry,
-                onAdd: () => onAdd(entry.card),
-                onRemove: () => onRemove(entry.card.id),
+            SliverToBoxAdapter(
+              child: SectionTitle(
+                title:
+                    '${zone.label} · ${zoneCount(groups, zone.key)}'
+                    '/${zone.target}${zone.key == 'main' ? '+' : ''}',
               ),
+            ),
+            SliverList.builder(
+              itemCount: groups[zone.key]!.length,
+              itemBuilder: (context, index) {
+                final entry = groups[zone.key]![index];
+                return _DeckRow(
+                  entry: entry,
+                  onAdd: () => onAdd(entry.card),
+                  onRemove: () => onRemove(entry.card.id),
+                );
+              },
+            ),
           ],
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }

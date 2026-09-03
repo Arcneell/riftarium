@@ -185,13 +185,20 @@ class DecksScreen extends ConsumerWidget {
             isPublic: request.isPublic,
           );
       if (!context.mounted) return;
-      if (outcome.unresolved.isNotEmpty) {
+      // Un seul message, mais qui dit tout ce qui n'a pas été importé.
+      final warnings = <String>[
+        if (outcome.unresolved.isNotEmpty)
+          '${outcome.unresolved.length} carte(s) introuvable(s) : '
+              '${outcome.unresolved.take(3).join(', ')}',
+        if (outcome.sideboardIgnored > 0)
+          '${outcome.sideboardIgnored} carte(s) de réserve ignorée(s) : '
+              'Riftarium ne garde que le deck principal',
+      ];
+      if (warnings.isNotEmpty) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text(
-              '${outcome.unresolved.length} carte(s) introuvable(s) : '
-              '${outcome.unresolved.take(3).join(', ')}',
-            ),
+            content: Text(warnings.join(' ')),
+            duration: const Duration(seconds: 5),
           ),
         );
       }

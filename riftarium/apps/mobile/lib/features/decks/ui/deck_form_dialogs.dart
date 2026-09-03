@@ -175,6 +175,7 @@ class _ImportCodeDialogState extends State<_ImportCodeDialog> {
 
   Future<void> _paste() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
     final text = data?.text?.trim();
     if (text == null || text.isEmpty) return;
     setState(() => _code.text = text);

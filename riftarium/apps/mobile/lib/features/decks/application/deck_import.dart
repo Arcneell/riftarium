@@ -14,6 +14,7 @@ class DeckImportResult {
     required this.cards,
     required this.unresolved,
     this.champion,
+    this.sideboardIgnored = 0,
   });
 
   final List<DeckCard> cards;
@@ -21,6 +22,10 @@ class DeckImportResult {
   /// Codes de cartes introuvables dans la base (le deck est créé sans elles).
   final List<String> unresolved;
   final RiftCard? champion;
+
+  /// Exemplaires portés par la réserve du code : Riftarium n'a pas de zone de
+  /// réserve, ils sont écartés — mais jamais en silence.
+  final int sideboardIgnored;
 
   int get total => cards.fold<int>(0, (sum, entry) => sum + entry.qty);
 }
@@ -67,6 +72,10 @@ Future<DeckImportResult> resolveDeckCode(
     cards: cards,
     unresolved: unresolved,
     champion: championCode == null ? null : found[championCode],
+    sideboardIgnored: contents.sideboard.fold<int>(
+      0,
+      (total, entry) => total + entry.count,
+    ),
   );
 }
 

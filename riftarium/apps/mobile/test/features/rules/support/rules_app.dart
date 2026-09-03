@@ -37,6 +37,9 @@ class NoRulesCache implements RulesCacheStore {
 
   @override
   Future<bool> write(String source) async => true;
+
+  @override
+  Future<void> clear() async {}
 }
 
 /// Application complète, câblée sur les fixtures : le routeur réel permet de

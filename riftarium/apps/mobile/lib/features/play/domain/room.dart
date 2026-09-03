@@ -26,12 +26,6 @@ class PlayUser {
 
   String get initial =>
       handle.isEmpty ? '?' : handle.substring(0, 1).toUpperCase();
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'handle': handle,
-    'avatar_url': avatarUrl,
-  };
 }
 
 /// Deck choisi, réduit à ce que le salon et l'historique en montrent.
@@ -54,8 +48,6 @@ class PlayDeck {
   final String format;
 
   String get formatLabel => format == 'free' ? 'Libre' : 'Tournoi';
-
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'format': format};
 }
 
 /// Un siège du salon (`RoomPlayerOut`).
@@ -85,14 +77,6 @@ class RoomPlayer {
   final bool ready;
   final RiftCard? legend;
   final PlayDeck? deck;
-
-  Map<String, dynamic> toJson() => {
-    'user': user.toJson(),
-    'seat': seat,
-    'ready': ready,
-    'legend': legend == null ? null : cardToJson(legend!),
-    'deck': deck?.toJson(),
-  };
 }
 
 /// Salon d'attente (`RoomOut`). Le code vaut secret : qui l'a peut rejoindre.
@@ -187,17 +171,4 @@ class Room {
 
   /// Lien partageable du salon, identique à celui du site.
   String shareUrl(String webBaseUrl) => '$webBaseUrl/salon/$code';
-
-  Map<String, dynamic> toJson() => {
-    'code': code,
-    'mode': mode,
-    'status': status,
-    'host_id': hostId,
-    'players': players.map((player) => player.toJson()).toList(),
-    'match_id': matchId,
-    'expires_at': expiresAt?.toIso8601String(),
-    'version': version,
-    'victory_score': victoryScore,
-    'rounds_to_win': roundsToWin,
-  };
 }

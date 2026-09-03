@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/design/components.dart';
+import '../../../../app/format.dart';
 import '../../../../app/theme.dart';
 import '../../../../app/widgets/rift_avatar.dart';
 import '../../../../core/api_exception.dart';
 import '../../domain/public_profile.dart';
-import 'achievement_widgets.dart';
 
 /// Message affichable d'une erreur : les appels API lèvent des [ApiException]
 /// dont le texte est déjà rédigé en français.
@@ -58,8 +58,9 @@ class SocialUserRow extends StatelessWidget {
     final detail =
         subtitle ??
         (user.lastMatchAt == null
-            ? 'Aucune partie suivie ensemble'
-            : 'Dernière partie le ${formatSocialDate(user.lastMatchAt!)}');
+            ? 'Aucune partie suivie'
+            : 'Dernière partie suivie le '
+                  '${formatSocialDate(user.lastMatchAt!)}');
     return RiftPanel(
       onTap: onOpen,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

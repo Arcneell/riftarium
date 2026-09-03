@@ -100,7 +100,8 @@ suivants, `prism` pour `six_domains`, `set_complete`, `giant_slayer`.
 **Mobile** (onglet Profil) : mon profil (avatar, pseudo, bio, badges débloqués
 en tête, stats de duels, Mes parties, réglages de confidentialité, « Modifier »
 : pseudo, bio, avatar parmi `/api/auth/avatars`, réglages) ; profil public
-(`/joueur/:handle`) : bannière avec l'avatar en grand, bio, badges, stats,
+(route interne `/joueur/:handle`, lien profond public `/u/:handle` comme sur le
+site) : bannière avec l'avatar en grand, bio, badges, stats,
 collection (grille si autorisée), decks publics, bouton Suivre ; « Amis »
 (`/profil/amis`) : suivis + abonnés, recherche par pseudo, « Inviter dans mon
 salon » (crée le salon puis partage le code). Depuis l'historique et les salons,

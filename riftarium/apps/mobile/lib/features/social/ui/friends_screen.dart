@@ -13,7 +13,8 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/common.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../auth/ui/login_screen.dart' show AuthError, BannerBackButton;
+import '../../../app/widgets/auth_widgets.dart'
+    show AuthError, BannerBackButton;
 import '../../play/application/play_providers.dart';
 import '../../play/data/play_api.dart';
 import '../application/social_providers.dart';
@@ -35,6 +36,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   final _search = TextEditingController();
   Timer? _debounce;
 
+  /// Saisie courante, avant l'anti-rebond.
+  String _typed = '';
+
   /// Recherche réellement envoyée à l'API (après [userSearchDelay]).
   String _query = '';
   bool _followers = false;
@@ -49,10 +53,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   }
 
   void _onSearch(String value) {
-    setState(() {});
+    final trimmed = value.trim();
+    setState(() => _typed = trimmed);
     _debounce?.cancel();
     _debounce = Timer(userSearchDelay, () {
-      if (mounted) setState(() => _query = value.trim());
+      if (mounted) setState(() => _query = trimmed);
     });
   }
 
@@ -117,7 +122,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     }
 
     final follows = ref.watch(followsProvider);
-    final searching = _search.text.trim().length >= userSearchMinLength;
+    // On passe en mode recherche dès la saisie, mais les résultats affichés
+    // sont ceux de `_query` : tant que l'anti-rebond n'a pas fini, on annonce
+    // un chargement plutôt qu'un « aucun joueur » prématuré.
+    final searching =
+        _typed.length >= userSearchMinLength ||
+        _query.length >= userSearchMinLength;
+    final pending = _typed != _query;
     return Scaffold(
       body: RefreshIndicator.adaptive(
         onRefresh: () async => ref.invalidate(followsProvider),
@@ -155,7 +166,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                 sliver: SliverToBoxAdapter(child: AuthError(message: _error!)),
               ),
-            if (searching) ..._searchResults() else ..._followLists(follows),
+            if (searching)
+              ..._searchResults(pending: pending)
+            else
+              ..._followLists(follows),
             const SliverToBoxAdapter(child: SizedBox(height: 36)),
           ],
         ),
@@ -163,8 +177,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     );
   }
 
-  List<Widget> _searchResults() {
-    final results = ref.watch(userSearchProvider(_query));
+  List<Widget> _searchResults({required bool pending}) {
+    final results = pending
+        ? const AsyncLoading<List<SocialUser>>()
+        : ref.watch(userSearchProvider(_query));
     return [
       const SliverToBoxAdapter(
         child: SectionTitle(eyebrow: 'Recherche', title: 'Résultats'),

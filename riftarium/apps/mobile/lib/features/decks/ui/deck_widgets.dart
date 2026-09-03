@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/design/components.dart';
+import '../../../app/design/motion_utils.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../cards/domain/card.dart';
+import '../../cards/domain/card_labels.dart';
 import '../domain/deck.dart';
 
 /// Briques d'affichage communes aux écrans de decks : boîte de deck, segment
 /// « Mes decks | Communauté », couverture de la légende, cœur animé.
-
-/// Durée d'animation annulée quand le système demande moins de mouvement.
-Duration riftDuration(BuildContext context, Duration duration) =>
-    MediaQuery.disableAnimationsOf(context) ? Duration.zero : duration;
 
 /// Colonnes d'une grille de cartes (règle 4 du système de design).
 int cardColumns(BuildContext context) {
@@ -22,15 +20,6 @@ int cardColumns(BuildContext context) {
   if (size.width > size.height) return 4;
   return size.width < 340 ? 2 : 3;
 }
-
-/// Montant en euros à la française : `12,50 €`. Null si le prix est inconnu.
-String? formatEur(double? amount) {
-  if (amount == null) return null;
-  return '${amount.toStringAsFixed(2).replaceAll('.', ',')} €';
-}
-
-/// Libellé du format : le site parle de decks « légaux » et « illégaux ».
-String formatLabel(String format) => format == 'free' ? 'illégal' : 'légal';
 
 /// Les six domaines de jeu, dans l'ordre du prisme.
 const List<String> filterDomains = [
@@ -297,6 +286,7 @@ class DeckBox extends StatelessWidget {
     this.author,
     this.visibility,
     this.pending = false,
+    this.rejected = false,
     this.likedByMe = false,
     this.views,
     this.priceEur,
@@ -324,6 +314,7 @@ class DeckBox extends StatelessWidget {
     likedByMe: deck.likedByMe,
     visibility: deck.isPublic ? 'public' : 'privé',
     pending: deck.isPending,
+    rejected: deck.isRejected,
     priceEur: deck.totalEur,
     onOpen: onOpen,
     onDelete: onDelete,
@@ -366,6 +357,9 @@ class DeckBox extends StatelessWidget {
   /// « public » ou « privé » ; nul sur un deck de la communauté.
   final String? visibility;
   final bool pending;
+
+  /// Deck écarté par la modération : il reste privé tant qu'il n'est pas revu.
+  final bool rejected;
   final bool likedByMe;
   final int? views;
   final double? priceEur;
@@ -379,9 +373,9 @@ class DeckBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final price = formatEur(priceEur);
+    final price = formatEuroOrNull(priceEur);
     final missing = missingCards;
-    final missingCost = formatEur(missingCostEur);
+    final missingCost = formatEuroOrNull(missingCostEur);
     final legendName = legend?.name;
     final subtitle = [
       legendName ?? 'Légende à choisir',
@@ -441,6 +435,8 @@ class DeckBox extends StatelessWidget {
                         label: 'en modération',
                         color: RiftColors.order,
                       ),
+                    if (rejected)
+                      const MonoBadge(label: 'refusé', color: RiftColors.fury),
                     if (missing != null)
                       MonoBadge(
                         label: missing == 0

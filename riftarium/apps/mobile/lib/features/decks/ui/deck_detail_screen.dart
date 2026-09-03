@@ -28,7 +28,7 @@ import 'deck_widgets.dart';
 
 /// Thème sombre figé : l'en-tête de la fiche est toujours sur fond encre, même
 /// quand l'application est en clair — les pastilles doivent s'y accorder.
-final _inkTheme = buildTheme(Brightness.dark);
+final _inkTheme = buildTheme();
 
 /// Fiche d'un deck : en-tête encre, légalité, cartes par zone, actions.
 class DeckDetailScreen extends ConsumerStatefulWidget {
@@ -692,8 +692,13 @@ class _ActionBar extends ConsumerWidget {
     } on DeckCodeException {
       // Deck vide : on partage au moins le lien.
     }
+    // Liste des noms : lisible par qui n'a pas d'outil pour décoder le code.
+    final names = nameList(deck.cards);
+    if (names.isNotEmpty) {
+      lines.addAll(['', 'Liste des noms :', names]);
+    }
     if (deck.isShareable) {
-      lines.add('${AppConfig.webBaseUrl}/decks/${deck.id}');
+      lines.addAll(['', '${AppConfig.webBaseUrl}/decks/${deck.id}']);
     }
     await SharePlus.instance.share(
       ShareParams(
