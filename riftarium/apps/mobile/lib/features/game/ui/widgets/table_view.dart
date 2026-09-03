@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../app/design/components.dart';
+import '../../../../app/design/reveal.dart';
 import '../../../../app/theme.dart';
 import '../../application/game_providers.dart';
 import '../../domain/game_actions.dart';
@@ -111,24 +111,31 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
   Widget _rotated(Widget child) => RotatedBox(quarterTurns: 2, child: child);
 
   /// Rangée d'une équipe en 2c2 : les coéquipiers côte à côte, leur score
-  /// commun posé entre eux.
+  /// commun posé entre eux. Le disque central s'adapte à l'écran pour laisser
+  /// aux panneaux la place de rester lisibles (nom, XP).
   Widget _teamRow(int team) {
     final members = widget.state.teamPlayers(team);
     if (members.isEmpty) return const SizedBox.shrink();
     if (members.length == 1) return _panel(members.first);
-    return Row(
-      children: [
-        Expanded(child: _panel(members[0], showScore: false)),
-        const SizedBox(width: 8),
-        _TeamScore(
-          state: widget.state,
-          team: team,
-          onAdd: () => _game.addPoint(members[0].id),
-          onRemove: () => _game.removePoint(members[0].id),
-        ),
-        const SizedBox(width: 8),
-        Expanded(child: _panel(members[1], showScore: false)),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scoreWidth = (constraints.maxWidth * 0.24).clamp(78.0, 116.0);
+        return Row(
+          children: [
+            Expanded(child: _panel(members[0], showScore: false)),
+            const SizedBox(width: 8),
+            _TeamScore(
+              state: widget.state,
+              team: team,
+              width: scoreWidth,
+              onAdd: () => _game.addPoint(members[0].id),
+              onRemove: () => _game.removePoint(members[0].id),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: _panel(members[1], showScore: false)),
+          ],
+        );
+      },
     );
   }
 
@@ -260,12 +267,14 @@ class _TeamScore extends StatelessWidget {
     required this.team,
     required this.onAdd,
     required this.onRemove,
+    this.width = 116,
   });
 
   final GameState state;
   final int team;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +282,7 @@ class _TeamScore extends StatelessWidget {
     final color = Player.fallbackColors[team % Player.fallbackColors.length];
     final score = state.scoreOfTeam(team);
     return SizedBox(
-      width: 116,
+      width: width,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -305,8 +314,12 @@ class _TeamScore extends StatelessWidget {
               children: [
                 Text('ÉQUIPE', style: text.eyebrow.copyWith(fontSize: 9)),
                 ScoreHalo(
-                  diameter: 132,
-                  child: BigScore(value: score, color: color, size: 66),
+                  diameter: width + 16,
+                  child: BigScore(
+                    value: score,
+                    color: color,
+                    size: width * 0.57,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Padding(
@@ -315,7 +328,7 @@ class _TeamScore extends StatelessWidget {
                     score: score,
                     target: state.mode.victoryScore,
                     color: color,
-                    size: 8,
+                    size: width < 100 ? 6.5 : 8,
                   ),
                 ),
               ],
@@ -327,7 +340,122 @@ class _TeamScore extends StatelessWidget {
   }
 }
 
-/// Barre centrale : tour, chronomètre, tour suivant, annuler, menu. Jamais
+/// Puce du joueur actif, au centre de la table : elle dit à qui c'est de
+/// jouer — en 2c2 comme à quatre, la lueur d'un panneau ne suffit pas — et un
+/// appui passe la main. Le suivi du tour devient un vrai outil, pas un décor.
+class _TurnChip extends StatelessWidget {
+  const _TurnChip({required this.state, required this.onTap});
+
+  final GameState state;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final player = state.activePlayer;
+    final color = player.color;
+    return Semantics(
+      button: true,
+      label: 'Passer au joueur suivant',
+      child: Tooltip(
+        message: 'Passer au joueur suivant',
+        child: PressScale(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: RiftMotion.quick,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(RiftRadius.full),
+              border: Border.all(color: color.withValues(alpha: 0.75)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ActiveDot(color: color),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AU TOUR DE',
+                        style: text.eyebrow.copyWith(fontSize: 8),
+                      ),
+                      Text(
+                        player.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: text.bodyStrong.copyWith(fontSize: 13.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.skip_next_rounded,
+                  size: 20,
+                  color: RiftColors.goldSoft,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Version en lecture seule (l'invité regarde l'hôte compter) : le joueur
+/// actif reste annoncé, sans geste.
+class _ActiveTurnLabel extends StatelessWidget {
+  const _ActiveTurnLabel({required this.state});
+
+  final GameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final player = state.activePlayer;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActiveDot(color: player.color),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(
+            player.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.bodyStrong.copyWith(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActiveDot extends StatelessWidget {
+  const _ActiveDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 9,
+    height: 9,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: color,
+      boxShadow: [
+        BoxShadow(color: color.withValues(alpha: 0.7), blurRadius: 8),
+      ],
+    ),
+  );
+}
+
+/// Barre centrale : tour, chronomètre, joueur actif, annuler, menu. Jamais
 /// tournée : elle appartient à la table, pas à un joueur.
 class _ControlBar extends StatelessWidget {
   const _ControlBar({
@@ -398,8 +526,8 @@ class _ControlBar extends StatelessWidget {
             ),
           Row(
             children: [
-              // Le chrono est borné : « Tour suivant » garde sa place, c'est
-              // lui qui s'ellipse quand la police est agrandie.
+              // Le chrono est borné : la puce du joueur actif garde sa
+              // place, c'est elle qui s'ellipse à police agrandie.
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 96),
                 child: Column(
@@ -434,13 +562,8 @@ class _ControlBar extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: readOnly
-                      ? const SizedBox.shrink()
-                      : GoldButton(
-                          label: 'Tour suivant',
-                          icon: Icons.skip_next_rounded,
-                          expand: false,
-                          onPressed: onNextTurn,
-                        ),
+                      ? _ActiveTurnLabel(state: state)
+                      : _TurnChip(state: state, onTap: onNextTurn),
                 ),
               ),
               PopupMenuButton<String>(
