@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riftarium_mobile/features/game/data/game_store.dart';
 import 'package:riftarium_mobile/features/game/domain/game_engine.dart';
 import 'package:riftarium_mobile/features/game/domain/game_mode.dart';
 import 'package:riftarium_mobile/features/game/ui/widgets/confetti.dart';
@@ -10,6 +9,7 @@ import 'package:riftarium_mobile/features/game/ui/widgets/draw_overlay.dart';
 import 'package:riftarium_mobile/features/game/ui/widgets/player_panel.dart';
 
 import 'support/game_app.dart';
+import 'support/in_memory_game_store.dart';
 
 void main() {
   /// Panneau du joueur nommé `name` : les tests visent une place précise
@@ -173,8 +173,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final game = gameOf(tester)!;
-    expect(game.xpOf(game.playerById('p0')), 1);
-    expect(game.xpOf(game.playerById('p1')), 0);
+    expect(game.xpOf(game.playerById('p0')!), 1);
+    expect(game.xpOf(game.playerById('p1')!), 0);
     expectLevel(tester, panel, 1, reached: true);
     expectLevel(tester, panel, 2, reached: false);
 
@@ -206,8 +206,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final after = gameOf(tester)!;
-    expect(after.xpOf(after.playerById('p0')), 1);
-    expect(after.xpOf(after.playerById('p1')), 0, reason: 'XP jamais partagée');
+    expect(after.xpOf(after.playerById('p0')!), 1);
+    expect(
+      after.xpOf(after.playerById('p1')!),
+      0,
+      reason: 'XP jamais partagée',
+    );
   });
 
   testWidgets('l’appui long ouvre la feuille et applique l’exténuation', (
@@ -227,7 +231,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(ActionChip, 'Chasse 2'));
     await tester.pumpAndSettle();
-    expect(gameOf(tester)!.xpOf(gameOf(tester)!.playerById('p0')), 2);
+    expect(gameOf(tester)!.xpOf(gameOf(tester)!.playerById('p0')!), 2);
 
     // Piocher dans un deck vide donne un point à l'adversaire, pas à soi.
     await tester.tap(find.widgetWithText(ActionChip, 'Joueur 2'));
@@ -317,6 +321,29 @@ void main() {
     expect(find.byType(TextField), findsNWidgets(3));
   });
 
+  testWidgets('la table allume l’écran, quitter rend la veille', (
+    tester,
+  ) async {
+    final awake = FakeScreenAwake();
+    await tester.pumpWidget(gameApp(tester: tester, awake: awake));
+    await tester.pumpAndSettle();
+    expect(awake.enables, 0, reason: 'la configuration n’allume rien');
+
+    await startGame(tester);
+    expect(awake.enables, 1);
+    expect(awake.disables, 0);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Quitter'));
+    await tester.pumpAndSettle();
+
+    expect(gameOf(tester), isNull);
+    expect(awake.disables, 1, reason: 'la veille du système reprend la main');
+  });
+
   testWidgets('une partie sauvegardée se reprend', (tester) async {
     var saved = GameEngine.start(
       mode: GameMode.skirmish,
@@ -343,7 +370,7 @@ void main() {
     expect(game.mode, GameMode.skirmish);
     expect(game.players.length, 3);
     expect(game.scoreOfTeam(2), 2);
-    expect(game.xpOf(game.playerById('p1')), 3);
+    expect(game.xpOf(game.playerById('p1')!), 3);
     expect(game.activePlayer.id, 'p1');
     expect(find.byType(PlayerPanel), findsNWidgets(3));
   });

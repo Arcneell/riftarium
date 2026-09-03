@@ -6,7 +6,7 @@ import '../../../../app/theme.dart';
 /// des chiffres clairs sur fond sombre se lisent à un mètre et n'éblouissent
 /// personne au-dessus d'un plateau. Les briques de la charte suivent.
 Widget gameTheme({required Widget child}) =>
-    Theme(data: buildTheme(Brightness.dark), child: child);
+    Theme(data: buildTheme(), child: child);
 
 /// Chronomètre de la partie : `12:04`, ou `1:02:33` au-delà de l'heure.
 String formatChrono(Duration elapsed) {
@@ -18,6 +18,134 @@ String formatChrono(Duration elapsed) {
       '${minutes.toString().padLeft(2, '0')}:'
       '${rest.toString().padLeft(2, '0')}';
   return hours == 0 ? tail : '$hours:$tail';
+}
+
+/// Le score d'un camp : le chiffre en très grand posé sur son voile radial,
+/// et (si [target] est donné) ses gemmes de points juste dessous. Le même
+/// bloc sert au panneau d'un joueur et au disque partagé d'une équipe : il
+/// n'existe qu'ici.
+class ScoreDisplay extends StatelessWidget {
+  const ScoreDisplay({
+    super.key,
+    required this.score,
+    required this.color,
+    this.target,
+    this.diameter = 176,
+    this.digitSize = 78,
+    this.gemSize = 8,
+    this.gemPadding = EdgeInsets.zero,
+  });
+
+  final int score;
+  final Color color;
+
+  /// Score de victoire du mode : donné, les gemmes s'affichent sous le
+  /// chiffre. Null, le bloc ne montre que le chiffre.
+  final int? target;
+
+  /// Diamètre du voile posé derrière le chiffre.
+  final double diameter;
+  final double digitSize;
+  final double gemSize;
+
+  /// Marge des gemmes : sur un disque étroit, elles ne doivent pas toucher
+  /// les bords.
+  final EdgeInsetsGeometry gemPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final gems = target;
+    final digits = _ScoreHalo(
+      diameter: diameter,
+      child: _BigScore(value: score, color: color, size: digitSize),
+    );
+    if (gems == null) return digits;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        digits,
+        const SizedBox(height: 8),
+        Padding(
+          padding: gemPadding,
+          child: ScoreGems(
+            score: score,
+            target: gems,
+            color: color,
+            size: gemSize,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Le chiffre du score : Marcellus, énorme, avec un léger battement à chaque
+/// changement pour que le geste se voie de l'autre bout de la table.
+class _BigScore extends StatelessWidget {
+  const _BigScore({required this.value, required this.color, this.size = 78});
+
+  final int value;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: RiftMotion.quick,
+      switchInCurve: RiftMotion.ease,
+      transitionBuilder: (child, animation) => ScaleTransition(
+        scale: Tween<double>(begin: 0.72, end: 1).animate(animation),
+        child: FadeTransition(opacity: animation, child: child),
+      ),
+      child: Text(
+        '$value',
+        key: ValueKey(value),
+        style: TextStyle(
+          fontFamily: RiftFonts.display,
+          fontSize: size,
+          height: 1,
+          color: RiftColors.ink,
+          shadows: [
+            // Un halo à la couleur du joueur, doublé d'une ombre encre : le
+            // chiffre tient même posé sur la partie claire d'une illustration.
+            Shadow(color: color.withValues(alpha: 0.55), blurRadius: 28),
+            const Shadow(
+              color: RiftColors.night,
+              blurRadius: 14,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Voile radial local posé derrière le chiffre : l'illustration reste visible
+/// partout ailleurs, le score reste lisible au centre.
+class _ScoreHalo extends StatelessWidget {
+  const _ScoreHalo({required this.child, this.diameter = 176});
+
+  final Widget child;
+  final double diameter;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: diameter,
+    height: diameter,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        colors: [
+          RiftColors.night.withValues(alpha: 0.55),
+          RiftColors.night.withValues(alpha: 0),
+        ],
+        stops: const [0.35, 1],
+      ),
+    ),
+    child: child,
+  );
 }
 
 /// Gemmes de score : une par point à marquer, remplies jusqu'au score courant.

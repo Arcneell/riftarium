@@ -32,12 +32,17 @@ class Player {
 
   /// Couleurs de repli quand le joueur n'a pas choisi de légende : une par
   /// camp, l'or d'abord (en 2c2 : équipe A en or, équipe B en sarcelle).
-  static const fallbackColors = [
+  /// Privées : on passe par [teamColor], le modulo ne se refait pas ailleurs.
+  static const _fallbackColors = [
     RiftColors.gold,
     RiftColors.hex,
     RiftColors.chaos,
     RiftColors.body,
   ];
+
+  /// Couleur d'un camp sans légende.
+  static Color teamColor(int team) =>
+      _fallbackColors[team % _fallbackColors.length];
 
   /// Couleur du panneau : le premier domaine de la légende, sinon le camp.
   Color get color {
@@ -46,7 +51,7 @@ class Player {
       final color = RiftColors.domain(domains.first);
       if (color != RiftColors.muted) return color;
     }
-    return fallbackColors[team % fallbackColors.length];
+    return teamColor(team);
   }
 
   Player copyWith({

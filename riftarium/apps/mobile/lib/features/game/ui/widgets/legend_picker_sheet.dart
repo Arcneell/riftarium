@@ -9,6 +9,7 @@ import '../../../../app/widgets/common.dart';
 import '../../../cards/domain/card.dart';
 import '../../application/game_providers.dart';
 import '../../data/legends_repository.dart';
+import 'game_theme.dart';
 
 /// Feuille de choix d'une légende. Renvoie la carte retenue, ou null si
 /// l'utilisateur referme sans choisir.
@@ -18,8 +19,7 @@ Future<RiftCard?> showLegendPicker(BuildContext context) =>
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: RiftColors.night,
-      builder: (context) => Theme(
-        data: buildTheme(Brightness.dark),
+      builder: (context) => gameTheme(
         child: const FractionallySizedBox(
           heightFactor: 0.92,
           child: _LegendPickerSheet(),

@@ -56,6 +56,10 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   int? _spotlight;
   int _drawTarget = 0;
   int _spinSteps = 0;
+
+  /// Numéro du tirage en cours : un « retirer au sort » pendant l'attente de
+  /// 1,8 s invalide le précédent, qui ne doit plus rien lancer.
+  int _drawToken = 0;
   bool _drawing = false;
   bool _spinning = false;
   bool _resumeDismissed = false;
@@ -96,6 +100,11 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
       _players = players;
       for (final player in players) {
         _names[player.seat].text = player.name;
+      }
+      // La durée de ronde n'a de sens qu'en tournoi : là, null veut dire
+      // « sans limite » (un choix), et non « rien de retenu ».
+      if (table.mode.isTournament) {
+        _roundMinutes = table.roundLimit?.inMinutes;
       }
       _firstPlayerId = null;
       _spotlight = null;
@@ -145,7 +154,9 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
 
   Future<void> _draw() async {
     final count = _players.length;
+    if (count == 0) return;
     final target = _random.nextInt(count);
+    final token = ++_drawToken;
     setState(() {
       _drawTarget = target;
       _drawing = true;
@@ -160,13 +171,13 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
       return;
     }
     await _spin.forward(from: 0);
-    if (!mounted) return;
+    if (!mounted || token != _drawToken) return;
     await HapticFeedback.mediumImpact();
-    if (!mounted) return;
+    if (!mounted || token != _drawToken) return;
     _settleDraw();
     // Le temps de lire le nom, puis la partie démarre d'elle-même.
     await Future<void>.delayed(const Duration(milliseconds: 1800));
-    if (mounted && _drawing) _closeDraw();
+    if (mounted && _drawing && token == _drawToken) _closeDraw();
   }
 
   void _settleDraw() => setState(() {
@@ -201,13 +212,22 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   }
 
   /// L'autre joueur d'un duel : celui qui joue en second si le désigné
-  /// choisit de commencer, et inversement.
-  String _opponentOf(String playerId) =>
-      _players.firstWhere((player) => player.id != playerId).id;
+  /// choisit de commencer, et inversement. Repli sur le joueur lui-même : le
+  /// moteur gardera alors l'ordre en place plutôt que de lever.
+  String _opponentOf(String playerId) {
+    for (final player in _players) {
+      if (player.id != playerId) return player.id;
+    }
+    return playerId;
+  }
 
-  /// Nom saisi du joueur `playerId`.
-  String _nameOfId(String playerId) =>
-      _nameOf(_players.firstWhere((player) => player.id == playerId).seat);
+  /// Nom saisi du joueur `playerId`, vide s'il n'est plus à table.
+  String _nameOfId(String playerId) {
+    for (final player in _players) {
+      if (player.id == playerId) return _nameOf(player.seat);
+    }
+    return '';
+  }
 
   Future<void> _pickLegend(Player player) async {
     _touched = true;
@@ -356,18 +376,14 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
                         : () => _startGame(firstPlayerId: _opponentOf(drawn)),
                   ),
                 ] else
+                  // Hors tournoi, la roue lance la partie en se refermant :
+                  // il n'y a jamais de second geste à faire ici.
                   GoldButton(
-                    label: drawn == null
-                        ? (_mode.isTournament
-                              ? 'Tirer le joueur désigné'
-                              : 'Tirer le premier joueur')
-                        : 'Commencer la partie',
-                    icon: drawn == null
-                        ? Icons.casino_outlined
-                        : Icons.play_arrow_rounded,
-                    onPressed: _spinning
-                        ? null
-                        : (drawn == null ? _draw : _startGame),
+                    label: _mode.isTournament
+                        ? 'Tirer le joueur désigné'
+                        : 'Tirer le premier joueur',
+                    icon: Icons.casino_outlined,
+                    onPressed: _spinning ? null : _draw,
                   ),
                 if (drawn != null)
                   Padding(
@@ -735,7 +751,7 @@ class _TeamChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Player.fallbackColors[team % Player.fallbackColors.length];
+    final color = Player.teamColor(team);
     return PressScale(
       onTap: onTap,
       child: AnimatedContainer(

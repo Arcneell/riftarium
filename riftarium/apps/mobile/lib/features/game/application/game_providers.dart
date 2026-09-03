@@ -61,6 +61,10 @@ final screenAwakeProvider = Provider<ScreenAwake>(
 
 final gameStoreProvider = Provider<GameStore>((ref) => const FileGameStore());
 
+/// Horloge de la table, injectable : les tests fixent l'instant courant pour
+/// vérifier ce qui dépend du temps (fin de la ronde en tournoi).
+final nowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
 final legendsCacheProvider = Provider<LegendsCacheStore>(
   (ref) => const FileLegendsCacheStore(),
 );
@@ -110,8 +114,13 @@ class GameController extends Notifier<GameState?> implements GameActions {
       ),
     );
     // La table est retenue au-delà de la partie : quitter n'efface que la
-    // sauvegarde de reprise, la prochaine configuration retrouve les joueurs.
-    unawaited(_store.writeTable(SavedTable(mode: mode, players: players)));
+    // sauvegarde de reprise, la prochaine configuration retrouve les joueurs,
+    // le format et la durée de ronde.
+    unawaited(
+      _store.writeTable(
+        SavedTable(mode: mode, players: players, roundLimit: roundLimit),
+      ),
+    );
   }
 
   /// Reprend une partie relue depuis la sauvegarde.

@@ -58,9 +58,9 @@ void main() {
     expect(restored.startedAt, state.startedAt);
     expect(restored.scoreOfTeam(0), 1);
     expect(restored.scoreOfTeam(1), 0);
-    expect(restored.xpOf(restored.playerById('p0')), 3);
-    expect(restored.xpOf(restored.playerById('p1')), 0);
-    expect(restored.xpOf(restored.playerById('p3')), 1);
+    expect(restored.xpOf(restored.playerById('p0')!), 3);
+    expect(restored.xpOf(restored.playerById('p1')!), 0);
+    expect(restored.xpOf(restored.playerById('p3')!), 1);
     expect(restored.history.length, state.history.length);
     expect(restored.players[0].legend?.name, 'Jinx');
     expect(restored.players[0].legend?.alternateArt, isTrue);

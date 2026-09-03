@@ -23,8 +23,11 @@ void main() {
 
   /// Ouvre la configuration en mode Tournoi et tire le joueur désigné. Renvoie
   /// le nom du joueur désigné.
-  Future<String> drawDesignated(WidgetTester tester) async {
-    await tester.pumpWidget(gameApp(tester: tester));
+  Future<String> drawDesignated(
+    WidgetTester tester, {
+    DateTime Function()? now,
+  }) async {
+    await tester.pumpWidget(gameApp(tester: tester, now: now));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Tournoi'));
@@ -137,6 +140,25 @@ void main() {
     expect(game.matchWinnerTeam, 0);
     expect(find.text('Victoire au temps'), findsOneWidget);
     expect(find.text('Joueur 1 remporte le match'), findsOneWidget);
+  });
+
+  testWidgets('une ronde déjà écoulée annonce le temps d’elle-même', (
+    tester,
+  ) async {
+    // Horloge deux heures en avance : la ronde de 60 minutes est écoulée
+    // avant même que la table s'affiche (RT 408.2).
+    final designated = await drawDesignated(
+      tester,
+      now: () => DateTime.now().add(const Duration(hours: 2)),
+    );
+    await tester.tap(find.text('$designated commence'));
+    await tester.pumpAndSettle();
+
+    final game = gameOf(tester)!;
+    expect(game.timeCalled, isTrue);
+    expect(game.overtimeTurnsLeft, kTournamentExtraTurns + 1);
+    expect(find.text('TEMPS ÉCOULÉ'), findsOneWidget);
+    expect(find.text('fin du tour'), findsOneWidget);
   });
 
   testWidgets('le perdant de la manche choisit qui commence la suivante', (

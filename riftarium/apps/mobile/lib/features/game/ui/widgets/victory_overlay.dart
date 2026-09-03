@@ -17,8 +17,8 @@ class VictoryOverlay extends StatefulWidget {
     super.key,
     required this.state,
     required this.onNewRound,
-    required this.onNewGame,
     required this.onFinish,
+    this.onNewGame,
     this.finishLabel = 'Terminer',
     this.allowNewGame = true,
   });
@@ -28,16 +28,23 @@ class VictoryOverlay extends StatefulWidget {
   /// Manche suivante. En tournoi, le perdant choisit qui commence
   /// (RT 407.4) : `firstPlayerId` porte ce choix.
   final void Function({String? firstPlayerId}) onNewRound;
-  final VoidCallback onNewGame;
+
+  /// Relance une partie libre. Null en partie suivie : une rencontre
+  /// enregistrée ne se rejoue pas d'un bouton, elle se termine.
+  final VoidCallback? onNewGame;
   final VoidCallback onFinish;
 
   /// Libellé de l'action qui clôt la rencontre (« Envoyer le résultat » en
   /// partie suivie).
   final String finishLabel;
 
-  /// Faux en partie suivie : une rencontre enregistrée ne se rejoue pas d'un
-  /// bouton, elle se termine.
+  /// Faux en partie suivie : le bouton « Nouvelle partie » n'apparaît pas,
+  /// même si [onNewGame] est fourni.
   final bool allowNewGame;
+
+  /// Le bouton « Nouvelle partie » n'a de sens que si les deux conditions
+  /// sont réunies : l'écran l'autorise et une action est branchée.
+  bool get _canRestart => allowNewGame && onNewGame != null;
 
   @override
   State<VictoryOverlay> createState() => _VictoryOverlayState();
@@ -70,11 +77,18 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
     final loser = tournament && hasNextRound && team != null
         ? state.teams.firstWhere((other) => other != team)
         : null;
+    // « Au temps » seulement quand la manche s'est arrêtée au bout des tours
+    // supplémentaires (RT 408.2.b) : un temps annoncé entre deux manches
+    // n'enlève rien à la victoire qui vient d'être marquée.
     final title = drawn
         ? 'Égalité'
-        : state.timedOut
+        : state.endedOnTime
         ? 'Victoire au temps'
         : 'Victoire';
+    // On ne fête pas un match nul : ni confettis, ni « Encore ! ». Une
+    // manche gagnée qui ne donne pas le match (1–1 au temps) n'est pas une
+    // victoire à célébrer.
+    final celebrate = !drawn && (matchWinner != null || !state.isMatchOver);
 
     return Positioned.fill(
       child: _FadeIn(
@@ -85,7 +99,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               // Un tap n'importe où sur le fond relance la fête.
-              onTap: reduceMotion ? null : _replay,
+              onTap: reduceMotion || !celebrate ? null : _replay,
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: ColoredBox(
@@ -239,7 +253,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 icon: Icons.play_arrow_rounded,
                                 onPressed: widget.onNewRound,
                               )
-                            else if (widget.allowNewGame)
+                            else if (widget._canRestart)
                               GoldButton(
                                 label: 'Nouvelle partie',
                                 icon: Icons.refresh_rounded,
@@ -251,7 +265,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 icon: Icons.check_rounded,
                                 onPressed: widget.onFinish,
                               ),
-                            if (hasNextRound || widget.allowNewGame) ...[
+                            if (hasNextRound || widget._canRestart) ...[
                               const SizedBox(height: 8),
                               GhostButton(
                                 label: widget.finishLabel,
@@ -259,7 +273,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 onPressed: widget.onFinish,
                               ),
                             ],
-                            if (!reduceMotion && !drawn)
+                            if (!reduceMotion && celebrate)
                               TextButton.icon(
                                 onPressed: _replay,
                                 icon: const Icon(
@@ -276,7 +290,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                 ),
               ),
             ),
-            if (!drawn)
+            if (celebrate)
               ConfettiOverlay(
                 colors: confettiPalette(
                   winners.expand(

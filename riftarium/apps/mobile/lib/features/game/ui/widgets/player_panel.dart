@@ -83,7 +83,6 @@ class PlayerPanel extends StatelessWidget {
                     Expanded(
                       child: _TapZone(
                         icon: Icons.add,
-                        align: Alignment.centerRight,
                         onTap: onAdd,
                         onLongPress: onSheet,
                       ),
@@ -91,7 +90,6 @@ class PlayerPanel extends StatelessWidget {
                     Expanded(
                       child: _TapZone(
                         icon: Icons.remove,
-                        align: Alignment.centerRight,
                         onTap: onRemove,
                         onLongPress: onSheet,
                       ),
@@ -118,13 +116,11 @@ class PlayerPanel extends StatelessWidget {
                         if (showScore)
                           Expanded(
                             child: Center(
-                              child: ScoreHalo(
+                              child: ScoreDisplay(
+                                score: state.scoreOf(player),
+                                color: color,
                                 diameter: haloSize,
-                                child: BigScore(
-                                  value: state.scoreOf(player),
-                                  color: color,
-                                  size: scoreSize,
-                                ),
+                                digitSize: scoreSize,
                               ),
                             ),
                           )
@@ -195,9 +191,13 @@ class _Backdrop extends StatelessWidget {
         ),
         if (legend != null)
           Positioned.fill(
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-              child: LegendArt(card: legend),
+            // Le flou est cher : isolé dans sa couche, il n'est pas repeint
+            // quand le score ou l'XP changent juste au-dessus.
+            child: RepaintBoundary(
+              child: ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                child: _LegendArt(card: legend),
+              ),
             ),
           ),
         Positioned.fill(
@@ -225,8 +225,8 @@ class _Backdrop extends StatelessWidget {
 ///
 /// `CardImage` impose le ratio 5/7 d'une carte et un squelette animé : ni l'un
 /// ni l'autre ne conviennent à un fond plein cadre.
-class LegendArt extends StatelessWidget {
-  const LegendArt({super.key, required this.card});
+class _LegendArt extends StatelessWidget {
+  const _LegendArt({required this.card});
 
   final RiftCard card;
 
@@ -311,80 +311,6 @@ class _Identity extends StatelessWidget {
   }
 }
 
-/// Le chiffre du score : Marcellus, énorme, avec un léger battement à chaque
-/// changement pour que le geste se voie de l'autre bout de la table.
-class BigScore extends StatelessWidget {
-  const BigScore({
-    super.key,
-    required this.value,
-    required this.color,
-    this.size = 78,
-  });
-
-  final int value;
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: RiftMotion.quick,
-      switchInCurve: RiftMotion.ease,
-      transitionBuilder: (child, animation) => ScaleTransition(
-        scale: Tween<double>(begin: 0.72, end: 1).animate(animation),
-        child: FadeTransition(opacity: animation, child: child),
-      ),
-      child: Text(
-        '$value',
-        key: ValueKey(value),
-        style: TextStyle(
-          fontFamily: RiftFonts.display,
-          fontSize: size,
-          height: 1,
-          color: RiftColors.darkInk,
-          shadows: [
-            // Un halo à la couleur du joueur, doublé d'une ombre encre : le
-            // chiffre tient même posé sur la partie claire d'une illustration.
-            Shadow(color: color.withValues(alpha: 0.55), blurRadius: 28),
-            const Shadow(
-              color: RiftColors.night,
-              blurRadius: 14,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Voile radial local posé derrière le chiffre : l'illustration reste visible
-/// partout ailleurs, le score reste lisible au centre.
-class ScoreHalo extends StatelessWidget {
-  const ScoreHalo({super.key, required this.child, this.diameter = 176});
-
-  final Widget child;
-  final double diameter;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: diameter,
-    height: diameter,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: RadialGradient(
-        colors: [
-          RiftColors.night.withValues(alpha: 0.55),
-          RiftColors.night.withValues(alpha: 0),
-        ],
-        stops: const [0.35, 1],
-      ),
-    ),
-    child: child,
-  );
-}
-
 /// Réserve d'XP (729) : le chiffre, six repères de niveau (824) et deux
 /// boutons compacts. L'XP n'est jamais partagée, même en 2c2.
 ///
@@ -447,7 +373,7 @@ class XpBar extends StatelessWidget {
                         '$xp',
                         style: text.monoStrong.copyWith(
                           fontSize: 16,
-                          color: RiftColors.darkInk,
+                          color: RiftColors.ink,
                         ),
                       ),
                       if (showMarkers) ...[
@@ -473,7 +399,9 @@ class XpBar extends StatelessWidget {
 }
 
 /// Six repères : le niveau N s'allume dès que le joueur a N XP. Le dernier
-/// atteint bat doucement, pour repérer sans compter ce qui vient d'ouvrir.
+/// atteint respire **une fois** quand il vient de s'ouvrir : un battement
+/// perpétuel attirerait l'œil toute la partie (et empêcherait tout
+/// `pumpAndSettle` de rendre la main).
 class LevelMarkers extends StatefulWidget {
   const LevelMarkers({super.key, required this.xp, required this.color});
 
@@ -488,31 +416,25 @@ class _LevelMarkersState extends State<LevelMarkers>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1400),
+    duration: const Duration(milliseconds: 900),
   );
 
   bool _reduceMotion = false;
+
+  int get _level => widget.xp.clamp(0, GameEngine.maxLevel);
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _reduceMotion = MediaQuery.disableAnimationsOf(context);
-    _sync();
   }
 
   @override
   void didUpdateWidget(covariant LevelMarkers oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _sync();
-  }
-
-  void _sync() {
-    final shouldRun = !_reduceMotion && widget.xp > 0;
-    if (shouldRun && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!shouldRun && _pulse.isAnimating) {
-      _pulse.stop();
-    }
+    // Un seul aller-retour, et seulement quand un niveau vient de s'ouvrir.
+    final opened = oldWidget.xp.clamp(0, GameEngine.maxLevel) < _level;
+    if (opened && _level > 0 && !_reduceMotion) _pulse.forward(from: 0);
   }
 
   @override
@@ -523,11 +445,15 @@ class _LevelMarkersState extends State<LevelMarkers>
 
   @override
   Widget build(BuildContext context) {
-    final reached = widget.xp.clamp(0, GameEngine.maxLevel);
+    final reached = _level;
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, _) {
-        final beat = _reduceMotion ? 1.0 : 0.6 + 0.4 * _pulse.value;
+        // Triangle 0 → 1 → 0 : le repère s'éteint à demi puis revient plein.
+        final wave = _pulse.value < 0.5
+            ? _pulse.value * 2
+            : (1 - _pulse.value) * 2;
+        final beat = _reduceMotion ? 1.0 : 1 - 0.4 * wave;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -608,13 +534,11 @@ class _XpButton extends StatelessWidget {
 class _TapZone extends StatelessWidget {
   const _TapZone({
     required this.icon,
-    required this.align,
     required this.onTap,
     required this.onLongPress,
   });
 
   final IconData icon;
-  final Alignment align;
   final VoidCallback onTap;
 
   /// Null en partie suivie : les noms et les légendes viennent des comptes.
@@ -630,7 +554,9 @@ class _TapZone extends StatelessWidget {
       },
       onLongPress: onLongPress,
       child: Align(
-        alignment: align,
+        // Le repère « + » / « − » se tient au bord droit de la zone : il ne
+        // gêne ni le nom, ni le chiffre du score, ni la barre d'XP.
+        alignment: Alignment.centerRight,
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Icon(

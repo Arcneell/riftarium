@@ -28,6 +28,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late final ScreenAwake _screen;
   bool _awake = false;
 
+  /// Les appels au plugin sont mis en file : sans cela, un aller-retour
+  /// rapide (partie lancée puis quittée) peut voir le `disable` répondre
+  /// avant le `enable` et laisser l'écran s'éteindre en pleine partie.
+  Future<void> _pending = Future<void>.value();
+
   @override
   void initState() {
     super.initState();
@@ -38,7 +43,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (_awake) _screen.disable();
+    if (_awake) _queue(enable: false);
     super.dispose();
   }
 
@@ -49,17 +54,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (state == AppLifecycleState.resumed) {
       _syncAwake(_awake);
     } else if (state == AppLifecycleState.paused) {
-      _screen.disable();
+      _queue(enable: false);
     }
   }
 
   void _syncAwake(bool shouldStayAwake) {
     _awake = shouldStayAwake;
-    if (shouldStayAwake) {
-      _screen.enable();
-    } else {
-      _screen.disable();
-    }
+    _queue(enable: shouldStayAwake);
+  }
+
+  /// Enchaîne l'appel après celui en cours. Une erreur du plugin est avalée
+  /// (`ScreenAwake` le fait déjà) pour ne pas rompre la file.
+  void _queue({required bool enable}) {
+    _pending = _pending
+        .then((_) => enable ? _screen.enable() : _screen.disable())
+        .onError<Object>((error, stack) {});
   }
 
   void _close() {

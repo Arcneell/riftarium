@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riftarium_mobile/features/game/domain/game_engine.dart';
 import 'package:riftarium_mobile/features/game/domain/game_mode.dart';
@@ -35,6 +37,16 @@ void main() {
       }
       expect(GameMode.duel.firstTurnNotes.first, contains('second joueur'));
       expect(GameMode.skirmish.firstTurnNotes.first, contains('ne pioche pas'));
+      // Guerre (488.4) : le premier joueur retire ses champs de bataille.
+      expect(
+        GameMode.war.firstTurnNotes.first,
+        contains('retire ses champs de bataille'),
+      );
+      // Chambre magmatique (489.4) : les mêmes ajustements qu'à quatre.
+      expect(
+        GameMode.magmaChamber.firstTurnNotes.join(' '),
+        allOf(contains('ne pioche pas'), contains('une rune de plus')),
+      );
     });
   });
 
@@ -74,16 +86,16 @@ void main() {
   group('points', () {
     test('un point n’appartient qu’au camp du joueur en solo', () {
       final state = score(fresh(GameMode.war), 'p1', 3);
-      expect(state.scoreOf(state.playerById('p1')), 3);
-      expect(state.scoreOf(state.playerById('p0')), 0);
-      expect(state.scoreOf(state.playerById('p2')), 0);
+      expect(state.scoreOf(state.playerById('p1')!), 3);
+      expect(state.scoreOf(state.playerById('p0')!), 0);
+      expect(state.scoreOf(state.playerById('p2')!), 0);
     });
 
     test('en 2c2, les coéquipiers partagent le score', () {
       final state = score(fresh(GameMode.magmaChamber), 'p0', 4);
-      expect(state.scoreOf(state.playerById('p0')), 4);
-      expect(state.scoreOf(state.playerById('p1')), 4);
-      expect(state.scoreOf(state.playerById('p2')), 0);
+      expect(state.scoreOf(state.playerById('p0')!), 4);
+      expect(state.scoreOf(state.playerById('p1')!), 4);
+      expect(state.scoreOf(state.playerById('p2')!), 0);
     });
 
     test('le score ne descend pas sous zéro', () {
@@ -91,7 +103,7 @@ void main() {
         fresh(GameMode.duel),
         playerId: 'p0',
       );
-      expect(state.scoreOf(state.playerById('p0')), 0);
+      expect(state.scoreOf(state.playerById('p0')!), 0);
       expect(state.canUndo, isFalse);
     });
 
@@ -177,8 +189,143 @@ void main() {
         playerId: 'p0',
         amount: 4,
       );
+      state = score(state, 'p0', 8);
       state = GameEngine.newRound(state);
-      expect(state.xpOf(state.playerById('p0')), 0);
+      expect(state.xpOf(state.playerById('p0')!), 0);
+    });
+
+    test('aucune nouvelle manche en pleine manche ni rencontre jouée', () {
+      final playing = score(fresh(GameMode.match), 'p0', 3);
+      expect(
+        GameEngine.newRound(playing),
+        same(playing),
+        reason: 'la manche en cours n’est pas finie',
+      );
+
+      var done = score(fresh(GameMode.match), 'p0', 8);
+      done = GameEngine.newRound(done);
+      done = score(done, 'p0', 8);
+      expect(done.roundsWonBy(0), 2);
+      expect(
+        GameEngine.newRound(done),
+        same(done),
+        reason: 'deux manches gagnées : la rencontre est jouée',
+      );
+
+      // Duel : une seule manche, donc jamais de suivante.
+      final duel = score(fresh(GameMode.duel), 'p0', 8);
+      expect(GameEngine.newRound(duel), same(duel));
+    });
+
+    test('en mode Match, le premier joueur est retiré au sort (486.6)', () {
+      final won = score(fresh(GameMode.match), 'p0', 8);
+      // Random(1) : la suite est fixée, le test ne dépend pas du hasard.
+      final drawn = <String>{};
+      for (var seed = 0; seed < 8; seed++) {
+        drawn.add(
+          GameEngine.newRound(won, random: Random(seed)).turnOrder.first,
+        );
+      }
+      expect(drawn, {'p0', 'p1'}, reason: 'les deux sièges sortent');
+
+      // Un choix explicite (tournoi : le perdant, RT 407.4) passe avant.
+      expect(GameEngine.newRound(won, firstPlayerId: 'p1').turnOrder, [
+        'p1',
+        'p0',
+      ]);
+    });
+  });
+
+  group('gestes impossibles', () {
+    test('un joueur inconnu ne compte rien', () {
+      final state = score(fresh(GameMode.duel), 'p0', 2);
+      expect(state.playerById('p9'), isNull);
+      expect(GameEngine.addPoint(state, playerId: 'p9'), same(state));
+      expect(GameEngine.removePoint(state, playerId: 'p9'), same(state));
+      expect(GameEngine.addXp(state, playerId: 'p9'), same(state));
+      expect(GameEngine.setXp(state, playerId: 'p9', value: 4), same(state));
+      expect(
+        GameEngine.exhaustion(state, fromPlayerId: 'p9', toPlayerId: 'p0'),
+        same(state),
+      );
+      expect(
+        GameEngine.exhaustion(state, fromPlayerId: 'p0', toPlayerId: 'p9'),
+        same(state),
+      );
+      expect(
+        GameEngine.updatePlayer(state, playerId: 'p9', name: 'X').players,
+        state.players,
+      );
+    });
+
+    test('la manche finie ne prend plus de tour', () {
+      final won = score(fresh(GameMode.match), 'p0', 8);
+      expect(won.isOver, isTrue);
+      expect(GameEngine.nextTurn(won), same(won));
+    });
+
+    test('à trois camps, il faut devancer tout le monde', () {
+      var state = score(fresh(GameMode.skirmish), 'p0', 8);
+      expect(GameEngine.checkVictory(state), 0);
+      state = score(state, 'p1', 8);
+      expect(
+        GameEngine.checkVictory(state),
+        isNull,
+        reason: '8 – 8 – 0 : personne ne se détache',
+      );
+      state = score(state, 'p2', 9);
+      expect(GameEngine.checkVictory(state), 2);
+      // Le tableau passé en paramètre prime sur celui de l'état.
+      expect(
+        GameEngine.checkVictory(state, scores: {0: 1, 1: 1, 2: 1}),
+        isNull,
+      );
+    });
+  });
+
+  group('remise à zéro', () {
+    test('reset garde joueurs, premier joueur et rappel déjà lu', () {
+      var state = GameEngine.start(
+        mode: GameMode.skirmish,
+        players: GameEngine.defaultPlayers(GameMode.skirmish),
+        firstPlayerId: 'p1',
+      );
+      state = state.copyWith(hintSeen: true);
+      state = score(state, 'p1', 3);
+      state = GameEngine.addXp(state, playerId: 'p2', amount: 2);
+
+      final again = GameEngine.reset(state);
+      expect(again.scoreOfTeam(1), 0);
+      expect(again.xpOf(again.playerById('p2')!), 0);
+      expect(again.round, 1);
+      expect(again.turnOrder, ['p1', 'p2', 'p0']);
+      expect(again.hintSeen, isTrue, reason: 'le rappel ne revient pas');
+      expect(again.canUndo, isFalse);
+    });
+
+    test('en tournoi, l’horloge de la ronde ne repart pas', () {
+      final start = DateTime.utc(2026, 9, 3, 14);
+      final state = GameEngine.start(
+        mode: GameMode.tournament,
+        players: GameEngine.defaultPlayers(GameMode.tournament),
+        startedAt: start,
+        roundLimit: kTournamentRoundLimit,
+      );
+      final again = GameEngine.reset(
+        state,
+        startedAt: start.add(const Duration(minutes: 20)),
+      );
+      expect(again.startedAt, start);
+      expect(again.roundLimit, kTournamentRoundLimit);
+
+      // Hors tournoi, le chronomètre de la partie repart bien.
+      final duel = GameEngine.start(
+        mode: GameMode.duel,
+        players: GameEngine.defaultPlayers(GameMode.duel),
+        startedAt: start,
+      );
+      final later = start.add(const Duration(minutes: 20));
+      expect(GameEngine.reset(duel, startedAt: later).startedAt, later);
     });
   });
 
@@ -221,13 +368,13 @@ void main() {
         playerId: 'p0',
         amount: 3,
       );
-      expect(state.xpOf(state.playerById('p0')), 3);
+      expect(state.xpOf(state.playerById('p0')!), 3);
 
       state = GameEngine.spendXp(state, playerId: 'p0', amount: 2);
-      expect(state.xpOf(state.playerById('p0')), 1);
+      expect(state.xpOf(state.playerById('p0')!), 1);
 
       final refused = GameEngine.spendXp(state, playerId: 'p0', amount: 5);
-      expect(refused.xpOf(refused.playerById('p0')), 1);
+      expect(refused.xpOf(refused.playerById('p0')!), 1);
     });
 
     test('l’XP n’est pas partagée entre coéquipiers', () {
@@ -236,11 +383,11 @@ void main() {
         playerId: 'p0',
         amount: 6,
       );
-      expect(state.xpOf(state.playerById('p0')), 6);
-      expect(state.xpOf(state.playerById('p1')), 0);
+      expect(state.xpOf(state.playerById('p0')!), 6);
+      expect(state.xpOf(state.playerById('p1')!), 0);
       // Les points, eux, restent communs.
       final scored = GameEngine.addPoint(state, playerId: 'p0');
-      expect(scored.scoreOf(scored.playerById('p1')), 1);
+      expect(scored.scoreOf(scored.playerById('p1')!), 1);
     });
 
     test('annuler rend l’XP dépensée', () {
@@ -250,9 +397,9 @@ void main() {
         amount: 2,
       );
       state = GameEngine.spendXp(state, playerId: 'p0');
-      expect(state.xpOf(state.playerById('p0')), 1);
+      expect(state.xpOf(state.playerById('p0')!), 1);
       state = GameEngine.undo(state);
-      expect(state.xpOf(state.playerById('p0')), 2);
+      expect(state.xpOf(state.playerById('p0')!), 2);
     });
 
     test('la saisie directe fixe la réserve', () {
@@ -261,8 +408,8 @@ void main() {
         playerId: 'p1',
         value: 5,
       );
-      expect(state.xpOf(state.playerById('p1')), 5);
-      expect(GameEngine.undo(state).xpOf(state.playerById('p1')), 0);
+      expect(state.xpOf(state.playerById('p1')!), 5);
+      expect(GameEngine.undo(state).xpOf(state.playerById('p1')!), 0);
       expect(
         GameEngine.setXp(state, playerId: 'p1', value: -1),
         same(state),

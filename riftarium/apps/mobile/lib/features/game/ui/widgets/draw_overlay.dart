@@ -59,6 +59,9 @@ class DrawOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
+    // Roue sans joueur : rien à tirer, l'écran de configuration reste seul.
+    if (players.isEmpty) return const SizedBox.shrink();
+    final winner = players[target % players.length];
     return Positioned.fill(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -66,71 +69,73 @@ class DrawOverlay extends StatelessWidget {
         child: ColoredBox(
           color: RiftColors.night.withValues(alpha: 0.94),
           child: SafeArea(
-            child: AnimatedBuilder(
-              animation: animation,
-              builder: (context, _) {
-                final progress = Curves.easeOutCubic.transform(animation.value);
-                final position = progress * steps;
-                final settled = animation.value >= 1;
-                final winner = players[target % players.length];
-                // Écran court et note longue (chambre magmatique) : le
-                // contenu défile au lieu de déborder.
-                return LayoutBuilder(
-                  builder: (context, viewport) => SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: viewport.maxHeight,
+            // Écran court et note longue (chambre magmatique) : le contenu
+            // défile au lieu de déborder. Seuls la roue et l'apparition du
+            // résultat dépendent de l'animation : le reste est construit une
+            // fois pour toutes et passé en `child`.
+            child: LayoutBuilder(
+              builder: (context, viewport) => SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(title, style: text.eyebrow),
+                      const SizedBox(height: 26),
+                      SizedBox(
+                        height: _rowHeight,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => AnimatedBuilder(
+                            animation: animation,
+                            builder: (context, _) => _wheel(
+                              width: constraints.maxWidth,
+                              position:
+                                  Curves.easeOutCubic.transform(
+                                    animation.value,
+                                  ) *
+                                  steps,
+                              settled: animation.value >= 1,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(title, style: text.eyebrow),
-                          const SizedBox(height: 26),
-                          SizedBox(
-                            height: _rowHeight,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) => _wheel(
-                                width: constraints.maxWidth,
-                                position: position,
-                                settled: settled,
+                      const SizedBox(height: 30),
+                      AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) => AnimatedOpacity(
+                          duration: RiftMotion.base,
+                          opacity: animation.value >= 1 ? 1 : 0,
+                          child: child,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              resultOf(nameOf(winner)),
+                              textAlign: TextAlign.center,
+                              style: text.displayLarge.copyWith(
+                                color: RiftColors.goldSoft,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 30),
-                          AnimatedOpacity(
-                            duration: RiftMotion.base,
-                            opacity: settled ? 1 : 0,
-                            child: Column(
-                              children: [
-                                Text(
-                                  resultOf(nameOf(winner)),
-                                  textAlign: TextAlign.center,
-                                  style: text.displayLarge.copyWith(
-                                    color: RiftColors.goldSoft,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                  ),
-                                  child: Text(
-                                    note,
-                                    textAlign: TextAlign.center,
-                                    style: text.small,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                              ),
+                              child: Text(
+                                note,
+                                textAlign: TextAlign.center,
+                                style: text.small,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         ),
@@ -235,7 +240,7 @@ class _Face extends StatelessWidget {
               name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
               style: text.displayLarge.copyWith(
                 fontSize: 52,
-                color: RiftColors.darkInk,
+                color: RiftColors.ink,
               ),
             ),
           )
