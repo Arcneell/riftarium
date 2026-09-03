@@ -51,41 +51,50 @@ abstract final class GameEngine {
     return order;
   }
 
-  /// Nouvelle partie. `firstPlayerId` est le joueur tiré au sort : l'ordre est
-  /// pivoté pour commencer par lui, ce qui préserve l'alternance en 2c2.
+  /// Pivote l'ordre des tours pour commencer par `firstPlayerId`, ce qui
+  /// préserve l'alternance en 2c2. Identifiant inconnu : ordre inchangé.
+  static List<String> _rotated(List<String> order, String? firstPlayerId) {
+    final start = firstPlayerId == null ? 0 : order.indexOf(firstPlayerId);
+    return start <= 0
+        ? order
+        : [...order.sublist(start), ...order.sublist(0, start)];
+  }
+
+  /// Nouvelle partie. `firstPlayerId` est le joueur tiré au sort (ou, en
+  /// tournoi, celui que le joueur désigné a choisi). `roundLimit` n'a de
+  /// sens qu'en tournoi : durée de la ronde, null sans limite.
   static GameState start({
     required GameMode mode,
     required List<Player> players,
     String? firstPlayerId,
     DateTime? startedAt,
+    Duration? roundLimit,
   }) {
-    final order = turnOrderFor(mode, players);
-    final start = firstPlayerId == null ? 0 : order.indexOf(firstPlayerId);
-    final rotated = start <= 0
-        ? order
-        : [...order.sublist(start), ...order.sublist(0, start)];
     return GameState(
       mode: mode,
       players: players,
       scores: {for (final player in players) player.team: 0},
       xp: {for (final player in players) player.id: 0},
       roundsWon: {for (final player in players) player.team: 0},
-      turnOrder: rotated,
+      turnOrder: _rotated(turnOrderFor(mode, players), firstPlayerId),
       turnIndex: 0,
       turnNumber: 1,
       round: 1,
       startedAt: startedAt ?? DateTime.now(),
+      roundLimit: mode.isTournament ? roundLimit : null,
     );
   }
 
   /// Ajoute (ou retire, si `delta` est négatif) des points au camp du joueur.
   /// Le score ne descend jamais sous zéro ; la victoire est réévaluée à chaque
-  /// changement, comme au nettoyage (472).
+  /// changement, comme au nettoyage (472). Une manche close au temps ne
+  /// bouge plus : son résultat est acquis.
   static GameState addPoint(
     GameState state, {
     required String playerId,
     int delta = 1,
   }) {
+    if (state.timedOut) return state;
     final player = state.playerById(playerId);
     final current = state.scoreOfTeam(player.team);
     final next = current + delta;
@@ -150,11 +159,74 @@ abstract final class GameEngine {
   }
 
   /// Passe la main au joueur suivant dans l'ordre du mode.
-  static GameState nextTurn(GameState state) => state.copyWith(
-    turnIndex: (state.turnIndex + 1) % state.turnOrder.length,
-    turnNumber: state.turnNumber + 1,
-    history: _pushed(state),
-  );
+  ///
+  /// Tournoi, temps écoulé (RT 408.2) : le tour en cours s'achève, puis trois
+  /// tours supplémentaires ; au bout du dernier, la manche s'arrête. Deux
+  /// points d'avance ou plus l'emportent, sinon égalité.
+  static GameState nextTurn(GameState state) {
+    if (state.drawn) return state;
+    if (state.timeCalled) {
+      final left = state.overtimeTurnsLeft - 1;
+      if (left <= 0) return _timeOut(state);
+      return state.copyWith(
+        turnIndex: (state.turnIndex + 1) % state.turnOrder.length,
+        turnNumber: state.turnNumber + 1,
+        overtimeTurnsLeft: left,
+        history: _pushed(state),
+      );
+    }
+    return state.copyWith(
+      turnIndex: (state.turnIndex + 1) % state.turnOrder.length,
+      turnNumber: state.turnNumber + 1,
+      history: _pushed(state),
+    );
+  }
+
+  /// Tournoi : la fin du temps est annoncée. Le tour en cours compte, puis
+  /// [kTournamentExtraTurns] tours supplémentaires. Entre deux manches, aucune
+  /// nouvelle manche n'est lancée (RT 408.2.d) : le match se clôt aussitôt.
+  /// Sans effet hors tournoi ou si le temps est déjà annoncé. Ne s'annule pas.
+  static GameState callTime(GameState state) {
+    if (!state.mode.isTournament || state.timeCalled) return state;
+    return state.copyWith(
+      timeCalled: true,
+      overtimeTurnsLeft: state.isOver ? 0 : kTournamentExtraTurns + 1,
+    );
+  }
+
+  /// Fin de manche au temps (RT 408.2.b) : le camp qui a
+  /// [kTournamentTimeLead] points d'avance ou plus gagne ; sinon égalité.
+  static GameState _timeOut(GameState state) {
+    int? leader;
+    var lead = 0;
+    for (final team in state.teams) {
+      final mine = state.scoreOfTeam(team);
+      final others = [
+        for (final other in state.teams)
+          if (other != team) state.scoreOfTeam(other),
+      ];
+      final best = others.isEmpty ? 0 : others.reduce((a, b) => a > b ? a : b);
+      if (mine - best >= kTournamentTimeLead && mine - best > lead) {
+        leader = team;
+        lead = mine - best;
+      }
+    }
+    if (leader == null) {
+      return state.copyWith(
+        overtimeTurnsLeft: 0,
+        drawn: true,
+        history: _pushed(state),
+      );
+    }
+    final rounds = Map<int, int>.from(state.roundsWon)
+      ..[leader] = (state.roundsWon[leader] ?? 0) + 1;
+    return state.copyWith(
+      overtimeTurnsLeft: 0,
+      winnerTeam: leader,
+      roundsWon: rounds,
+      history: _pushed(state),
+    );
+  }
 
   /// Camp qui l'emporte : il atteint le score de victoire *et* devance
   /// strictement tous les autres (472). Une égalité à 8 ne gagne pas.
@@ -179,18 +251,27 @@ abstract final class GameEngine {
 
   /// Manche suivante : les scores et l'XP repartent de zéro, les manches
   /// gagnées et les joueurs restent. L'historique est vidé (on n'annule pas
-  /// au-delà d'une manche).
-  static GameState newRound(GameState state) => state.copyWith(
-    scores: {for (final team in state.teams) team: 0},
-    xp: {for (final player in state.players) player.id: 0},
-    turnIndex: 0,
-    turnNumber: 1,
-    round: state.round + 1,
-    clearWinner: true,
-    history: const [],
-  );
+  /// au-delà d'une manche). `firstPlayerId` (tournoi : le choix du perdant,
+  /// RT 407.4) fait commencer ce joueur ; sinon l'ordre reste celui de la
+  /// manche précédente. Une fois le temps annoncé, plus de nouvelle manche.
+  static GameState newRound(GameState state, {String? firstPlayerId}) {
+    if (state.mode.isTournament && state.timeCalled) return state;
+    return state.copyWith(
+      scores: {for (final team in state.teams) team: 0},
+      xp: {for (final player in state.players) player.id: 0},
+      turnOrder: _rotated(state.turnOrder, firstPlayerId),
+      turnIndex: 0,
+      turnNumber: 1,
+      round: state.round + 1,
+      clearWinner: true,
+      drawn: false,
+      history: const [],
+    );
+  }
 
-  /// Annule la dernière action comptée (point, tour, exténuation).
+  /// Annule la dernière action comptée (point, tour, exténuation). L'annonce
+  /// du temps ne s'annule jamais : le compte des tours supplémentaires
+  /// revient en arrière, pas l'horloge.
   static GameState undo(GameState state) {
     if (state.history.isEmpty) return state;
     final history = List<GameMoment>.from(state.history);
@@ -203,16 +284,23 @@ abstract final class GameEngine {
       turnNumber: moment.turnNumber,
       winnerTeam: moment.winnerTeam,
       clearWinner: moment.winnerTeam == null,
+      timeCalled: state.timeCalled || moment.timeCalled,
+      overtimeTurnsLeft: moment.timeCalled
+          ? moment.overtimeTurnsLeft
+          : state.overtimeTurnsLeft,
+      drawn: moment.drawn,
       history: history,
     );
   }
 
-  /// Remet la partie à zéro sans quitter la table : mêmes joueurs, même mode.
+  /// Remet la partie à zéro sans quitter la table : mêmes joueurs, même mode,
+  /// même limite de temps ; l'horloge de la ronde repart.
   static GameState reset(GameState state, {DateTime? startedAt}) => start(
     mode: state.mode,
     players: state.players,
     firstPlayerId: state.turnOrder.first,
     startedAt: startedAt,
+    roundLimit: state.roundLimit,
   );
 
   /// Renomme un joueur ou lui change sa légende, sans toucher au compte.

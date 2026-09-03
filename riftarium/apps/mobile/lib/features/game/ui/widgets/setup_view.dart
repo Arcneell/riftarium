@@ -49,6 +49,9 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
 
   GameMode _mode = GameMode.duel;
   late List<Player> _players = GameEngine.defaultPlayers(_mode);
+
+  /// Tournoi : durée de la ronde en minutes, null sans limite.
+  int? _roundMinutes = kTournamentRoundLimit.inMinutes;
   String? _firstPlayerId;
   int? _spotlight;
   int _drawTarget = 0;
@@ -173,21 +176,38 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
   });
 
   /// La roue se referme et la partie démarre aussitôt : pas de second geste.
+  /// En tournoi, le tirage désigne qui *choisit* (RT 407.1) : la roue se
+  /// referme sur ce choix, la partie attend.
   void _closeDraw() {
     if (!_drawing) return;
     setState(() => _drawing = false);
-    _startGame();
+    if (!_mode.isTournament) _startGame();
   }
 
-  void _startGame() {
+  /// Démarre la partie. `firstPlayerId` force le joueur qui commence (tournoi :
+  /// le choix du joueur désigné) ; sinon c'est le joueur tiré au sort.
+  void _startGame({String? firstPlayerId}) {
+    final minutes = _roundMinutes;
     ref
         .read(gameControllerProvider.notifier)
         .start(
           mode: _mode,
           players: _seatedPlayers(),
-          firstPlayerId: _firstPlayerId,
+          firstPlayerId: firstPlayerId ?? _firstPlayerId,
+          roundLimit: _mode.isTournament && minutes != null
+              ? Duration(minutes: minutes)
+              : null,
         );
   }
+
+  /// L'autre joueur d'un duel : celui qui joue en second si le désigné
+  /// choisit de commencer, et inversement.
+  String _opponentOf(String playerId) =>
+      _players.firstWhere((player) => player.id != playerId).id;
+
+  /// Nom saisi du joueur `playerId`.
+  String _nameOfId(String playerId) =>
+      _nameOf(_players.firstWhere((player) => player.id == playerId).seat);
 
   Future<void> _pickLegend(Player player) async {
     _touched = true;
@@ -267,6 +287,18 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
                       ),
                     ),
                   ),
+                if (_mode.isTournament) ...[
+                  const SizedBox(height: 18),
+                  Text('RONDE', style: text.eyebrow),
+                  const SizedBox(height: 10),
+                  _RoundLimitPicker(
+                    minutes: _roundMinutes,
+                    onSelect: (minutes) => setState(() {
+                      _touched = true;
+                      _roundMinutes = minutes;
+                    }),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 Text('JOUEURS', style: text.eyebrow),
                 const SizedBox(height: 10),
@@ -296,24 +328,47 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Center(
                       child: Text(
-                        '${_nameOf(_players.firstWhere((p) => p.id == drawn).seat)} commence.',
+                        _mode.isTournament
+                            ? '${_nameOfId(drawn)} est le joueur désigné : '
+                                  'à lui de choisir.'
+                            : '${_nameOfId(drawn)} commence.',
+                        textAlign: TextAlign.center,
                         style: text.bodyStrong.copyWith(
                           color: RiftColors.goldSoft,
                         ),
                       ),
                     ),
                   ),
-                GoldButton(
-                  label: drawn == null
-                      ? 'Tirer le premier joueur'
-                      : 'Commencer la partie',
-                  icon: drawn == null
-                      ? Icons.casino_outlined
-                      : Icons.play_arrow_rounded,
-                  onPressed: _spinning
-                      ? null
-                      : (drawn == null ? _draw : _startGame),
-                ),
+                if (drawn != null && _mode.isTournament) ...[
+                  GoldButton(
+                    label: '${_nameOfId(drawn)} commence',
+                    icon: Icons.play_arrow_rounded,
+                    onPressed: _spinning
+                        ? null
+                        : () => _startGame(firstPlayerId: drawn),
+                  ),
+                  const SizedBox(height: 8),
+                  GhostButton(
+                    label: '${_nameOfId(drawn)} joue en second',
+                    icon: Icons.swap_horiz_rounded,
+                    onPressed: _spinning
+                        ? null
+                        : () => _startGame(firstPlayerId: _opponentOf(drawn)),
+                  ),
+                ] else
+                  GoldButton(
+                    label: drawn == null
+                        ? (_mode.isTournament
+                              ? 'Tirer le joueur désigné'
+                              : 'Tirer le premier joueur')
+                        : 'Commencer la partie',
+                    icon: drawn == null
+                        ? Icons.casino_outlined
+                        : Icons.play_arrow_rounded,
+                    onPressed: _spinning
+                        ? null
+                        : (drawn == null ? _draw : _startGame),
+                  ),
                 if (drawn != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
@@ -340,7 +395,14 @@ class _GameSetupViewState extends ConsumerState<GameSetupView>
             animation: reduceMotion ? kAlwaysCompleteAnimation : _spin,
             steps: _spinSteps,
             target: _drawTarget,
-            note: _mode.firstTurnNotes.join(' '),
+            note: _mode.isTournament
+                ? 'Le joueur désigné choisit de jouer en premier ou en second '
+                      '(règles de tournoi 407.1).'
+                : _mode.firstTurnNotes.join(' '),
+            title: _mode.isTournament ? 'JOUEUR DÉSIGNÉ' : 'PREMIER JOUEUR',
+            resultOf: _mode.isTournament
+                ? (name) => '$name choisit.'
+                : (name) => '$name commence.',
             onDismiss: _closeDraw,
           ),
       ],
@@ -478,10 +540,62 @@ class _ModeCard extends StatelessWidget {
                       ? '1 manche'
                       : '${mode.roundsToWin} manches gagnantes',
                 ),
+                if (mode.isTournament)
+                  const MonoBadge(label: 'Ronde chronométrée'),
               ],
             ),
+            if (mode.isTournament) ...[
+              const SizedBox(height: 8),
+              Text(mode.tagline, style: text.small),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Tournoi : durée de la ronde. Les règles recommandent 60 minutes en ronde
+/// suisse (RT 604.1) et aucune limite en élimination directe (604.2) ; le
+/// temps peut aussi être annoncé à la main depuis la table.
+class _RoundLimitPicker extends StatelessWidget {
+  const _RoundLimitPicker({required this.minutes, required this.onSelect});
+
+  final int? minutes;
+  final void Function(int? minutes) onSelect;
+
+  static const _choices = <int?>[null, 45, 60, 90];
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    return RiftPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final choice in _choices)
+                ChoiceChip(
+                  label: Text(choice == null ? 'Sans limite' : '$choice min'),
+                  selected: choice == minutes,
+                  onSelected: (_) => onSelect(choice),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            minutes == null
+                ? 'Élimination directe : la partie va à son terme. L’arbitre '
+                      'peut annoncer la fin du temps depuis le menu de la table.'
+                : 'Au bout du temps : le tour en cours s’achève, puis trois '
+                      'tours supplémentaires. Deux points d’avance gagnent le '
+                      'match, sinon égalité.',
+            style: text.small,
+          ),
+        ],
       ),
     );
   }

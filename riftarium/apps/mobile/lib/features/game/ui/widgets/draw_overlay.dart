@@ -21,7 +21,11 @@ class DrawOverlay extends StatelessWidget {
     required this.target,
     required this.note,
     required this.onDismiss,
+    this.title = 'PREMIER JOUEUR',
+    this.resultOf = _defaultResult,
   });
+
+  static String _defaultResult(String name) => '$name commence.';
 
   final List<Player> players;
 
@@ -40,6 +44,13 @@ class DrawOverlay extends StatelessWidget {
   final String note;
 
   final VoidCallback onDismiss;
+
+  /// Surtitre de la roue : « PREMIER JOUEUR », ou « JOUEUR DÉSIGNÉ » en
+  /// tournoi, où le tirage ne désigne pas qui commence mais qui choisit.
+  final String title;
+
+  /// Phrase affichée sous la roue une fois le nom tiré.
+  final String Function(String name) resultOf;
 
   static const _itemWidth = 132.0;
   static const _stride = _itemWidth + 26;
@@ -75,7 +86,7 @@ class DrawOverlay extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('PREMIER JOUEUR', style: text.eyebrow),
+                          Text(title, style: text.eyebrow),
                           const SizedBox(height: 26),
                           SizedBox(
                             height: _rowHeight,
@@ -94,7 +105,7 @@ class DrawOverlay extends StatelessWidget {
                             child: Column(
                               children: [
                                 Text(
-                                  '${nameOf(winner)} commence.',
+                                  resultOf(nameOf(winner)),
                                   textAlign: TextAlign.center,
                                   style: text.displayLarge.copyWith(
                                     color: RiftColors.goldSoft,

@@ -189,6 +189,7 @@ class GuideTopic {
     required this.details,
     required this.cases,
     required this.sections,
+    this.doc = 'core',
     this.demo,
     this.examples = const [],
     this.chips = const [],
@@ -202,6 +203,9 @@ class GuideTopic {
     details: _strings(json['details']),
     cases: _maps(json['cases']).map(TopicCase.fromJson).toList(growable: false),
     sections: _strings(json['sections']),
+    doc: json['doc'] is String && (json['doc'] as String).isNotEmpty
+        ? json['doc'] as String
+        : 'core',
     demo: json['demo'] is Map<String, dynamic>
         ? TopicDemo.fromJson(json['demo'] as Map<String, dynamic>)
         : null,
@@ -222,6 +226,11 @@ class GuideTopic {
 
   /// Identifiants des sections officielles à reproduire (`301`, `315`…).
   final List<String> sections;
+
+  /// Document où chercher ces sections : `core` (règles du jeu) ou
+  /// `tournament` (règles de tournoi). Les numéros se recoupent d'un
+  /// document à l'autre (401 existe dans les deux).
+  final String doc;
   final TopicDemo? demo;
   final List<GuideCard> examples;
 

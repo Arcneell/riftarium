@@ -99,12 +99,14 @@ class GameController extends Notifier<GameState?> implements GameActions {
     required GameMode mode,
     required List<Player> players,
     String? firstPlayerId,
+    Duration? roundLimit,
   }) {
     _apply(
       GameEngine.start(
         mode: mode,
         players: players,
         firstPlayerId: firstPlayerId,
+        roundLimit: roundLimit,
       ),
     );
     // La table est retenue au-delà de la partie : quitter n'efface que la
@@ -155,7 +157,12 @@ class GameController extends Notifier<GameState?> implements GameActions {
   void undo() => _mutate(GameEngine.undo);
 
   @override
-  void newRound() => _mutate(GameEngine.newRound);
+  void newRound({String? firstPlayerId}) => _mutate(
+    (state) => GameEngine.newRound(state, firstPlayerId: firstPlayerId),
+  );
+
+  @override
+  void callTime() => _mutate(GameEngine.callTime);
 
   @override
   void reset() => _mutate((state) => GameEngine.reset(state));

@@ -15,7 +15,14 @@ abstract class GameActions {
   void setXp(String playerId, int value);
   void nextTurn();
   void undo();
-  void newRound();
+
+  /// Manche suivante. En tournoi, le perdant choisit qui commence
+  /// (`firstPlayerId`) ; sans choix, le premier joueur reste le même.
+  void newRound({String? firstPlayerId});
+
+  /// Tournoi : le temps de la ronde est écoulé (horloge de la table ou
+  /// annonce de l'arbitre). Sans effet hors tournoi.
+  void callTime();
   void reset();
   void renamePlayer(String playerId, String name);
   void setLegend(String playerId, RiftCard? legend);
