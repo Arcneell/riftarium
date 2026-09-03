@@ -2479,10 +2479,15 @@ td.num {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(201, 167, 92, 0.75), transparent);
 }
+.hero-fan .fan-card .card-art {
+  border-radius: inherit;
+}
 .hero-fan .fan-card img {
   width: 100%;
-  aspect-ratio: 744/1039;
-  object-fit: cover;
+  height: auto;
+  aspect-ratio: 744 / 1039;
+  object-fit: contain;
+  display: block;
 }
 @keyframes foil {
   0%,
