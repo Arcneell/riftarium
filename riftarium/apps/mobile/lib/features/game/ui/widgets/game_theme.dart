@@ -73,19 +73,26 @@ class ScoreGems extends StatelessWidget {
   }
 }
 
-/// Filet or qui respire autour du joueur actif. Statique quand le système
-/// demande moins de mouvement.
+/// Liseré lumineux autour de l'élément actif : un trait net et saturé, pas un
+/// halo diffus — le joueur dont c'est le tour doit se voir de l'autre bout de
+/// la table. La respiration joue sur la luminosité du trait, jamais sur du
+/// flou. Statique quand le système demande moins de mouvement.
 class ActiveGlow extends StatefulWidget {
   const ActiveGlow({
     super.key,
     required this.active,
     required this.child,
     this.borderRadius = RiftRadius.md,
+    this.color = RiftColors.gold,
   });
 
   final bool active;
   final Widget child;
   final double borderRadius;
+
+  /// Teinte du liseré : l'or par défaut (sélections), la couleur du joueur
+  /// sur la table de jeu.
+  final Color color;
 
   @override
   State<ActiveGlow> createState() => _ActiveGlowState();
@@ -142,22 +149,30 @@ class _ActiveGlowState extends State<ActiveGlow>
     );
   }
 
-  Widget _frame(double intensity, Widget child) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(widget.borderRadius),
-      border: Border.all(
-        color: RiftColors.gold.withValues(alpha: 0.12 + 0.78 * intensity),
-        width: intensity == 0 ? 1 : 2,
+  Widget _frame(double intensity, Widget child) {
+    // Inactif : simple filet discret. Actif : trait de 3 px pleine saturation
+    // qui respire entre 70 % et 100 % de luminosité, doublé d'un halo très
+    // serré (7 px) qui le fait « briller » sans jamais baver.
+    final tint = Color.lerp(widget.color, Colors.white, 0.22 * intensity)!;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        border: Border.all(
+          color: intensity == 0
+              ? RiftColors.gold.withValues(alpha: 0.12)
+              : tint.withValues(alpha: 0.7 + 0.3 * intensity),
+          width: intensity == 0 ? 1 : 3,
+        ),
+        boxShadow: intensity == 0
+            ? null
+            : [
+                BoxShadow(
+                  color: tint.withValues(alpha: 0.35 + 0.35 * intensity),
+                  blurRadius: 7,
+                ),
+              ],
       ),
-      boxShadow: intensity == 0
-          ? null
-          : [
-              BoxShadow(
-                color: RiftColors.gold.withValues(alpha: 0.28 * intensity),
-                blurRadius: 26,
-              ),
-            ],
-    ),
-    child: child,
-  );
+      child: child,
+    );
+  }
 }

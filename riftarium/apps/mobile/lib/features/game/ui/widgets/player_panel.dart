@@ -51,6 +51,9 @@ class PlayerPanel extends StatelessWidget {
     final color = player.color;
     return ActiveGlow(
       active: active,
+      // Le liseré prend la couleur du joueur : à quatre autour de la table,
+      // « c'est à moi » se lit à la teinte, pas seulement à la présence du trait.
+      color: color,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(RiftRadius.md),
         // Le panneau s'adapte à sa place : plein écran en duel, un quart
