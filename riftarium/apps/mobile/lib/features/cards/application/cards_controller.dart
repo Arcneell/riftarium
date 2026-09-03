@@ -10,6 +10,11 @@ import '../domain/prices_meta.dart';
 /// Taille de page de la cartothèque (maximum accepté par l'API : 100).
 const int kCardsPageSize = 30;
 
+/// Longueur maximale de la recherche : au-delà, `GET /api/cards` répond 422
+/// (`MAX_QUERY_LEN`, `apps/api/app/routers/cards.py`). La saisie est donc
+/// tronquée avant d'atteindre l'API.
+const int kMaxQueryLength = 100;
+
 /// Filtres courants, partagés par la barre de recherche, la feuille de
 /// filtres et les puces de rappel.
 final cardFiltersProvider =
@@ -21,9 +26,13 @@ class CardFiltersController extends Notifier<CardFilters> {
   @override
   CardFilters build() => const CardFilters();
 
-  /// Recherche plein texte (nom, texte, identifiant Riftbound).
+  /// Recherche plein texte (nom, texte, identifiant Riftbound), tronquée à
+  /// [kMaxQueryLength] caractères comme l'exige l'API.
   void setQuery(String value) {
-    final query = value.trim();
+    final trimmed = value.trim();
+    final query = trimmed.length > kMaxQueryLength
+        ? trimmed.substring(0, kMaxQueryLength)
+        : trimmed;
     if ((state.query ?? '') == query) return;
     state = state.copyWith(query: query);
   }
@@ -71,14 +80,6 @@ class CardsList {
     this.loadingMore = false,
     this.loadMoreError,
   });
-
-  const CardsList.empty()
-    : items = const [],
-      total = 0,
-      page = 0,
-      hasMore = false,
-      loadingMore = false,
-      loadMoreError = null;
 
   final List<RiftCard> items;
   final int total;
@@ -202,20 +203,14 @@ final pricesMetaProvider = FutureProvider<PricesMeta>((ref) async {
 });
 
 /// Fiche d'une carte. Rechargée au changement de session : `owned_qty` et
-/// `wished_qty` n'apparaissent que pour un compte connecté.
-final cardDetailProvider = FutureProvider.family<RiftCard, String>((
+/// `wished_qty` n'apparaissent que pour un compte connecté. Les variantes
+/// arrivent avec le détail (`payload['variants']`) : pas de second appel.
+/// `autoDispose` : la fiche quittée ne garde pas en mémoire une carte (et ses
+/// quantités possédées) que la prochaine ouverture rechargera de toute façon.
+final cardDetailProvider = FutureProvider.autoDispose.family<RiftCard, String>((
   ref,
   cardId,
 ) {
   ref.watch(authControllerProvider.select((state) => state.isSignedIn));
   return ref.watch(cardsApiProvider).get(cardId);
-});
-
-/// Variantes (alt-art, signature, overnumbered) de la même carte.
-final cardVariantsProvider = FutureProvider.family<List<RiftCard>, String>((
-  ref,
-  cardId,
-) {
-  ref.watch(authControllerProvider.select((state) => state.isSignedIn));
-  return ref.watch(cardsApiProvider).variants(cardId);
 });

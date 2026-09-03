@@ -434,7 +434,7 @@ class _StageMessage extends StatelessWidget {
     // Le fond est encre : on force la palette sombre pour que les textes de
     // l'état vide restent en parchemin clair.
     return Theme(
-      data: buildTheme(Brightness.dark),
+      data: buildTheme(),
       child: EmptyView(
         icon: icon,
         title: title,
@@ -505,12 +505,15 @@ class _History extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = riftText(context);
     final history = state.history;
+    // Cumul de ce qui a été rangé : le prix d'une carte compte autant de fois
+    // qu'on en a ajouté d'exemplaires (un « +3 » vaut trois fois son prix).
     var total = 0.0;
     var priced = 0;
     for (final entry in history) {
       final price = entry.card.priceEur;
+      final copies = entry.addedQty > 0 ? entry.addedQty : 1;
       if (price != null) {
-        total += price;
+        total += price * copies;
         priced++;
       }
     }

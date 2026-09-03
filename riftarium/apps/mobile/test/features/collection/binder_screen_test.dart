@@ -123,7 +123,7 @@ void main() {
       expect(find.text('Origines'), findsOneWidget);
       expect(find.text('25/100'), findsOneWidget);
       expect(
-        find.text('25 % · Il manque 75 cartes (~210,50 €)'),
+        find.text('25 % · Il manque 75 cartes (~210,50 €)'),
         findsOneWidget,
       );
 
@@ -135,7 +135,7 @@ void main() {
       // Carte possédée : pastille de quantité. Manquante : code et prix.
       expect(find.text('×2'), findsOneWidget);
       expect(find.text('OGN 210'), findsOneWidget);
-      expect(find.text('2,50 €'), findsOneWidget);
+      expect(find.text('2,50 €'), findsOneWidget);
 
       // 20 cartes par pages de 9 : trois doubles pages.
       expect(find.text('page 1 / 3'), findsOneWidget);

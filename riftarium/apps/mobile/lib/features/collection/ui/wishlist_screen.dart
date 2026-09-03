@@ -10,11 +10,12 @@ import '../../../app/router.dart';
 import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
+import '../../../app/widgets/api_messages.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/wishlist_controller.dart';
+import '../../cards/domain/card_labels.dart';
 import '../domain/collection.dart';
-import 'collection_screen.dart' show messageOf;
 import 'widgets/collection_sign_in.dart';
 import 'widgets/quantity_stepper.dart';
 
@@ -29,20 +30,28 @@ class WishlistScreen extends ConsumerStatefulWidget {
 
 class _WishlistScreenState extends ConsumerState<WishlistScreen> {
   String? _error;
-  String? _busyCardId;
 
-  Future<void> _run(String cardId, Future<void> Function() action) async {
-    if (_busyCardId != null) return;
+  /// Cartes dont une modification est en vol : une ligne occupée n'est pas
+  /// touchable, les autres restent utilisables (avant, la première action
+  /// bloquait toute la liste).
+  final Set<String> _busy = {};
+
+  /// Exécute une action sur une carte. Renvoie vrai si elle a abouti — le
+  /// glissement s'en sert pour ne retirer la ligne qu'en cas de succès.
+  Future<bool> _run(String cardId, Future<void> Function() action) async {
+    if (_busy.contains(cardId)) return false;
     setState(() {
-      _busyCardId = cardId;
+      _busy.add(cardId);
       _error = null;
     });
     try {
       await action();
+      return true;
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
+      return false;
     } finally {
-      if (mounted) setState(() => _busyCardId = null);
+      if (mounted) setState(() => _busy.remove(cardId));
     }
   }
 
@@ -106,7 +115,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                         _Stat(
                           index: 1,
                           label: 'Valeur estimée',
-                          value: formatEur(data.valueEur) ?? '—',
+                          value: formatEuroOrNull(data.valueEur) ?? '—',
                         ),
                       ],
                     ),
@@ -151,7 +160,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                       return _WishRow(
                         item: item,
                         index: index,
-                        busy: _busyCardId == item.card.id,
+                        busy: _busy.contains(item.card.id),
                         onQty: (qty) => _run(
                           item.card.id,
                           () => controller.setQuantity(
@@ -235,18 +244,22 @@ class _WishRow extends StatelessWidget {
   final int index;
   final bool busy;
   final ValueChanged<int> onQty;
-  final VoidCallback onRemove;
+
+  /// Retrait de la carte : vrai quand l'API a accepté.
+  final Future<bool> Function() onRemove;
 
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
-    final price = formatEur(item.valueEur);
+    final price = formatEuroOrNull(item.valueEur);
     return Reveal(
       index: index,
       child: Dismissible(
         key: ValueKey(item.card.id),
         direction: busy ? DismissDirection.none : DismissDirection.endToStart,
-        onDismissed: (_) => onRemove(),
+        // Le retrait part avant l'animation : si l'API refuse, la ligne
+        // revient en place au lieu de disparaître d'un écran incohérent.
+        confirmDismiss: (_) => onRemove(),
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
@@ -303,7 +316,7 @@ class _WishRow extends StatelessWidget {
                         ),
                         const Spacer(),
                         IconButton(
-                          onPressed: busy ? null : onRemove,
+                          onPressed: busy ? null : () => onRemove(),
                           tooltip: 'Retirer',
                           icon: const Icon(Icons.delete_outline, size: 20),
                           color: RiftColors.fury,

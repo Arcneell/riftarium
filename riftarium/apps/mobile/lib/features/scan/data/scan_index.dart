@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../cards/domain/card.dart';
 import '../domain/collector_code.dart';
 
 /// Index du scan : `GET /api/cards/hashes`.
@@ -42,15 +41,19 @@ class ScanIndexApi {
 }
 
 /// Index chargé en mémoire, prêt à résoudre un code lu en identifiant de carte.
+///
+/// Les `riftbound_id` sont décomposés une fois pour toutes à la construction
+/// ([CollectorIndex]) : la résolution d'une lecture est ensuite immédiate.
 class ScanIndex {
   ScanIndex(List<ScanIndexEntry> entries)
     : entries = List.unmodifiable(entries),
-      totals = collectorTotals(entries);
+      _codes = CollectorIndex(entries);
 
   final List<ScanIndexEntry> entries;
+  final CollectorIndex _codes;
 
   /// Totaux d'impression connus : sans eux, aucune lecture n'est acceptée.
-  final Set<int> totals;
+  Set<int> get totals => _codes.totals;
 
   /// Faux quand l'index est vide ou dépourvu de `riftbound_id` exploitable :
   /// le scanner ne peut alors rien reconnaître.
@@ -63,7 +66,7 @@ class ScanIndex {
 
   /// Meilleure carte pour un code lu, ou null si le code n'existe pas ici.
   ScanIndexEntry? resolve(CollectorCode code) {
-    final matches = matchByCode(code, entries);
+    final matches = _codes.match(code);
     return matches.isEmpty ? null : matches.first;
   }
 }
@@ -77,10 +80,3 @@ final scanIndexApiProvider = Provider<ScanIndexApi>(
 final scanIndexProvider = FutureProvider<ScanIndex>(
   (ref) => ref.watch(scanIndexApiProvider).fetch(),
 );
-
-/// Vérifie qu'une carte chargée correspond bien au code lu (`set_id` +
-/// `collector_number`), en dernier contrôle avant de l'afficher.
-bool cardMatchesCode(RiftCard card, CollectorCode code) {
-  if (card.collectorNumber != code.number) return false;
-  return code.set == null || card.setId.toUpperCase() == code.set;
-}

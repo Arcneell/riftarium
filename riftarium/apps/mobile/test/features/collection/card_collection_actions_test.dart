@@ -84,6 +84,8 @@ void main() {
       200,
       cardStateJson(cardId: 'OGN-209', entries: [entryJson(id: 12, qty: 2)]),
     ),
+    // Le cœur lit la wishlist du compte, seule source de vérité.
+    'GET /wishlist': FakeResponse(200, wishlistJson(items: const [])),
     ...extra,
   };
 
@@ -146,6 +148,13 @@ void main() {
 
     expect(find.text('Ajouter à la wishlist'), findsOneWidget);
 
+    // Le serveur porte désormais la carte : la wishlist relue le confirme.
+    adapter.routes['GET /wishlist'] = FakeResponse(
+      200,
+      wishlistJson(
+        items: [wishItemJson(card: cardJson(id: 'OGN-209'))],
+      ),
+    );
     await tester.tap(find.text('Ajouter à la wishlist'));
     await tester.pumpAndSettle();
 
@@ -159,7 +168,15 @@ void main() {
     tester,
   ) async {
     final adapter = FakeHttpAdapter(
-      routes({'DELETE /wishlist/OGN-209': const FakeResponse(204, {})}),
+      routes({
+        'DELETE /wishlist/OGN-209': const FakeResponse(204, {}),
+        'GET /wishlist': FakeResponse(
+          200,
+          wishlistJson(
+            items: [wishItemJson(card: cardJson(id: 'OGN-209'))],
+          ),
+        ),
+      }),
     );
 
     await tester.pumpWidget(
@@ -167,6 +184,11 @@ void main() {
     );
     await settle(tester);
 
+    // Retrait accepté : la wishlist relue ne porte plus la carte.
+    adapter.routes['GET /wishlist'] = FakeResponse(
+      200,
+      wishlistJson(items: const []),
+    );
     await tester.tap(find.text('Dans ma wishlist'));
     await tester.pumpAndSettle();
 

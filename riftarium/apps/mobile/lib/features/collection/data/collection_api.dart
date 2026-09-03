@@ -57,7 +57,7 @@ class CollectionApi {
   Future<CardCollectionState> cardState(String cardId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/collection/$cardId',
+        '/collection/${Uri.encodeComponent(cardId)}',
       );
       return CardCollectionState.fromJson(response.data ?? const {});
     } on DioException catch (error) {
@@ -76,7 +76,7 @@ class CollectionApi {
   }) async {
     try {
       await _dio.put<Map<String, dynamic>>(
-        '/collection/$cardId',
+        '/collection/${Uri.encodeComponent(cardId)}',
         data: {'qty': qty, 'condition': condition, 'lang': lang},
       );
     } on DioException catch (error) {
@@ -94,7 +94,7 @@ class CollectionApi {
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/collection/$cardId/entries',
+        '/collection/${Uri.encodeComponent(cardId)}/entries',
         data: {'qty': qty, 'condition': condition, 'lang': lang},
       );
       return CardCollectionState.fromJson(response.data ?? const {});
@@ -122,6 +122,21 @@ class CollectionApi {
     }
   }
 
+  /// `POST /api/collection/bulk` : retire toutes les cartes visées d'un coup
+  /// (`remove`). Un seul appel, donc pas d'échec à moitié comme lorsque les
+  /// lots étaient supprimés un par un.
+  Future<void> removeCards(List<String> cardIds) async {
+    if (cardIds.isEmpty) return;
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/collection/bulk',
+        data: {'card_ids': cardIds, 'remove': true},
+      );
+    } on DioException catch (error) {
+      throw toApiException(error);
+    }
+  }
+
   /// `GET /api/wishlist` : toute la wishlist, la plus récente d'abord.
   Future<Wishlist> wishlist() async {
     try {
@@ -135,7 +150,10 @@ class CollectionApi {
   /// `PUT /api/wishlist/{card_id}` : quantité souhaitée (1 à 99), 204.
   Future<void> setWish({required String cardId, required int qty}) async {
     try {
-      await _dio.put<void>('/wishlist/$cardId', data: {'qty': qty});
+      await _dio.put<void>(
+        '/wishlist/${Uri.encodeComponent(cardId)}',
+        data: {'qty': qty},
+      );
     } on DioException catch (error) {
       throw toApiException(error);
     }
@@ -144,7 +162,7 @@ class CollectionApi {
   /// `DELETE /api/wishlist/{card_id}` : retire la carte de la wishlist, 204.
   Future<void> removeWish(String cardId) async {
     try {
-      await _dio.delete<void>('/wishlist/$cardId');
+      await _dio.delete<void>('/wishlist/${Uri.encodeComponent(cardId)}');
     } on DioException catch (error) {
       throw toApiException(error);
     }

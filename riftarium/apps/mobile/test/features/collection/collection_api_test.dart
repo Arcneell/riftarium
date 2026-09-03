@@ -66,7 +66,7 @@ void main() {
     expect(progress.sets.single.percent, 25);
     expect(
       progress.sets.single.missingLabel,
-      'il manque 75 cartes (~210,50 €)',
+      'il manque 75 cartes (~210,50 €)',
     );
     expect(progress.overall.name, 'Tous sets confondus');
     expect(progress.overall.owned, 25);

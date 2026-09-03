@@ -65,7 +65,8 @@ void main() {
   }
 
   /// La cartothèque sous la fiche est vide : ses cartes ne brouillent pas les
-  /// recherches de texte.
+  /// recherches de texte. Les variantes voyagent dans la fiche elle-même
+  /// (`GET /cards/{id}` renvoie `variants`) : pas de second appel.
   Map<String, Object> routes({
     Map<String, dynamic>? card,
     List<Map<String, dynamic>>? variants,
@@ -73,8 +74,10 @@ void main() {
     'GET /cards': cardPageJson(total: 0, items: const []),
     'GET /sets': setsJson,
     'GET /prices/meta': pricesMetaJson,
-    'GET /cards/OGN-209': card ?? jinx,
-    'GET /cards/OGN-209/variants': variants ?? const <Map<String, dynamic>>[],
+    'GET /cards/OGN-209': {
+      ...(card ?? jinx),
+      'variants': variants ?? const <Map<String, dynamic>>[],
+    },
   };
 
   testWidgets('la fiche affiche les champs de la carte', (tester) async {
@@ -179,6 +182,11 @@ void main() {
     await settle(tester);
 
     expect(find.text('Variantes'), findsNothing);
+    // Aucune requête de variantes : la fiche suffit.
+    expect(
+      api.requests.where((request) => request.path.endsWith('/variants')),
+      isEmpty,
+    );
   });
 
   testWidgets('carte introuvable : message d’erreur et nouvel essai', (

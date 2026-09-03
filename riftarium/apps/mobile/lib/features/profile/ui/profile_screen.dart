@@ -10,16 +10,18 @@ import '../../../app/adaptive.dart';
 import '../../../app/design/banners.dart';
 import '../../../app/design/components.dart';
 import '../../../app/design/reveal.dart';
+import '../../../app/format.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/web_links.dart';
+import '../../../app/widgets/auth_widgets.dart'
+    show AuthError, BannerBackButton;
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/rift_avatar.dart';
 import '../../../app/widgets/share_origin.dart';
 import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/session.dart';
-import '../../auth/ui/login_screen.dart'
-    show AuthError, BannerBackButton, openWebPage;
 import '../../play/application/play_providers.dart';
 import '../../social/application/social_providers.dart';
 import '../../social/ui/widgets/achievement_widgets.dart';
@@ -225,7 +227,7 @@ class ProfileScreen extends ConsumerWidget {
                     _Action(
                       icon: Icons.lock_reset_outlined,
                       label: 'Changer le mot de passe',
-                      onTap: () => showChangePasswordDialog(context, ref),
+                      onTap: () => showChangePasswordDialog(context),
                     ),
                     _Action(
                       icon: Icons.download_outlined,
@@ -237,7 +239,7 @@ class ProfileScreen extends ConsumerWidget {
                       label: 'Supprimer mon compte',
                       destructive: true,
                       onTap: () =>
-                          showDeleteAccountDialog(context, ref, profile.handle),
+                          showDeleteAccountDialog(context, profile.handle),
                     ),
                   ],
                 ),
@@ -638,12 +640,12 @@ class _Stats extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final (cell, index) in row.indexed) ...[
-                  if (cell > 0) const SizedBox(width: _gap),
+                for (final (position, entryIndex) in row.indexed) ...[
+                  if (position > 0) const SizedBox(width: _gap),
                   Expanded(
                     child: Reveal(
-                      index: index,
-                      child: _StatTile(entry: entries[index]),
+                      index: entryIndex,
+                      child: _StatTile(entry: entries[entryIndex]),
                     ),
                   ),
                 ],

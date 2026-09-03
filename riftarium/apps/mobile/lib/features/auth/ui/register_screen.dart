@@ -6,9 +6,10 @@ import '../../../app/adaptive.dart';
 import '../../../app/design/components.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/web_links.dart';
+import '../../../app/widgets/auth_widgets.dart';
 import '../../../core/api_exception.dart';
 import '../application/auth_controller.dart';
-import 'login_screen.dart';
 
 /// Mêmes bornes que `RegisterIn` côté API (`app/schemas.py`) : la validation
 /// locale évite un aller-retour, le serveur reste seul juge.

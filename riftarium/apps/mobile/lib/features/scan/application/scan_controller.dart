@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 import '../../../core/api_exception.dart';
+import '../../cards/application/cards_controller.dart';
 import '../../cards/data/cards_api.dart';
 import '../../cards/domain/card.dart';
+import '../../collection/application/card_collection_controller.dart';
+import '../../collection/application/collection_controller.dart';
 import '../data/scan_collection_api.dart';
 import '../data/scan_index.dart';
 import '../domain/collector_code.dart';
@@ -72,10 +75,25 @@ enum ScanStage {
 /// Carte reconnue pendant la session, telle qu'affichée dans l'historique.
 @immutable
 class ScanHistoryEntry {
-  const ScanHistoryEntry({required this.card, required this.code});
+  const ScanHistoryEntry({
+    required this.card,
+    required this.code,
+    this.addedQty = 0,
+  });
 
   final RiftCard card;
   final String code;
+
+  /// Exemplaires ajoutés à la collection depuis cet écran : le cumul en euros
+  /// du bandeau compte ce qui a réellement été rangé, pas une carte vue.
+  final int addedQty;
+
+  ScanHistoryEntry copyWith({RiftCard? card, int? addedQty}) =>
+      ScanHistoryEntry(
+        card: card ?? this.card,
+        code: code,
+        addedQty: addedQty ?? this.addedQty,
+      );
 }
 
 @immutable
@@ -287,6 +305,9 @@ class ScanController extends AutoDisposeNotifier<ScanState>
     } on CameraException {
       // Flux déjà coupé par le système : rien à libérer.
     }
+    // Le système éteint la torche avec le capteur : l'icône ne doit pas rester
+    // allumée pendant que la caméra dort.
+    if (!_closed && state.torchOn) _set(state.copyWith(torchOn: false));
   }
 
   /// Analyse d'une image du flux. Volontairement tolérante : une image floue ou
@@ -399,12 +420,19 @@ class ScanController extends AutoDisposeNotifier<ScanState>
           history: [
             for (final entry in state.history)
               if (entry.card.id == updated.id)
-                ScanHistoryEntry(card: updated, code: entry.code)
+                entry.copyWith(card: updated, addedQty: entry.addedQty + qty)
               else
                 entry,
           ],
         ),
       );
+      // La collection, la progression par set, la fiche de cette carte et la
+      // cartothèque affichent tous cette quantité : elles repartiront du
+      // serveur à leur prochaine lecture.
+      ref.invalidate(collectionControllerProvider);
+      ref.invalidate(collectionProgressProvider);
+      ref.invalidate(cardCollectionProvider(card.id));
+      ref.invalidate(cardsListProvider);
       await HapticFeedback.mediumImpact();
     } on ApiException catch (error) {
       if (_closed) return;
@@ -477,7 +505,18 @@ class ScanController extends AutoDisposeNotifier<ScanState>
         // et laisser tourner l'analyse ne ferait que vider la batterie.
         unawaited(_stopStream());
       case AppLifecycleState.resumed:
-        unawaited(_startStream());
+        // Sur une panne, un refus de permission ou un appareil sans capteur,
+        // il n'y a rien à relancer : l'écran attend un nouvel essai explicite.
+        switch (this.state.stage) {
+          case ScanStage.failed:
+          case ScanStage.permissionDenied:
+          case ScanStage.noCamera:
+            return;
+          case ScanStage.initializing:
+          case ScanStage.scanning:
+          case ScanStage.recognized:
+            unawaited(_startStream());
+        }
     }
   }
 

@@ -19,8 +19,14 @@ class Session {
         "Réponse d'authentification incomplète : jeton absent.",
       );
     }
+    final handle = json['handle'];
+    if (handle is! String || handle.isEmpty) {
+      throw const ApiException(
+        "Réponse d'authentification incomplète : pseudo absent.",
+      );
+    }
     return Session(
-      handle: json['handle'] as String,
+      handle: handle,
       token: token,
       avatarUrl: json['avatar_url'] as String?,
       isAdmin: json['is_admin'] == true,
@@ -56,8 +62,8 @@ class Profile {
   factory Profile.fromJson(Map<String, dynamic> json) {
     final rawStats = json['stats'];
     return Profile(
-      id: (json['id'] as num).toInt(),
-      handle: json['handle'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      handle: (json['handle'] as String?) ?? '',
       bio: (json['bio'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
       emailVerified: json['email_verified'] == true,
@@ -104,20 +110,12 @@ class Profile {
 
 /// Une légende proposée comme avatar (`GET /api/auth/avatars`).
 class AvatarOption {
-  const AvatarOption({
-    required this.id,
-    required this.name,
-    this.imageUrl,
-    this.domains = const [],
-  });
+  const AvatarOption({required this.id, required this.name, this.imageUrl});
 
   factory AvatarOption.fromJson(Map<String, dynamic> json) => AvatarOption(
     id: (json['id'] as String?) ?? '',
     name: (json['name'] as String?) ?? '',
     imageUrl: json['image_url'] as String?,
-    domains: (json['domains'] as List? ?? const [])
-        .map((item) => item.toString())
-        .toList(),
   );
 
   static List<AvatarOption> listFrom(Object? source) =>
@@ -130,5 +128,4 @@ class AvatarOption {
   final String id;
   final String name;
   final String? imageUrl;
-  final List<String> domains;
 }

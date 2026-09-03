@@ -4,10 +4,8 @@ import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/api_exception.dart';
 import 'package:riftarium_mobile/features/scan/data/scan_collection_api.dart';
 import 'package:riftarium_mobile/features/scan/data/scan_index.dart';
-import 'package:riftarium_mobile/features/scan/domain/collector_code.dart';
 
 import '../../support/fakes.dart';
-import 'scan_fixtures.dart';
 
 void main() {
   late FakeHttpAdapter adapter;
@@ -105,30 +103,6 @@ void main() {
             'Index en panne',
           ),
         ),
-      );
-    });
-  });
-
-  group('cardMatchesCode', () {
-    test('confronte set et numéro collector', () {
-      final card = scanCard();
-      expect(
-        cardMatchesCode(
-          card,
-          const CollectorCode(set: 'OGN', number: 209, total: 298),
-        ),
-        isTrue,
-      );
-      expect(
-        cardMatchesCode(
-          card,
-          const CollectorCode(set: 'UNL', number: 209, total: 219),
-        ),
-        isFalse,
-      );
-      expect(
-        cardMatchesCode(card, const CollectorCode(number: 210, total: 298)),
-        isFalse,
       );
     });
   });

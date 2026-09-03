@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,11 +10,12 @@ import '../../../app/design/page_banner.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/api_messages.dart';
+import '../../../app/widgets/card_grid_metrics.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
 import '../../../app/widgets/profile_action.dart';
 import '../../../app/widgets/search_field.dart';
-import '../../../core/api_exception.dart';
 import '../application/cards_controller.dart';
 import '../data/cards_api.dart';
 import '../domain/card_labels.dart';
@@ -115,7 +115,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
               delegate: _SearchHeader(
                 controller: _search,
                 filterCount: _activeFacetCount(filters),
-                dark: Theme.of(context).brightness == Brightness.dark,
               ),
             ),
             const _ActiveFilters(),
@@ -141,7 +140,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
           hasScrollBody: false,
           child: list.hasError
               ? ErrorView(
-                  message: _messageOf(list.error),
+                  message: messageOf(list.error),
                   onRetry: () => ref.invalidate(cardsListProvider),
                 )
               : const LoadingView(),
@@ -175,31 +174,22 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
     return [
       if (list.hasError)
         SliverToBoxAdapter(
-          child: _InlineNotice(message: _messageOf(list.error)),
+          child: _InlineNotice(message: messageOf(list.error)),
         ),
       SliverLayoutBuilder(
         builder: (context, constraints) {
-          // Trois colonnes sur un téléphone tenu droit, deux sur un très petit
-          // écran, quatre dès qu'on tourne l'appareil (ou sur tablette).
-          final width = constraints.crossAxisExtent;
-          final columns = width < 340
-              ? 2
-              : width >= 640
-              ? 4
-              : 3;
-          final available = math.max(
-            columns * 60.0,
-            width - RiftSpace.page.horizontal,
+          final grid = cardGridMetrics(
+            width: constraints.crossAxisExtent,
+            gap: _gap,
           );
-          final tileWidth = (available - _gap * (columns - 1)) / columns;
-          // Ratio portrait d'un visuel de carte, plus la ligne du nom.
-          final imageHeight = tileWidth / CardImage.portraitRatio;
+          // Le visuel au ratio portrait, plus la ligne du nom.
+          final imageHeight = grid.imageHeight;
 
           return SliverPadding(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 40),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
+                crossAxisCount: grid.columns,
                 crossAxisSpacing: _gap,
                 mainAxisSpacing: 16,
                 mainAxisExtent: imageHeight + 34,
@@ -243,17 +233,12 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
 /// Barre de recherche épinglée sous la bannière : champ arrondi sur parchemin
 /// translucide et bouton de filtres avec son compteur or.
 class _SearchHeader extends SliverPersistentHeaderDelegate {
-  const _SearchHeader({
-    required this.controller,
-    required this.filterCount,
-    required this.dark,
-  });
+  const _SearchHeader({required this.controller, required this.filterCount});
 
   static const double _height = 80;
 
   final TextEditingController controller;
   final int filterCount;
-  final bool dark;
 
   @override
   double get minExtent => _height;
@@ -281,7 +266,11 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       child: Row(
         children: [
-          Expanded(child: RiftSearchField(controller: controller)),
+          // L'API borne `q` à 100 caractères : autant ne pas laisser saisir
+          // une recherche qu'elle refuserait.
+          Expanded(
+            child: RiftSearchField(controller: controller, maxLength: 100),
+          ),
           const SizedBox(width: 10),
           _FiltersButton(count: filterCount),
         ],
@@ -292,7 +281,6 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _SearchHeader oldDelegate) =>
       oldDelegate.filterCount != filterCount ||
-      oldDelegate.dark != dark ||
       oldDelegate.controller != controller;
 }
 
@@ -466,6 +454,3 @@ class _InlineNotice extends StatelessWidget {
     );
   }
 }
-
-String _messageOf(Object? error) =>
-    error is ApiException ? error.message : 'Erreur inattendue.';

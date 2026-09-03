@@ -34,8 +34,6 @@ class RiftboundId {
 
   /// Total d'impression du set (219 pour UNL, 298 pour OGN…).
   final int total;
-
-  bool get star => suffix.contains('*');
 }
 
 final RegExp _riftboundIdPattern = RegExp(
@@ -109,18 +107,80 @@ class ScanIndexEntry {
   final String rid;
 }
 
-/// Totaux d'impression présents dans l'index (219 pour UNL, 298 pour OGN…).
+/// Index de scan pré-parsé : chaque `riftbound_id` n'est décomposé qu'une fois,
+/// au chargement, et les entrées sont rangées par couple (numéro, total).
 ///
-/// Ce filtre est ce qui rend l'OCR utilisable : un total inventé par la
-/// reconnaissance (« 279 », « 2I9 » relu 219…) est rejeté au lieu de désigner
-/// une carte au hasard.
-Set<int> collectorTotals(Iterable<ScanIndexEntry> entries) {
-  final totals = <int>{};
-  for (final entry in entries) {
-    final parsed = parseRiftboundId(entry.rid);
-    if (parsed != null) totals.add(parsed.total);
+/// Sans cela, chaque image analysée relançait une expression régulière sur les
+/// milliers de lignes de l'index — trois ou quatre fois par seconde.
+class CollectorIndex {
+  CollectorIndex(Iterable<ScanIndexEntry> entries) {
+    for (final entry in entries) {
+      final parsed = parseRiftboundId(entry.rid);
+      if (parsed == null) continue;
+      totals.add(parsed.total);
+      _byNumber.putIfAbsent((parsed.number, parsed.total), () => []).add((
+        entry: entry,
+        parsed: parsed,
+      ));
+    }
   }
-  return totals;
+
+  /// Totaux d'impression présents dans l'index (219 pour UNL, 298 pour OGN…).
+  ///
+  /// Ce filtre est ce qui rend l'OCR utilisable : un total inventé par la
+  /// reconnaissance (« 279 », « 2I9 » relu 219…) est rejeté au lieu de
+  /// désigner une carte au hasard.
+  final Set<int> totals = {};
+
+  final Map<(int, int), List<({ScanIndexEntry entry, RiftboundId parsed})>>
+  _byNumber = {};
+
+  /// Cartes de l'index compatibles avec un code lu.
+  ///
+  /// Le suffixe imprimé (lettre d'alt-art, étoile de signature) fait quelques
+  /// pixels sur la photo : le lire est un coup de dé. Toutes les variantes du
+  /// même numéro sont donc retournées ensemble, celle dont le suffixe
+  /// correspond exactement passant devant (préférence, jamais filtre) — une
+  /// lecture « 007a » désigne l'art alternatif, « 007 » la carte de base.
+  List<ScanIndexEntry> match(CollectorCode? code) {
+    if (code == null) return const [];
+    final candidates = _byNumber[(code.number, code.total)];
+    if (candidates == null || candidates.isEmpty) return const [];
+
+    // Le set filtre les collisions entre extensions ; s'il a été mal lu, on
+    // retombe sur le numéro seul plutôt que de perdre une lecture valide.
+    var items = candidates;
+    if (code.set != null) {
+      final sameSet = [
+        for (final item in candidates)
+          if (item.parsed.set == code.set) item,
+      ];
+      if (sameSet.isNotEmpty) items = sameSet;
+    }
+
+    // Tri stable : suffixe identique d'abord (l'alt « a » devant quand « a » a
+    // été lu, la base devant quand rien ne suit le numéro), puis l'étoile
+    // seule en repli (la lettre a pu être manquée, pas l'étoile).
+    int scoreOf(String suffix) {
+      if (suffix == code.suffix) return 0;
+      if (suffix.contains('*') == code.star) return 1;
+      return 2;
+    }
+
+    final ranked = List.generate(
+      items.length,
+      (rank) => (
+        entry: items[rank].entry,
+        rank: rank,
+        score: scoreOf(items[rank].parsed.suffix),
+      ),
+    );
+    ranked.sort((a, b) {
+      if (a.score != b.score) return a.score.compareTo(b.score);
+      return a.rank.compareTo(b.rank);
+    });
+    return [for (final item in ranked) item.entry];
+  }
 }
 
 /// Groupe de chiffres du texte nettoyé, avec ses positions.
@@ -241,57 +301,6 @@ CollectorCode? parseCollectorCodeFromLines(
   return null;
 }
 
-/// Cartes de l'index compatibles avec un code lu.
-///
-/// Le suffixe imprimé (lettre d'alt-art, étoile de signature) fait quelques
-/// pixels sur la photo : le lire est un coup de dé. Toutes les variantes du
-/// même numéro sont donc retournées ensemble, celle dont le suffixe correspond
-/// exactement passant devant (préférence, jamais filtre) — une lecture
-/// « 007a » désigne l'art alternatif, « 007 » la carte de base.
-List<ScanIndexEntry> matchByCode(
-  CollectorCode? code,
-  Iterable<ScanIndexEntry> entries,
-) {
-  if (code == null) return const [];
-
-  List<ScanIndexEntry> collect({required bool useSet}) {
-    final found = <ScanIndexEntry>[];
-    for (final entry in entries) {
-      final parsed = parseRiftboundId(entry.rid);
-      if (parsed == null) continue;
-      if (parsed.number != code.number || parsed.total != code.total) continue;
-      if (useSet && parsed.set != code.set) continue;
-      found.add(entry);
-    }
-    return found;
-  }
-
-  // Le set filtre les collisions entre extensions ; s'il a été mal lu, on
-  // retombe sur le numéro seul plutôt que de perdre une lecture valide.
-  var items = code.set == null ? <ScanIndexEntry>[] : collect(useSet: true);
-  if (items.isEmpty) items = collect(useSet: false);
-
-  // Tri stable : suffixe identique d'abord (l'alt « a » devant quand « a » a
-  // été lu, la base devant quand rien ne suit le numéro), puis l'étoile seule
-  // en repli (la lettre a pu être manquée, pas l'étoile).
-  int scoreOf(ScanIndexEntry entry) {
-    final suffix = parseRiftboundId(entry.rid)?.suffix ?? '';
-    if (suffix == code.suffix) return 0;
-    if (suffix.contains('*') == code.star) return 1;
-    return 2;
-  }
-
-  final ranked = List.generate(
-    items.length,
-    (rank) => (entry: items[rank], rank: rank, score: scoreOf(items[rank])),
-  );
-  ranked.sort((a, b) {
-    if (a.score != b.score) return a.score.compareTo(b.score);
-    return a.rank.compareTo(b.rank);
-  });
-  return [for (final item in ranked) item.entry];
-}
-
 /// Verrouillage d'une lecture : une carte n'est reconnue que lorsque la même
 /// lecture revient plusieurs fois.
 ///
@@ -352,10 +361,4 @@ class ScanStabilizer {
 
   /// Oublie les lectures en cours sans lever les délais d'anti-doublon.
   void clearPending() => _recent.clear();
-
-  /// Remise à zéro complète (nouvelle session de scan).
-  void reset() {
-    _recent.clear();
-    _lockedAt.clear();
-  }
 }

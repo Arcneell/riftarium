@@ -104,13 +104,8 @@ void main() {
     expect(stabilizer.offer('a'), 'a');
   });
 
-  test('reset oublie les délais, clearPending seulement la fenêtre', () {
+  test('clearPending oublie la fenêtre, pas le délai d’anti-doublon', () {
     final stabilizer = build();
-    stabilizer.offer('a');
-    stabilizer.offer('a');
-    stabilizer.offer('a');
-
-    stabilizer.reset();
     stabilizer.offer('a');
     stabilizer.offer('a');
     expect(stabilizer.offer('a'), 'a');

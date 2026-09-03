@@ -31,6 +31,11 @@ void main() {
       ),
     ),
     'GET /collection/sets': const FakeResponse(200, setsProgressJson),
+    // Après chaque mutation, seule la carte touchée est relue.
+    'GET /collection/OGN-209': FakeResponse(
+      200,
+      cardStateJson(cardId: 'OGN-209', entries: [entryJson(id: 12, qty: 2)]),
+    ),
     ...extra,
   };
 
@@ -67,6 +72,13 @@ void main() {
           'condition': 'NM',
           'lang': 'EN',
         }),
+        'GET /collection/OGN-209': FakeResponse(
+          200,
+          cardStateJson(
+            cardId: 'OGN-209',
+            entries: [entryJson(id: 12, qty: 5)],
+          ),
+        ),
       }),
     );
     final container = collectionContainer(adapter);
@@ -86,8 +98,22 @@ void main() {
     final put = adapter.requests.firstWhere((r) => r.method == 'PUT');
     expect(put.path, '/collection/OGN-209');
     expect(put.jsonBody, {'qty': 5, 'condition': 'NM', 'lang': 'EN'});
-    // Rechargement après la mutation : les valeurs reviennent du serveur.
-    expect(container.read(collectionControllerProvider).value!.totalCards, 2);
+    // Seule la carte touchée est relue : les lots reviennent du serveur (leurs
+    // identifiants avec) et la liste ne repart pas de la première page.
+    final state = container.read(collectionControllerProvider).value!;
+    expect(state.items.single.entries.single.id, 12);
+    expect(state.items.single.totalQty, 5);
+    expect(
+      adapter.requests.where((r) => r.path == '/collection').length,
+      1,
+      reason: 'la liste complète n’est pas rechargée',
+    );
+    expect(
+      adapter.requests.any(
+        (r) => r.method == 'GET' && r.path == '/collection/OGN-209',
+      ),
+      isTrue,
+    );
   });
 
   test('setQuantity : échec serveur, la liste revient à son état', () async {
@@ -116,13 +142,13 @@ void main() {
     );
   });
 
-  test('removeCard : un PATCH qty 0 par lot, carte retirée', () async {
+  test('removeCard : un seul appel groupé, carte retirée', () async {
     final adapter = FakeHttpAdapter(
       routes({
-        'PATCH /collection/entries/12': FakeResponse(
-          200,
-          cardStateJson(cardId: 'OGN-209'),
-        ),
+        'POST /collection/bulk': const FakeResponse(200, {
+          'updated': 0,
+          'removed': 1,
+        }),
       }),
     );
     final container = collectionContainer(adapter);
@@ -137,9 +163,18 @@ void main() {
     expect(optimistic.uniqueCards, 0);
 
     await pending;
-    final patch = adapter.requests.firstWhere((r) => r.method == 'PATCH');
-    expect(patch.path, '/collection/entries/12');
-    expect(patch.jsonBody, {'qty': 0});
+    final bulk = adapter.requests.firstWhere((r) => r.method == 'POST');
+    expect(bulk.path, '/collection/bulk');
+    expect(bulk.jsonBody, {
+      'card_ids': ['OGN-209'],
+      'remove': true,
+    });
+    expect(
+      adapter.requests.any((r) => r.method == 'PATCH'),
+      isFalse,
+      reason: 'plus de suite de PATCH à moitié appliquée',
+    );
+    expect(container.read(collectionControllerProvider).value!.items, isEmpty);
   });
 
   test('addEntry : la quantité s’ajoute au lot existant', () async {

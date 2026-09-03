@@ -5,6 +5,7 @@ import '../../../app/theme.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../cards/domain/card.dart';
 import '../../cards/domain/card_labels.dart';
+import '../../collection/ui/widgets/quantity_stepper.dart';
 
 /// Feuille de résultat affichée au bas de l'écran de scan.
 ///
@@ -189,8 +190,12 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
             const SizedBox(height: 14),
             Row(
               children: [
-                _QtyStepper(
-                  qty: _qty,
+                QuantityStepper(
+                  value: _qty,
+                  min: 1,
+                  max: 99,
+                  size: StepperSize.compact,
+                  semanticsLabel: 'Exemplaires à ajouter',
                   onChanged: (value) => setState(() => _qty = value),
                 ),
                 const SizedBox(width: 12),
@@ -261,52 +266,6 @@ class _SheetNote extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(message, style: text.small.copyWith(color: textColor)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Quantité à ajouter : − / valeur / +, bornée de 1 à 99.
-class _QtyStepper extends StatelessWidget {
-  const _QtyStepper({required this.qty, required this.onChanged});
-
-  final int qty;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = riftText(context);
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: 'Un exemplaire de moins',
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            onPressed: qty > 1 ? () => onChanged(qty - 1) : null,
-            icon: const Icon(Icons.remove),
-          ),
-          SizedBox(
-            width: 24,
-            child: Text(
-              '$qty',
-              textAlign: TextAlign.center,
-              style: text.monoStrong.copyWith(fontSize: 15),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Un exemplaire de plus',
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            onPressed: qty < 99 ? () => onChanged(qty + 1) : null,
-            icon: const Icon(Icons.add),
           ),
         ],
       ),

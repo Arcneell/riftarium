@@ -85,6 +85,9 @@ class CardFilters {
 }
 
 /// Appels `/api/cards*`, `/api/sets`, `/api/prices/meta`.
+///
+/// Pas d'appel à `/cards/{id}/variants` : `GET /cards/{id}` renvoie déjà la
+/// famille de variantes dans son champ `variants`.
 class CardsApi {
   CardsApi(this._dio);
 
@@ -115,23 +118,12 @@ class CardsApi {
     }
   }
 
-  /// Variantes (alt-art, signature…) partageant le même `riftbound_id`.
-  Future<List<RiftCard>> variants(String cardId) async {
-    try {
-      final response = await _dio.get<dynamic>('/cards/$cardId/variants');
-      return _cardsOf(response.data);
-    } on DioException catch (error) {
-      throw toApiException(error);
-    }
-  }
-
-  /// Sets connus (`GET /api/sets`), tels que renvoyés par l'API.
+  /// Sets connus (`GET /api/sets`) : l'API répond par une liste JSON nue
+  /// (`list_sets`, `apps/api/app/routers/cards.py`).
   Future<List<Map<String, dynamic>>> sets() async {
     try {
-      final response = await _dio.get<dynamic>('/sets');
-      final data = response.data;
-      final list = data is Map ? data['items'] ?? data['sets'] : data;
-      return (list as List? ?? const [])
+      final response = await _dio.get<List<dynamic>>('/sets');
+      return (response.data ?? const [])
           .whereType<Map<String, dynamic>>()
           .toList();
     } on DioException catch (error) {
@@ -147,13 +139,5 @@ class CardsApi {
     } on DioException catch (error) {
       throw toApiException(error);
     }
-  }
-
-  static List<RiftCard> _cardsOf(Object? data) {
-    final list = data is Map ? data['items'] : data;
-    return (list as List? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(RiftCard.fromJson)
-        .toList();
   }
 }

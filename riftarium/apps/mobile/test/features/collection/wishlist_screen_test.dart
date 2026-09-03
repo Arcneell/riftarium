@@ -68,8 +68,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CARTES SOUHAITÉES'), findsOneWidget);
-    expect(find.text('25,00 €'), findsOneWidget); // valeur totale estimée
-    expect(find.text('OGN 209 · 25,00 €'), findsOneWidget); // 2 × 12,50 €
+    expect(find.text('25,00 €'), findsOneWidget); // valeur totale estimée
+    expect(find.text('OGN 209 · 25,00 €'), findsOneWidget); // 2 × 12,50 €
     expect(find.text('2'), findsOneWidget); // quantité du stepper
     expect(find.byTooltip('Retirer'), findsOneWidget);
   });

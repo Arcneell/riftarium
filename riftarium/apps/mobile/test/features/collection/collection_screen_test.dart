@@ -93,7 +93,7 @@ void main() {
     await tester.tap(find.text('Complétion par set'));
     await tester.pumpAndSettle();
     expect(find.text('Origines'), findsOneWidget);
-    expect(find.text('Il manque 75 cartes (~210,50 €)'), findsWidgets);
+    expect(find.text('Il manque 75 cartes (~210,50 €)'), findsWidgets);
 
     // La grille est plus bas : on défile jusqu'à la carte possédée.
     await tester.scrollUntilVisible(
@@ -107,7 +107,7 @@ void main() {
     // Quantité en pastille, lot en mono, valeur du lot (2 × 12,50 €).
     expect(find.text('×2'), findsOneWidget);
     expect(find.text('NM · EN'), findsOneWidget);
-    expect(find.text('25,00 €'), findsWidgets);
+    expect(find.text('25,00 €'), findsWidgets);
   });
 
   testWidgets('collection vide : message d’accueil', (tester) async {

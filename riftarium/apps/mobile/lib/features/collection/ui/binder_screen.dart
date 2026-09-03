@@ -9,13 +9,14 @@ import '../../../app/design/components.dart';
 import '../../../app/design/reveal.dart';
 import '../../../app/router.dart';
 import '../../../app/theme.dart';
+import '../../../app/widgets/api_messages.dart';
 import '../../../app/widgets/card_image.dart';
 import '../../../app/widgets/common.dart';
-import '../../../core/api_exception.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../cards/domain/card.dart';
 import '../application/binder_providers.dart';
 import '../application/collection_controller.dart';
+import '../../cards/domain/card_labels.dart';
 import '../domain/collection.dart';
 import 'widgets/collection_sign_in.dart';
 
@@ -147,11 +148,6 @@ class _BinderScreenState extends ConsumerState<BinderScreen> {
     );
   }
 }
-
-/// Message affichable d'une erreur de provider (mêmes règles que l'onglet).
-String _messageOf(Object? error) => error is ApiException
-    ? error.message
-    : 'Chargement impossible. Réessaie plus tard.';
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
@@ -336,7 +332,7 @@ class _BinderBody extends ConsumerWidget {
     return firstPage.when(
       loading: () => const _PageSkeleton(),
       error: (error, _) => ErrorView(
-        message: _messageOf(error),
+        message: messageOf(error),
         onRetry: () => ref.invalidate(binderPageProvider(request)),
       ),
       data: (page) {
@@ -401,14 +397,34 @@ class _PageTurn extends StatelessWidget {
 /// Une page : 9 pochettes 3 × 3, dimensionnées pour tenir dans la hauteur
 /// disponible. Les pages voisines sont observées pour être déjà chargées
 /// quand le doigt arrive.
-class _BinderPage extends ConsumerWidget {
+class _BinderPage extends ConsumerStatefulWidget {
   const _BinderPage({required this.request, required this.pages});
 
   final BinderPageRequest request;
   final int pages;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BinderPage> createState() => _BinderPageState();
+}
+
+class _BinderPageState extends ConsumerState<_BinderPage> {
+  /// Feuille dont les vignettes sont déjà en cache : le préchargement ne se
+  /// rejoue pas à chaque reconstruction (le pivotement de page en déclenche
+  /// une par image d'animation).
+  BinderPageRequest? _precachedFor;
+
+  void _precache(List<RiftCard> cards) {
+    if (_precachedFor == widget.request || cards.isEmpty) return;
+    _precachedFor = widget.request;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) unawaited(precacheCardThumbs(context, cards));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final request = widget.request;
+    final pages = widget.pages;
     // Garder les voisines en vie : le glissement tombe sur une page prête.
     if (request.page > 1) {
       ref.watch(
@@ -433,20 +449,14 @@ class _BinderPage extends ConsumerWidget {
     return page.when(
       loading: () => const _PageSkeleton(),
       error: (error, _) => ErrorView(
-        message: _messageOf(error),
+        message: messageOf(error),
         onRetry: () => ref.invalidate(binderPageProvider(request)),
       ),
       data: (data) {
         // Vignettes de la page et de la suivante mises en cache : la feuille
         // arrive pleine, sans squelettes ni fondus pendant le glissement.
         final upcoming = next?.valueOrNull?.items ?? const <RiftCard>[];
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            unawaited(
-              precacheCardThumbs(context, [...data.items, ...upcoming]),
-            );
-          }
-        });
+        _precache([...data.items, ...upcoming]);
         final cards = List<RiftCard?>.from(data.items);
         while (cards.length < binderPageSize) {
           cards.add(null);
@@ -474,9 +484,14 @@ class _PocketGrid extends StatelessWidget {
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth - RiftSpace.page.horizontal;
         final maxHeight = constraints.maxHeight - 16;
-        final width = math.min(
-          (maxWidth - _gap * 2) / 3,
-          (maxHeight - _gap * 2) / 3 * CardImage.portraitRatio,
+        // Plancher à 1 px : pendant une transition, la contrainte peut
+        // arriver à zéro et une pochette négative fait planter la mise en page.
+        final width = math.max(
+          1.0,
+          math.min(
+            (maxWidth - _gap * 2) / 3,
+            (maxHeight - _gap * 2) / 3 * CardImage.portraitRatio,
+          ),
         );
         final height = width / CardImage.portraitRatio;
         return Center(
@@ -572,7 +587,7 @@ class _Pocket extends StatelessWidget {
       );
     }
 
-    final price = formatEur(held.priceEur);
+    final price = formatEuroOrNull(held.priceEur);
     // Pas de Reveal ici : rejouer la cascade à chaque page construite pendant
     // le glissement faisait clignoter la feuille (vide, puis remplie une
     // pochette à la fois). Le pivotement de page suffit comme mouvement.

@@ -57,6 +57,12 @@ class _CollectionEditSheetState extends ConsumerState<CollectionEditSheet> {
       await action();
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
+    } catch (_) {
+      // Tout le reste (bug, réponse illisible) : la feuille reste ouverte avec
+      // un message plutôt que de laisser l'erreur remonter dans le vide.
+      if (mounted) {
+        setState(() => _error = 'La modification n’a pas abouti.');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
