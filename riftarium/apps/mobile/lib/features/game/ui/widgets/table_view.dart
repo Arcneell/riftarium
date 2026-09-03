@@ -8,6 +8,7 @@ import '../../../../app/design/reveal.dart';
 import '../../../../app/theme.dart';
 import '../../application/game_providers.dart';
 import '../../domain/game_actions.dart';
+import '../../domain/game_mode.dart';
 import '../../domain/game_state.dart';
 import '../../domain/player.dart';
 import 'game_theme.dart';
@@ -71,10 +72,23 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
       _clock?.cancel();
       _clock = null;
     } else {
-      _clock ??= Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() {});
-      });
+      _clock ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     }
+  }
+
+  /// Battement de l'horloge : rafraîchit l'affichage et, en tournoi, annonce
+  /// la fin du temps quand la ronde est écoulée (RT 408.2). La table qui
+  /// compte le fait ; l'invité en lecture seule attend l'hôte.
+  void _tick() {
+    if (!mounted) return;
+    final state = widget.state;
+    if (!widget.readOnly &&
+        state.mode.isTournament &&
+        !state.timeCalled &&
+        state.remainingTime(DateTime.now()) == Duration.zero) {
+      _game.callTime();
+    }
+    setState(() {});
   }
 
   @override
@@ -225,8 +239,35 @@ class _GameTableViewState extends ConsumerState<GameTableView> {
     onNewRound: _game.newRound,
     onReset: _game.reset,
     onQuit: _confirmQuit,
+    onCallTime: _confirmCallTime,
     onDismissHint: _game.markHintSeen,
   );
+
+  /// L'arbitre annonce la fin du temps : irréversible, on demande confirmation.
+  Future<void> _confirmCallTime() async {
+    final call = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Annoncer la fin du temps ?'),
+        content: const Text(
+          'Le tour en cours s’achève, puis trois tours supplémentaires sont '
+          'joués. Deux points d’avance gagnent le match, sinon égalité. '
+          'Cette annonce ne s’annule pas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Pas encore'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Temps écoulé'),
+          ),
+        ],
+      ),
+    );
+    if (call == true) _game.callTime();
+  }
 
   Future<void> _confirmQuit() async {
     final custom = widget.confirmQuit;
@@ -473,6 +514,7 @@ class _ControlBar extends StatelessWidget {
     required this.onNewRound,
     required this.onReset,
     required this.onQuit,
+    required this.onCallTime,
     required this.onDismissHint,
   });
 
@@ -486,13 +528,17 @@ class _ControlBar extends StatelessWidget {
   final VoidCallback onNewRound;
   final VoidCallback onReset;
   final VoidCallback onQuit;
+  final VoidCallback onCallTime;
   final VoidCallback onDismissHint;
 
   @override
   Widget build(BuildContext context) {
     final text = riftText(context);
     final showHint = !state.hintSeen && state.turnNumber == 1;
-    final elapsed = DateTime.now().difference(state.startedAt);
+    final now = DateTime.now();
+    final elapsed = now.difference(state.startedAt);
+    final canCallTime =
+        state.mode.isTournament && !state.timeCalled && !readOnly;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -534,27 +580,29 @@ class _ControlBar extends StatelessWidget {
               // place, c'est elle qui s'ellipse à police agrandie.
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 96),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      state.mode.roundsToWin > 1
-                          ? 'M${state.round} · TOUR ${state.turnNumber}'
-                          : 'TOUR ${state.turnNumber}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.eyebrow.copyWith(fontSize: 9.5),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      formatChrono(elapsed),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.monoStrong.copyWith(fontSize: 14),
-                    ),
-                  ],
-                ),
+                child: state.mode.isTournament
+                    ? _TournamentClock(state: state, now: now)
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.mode.roundsToWin > 1
+                                ? 'M${state.round} · TOUR ${state.turnNumber}'
+                                : 'TOUR ${state.turnNumber}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: text.eyebrow.copyWith(fontSize: 9.5),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatChrono(elapsed),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: text.monoStrong.copyWith(fontSize: 14),
+                          ),
+                        ],
+                      ),
               ),
               const SizedBox(width: 10),
               if (!readOnly)
@@ -576,9 +624,15 @@ class _ControlBar extends StatelessWidget {
                 onSelected: (value) => switch (value) {
                   'round' => onNewRound(),
                   'reset' => onReset(),
+                  'time' => onCallTime(),
                   _ => onQuit(),
                 },
                 itemBuilder: (context) => [
+                  if (canCallTime)
+                    const PopupMenuItem(
+                      value: 'time',
+                      child: Text('Annoncer la fin du temps'),
+                    ),
                   if (allowRestart && !readOnly) ...const [
                     PopupMenuItem(
                       value: 'round',
@@ -593,6 +647,70 @@ class _ControlBar extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Horloge de la ronde en tournoi : le temps restant plutôt que le temps
+/// écoulé, puis le décompte des tours supplémentaires une fois le temps
+/// annoncé (RT 408.2). Passe à l'or sous cinq minutes.
+class _TournamentClock extends StatelessWidget {
+  const _TournamentClock({required this.state, required this.now});
+
+  final GameState state;
+  final DateTime now;
+
+  static const _warning = Duration(minutes: 5);
+
+  @override
+  Widget build(BuildContext context) {
+    final text = riftText(context);
+    final String eyebrow;
+    final String value;
+    Color? color;
+    if (state.timeCalled) {
+      eyebrow = 'TEMPS ÉCOULÉ';
+      final left = state.overtimeTurnsLeft;
+      value = left > kTournamentExtraTurns
+          ? 'fin du tour'
+          : left <= 0
+          ? 'terminé'
+          : '+${kTournamentExtraTurns - left + 1}/$kTournamentExtraTurns';
+      color = RiftColors.goldSoft;
+    } else {
+      final remaining = state.remainingTime(now);
+      if (remaining == null) {
+        eyebrow = 'M${state.round} · TOUR ${state.turnNumber}';
+        value = formatChrono(now.difference(state.startedAt));
+      } else {
+        eyebrow = 'M${state.round} · RONDE';
+        value = formatChrono(remaining);
+        if (remaining <= _warning) color = RiftColors.goldSoft;
+      }
+    }
+    return Semantics(
+      label: state.timeCalled
+          ? 'Temps écoulé, tours supplémentaires'
+          : 'Temps restant de la ronde',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            eyebrow,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.eyebrow.copyWith(fontSize: 9.5, color: color),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.monoStrong.copyWith(fontSize: 14, color: color),
           ),
         ],
       ),

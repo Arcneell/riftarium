@@ -12,6 +12,9 @@ class GameMoment {
     required this.turnIndex,
     required this.turnNumber,
     this.winnerTeam,
+    this.timeCalled = false,
+    this.overtimeTurnsLeft = 0,
+    this.drawn = false,
   });
 
   factory GameMoment.fromJson(Map<String, dynamic> json) => GameMoment(
@@ -21,6 +24,9 @@ class GameMoment {
     turnIndex: (json['turn_index'] as num?)?.toInt() ?? 0,
     turnNumber: (json['turn_number'] as num?)?.toInt() ?? 1,
     winnerTeam: (json['winner_team'] as num?)?.toInt(),
+    timeCalled: json['time_called'] == true,
+    overtimeTurnsLeft: (json['overtime_turns_left'] as num?)?.toInt() ?? 0,
+    drawn: json['drawn'] == true,
   );
 
   final Map<int, int> scores;
@@ -31,6 +37,9 @@ class GameMoment {
   final int turnIndex;
   final int turnNumber;
   final int? winnerTeam;
+  final bool timeCalled;
+  final int overtimeTurnsLeft;
+  final bool drawn;
 
   Map<String, dynamic> toJson() => {
     'scores': _mapToJson(scores),
@@ -39,6 +48,9 @@ class GameMoment {
     'turn_index': turnIndex,
     'turn_number': turnNumber,
     'winner_team': winnerTeam,
+    'time_called': timeCalled,
+    'overtime_turns_left': overtimeTurnsLeft,
+    'drawn': drawn,
   };
 }
 
@@ -59,6 +71,10 @@ class GameState {
     this.winnerTeam,
     this.hintSeen = false,
     this.history = const [],
+    this.roundLimit,
+    this.timeCalled = false,
+    this.overtimeTurnsLeft = 0,
+    this.drawn = false,
   });
 
   final GameMode mode;
@@ -84,7 +100,8 @@ class GameState {
   /// Numéro de la manche (1 hors match).
   final int round;
 
-  /// Début du chronomètre.
+  /// Début du chronomètre. En tournoi, c'est l'horloge de la ronde : elle
+  /// court sur tout le match, pas seulement sur la manche en cours.
   final DateTime startedAt;
 
   /// Camp vainqueur de la manche, null tant qu'aucun n'a gagné.
@@ -94,6 +111,23 @@ class GameState {
   final bool hintSeen;
 
   final List<GameMoment> history;
+
+  /// Tournoi : durée de la ronde (RT 604.1), null sans limite de temps
+  /// (élimination directe, ou l'arbitre annonce le temps lui-même).
+  final Duration? roundLimit;
+
+  /// Tournoi : la fin du temps a été annoncée (RT 408.2). Irréversible.
+  final bool timeCalled;
+
+  /// Tournoi : tours restant à jouer après l'annonce, tour en cours compris.
+  /// 4 à l'annonce (le tour en cours puis trois tours supplémentaires), 0
+  /// quand la partie s'arrête au temps. Sans signification si [timeCalled]
+  /// est faux.
+  final int overtimeTurnsLeft;
+
+  /// La manche s'est terminée sur une égalité (temps écoulé sans deux points
+  /// d'écart, RT 408.2.b). Une égalité ne compte pas comme manche gagnée.
+  final bool drawn;
 
   Player playerById(String id) =>
       players.firstWhere((player) => player.id == id, orElse: () => players[0]);
@@ -128,11 +162,56 @@ class GameState {
     return members.isEmpty ? 'Joueur ${team + 1}' : members.first.name;
   }
 
-  bool get isOver => winnerTeam != null;
+  /// La manche est finie : un vainqueur, ou une égalité au temps.
+  bool get isOver => winnerTeam != null || drawn;
 
-  /// La rencontre est finie : plus de manche à jouer.
-  bool get isMatchOver =>
-      winnerTeam != null && roundsWonBy(winnerTeam!) >= mode.roundsToWin;
+  /// La partie s'est arrêtée au temps, après les tours supplémentaires.
+  bool get timedOut => timeCalled && overtimeTurnsLeft == 0 && isOver;
+
+  /// La rencontre est finie : plus de manche à jouer. En tournoi, la fin du
+  /// temps clôt le match dès que la manche en cours s'achève (RT 408.2.d).
+  bool get isMatchOver {
+    final winner = winnerTeam;
+    if (winner != null && roundsWonBy(winner) >= mode.roundsToWin) return true;
+    return mode.isTournament && timeCalled && isOver;
+  }
+
+  /// Camp qui remporte la rencontre, null si elle continue ou si elle est
+  /// nulle. Au temps : deux points d'avance gagnent le match (RT 408.2.b),
+  /// sinon le plus de manches gagnées (RT 404.4), sinon match nul (404.5).
+  int? get matchWinnerTeam {
+    if (!isMatchOver) return null;
+    final winner = winnerTeam;
+    if (winner != null && roundsWonBy(winner) >= mode.roundsToWin) {
+      return winner;
+    }
+    if (timedOut && winner != null) return winner;
+    int? best;
+    var bestRounds = -1;
+    var tied = false;
+    for (final team in teams) {
+      final rounds = roundsWonBy(team);
+      if (rounds > bestRounds) {
+        bestRounds = rounds;
+        best = team;
+        tied = false;
+      } else if (rounds == bestRounds) {
+        tied = true;
+      }
+    }
+    return tied ? null : best;
+  }
+
+  /// Match nul : la rencontre est finie sans vainqueur.
+  bool get isMatchDrawn => isMatchOver && matchWinnerTeam == null;
+
+  /// Temps restant dans la ronde, null sans limite. Jamais négatif.
+  Duration? remainingTime(DateTime now) {
+    final limit = roundLimit;
+    if (limit == null) return null;
+    final left = limit - now.difference(startedAt);
+    return left.isNegative ? Duration.zero : left;
+  }
 
   bool get canUndo => history.isNotEmpty;
 
@@ -143,6 +222,9 @@ class GameState {
     turnIndex: turnIndex,
     turnNumber: turnNumber,
     winnerTeam: winnerTeam,
+    timeCalled: timeCalled,
+    overtimeTurnsLeft: overtimeTurnsLeft,
+    drawn: drawn,
   );
 
   GameState copyWith({
@@ -159,6 +241,9 @@ class GameState {
     bool clearWinner = false,
     bool? hintSeen,
     List<GameMoment>? history,
+    bool? timeCalled,
+    int? overtimeTurnsLeft,
+    bool? drawn,
   }) => GameState(
     mode: mode,
     players: players ?? this.players,
@@ -173,6 +258,10 @@ class GameState {
     winnerTeam: clearWinner ? null : (winnerTeam ?? this.winnerTeam),
     hintSeen: hintSeen ?? this.hintSeen,
     history: history ?? this.history,
+    roundLimit: roundLimit,
+    timeCalled: timeCalled ?? this.timeCalled,
+    overtimeTurnsLeft: overtimeTurnsLeft ?? this.overtimeTurnsLeft,
+    drawn: drawn ?? this.drawn,
   );
 
   /// Sérialisation. Le chronomètre est écrit en durée écoulée, pas en date :
@@ -193,6 +282,10 @@ class GameState {
     'winner_team': winnerTeam,
     'hint_seen': hintSeen,
     'history': history.map((moment) => moment.toJson()).toList(),
+    'round_limit_s': roundLimit?.inSeconds,
+    'time_called': timeCalled,
+    'overtime_turns_left': overtimeTurnsLeft,
+    'drawn': drawn,
   };
 
   /// Relecture. Renvoie null si le fichier ne décrit pas une partie jouable
@@ -214,6 +307,7 @@ class GameState {
         .toList();
     if (order.isEmpty) return null;
     final elapsed = (json['elapsed_us'] as num?)?.toInt() ?? 0;
+    final limitSeconds = (json['round_limit_s'] as num?)?.toInt();
     return GameState(
       mode: mode,
       players: players,
@@ -233,6 +327,12 @@ class GameState {
           .whereType<Map>()
           .map((item) => GameMoment.fromJson(Map<String, dynamic>.from(item)))
           .toList(),
+      roundLimit: limitSeconds == null || limitSeconds <= 0
+          ? null
+          : Duration(seconds: limitSeconds),
+      timeCalled: json['time_called'] == true,
+      overtimeTurnsLeft: (json['overtime_turns_left'] as num?)?.toInt() ?? 0,
+      drawn: json['drawn'] == true,
     );
   }
 }

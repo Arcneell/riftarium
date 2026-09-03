@@ -183,7 +183,7 @@ class _TopicBody extends StatelessWidget {
           ],
           if (topic.sections.isNotEmpty) ...[
             const _PartTitle('Le texte officiel'),
-            _OfficialSections(sections: topic.sections),
+            _OfficialSections(sections: topic.sections, book: topic.doc),
           ],
           const SizedBox(height: 26),
           if (next != null) ...[
@@ -393,9 +393,12 @@ class _Examples extends StatelessWidget {
 /// Sections officielles de la mécanique, repliées par défaut : la fiche
 /// répond d'abord, le texte intégral n'est là que pour trancher.
 class _OfficialSections extends ConsumerStatefulWidget {
-  const _OfficialSections({required this.sections});
+  const _OfficialSections({required this.sections, required this.book});
 
   final List<String> sections;
+
+  /// Livre de référence (`core` ou `tournament`).
+  final String book;
 
   @override
   ConsumerState<_OfficialSections> createState() => _OfficialSectionsState();
@@ -410,7 +413,7 @@ class _OfficialSectionsState extends ConsumerState<_OfficialSections> {
     final document = ref.watch(rulesProvider).valueOrNull;
     final located = <RuleLocation>[
       for (final id in widget.sections)
-        ?document?.locate(id, fromBookKey: 'core'),
+        ?document?.locate(id, fromBookKey: widget.book),
     ];
 
     if (!_open) {

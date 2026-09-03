@@ -158,7 +158,14 @@ class TrackedMatchController
   void undo() => _play(GameEngine.undo);
 
   @override
-  void newRound() => _play(GameEngine.newRound);
+  void newRound({String? firstPlayerId}) => _play(
+    (board) => GameEngine.newRound(board, firstPlayerId: firstPlayerId),
+  );
+
+  /// Sans effet en partie suivie : pas de ronde chronométrée (modes duel et
+  /// match seulement).
+  @override
+  void callTime() {}
 
   /// Sans effet en partie suivie : une rencontre ne se remet pas à zéro, elle
   /// se termine ou s'abandonne.

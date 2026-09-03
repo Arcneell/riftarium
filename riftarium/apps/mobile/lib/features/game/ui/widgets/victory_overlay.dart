@@ -7,6 +7,7 @@ import '../../../../app/design/foil.dart';
 import '../../../../app/theme.dart';
 import '../../../../app/widgets/card_image.dart';
 import '../../domain/game_state.dart';
+import '../../domain/player.dart';
 import 'confetti.dart';
 
 /// Troisième étape : l'écran de victoire. Le visuel du vainqueur balayé d'un
@@ -23,7 +24,10 @@ class VictoryOverlay extends StatefulWidget {
   });
 
   final GameState state;
-  final VoidCallback onNewRound;
+
+  /// Manche suivante. En tournoi, le perdant choisit qui commence
+  /// (RT 407.4) : `firstPlayerId` porte ce choix.
+  final void Function({String? firstPlayerId}) onNewRound;
   final VoidCallback onNewGame;
   final VoidCallback onFinish;
 
@@ -50,8 +54,9 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
     final state = widget.state;
     final text = riftText(context);
     final team = state.winnerTeam;
-    if (team == null) return const SizedBox.shrink();
-    final winners = state.teamPlayers(team);
+    final drawn = team == null && state.drawn;
+    if (team == null && !drawn) return const SizedBox.shrink();
+    final winners = team == null ? const <Player>[] : state.teamPlayers(team);
     final legend = winners
         .map((player) => player.legend)
         .where((card) => card != null)
@@ -59,6 +64,17 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
     final others = state.teams.where((other) => other != team);
     final hasNextRound = state.mode.roundsToWin > 1 && !state.isMatchOver;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final tournament = state.mode.isTournament;
+    final matchWinner = state.matchWinnerTeam;
+    // Tournoi : le perdant de la manche choisit qui commence la suivante.
+    final loser = tournament && hasNextRound && team != null
+        ? state.teams.firstWhere((other) => other != team)
+        : null;
+    final title = drawn
+        ? 'Égalité'
+        : state.timedOut
+        ? 'Victoire au temps'
+        : 'Victoire';
 
     return Positioned.fill(
       child: _FadeIn(
@@ -100,7 +116,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                               const _GoldEmblem(),
                             const SizedBox(height: 22),
                             Text(
-                              'Victoire',
+                              title,
                               style: text.displayLarge.copyWith(
                                 fontSize: 46,
                                 color: RiftColors.goldSoft,
@@ -110,9 +126,14 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                             const Center(child: GoldRule(width: 72)),
                             const SizedBox(height: 14),
                             Text(
-                              state.teamName(team),
+                              team == null
+                                  ? 'Temps écoulé, moins de deux points '
+                                        'd’écart : la manche ne compte pas.'
+                                  : state.teamName(team),
                               textAlign: TextAlign.center,
-                              style: text.displaySmall.copyWith(fontSize: 22),
+                              style: team == null
+                                  ? text.body
+                                  : text.displaySmall.copyWith(fontSize: 22),
                             ),
                             if (state.mode.isTeamPlay) ...[
                               const SizedBox(height: 4),
@@ -130,10 +151,11 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                MonoBadge(
-                                  label: 'Score ${state.scoreOfTeam(team)}',
-                                  filled: true,
-                                ),
+                                if (team != null)
+                                  MonoBadge(
+                                    label: 'Score ${state.scoreOfTeam(team)}',
+                                    filled: true,
+                                  ),
                                 for (final other in others)
                                   MonoBadge(
                                     label:
@@ -143,13 +165,75 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 if (state.mode.roundsToWin > 1)
                                   MonoBadge(
                                     label:
-                                        'Manches ${state.roundsWonBy(team)} – '
-                                        '${others.map(state.roundsWonBy).join(' – ')}',
+                                        'Manches '
+                                        '${[?team, ...others].map(state.roundsWonBy).join(' – ')}',
                                   ),
                               ],
                             ),
+                            if (tournament && state.isMatchOver) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                matchWinner == null
+                                    ? 'Match nul'
+                                    : '${state.teamName(matchWinner)} '
+                                          'remporte le match',
+                                textAlign: TextAlign.center,
+                                style: text.displaySmall.copyWith(
+                                  fontSize: 20,
+                                  color: RiftColors.goldSoft,
+                                ),
+                              ),
+                              if (state.timeCalled) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  state.timedOut && matchWinner != null
+                                      ? 'Deux points d’avance au temps : le '
+                                            'match est gagné (RT 408.2.b).'
+                                      : 'Temps écoulé : aucune nouvelle manche '
+                                            'n’est lancée (RT 408.2.d).',
+                                  textAlign: TextAlign.center,
+                                  style: text.small,
+                                ),
+                              ],
+                            ],
                             const SizedBox(height: 26),
-                            if (hasNextRound)
+                            if (hasNextRound && loser != null) ...[
+                              Text(
+                                '${state.teamName(loser)} a perdu la manche : '
+                                'il choisit qui commence.',
+                                textAlign: TextAlign.center,
+                                style: text.small,
+                              ),
+                              const SizedBox(height: 10),
+                              GoldButton(
+                                label: '${state.teamName(loser)} commence',
+                                icon: Icons.play_arrow_rounded,
+                                onPressed: () => widget.onNewRound(
+                                  firstPlayerId: state
+                                      .teamPlayers(loser)
+                                      .first
+                                      .id,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GhostButton(
+                                label: '${state.teamName(team!)} commence',
+                                icon: Icons.swap_horiz_rounded,
+                                onPressed: () => widget.onNewRound(
+                                  firstPlayerId: state
+                                      .teamPlayers(team)
+                                      .first
+                                      .id,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Réserve : échanges un pour un avec le deck '
+                                'principal, champion élu compris.',
+                                textAlign: TextAlign.center,
+                                style: text.small,
+                              ),
+                            ] else if (hasNextRound)
                               GoldButton(
                                 label: 'Manche suivante',
                                 icon: Icons.play_arrow_rounded,
@@ -175,7 +259,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                                 onPressed: widget.onFinish,
                               ),
                             ],
-                            if (!reduceMotion)
+                            if (!reduceMotion && !drawn)
                               TextButton.icon(
                                 onPressed: _replay,
                                 icon: const Icon(
@@ -192,14 +276,15 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                 ),
               ),
             ),
-            ConfettiOverlay(
-              colors: confettiPalette(
-                winners.expand(
-                  (player) => player.legend?.domains ?? const <String>[],
+            if (!drawn)
+              ConfettiOverlay(
+                colors: confettiPalette(
+                  winners.expand(
+                    (player) => player.legend?.domains ?? const <String>[],
+                  ),
                 ),
+                burst: _burst,
               ),
-              burst: _burst,
-            ),
           ],
         ),
       ),
