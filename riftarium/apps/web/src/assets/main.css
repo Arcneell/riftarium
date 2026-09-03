@@ -302,6 +302,14 @@ a {
 a:hover {
   color: var(--hex);
 }
+/* Bouton habillé en lien (retour d'historique de la fiche carte). */
+.card-back-link {
+  color: var(--gold-deep);
+  transition: color 0.2s;
+}
+.card-back-link:hover {
+  color: var(--hex);
+}
 button {
   font: inherit;
   color: inherit;
@@ -2245,29 +2253,6 @@ td.num {
   font-weight: 700;
 }
 
-/* ---------- Aperçu deck ---------- */
-.deck-preview {
-  display: flex;
-  margin: 14px 0 4px;
-}
-.deck-preview img {
-  width: 66px;
-  aspect-ratio: 744/1039;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 2px solid var(--paper-2);
-  box-shadow: 0 5px 14px rgba(2, 6, 16, 0.55);
-  margin-left: -22px;
-  transition: transform 0.2s;
-}
-.deck-preview img:first-child {
-  margin-left: 0;
-}
-.deck-preview img:hover {
-  transform: translateY(-6px) rotate(2deg);
-  z-index: 2;
-}
-
 /* ---------- Pagination ---------- */
 .pager {
   display: flex;
@@ -3873,6 +3858,7 @@ footer {
 }
 .tb-card {
   position: absolute;
+  padding: 0;
   width: 7.2%;
   aspect-ratio: 744 / 1039;
   transform: translate(-50%, -50%) rotate(var(--r, 0deg));
@@ -4127,6 +4113,7 @@ footer {
 }
 .tb-focus {
   position: absolute;
+  padding: 0;
   left: 50%;
   top: 43%;
   transform: translate(-50%, -50%);
@@ -4885,9 +4872,6 @@ h2.dbuilder-name {
 .dbuilder-count {
   font-size: 0.8rem;
   margin: 14px 0 16px;
-}
-.dbuilder-hint {
-  color: var(--gold-deep);
 }
 
 /* Galerie : toutes les cartes, possédées en couleur, manquantes grisées */

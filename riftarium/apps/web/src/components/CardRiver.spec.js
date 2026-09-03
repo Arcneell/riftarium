@@ -142,12 +142,18 @@ describe("CardRiver", () => {
     const observer = globalThis.__io.instances[0]
     observer.callback([{ isIntersecting: true }])
 
-    const first = wrapper.get(".river-track").attributes("style")
-    await wrapper.get(".river-row").trigger("mouseenter")
-    const tick = raf.mock.calls.at(-1)?.[0]
+    /* Une première frame pose la translation (écrite directement sur le DOM). */
+    let tick = raf.mock.calls.at(-1)?.[0]
     tick?.(1000)
     await flushPromises()
-    expect(wrapper.get(".river-track").attributes("style")).toBe(first)
+    const moved = wrapper.get(".river-track").attributes("style")
+    expect(moved).toContain("translateX")
+
+    await wrapper.get(".river-row").trigger("mouseenter")
+    tick = raf.mock.calls.at(-1)?.[0]
+    tick?.(2000)
+    await flushPromises()
+    expect(wrapper.get(".river-track").attributes("style")).toBe(moved)
     wrapper.unmount()
   })
 

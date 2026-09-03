@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import ProfileView from "./ProfileView.vue"
-import { api, session } from "../api.js"
+import { api, ApiError, session } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -285,6 +285,48 @@ describe("ProfileView", () => {
     await flushPromises()
     expect(wrapper.get(".profile-privacy .error").text()).toBe("Requête invalide")
     expect(wrapper.findAll(".privacy-list input")[1].element.checked).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("un échec de choix de portrait laisse le profil affiché", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/auth/me" && !options.method) return Promise.resolve({ ...profile })
+      if (path === "/api/auth/avatars") return Promise.resolve(faces)
+      if (path === "/api/me/achievements") return Promise.resolve(achievements)
+      if (path === "/api/auth/me" && options.method === "PATCH") {
+        return Promise.reject(new ApiError(429, "Trop de requêtes, réessayez dans une minute"))
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.findAll(".avatar-pick")[1].trigger("click")
+    await flushPromises()
+    expect(wrapper.get(".error").text()).toContain("Trop de requêtes")
+    /* Le profil ne disparaît pas : l'erreur est celle d'une action, pas du chargement. */
+    expect(wrapper.find(".profile-hero").exists()).toBe(true)
+    expect(wrapper.get("#profile-handle").element.value).toBe("testeur")
+    wrapper.unmount()
+  })
+
+  it("une bascule de confidentialité ne réécrit pas la bio en cours de saisie", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.get("#profile-bio").setValue("Main Fureur, Réunion")
+    await wrapper.get("#profile-handle").setValue("nyra")
+
+    await wrapper.findAll(".privacy-list input")[0].trigger("change")
+    await flushPromises()
+    expect(wrapper.get(".profile-privacy .success").text()).toBe("Réglage enregistré")
+    /* La réponse du PATCH rafraîchit le profil, jamais les champs déjà saisis. */
+    expect(wrapper.get("#profile-bio").element.value).toBe("Main Fureur, Réunion")
+    expect(wrapper.get("#profile-handle").element.value).toBe("nyra")
+    wrapper.unmount()
+  })
+
+  it("le sélecteur de portrait est un groupe nommé pour les lecteurs d'écran", async () => {
+    const { wrapper } = await mountView()
+    const scroller = wrapper.get(".avatar-scroller")
+    expect(scroller.attributes("role")).toBe("group")
+    expect(scroller.attributes("aria-label")).toBe("Choisir un portrait")
     wrapper.unmount()
   })
 

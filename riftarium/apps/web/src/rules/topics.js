@@ -24,7 +24,7 @@ export const TOPICS = [
     category: "modes",
     summary: "Le format de référence : deux joueurs, une manche sèche, premier à 8 points.",
     details: [
-      "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. Deux champs de bataille en jeu, victoire à **8 points**. C'est le format des parties rapides ; en tournoi, on joue le plus souvent en deux manches gagnantes (voir *Le match en tournoi*).",
+      "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. Deux champs de bataille en jeu, victoire à **8 points**. C'est le format des parties rapides ; en tournoi, on joue le plus souvent en deux manches gagnantes (voir **Le match en tournoi**).",
       "**Ce que chacun apporte.** Un deck complet : une **légende de champion** (elle fixe l'identité de domaine — toutes vos cartes doivent y correspondre), un **deck principal d'au moins 40 cartes** dont votre **champion élu** (même tag de champion que la légende, maximum 3 exemplaires d'un même nom, maximum 3 cartes signature), un **deck de runes de 12 runes**, et **3 champs de bataille** de noms différents.",
       "**Mise en place, pas à pas.** 1 — Chaque joueur pose sa légende dans sa zone de légende et son champion élu dans sa zone de champion. 2 — Chaque joueur tire **au hasard un** de ses trois champs de bataille ; les deux autres sont écartés pour la partie. Les deux champs retenus sont placés côte à côte au centre. 3 — Chacun mélange son deck principal et son deck de runes, séparément. 4 — Le **premier joueur est tiré au sort** (pile ou face, dé… n'importe quelle méthode acceptée). 5 — Tout le monde pioche **4 cartes**.",
       "**Le mulligan.** Dans l'ordre des tours, chaque joueur peut mettre de côté **jusqu'à 2 cartes** de sa main, piocher autant de nouvelles cartes, puis **recycler** les cartes mises de côté (elles retournent sous le deck, mélangées). Une seule fois par joueur.",
@@ -267,7 +267,7 @@ export const TOPICS = [
       "Deux manches gagnantes, un joueur désigné qui choisit, une ronde de 60 minutes et une fin de match au temps : ce qui change en compétition.",
     details: [
       "En tournoi, une **rencontre** oppose deux joueurs en **deux manches gagnantes** (RT 404.2). Chaque manche est un duel ordinaire — mêmes tours, même course à **8 points**, même règle du dernier point — mais tout ce qui l'entoure change : qui commence, la réserve, le temps, la fin du match. Le compteur de l'application Riftarium a un mode **Tournoi** qui applique ce qui suit.",
-      "**Ce que chacun apporte.** Un deck principal d'**exactement 40 cartes** (et non « au moins 40 » comme en partie libre), champion élu compris ; une légende ; **12 runes** ; **3 champs de bataille** de noms différents (RT 402.1). Aux événements de niveau élevé, la liste est **enregistrée** avant la première ronde et ne bouge plus (RT 401). Voir *Deck et formats de compétition*.",
+      "**Ce que chacun apporte.** Un deck principal d'**exactement 40 cartes** (et non « au moins 40 » comme en partie libre), champion élu compris ; une légende ; **12 runes** ; **3 champs de bataille** de noms différents (RT 402.1). Aux événements de niveau élevé, la liste est **enregistrée** avant la première ronde et ne bouge plus (RT 401). Voir **Deck et formats de compétition**.",
       "**Qui commence.** Au début de la première manche, une méthode aléatoire acceptée par les deux joueurs (pile ou face, dé…) désigne un **joueur désigné** ; ce joueur **choisit** de jouer en premier ou en second (RT 407.1). Le tirage ne fait donc pas commencer : il donne le choix. Pour les manches suivantes, c'est le **perdant de la manche précédente** qui choisit (RT 407.4). Après une égalité, le premier joueur reste le même.",
       "**Mise en place.** Comme en duel (règle 110), avec deux ajouts : chaque joueur **présente** son deck principal, son deck de runes et sa réserve à l'adversaire, qui a le droit de les **mélanger** (RT 406.1.d et e). En première manche, la mise en place peut se faire avant le lancement du chronomètre, mais la partie elle-même ne commence qu'une fois la ronde lancée (RT 406.1.f).",
       "**Entre deux manches.** Si la compétition autorise une **réserve**, les cartes s'échangent **une pour une** avec le deck principal, champion élu compris ; **jamais avant la première manche** (RT 403.4 et 403.5). Légende, runes et champs de bataille ne changent pas. Chaque joueur présente à nouveau le champ de bataille de son choix, comme en mode Match.",
@@ -362,7 +362,7 @@ export const TOPICS = [
       "**Les notes.** Autorisées pendant le match, consultables pendant les manches du même match (RT 416.1). Fiches vierges au début de chaque match, visibles par l'adversaire et les officiels (RT 416.2). Pas de notes extérieures à la partie en cours, y compris celles des matchs précédents (RT 416.4).",
       "**Appareils électroniques.** Autorisés pendant la compétition, **interdits pendant les matchs** (RT 417.1), sauf à petit niveau où ils peuvent remplacer les notes papier et servir de compteur (RT 417.2, 415.3.a). L'arbitre principal peut restreindre ou élargir (RT 417.3).",
       "**Mélange et présentation.** Chaque joueur mélange ses deux decks, puis les **présente** à l'adversaire, qui peut les mélanger à son tour (RT 406.1.c à e) ; au niveau professionnel, ce mélange par l'adversaire est obligatoire. On peut demander à un arbitre de mélanger à sa place.",
-      "**Communication.** Les joueurs communiquent honnêtement sur l'état de la partie et répondent avec honnêteté à toute question sur une information publique — scores, runes, tour en cours, chaîne d'effets (RT 501, 502) ; personne n'est tenu d'aider l'adversaire à *déduire* quoi que ce soit. Les **raccourcis** (sauter une étape technique d'un commun accord) sont permis s'ils sont annoncés ; chacun peut interrompre un raccourci pour agir (RT 503). Une **boucle** se déclare avec son nombre d'itérations ; sans personne pour la rompre ni la maintenir, la partie est nulle (RT 505).",
+      "**Communication.** Les joueurs communiquent honnêtement sur l'état de la partie et répondent avec honnêteté à toute question sur une information publique — scores, runes, tour en cours, chaîne d'effets (RT 501, 502) ; personne n'est tenu d'aider l'adversaire à déduire quoi que ce soit. Les **raccourcis** (sauter une étape technique d'un commun accord) sont permis s'ils sont annoncés ; chacun peut interrompre un raccourci pour agir (RT 503). Une **boucle** se déclare avec son nombre d'itérations ; sans personne pour la rompre ni la maintenir, la partie est nulle (RT 505).",
       "**Arbitre et appels.** À tout moment pendant un match, un joueur peut mettre la partie en pause pour appeler un arbitre de salle ; au-delà d'une minute d'intervention, une prolongation est accordée (RT 412). Une décision peut être portée en **appel** auprès de l'arbitre principal, une fois la décision annoncée ; celle de l'arbitre principal est définitive (RT 413).",
       "**Sanctions.** Les erreurs sont présumées involontaires (RT 701.1.a). L'**avertissement** garde trace d'une erreur ; répété, il devient une **perte de partie** ; la **perte de match** et la **disqualification** répondent aux fautes qui compromettent le match ou l'intégrité de la compétition (RT 701.2). Un oubli de point ou de pioche se corrige sans sanction tant que le cycle de manche n'est pas fini (RT 702.3, 702.4). Le jeu lent est sanctionné même dans les manches sans limite de temps (RT 604.2.a).",
       "**Abandon et forfait.** On peut quitter la compétition à tout moment en prévenant le marqueur avant l'appariement suivant ; ne pas se présenter à un match vaut élimination (RT 414). Un joueur qui refuse de jouer est déclaré forfait (RT 410.5)."
@@ -840,7 +840,7 @@ export const TOPICS = [
         a: "Pendant la confrontation, la focalisation circule entre tous les joueurs dans l'ordre du tour : il peut jouer ses Actions/Réactions, mais ses unités ne peuvent pas rejoindre le champ."
       }
     ],
-    sections: ["462", "447"]
+    sections: ["459", "445"]
   },
   /* ================= Champs de bataille & points ================= */
   {
@@ -1094,7 +1094,7 @@ export const TOPICS = [
         a: "Seulement si elle est entrée préparée ([Accélération]) ou directement sur le champ ([Embuscade]). Sinon, elle attend votre prochain éveil."
       }
     ],
-    sections: ["140", "144", "445"]
+    sections: ["140", "445"]
   },
   {
     slug: "equipements-et-objets",
@@ -1161,7 +1161,7 @@ export const TOPICS = [
         a: "Illégal : la limite de 3 par nom inclut le champion élu — 2 en deck + l'élu au maximum."
       }
     ],
-    sections: ["108", "173", "376"]
+    sections: ["108", "376"]
   },
   {
     slug: "regle-d-or",
@@ -1443,7 +1443,7 @@ export const TOPICS = [
         a: "Non : chaque déplacement épuise l'unité. Un seul déplacement standard par éveil, sauf effet qui la re-prépare."
       }
     ],
-    sections: ["810", "144"],
+    sections: ["810", "140"],
     examples: [
       { id: "ogn-019-298", name: "Raging Soul", img: img("037647d0decc94ff4a5d53b11cf36afe9d849533-744x1039.png") }
     ]

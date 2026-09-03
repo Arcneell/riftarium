@@ -82,6 +82,20 @@ describe("ForgotPasswordView", () => {
     expect(wrapper.find("form").exists()).toBe(true)
   })
 
+  it("signale un vrai échec quand la requête n'aboutit pas (réseau ou 5xx)", async () => {
+    for (const failure of [new Error("Failed to fetch"), new ApiError(503, "Service Unavailable")]) {
+      api.mockRejectedValue(failure)
+      const { wrapper } = await mountView()
+      await wrapper.get("#forgot-email").setValue("nyra@example.org")
+      await wrapper.get("form").trigger("submit")
+      await flushPromises()
+      expect(wrapper.get(".error").text()).toContain("n'a pas pu être envoyée")
+      expect(wrapper.text()).not.toContain(NEUTRAL)
+      expect(wrapper.find("form").exists()).toBe(true)
+      wrapper.unmount()
+    }
+  })
+
   it("désactive le bouton et ignore les doubles soumissions pendant la requête", async () => {
     let resolveSend
     api.mockImplementation(() => new Promise((resolve) => (resolveSend = resolve)))

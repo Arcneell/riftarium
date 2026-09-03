@@ -26,7 +26,11 @@ const router = useRouter()
 const me = ref(null)
 const avatars = ref([])
 const loading = ref(true)
-const error = ref("")
+/* `loadError` = le profil n'a pas pu être lu, il n'y a rien à afficher ;
+   `actionError` = une action a échoué alors que la page est là (portrait, export).
+   Les mélanger effaçait toute la page sur un simple 429. */
+const loadError = ref("")
+const actionError = ref("")
 const exporting = ref(false)
 
 const identity = reactive({ handle: "", bio: "", password: "", saving: false, error: "", ok: "" })
@@ -49,11 +53,16 @@ const memberSince = computed(() => formatMemberSince(me.value?.created_at))
 const unlockedCount = computed(() => achievements.value.reduce((sum, group) => sum + group.unlocked, 0))
 const achievementCount = computed(() => achievements.value.reduce((sum, group) => sum + group.total, 0))
 
-function applyProfile(profile) {
+/* `resetForms` n'est vrai qu'au premier chargement : les réponses des actions
+   (bascule de confidentialité, choix de portrait) rafraîchissent le profil affiché
+   sans écraser un pseudo, une bio ou une adresse en cours de saisie. */
+function applyProfile(profile, { resetForms = false } = {}) {
   me.value = profile
-  identity.handle = profile.handle
-  identity.bio = profile.bio || ""
-  account.email = profile.email
+  if (resetForms) {
+    identity.handle = profile.handle
+    identity.bio = profile.bio || ""
+    account.email = profile.email
+  }
   setSession(session.token, profile.handle, profile.avatar_url)
   /* Tient le bandeau global (App.vue) au courant du statut de vérification. */
   if ("email_verified" in profile) session.emailVerified = profile.email_verified
@@ -65,13 +74,13 @@ function applyProfile(profile) {
 
 async function load() {
   loading.value = true
-  error.value = ""
+  loadError.value = ""
   try {
     const [profile, faces] = await Promise.all([api("/api/auth/me"), api("/api/auth/avatars")])
-    applyProfile(profile)
+    applyProfile(profile, { resetForms: true })
     avatars.value = faces
   } catch (e) {
-    error.value = e.message
+    loadError.value = e.message
   } finally {
     loading.value = false
   }
@@ -114,11 +123,11 @@ async function togglePrivacy(key) {
 async function pickAvatar(cardId) {
   if (avatarBusy.value) return
   avatarBusy.value = true
-  error.value = ""
+  actionError.value = ""
   try {
     applyProfile(await api("/api/auth/me", { method: "PATCH", body: { avatar_card_id: cardId } }))
   } catch (e) {
-    error.value = e.message
+    actionError.value = e.message
   } finally {
     avatarBusy.value = false
   }
@@ -135,7 +144,9 @@ async function saveIdentity() {
     body.current_password = identity.password
   }
   try {
-    applyProfile(await api("/api/auth/me", { method: "PATCH", body }))
+    /* Envoi volontaire du formulaire : on le recale sur ce que le serveur a retenu
+       (pseudo normalisé, bio tronquée…). */
+    applyProfile(await api("/api/auth/me", { method: "PATCH", body }), { resetForms: true })
     identity.password = ""
     identity.ok = "Profil mis à jour"
   } catch (e) {
@@ -155,7 +166,8 @@ async function saveEmail() {
       await api("/api/auth/me", {
         method: "PATCH",
         body: { email: account.email, current_password: account.password }
-      })
+      }),
+      { resetForms: true }
     )
     account.password = ""
     account.ok = "Email mis à jour — un e-mail de vérification a été envoyé à la nouvelle adresse."
@@ -216,7 +228,7 @@ async function savePassword() {
 async function downloadExport() {
   if (exporting.value) return
   exporting.value = true
-  error.value = ""
+  actionError.value = ""
   try {
     const data = await api("/api/auth/export")
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
@@ -224,10 +236,17 @@ async function downloadExport() {
     const link = document.createElement("a")
     link.href = url
     link.download = `riftarium-${data.handle}.json`
+    /* Firefox n'honore le clic que sur un lien réellement dans le document, et
+       révoquer l'URL tout de suite annule parfois le téléchargement : on nettoie
+       au tour de boucle suivant. */
+    document.body.append(link)
     link.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => {
+      link.remove()
+      URL.revokeObjectURL(url)
+    }, 0)
   } catch (e) {
-    error.value = e.message
+    actionError.value = e.message
   } finally {
     exporting.value = false
   }
@@ -269,10 +288,13 @@ onMounted(() => {
 
   <section>
     <div class="wrap profile-page">
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="loadError" class="error">{{ loadError }}</p>
       <p v-else-if="loading" class="muted">Chargement du profil…</p>
 
       <template v-else-if="me">
+        <!-- Échec d'une action : le message s'affiche au-dessus du profil, qui reste là. -->
+        <p v-if="actionError" class="error" role="alert">{{ actionError }}</p>
+
         <div class="profile-hero panel">
           <UserAvatar :src="me.avatar_url" :handle="me.handle" :size="92" />
           <div>
@@ -437,7 +459,13 @@ onMounted(() => {
           <div class="panel">
             <h3>Portrait de légende</h3>
             <p class="muted" style="margin-bottom: 16px">Choisissez un portrait parmi les légendes Riftbound.</p>
-            <div class="avatar-scroller" :class="{ busy: avatarBusy }" tabindex="0" aria-label="Choisir un portrait">
+            <div
+              class="avatar-scroller"
+              :class="{ busy: avatarBusy }"
+              tabindex="0"
+              role="group"
+              aria-label="Choisir un portrait"
+            >
               <div class="avatar-grid">
                 <button
                   type="button"

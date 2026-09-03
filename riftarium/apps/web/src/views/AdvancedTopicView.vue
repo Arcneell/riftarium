@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
@@ -7,6 +7,8 @@ import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
 import RuleText from "../components/RuleText.vue"
 import TopicDemo from "../components/TopicDemo.vue"
 import { keywordFamily } from "../cardText.js"
+import { cardThumb } from "../api.js"
+import { loadRulesDocuments } from "../rules/rulesStore.js"
 import { applySeo } from "../seo.js"
 
 const route = useRoute()
@@ -29,47 +31,68 @@ const related = computed(() =>
    `doc` choisit le document (règles du jeu par défaut, règles de tournoi pour la
    catégorie Tournoi) : les numéros de section se recoupent d'un document à l'autre. */
 const officialSections = ref([])
-let documents = null
+/* Le fichier n'a pas pu être lu (hors ligne, 404) : on le dit au lieu de laisser
+   croire que le sujet n'a pas de texte officiel. */
+const officialError = ref(false)
 const officialDoc = computed(() => topic.value?.doc ?? "core")
 
 async function loadOfficial() {
   officialSections.value = []
-  if (!topic.value) return
+  officialError.value = false
+  if (!topic.value?.sections?.length) return
   try {
-    if (!documents) {
-      const response = await fetch("/data/rules-fr.json")
-      documents = await response.json()
-    }
-    const sections = []
-    const document = documents[officialDoc.value]
-    for (const chapter of document?.chapters ?? []) {
+    /* Cache de module partagé avec le lecteur intégral : un seul téléchargement. */
+    const documents = await loadRulesDocuments()
+    const found = new Map()
+    for (const chapter of documents[officialDoc.value]?.chapters ?? []) {
       for (const section of chapter.sections) {
-        if (topic.value.sections?.includes(section.id)) sections.push(section)
+        if (topic.value.sections.includes(section.id)) found.set(section.id, section)
       }
     }
-    officialSections.value = topic.value.sections.map((id) => sections.find((s) => s.id === id)).filter(Boolean)
+    officialSections.value = topic.value.sections.map((id) => found.get(id)).filter(Boolean)
   } catch {
-    officialSections.value = []
+    officialError.value = true
   }
 }
 onMounted(loadOfficial)
-watch(() => route.params.slug, loadOfficial)
-watch(
-  topic,
-  (item) => {
-    applySeo({
-      title: item ? `${item.title} — Aide Riftbound` : "Aide Riftbound",
-      description: item?.summary,
-      path: route.path,
-      noindex: !item
-    })
-  },
-  { immediate: true }
-)
 
-/* Zoom sur les cartes d'exemple. */
+/* Un appel direct, pas un `watch` : App.vue clef la RouterView sur le chemin, donc
+   passer d'un sujet à l'autre remonte le composant — le sujet ne change jamais
+   sous les pieds de cette instance. */
+applySeo({
+  title: topic.value ? `${topic.value.title} — Aide Riftbound` : "Aide Riftbound",
+  description: topic.value?.summary,
+  path: route.path,
+  noindex: !topic.value
+})
+
+/* Zoom sur les cartes d'exemple : le redimensionnement CDN est celui d'api.js,
+   plutôt qu'un remplacement de largeur au petit bonheur dans l'URL. */
 const zoomCard = ref(null)
-const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w=1024")
+const zoomUrl = (card) => cardThumb(card.img, 1024)
+
+/* Échap ferme le zoom, et le panneau prend le focus à l'ouverture : sans cela le
+   `role="dialog"` promet un dialogue que le clavier ne sait ni atteindre ni quitter. */
+const zoomEl = ref(null)
+
+function onZoomKey(event) {
+  if (event.key === "Escape") zoomCard.value = null
+}
+
+watch(zoomCard, async (card) => {
+  if (typeof document === "undefined") return
+  if (card) {
+    document.addEventListener("keydown", onZoomKey)
+    await nextTick()
+    zoomEl.value?.focus()
+  } else {
+    document.removeEventListener("keydown", onZoomKey)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== "undefined") document.removeEventListener("keydown", onZoomKey)
+})
 </script>
 
 <template>
@@ -113,6 +136,11 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
               <p class="topic-a"><RuleText :text="item.a" /></p>
             </div>
           </template>
+
+          <p v-if="officialError" class="muted" style="font-size: 0.8rem">
+            Texte officiel indisponible pour l'instant. Il reste consultable dans le
+            <RouterLink to="/regles/officielles">lecteur des règles</RouterLink>.
+          </p>
 
           <template v-if="officialSections.length">
             <h3 class="topic-part">Le texte officiel, en intégralité</h3>
@@ -168,9 +196,12 @@ const zoomUrl = (card) => card.img.replace("w=360", "w=860").replace("w=560", "w
 
       <div
         v-if="zoomCard"
+        ref="zoomEl"
         class="tb-zoom topic-zoom"
         role="dialog"
+        aria-modal="true"
         aria-label="Carte en grand"
+        tabindex="-1"
         @click="zoomCard = null"
       >
         <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />

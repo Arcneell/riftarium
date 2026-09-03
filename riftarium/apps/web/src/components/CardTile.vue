@@ -39,7 +39,7 @@ const price = computed(() => formatEur(props.card.price_eur))
       </div>
       <div class="t-name">{{ card.name }}</div>
       <div class="t-meta">
-        <span>{{ card.riftbound_id.toUpperCase() }}</span>
+        <span>{{ (card.riftbound_id || "").toUpperCase() }}</span>
         <span :style="{ color: DOMAINS[card.domains?.[0]]?.text }">
           {{ card.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") }}
         </span>

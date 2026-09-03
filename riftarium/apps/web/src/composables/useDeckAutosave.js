@@ -1,5 +1,8 @@
 import { onBeforeUnmount, onMounted, ref, watch } from "vue"
 
+/* Durée d'affichage de la confirmation « Enregistré ». */
+const SAVED_FLASH_MS = 2000
+
 /* Sauvegarde automatique d'un deck en édition : comparaison d'instantanés sérialisés,
    débounce, save de rattrapage au démontage et garde beforeunload.
 
@@ -18,6 +21,17 @@ export function useDeckAutosave(deck, saveFn, options) {
   const sessionExpired = ref(false)
   let savedSnapshot = ""
   let saveTimer = null
+  let savedFlashTimer = null
+
+  /* « Enregistré » est une confirmation, pas un état : au bout de deux secondes
+     l'indicateur s'efface, sinon il reste affiché toute la session. */
+  function flashSaved() {
+    saveState.value = "saved"
+    clearTimeout(savedFlashTimer)
+    savedFlashTimer = setTimeout(() => {
+      if (saveState.value === "saved") saveState.value = ""
+    }, SAVED_FLASH_MS)
+  }
 
   /* Après un chargement : l'état courant devient la référence « déjà sauvegardé ». */
   function markSaved() {
@@ -31,8 +45,9 @@ export function useDeckAutosave(deck, saveFn, options) {
     try {
       await saveFn()
       savedSnapshot = sent
-      saveState.value = "saved"
+      flashSaved()
     } catch (e) {
+      clearTimeout(savedFlashTimer)
       saveState.value = "error"
       /* 401 : on ne bascule pas en lecture seule, le brouillon reste affiché et éditable localement. */
       if (e.status === 401) {
@@ -68,8 +83,12 @@ export function useDeckAutosave(deck, saveFn, options) {
   onMounted(() => window.addEventListener("beforeunload", onBeforeUnload))
 
   onBeforeUnmount(() => {
-    /* Save de rattrapage d'abord, tant que le deck est encore en mémoire. */
+    /* Save de rattrapage d'abord, tant que le deck est encore en mémoire.
+       Fire-and-forget assumé : le composant disparaît avant la fin de la requête,
+       personne ne peut plus lire `saveState` ni `error` — un échec est donc perdu
+       (le garde beforeunload couvre la fermeture d'onglet, pas la navigation SPA). */
     clearTimeout(saveTimer)
+    clearTimeout(savedFlashTimer)
     save()
     window.removeEventListener("beforeunload", onBeforeUnload)
   })

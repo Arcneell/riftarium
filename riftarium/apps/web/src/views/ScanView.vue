@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { onBeforeRouteLeave } from "vue-router"
 import { api, cardThumb, session, CONDITIONS, LANGS, RARITIES, TYPES } from "../api.js"
 import { PRICE_NOTE, cardmarketUrl, formatEur } from "../prices.js"
-import { codeImageFromVideoFrame, hashesFromVideoFrame, scanFile } from "../scanCapture.js"
+import { codeImageFromVideoFrame, hashesFromVideoFrame, releaseCanvasPool, scanFile } from "../scanCapture.js"
 import { cancelOcr, ensureOcrWorker, formatCode, readCodeText, terminateOcrWorker } from "../scanOcr.js"
 import { useCardScanner } from "../composables/useCardScanner.js"
 
@@ -74,20 +74,43 @@ function normalizedQty() {
 
 /* Rectangle de la carte dans les coordonnées intrinsèques de la vidéo. Le flux couvre le
    cadre en object-fit: cover : on remonte du rectangle affiché vers la source pour que le
-   balayage porte sur la zone que l'utilisateur voit dans la silhouette. */
+   balayage porte sur la zone que l'utilisateur voit dans la silhouette.
+
+   Mémorisé : la boucle le demande deux fois par image (empreintes puis code), soit quatre
+   getBoundingClientRect qui forcent chacun un recalcul de mise en page — 16 par seconde
+   pour une géométrie qui, elle, ne bouge pas. La vidéo et la silhouette sont dimensionnées
+   par le CSS : seul un changement de viewport les déplace, d'où l'invalidation sur resize /
+   orientationchange (et au démarrage de la caméra, où le <video> vient d'apparaître). */
+let cardRect = null
+function invalidateCardRect() {
+  cardRect = null
+}
+/* Le <video> peut changer de taille sans événement resize de la fenêtre (barre
+   d'adresse mobile qui se rétracte, panneau de résultat qui pousse la scène) :
+   un ResizeObserver sur l'élément couvre ces cas. Absent de jsdom, d'où le garde. */
+let videoObserver = null
+function observeVideo() {
+  if (typeof ResizeObserver === "undefined" || !video.value || videoObserver) return
+  videoObserver = new ResizeObserver(invalidateCardRect)
+  videoObserver.observe(video.value)
+}
 function videoCardRect() {
+  if (cardRect) return cardRect
   const element = video.value
   if (!element?.videoWidth || !frame.value) return null
   const videoRect = element.getBoundingClientRect()
   const frameRect = frame.value.getBoundingClientRect()
   if (!videoRect.width || !frameRect.width) return null
   const scale = Math.max(element.videoWidth / videoRect.width, element.videoHeight / videoRect.height)
-  return {
+  /* Rien n'est mémorisé tant que la vidéo n'a pas ses dimensions (premières images) :
+     le rectangle serait faux et resterait figé. */
+  cardRect = {
     sx: (element.videoWidth - videoRect.width * scale) / 2 + (frameRect.left - videoRect.left) * scale,
     sy: (element.videoHeight - videoRect.height * scale) / 2 + (frameRect.top - videoRect.top) * scale,
     sw: frameRect.width * scale,
     sh: frameRect.height * scale
   }
+  return cardRect
 }
 
 const scanner = useCardScanner({
@@ -111,6 +134,9 @@ const scanner = useCardScanner({
   },
   /* readCodeText renvoie null si un OCR est déjà en cours : la boucle saute son tour. */
   readText: (image) => readCodeText(image),
+  /* Une boucle continue n'a de sens que devant un flux caméra : sur desktop (ou après un
+     import de photo, caméra coupée), la relancer la ferait tourner à vide. */
+  canLoop: () => camera.status === "on",
   vibrate: (ms) => navigator.vibrate?.(ms)
 })
 /* Déstructuré pour que le template lise `result`, `autoAdd`… directement (les refs de premier
@@ -187,6 +213,8 @@ async function startCamera() {
       }
     })
     camera.status = "on"
+    invalidateCardRect() // le <video> et la silhouette réapparaissent : ancien rectangle périmé
+    observeVideo()
     await nextTick() // le <video> n'est rendu qu'une fois le flux obtenu
     if (!video.value) return stopCamera()
     video.value.srcObject = stream
@@ -196,6 +224,10 @@ async function startCamera() {
     torch.on = false
     scanner.start()
   } catch (error) {
+    /* L'échec peut arriver APRÈS getUserMedia (lecture refusée, <video> disparu) : sans
+       stopCamera, les pistes resteraient ouvertes — LED allumée, caméra confisquée aux
+       autres onglets — alors que l'écran affiche « caméra indisponible ». */
+    stopCamera()
     camera.status = "off"
     camera.error = explainCameraError(error)
   }
@@ -216,6 +248,7 @@ function stopCamera() {
   torch.available = false
   torch.on = false
   if (video.value) video.value.srcObject = null
+  invalidateCardRect()
   if (camera.status === "on" || camera.status === "starting") camera.status = "off"
 }
 
@@ -238,26 +271,45 @@ function onVisibilityChange() {
   else scanner.resume()
 }
 
+/* Faux dès que l'écran est quitté : les suites asynchrones (index, import de photo) le
+   relisent après chaque await plutôt que de reprendre la main sur un écran mort. */
+let alive = true
+
 /** Coupe boucle, caméra et worker OCR. Attendue : un terminate encore en vol pendant qu'on
     revient sur /scan relancerait un moteur qu'on est en train de tuer. */
 async function shutdown() {
+  alive = false
   scanner.stop()
   stopCamera()
   document.removeEventListener("visibilitychange", onVisibilityChange)
+  window.removeEventListener("resize", invalidateCardRect)
+  window.removeEventListener("orientationchange", invalidateCardRect)
+  videoObserver?.disconnect()
+  videoObserver = null
+  releaseCanvasPool()
   /* Un worker wasm oublié garde des dizaines de Mo et continue de tourner. */
   await terminateOcrWorker()
 }
 
-/* Coupe caméra, boucle et worker OCR à la navigation comme au démontage. */
+/* Coupe caméra, boucle et worker OCR à la navigation comme au démontage. Un rejet de
+   shutdown est avalé des deux côtés : dans un garde de navigation il ANNULERAIT le
+   changement de page, et au démontage il remonterait en rejet non géré. */
 onBeforeRouteLeave(async () => {
-  await shutdown()
+  try {
+    await shutdown()
+  } catch {
+    /* on quitte l'écran de toute façon */
+  }
 })
 onBeforeUnmount(() => {
-  shutdown()
+  shutdown().catch(() => {})
 })
 
-onMounted(async () => {
-  document.addEventListener("visibilitychange", onVisibilityChange)
+/** Charge l'index du scan, puis démarre ce qui est possible. Extraite pour être rejouable :
+    un index en échec (réseau coupé, API qui redémarre) condamnait l'écran sans recours. */
+async function loadIndex() {
+  index.loading = true
+  index.error = ""
   try {
     const data = await api(`/api/cards/hashes?v=${INDEX_VERSION}`)
     const items = data?.items || []
@@ -281,11 +333,18 @@ onMounted(async () => {
   } finally {
     index.loading = false
   }
-  if (!index.total) return
+  if (!alive || !index.total) return
   warmOcr()
   /* Sans empreinte, la caméra n'aurait que la voie code : trop peu fiable pour une boucle
      automatique. L'import de photo, lui, reste proposé. */
   if (index.hashed) startCamera()
+}
+
+onMounted(() => {
+  document.addEventListener("visibilitychange", onVisibilityChange)
+  window.addEventListener("resize", invalidateCardRect)
+  window.addEventListener("orientationchange", invalidateCardRect)
+  loadIndex()
 })
 
 async function onFileChange(event) {
@@ -301,8 +360,13 @@ async function onFileChange(event) {
   showAlternatives.value = false
   try {
     const { hexes, codeImage } = await scanFile(file)
+    /* Écran quitté pendant le décodage : scanOnce redemanderait un worker OCR juste après
+       le terminateOcrWorker de shutdown (des dizaines de Mo jamais libérés) et pourrait
+       POSTer un ajout automatique après la navigation. */
+    if (!alive) return
     await scanner.scanOnce({ hexes, codeImage })
   } catch {
+    if (!alive) return
     scanError.value = "Photo illisible. Réessayez avec la carte bien à plat et bien éclairée."
   } finally {
     importing.value = false
@@ -376,7 +440,12 @@ function onAutoAddChange() {
       <h1 class="sr-only">Scanner une carte</h1>
 
       <p v-if="index.loading" class="muted scan-status">Chargement de l'index des cartes…</p>
-      <p v-else-if="index.error" class="error">{{ index.error }}</p>
+      <div v-else-if="index.error" class="scan-recover">
+        <p class="error">{{ index.error }}</p>
+        <!-- Sans reprise, un index en échec condamnait la page : plus de caméra, plus
+             d'import, et rien qui indique qu'un rechargement pourrait suffire. -->
+        <button type="button" class="btn btn-ghost btn-sm" @click="loadIndex">Réessayer</button>
+      </div>
       <div v-else-if="!index.total" class="panel scan-empty">
         <p>Aucune carte à reconnaître pour l'instant. Le scan sera disponible dès que le catalogue sera synchronisé.</p>
       </div>

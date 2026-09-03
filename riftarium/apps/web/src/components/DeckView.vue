@@ -85,8 +85,10 @@ async function copyDeck() {
           />
         </div>
         <div class="deck-box-stats">
+          <!-- Même condition que l'éditeur : un deck public mais en modération
+               n'est pas encore likeable. -->
           <button
-            v-if="deck.is_public"
+            v-if="deck.is_public && deck.moderation_status === 'published'"
             type="button"
             class="deck-box-stat"
             :class="{ liked: deck.liked_by_me }"
@@ -95,7 +97,7 @@ async function copyDeck() {
             @click="$emit('like')"
           >
             <Icon name="heart" :size="16" />
-            {{ deck.likes }}
+            {{ deck.likes ?? 0 }}
           </button>
           <span class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
             <Icon name="eye" :size="16" />

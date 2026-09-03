@@ -32,14 +32,18 @@ function clampQty(value) {
   return Math.min(99, Math.max(1, qty))
 }
 
-async function setQty(item, value) {
+async function setQty(item, value, input = null) {
   const qty = clampQty(value)
+  /* Champ non contrôlé (`:value`) : quand le clamp retombe sur la quantité
+     courante, Vue ne rend rien et la saisie invalide resterait affichée. */
+  if (input) input.value = String(qty)
   if (busyId.value) return
   busyId.value = item.card.id
   error.value = ""
   try {
+    /* Pas d'affectation locale de `item.qty` : `refresh()` reprend la liste du
+       serveur juste après, elle serait écrasée aussitôt. */
     await api(`/api/wishlist/${item.card.id}`, { method: "PUT", body: { qty } })
-    item.qty = qty
     await refresh()
   } catch (e) {
     error.value = e.message
@@ -89,7 +93,7 @@ onMounted(refresh)
             <div class="wish-stepper" role="group" :aria-label="`Quantité souhaitée de ${item.card.name}`">
               <button
                 type="button"
-                :disabled="busyId === item.card.id || item.qty <= 1"
+                :disabled="Boolean(busyId) || item.qty <= 1"
                 aria-label="Un exemplaire de moins"
                 @click="setQty(item, item.qty - 1)"
               >
@@ -102,11 +106,12 @@ onMounted(refresh)
                 max="99"
                 :value="item.qty"
                 :aria-label="`Quantité souhaitée de ${item.card.name}`"
-                @change="setQty(item, $event.target.value)"
+                :disabled="Boolean(busyId)"
+                @change="setQty(item, $event.target.value, $event.target)"
               />
               <button
                 type="button"
-                :disabled="busyId === item.card.id || item.qty >= 99"
+                :disabled="Boolean(busyId) || item.qty >= 99"
                 aria-label="Un exemplaire de plus"
                 @click="setQty(item, item.qty + 1)"
               >
@@ -117,7 +122,7 @@ onMounted(refresh)
               type="button"
               class="wish-remove"
               :aria-label="`Retirer ${item.card.name} de ma liste de souhaits`"
-              :disabled="busyId === item.card.id"
+              :disabled="Boolean(busyId)"
               @click="removeItem(item)"
             >
               Retirer

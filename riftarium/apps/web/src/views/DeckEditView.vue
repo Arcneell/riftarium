@@ -191,7 +191,12 @@ const rarityOptions = computed(() => rarityFilterOptions())
 const energyOptions = computed(() => energyFilterOptions())
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
 
-watch(size, scheduleGallery)
+/* La taille de page suit la grille : on recharge, sauf si la page courante
+   n'existe plus après un agrandissement. */
+watch(size, () => {
+  if (gallery.page > pageCount.value) gallery.page = 1
+  else scheduleGallery()
+})
 
 /* La légende vient d'être choisie : on rouvre la galerie sur toutes les cartes. */
 watch(legendEntry, (next, previous) => {
@@ -228,18 +233,23 @@ let dragStart = null
 let dragMoved = false
 let suppressClick = false
 
+const likeBusy = ref(false)
+
 async function toggleLike() {
-  if (!deck.value) return
+  if (!deck.value || likeBusy.value) return
   if (!session.token) {
     router.push({ path: "/connexion", query: { suite: `/decks/${deck.value.id}` } })
     return
   }
+  likeBusy.value = true
   try {
     const payload = await api(`/api/decks/${deck.value.id}/like`, { method: "POST" })
     deck.value.likes = payload.likes
     deck.value.liked_by_me = payload.liked_by_me
   } catch (e) {
     error.value = e.message
+  } finally {
+    likeBusy.value = false
   }
 }
 
@@ -342,15 +352,24 @@ function closeMissing() {
 
 /* ---------- Cycle de vie ---------- */
 
+/* Jeton de séquence : deux chargements rapprochés (variantes de l'URL, retour
+   arrière) doivent laisser l'autosave travailler sur le dernier deck, pas sur
+   une réponse en retard. */
+let loadSeq = 0
+
 async function load() {
+  const mine = ++loadSeq
   try {
-    deck.value = await api(`/api/decks/${route.params.id}`)
+    const loaded = await api(`/api/decks/${route.params.id}`)
+    if (mine !== loadSeq) return
+    deck.value = loaded
     sessionExpired.value = false
     markSaved()
     if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
     if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
       try {
         const seen = await api(`/api/decks/${deck.value.id}/view`, { method: "POST" })
+        if (mine !== loadSeq) return
         deck.value.views = seen.views
       } catch {
         /* compteur de vues non bloquant */
@@ -368,7 +387,7 @@ async function load() {
       image: publicDeck ? pageUrl(`/api/decks/${deck.value.id}/og.png`) : undefined
     })
   } catch (e) {
-    error.value = e.message
+    if (mine === loadSeq) error.value = e.message
   }
 }
 
@@ -407,11 +426,14 @@ onBeforeUnmount(() => {
   pulseTimers.clear()
   window.removeEventListener("scroll", hidePreview)
   window.removeEventListener("pointermove", onDragMove)
+  /* `{ once: true }` ne retire l'écouteur qu'après un relâchement : un démontage
+     en cours de glissement le laissait accroché à window. */
+  window.removeEventListener("pointerup", onDragEnd)
 })
 </script>
 
 <template>
-  <p v-if="error && !deck" class="error wrap" style="padding-top: 40px">{{ error }}</p>
+  <!-- Deck absent : l'erreur est portée par la branche v-else en bas de ce fichier. -->
   <DeckView v-if="deck && !canEdit" :deck="deck" @like="toggleLike" />
   <section class="dbuilder-page" v-else-if="deck">
     <div class="dbuilder-bar">
@@ -446,6 +468,7 @@ onBeforeUnmount(() => {
           :class="{ liked: deck.liked_by_me }"
           :aria-pressed="deck.liked_by_me"
           :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
+          :disabled="likeBusy"
           @click="toggleLike"
         >
           <Icon name="heart" :size="16" />

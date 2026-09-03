@@ -45,68 +45,95 @@ const priceFoil = computed(() =>
   card.value?.price_foil_eur !== card.value?.price_eur ? formatEur(card.value?.price_foil_eur) : null
 )
 
+/* Jeton de séquence : deux navigations rapprochées (variantes, retour arrière)
+   lancent deux chargements ; seul le dernier a le droit d'écrire dans l'état. */
+let seq = 0
+
 watch(
   () => route.params.id,
   async (id) => {
     /* Transition sortante : l'id devient undefined, pas de requête parasite GET /api/cards/undefined. */
     if (!id) return
+    const mine = ++seq
     card.value = null
     error.value = ""
     saved.value = ""
+    entries.value = []
+    let loaded
     try {
-      card.value = await api(`/api/cards/${id}`)
-      entries.value = []
-      if (session.token) {
-        const owned = await api(`/api/collection/${card.value.id}`)
-        entries.value = owned.entries
-      }
+      loaded = await api(`/api/cards/${id}`)
+      if (mine !== seq) return
+      card.value = loaded
       applySeo({
-        title: `${card.value.name} — Carte Riftbound`,
-        description: `${card.value.name} (${card.value.set_id}) : ${TYPES[card.value.type] || card.value.type} Riftbound. Fiche, visuel officiel et variantes sur Riftarium.`,
+        title: `${loaded.name} — Carte Riftbound`,
+        description: `${loaded.name} (${loaded.set_id}) : ${TYPES[loaded.type] || loaded.type} Riftbound. Fiche, visuel officiel et variantes sur Riftarium.`,
         path: route.path,
-        image: card.value.image_url
+        image: loaded.image_url
       })
     } catch (e) {
-      error.value = e.message
+      if (mine === seq) error.value = e.message
+      return
+    }
+    /* Les lots possédés ne conditionnent pas la fiche : un échec ici ne doit ni
+       masquer la carte ni priver la page de son référencement. */
+    if (!session.token) return
+    try {
+      const owned = await api(`/api/collection/${loaded.id}`)
+      if (mine !== seq) return
+      entries.value = owned.entries
+    } catch {
+      /* collection indisponible : la fiche reste lisible, sans ses lots */
     }
   },
   { immediate: true }
 )
 
+/* Un lot se compte en entiers : `v-model.number` renvoie "" sur un champ vidé
+   (et un décimal si l'on tape « 1,5 »), ce qu'il ne faut pas envoyer à l'API. */
+function validQty(value, min = 0) {
+  return Number.isInteger(value) && value >= min && value <= 999
+}
+
 function applyState(state, message) {
+  if (!card.value) return
   entries.value = state.entries
   card.value.owned_qty = state.total_qty
   saved.value = message
 }
 
+/* Retourne vrai si la mutation est passée : l'appelant ne réinitialise sa saisie
+   qu'à cette condition (une erreur laissait auparavant le formulaire vidé). */
 async function mutate(request, message) {
-  if (busy.value) return
+  if (busy.value) return false
   busy.value = true
   saved.value = ""
   error.value = ""
   try {
     applyState(await request(), message)
+    return true
   } catch (e) {
     error.value = e.message
+    return false
   } finally {
     busy.value = false
   }
 }
 
-function addEntry() {
-  mutate(
+async function addEntry() {
+  if (!validQty(draft.qty, 1)) return
+  const done = await mutate(
     () =>
       api(`/api/collection/${card.value.id}/entries`, {
         method: "POST",
         body: { qty: draft.qty, condition: draft.condition, lang: draft.lang }
       }),
     "Lot ajouté."
-  ).then(() => {
-    draft.qty = 1
-  })
+  )
+  if (done) draft.qty = 1
 }
 
 function saveEntry(entry) {
+  if (!validQty(entry.qty)) return
   mutate(
     () =>
       api(`/api/collection/entries/${entry.id}`, {
@@ -155,7 +182,12 @@ function openVariant(id) {
   <section class="card-detail">
     <div class="wrap cards-wrap">
       <p class="card-back">
-        <a v-if="backLink.useBack" href="#" @click.prevent="router.back()">← {{ backLink.label }}</a>
+        <!-- Un retour d'historique est une action, pas une adresse : un bouton, pas
+             un `href="#"`. La remise à zéro globale de `button` lui laisse déjà
+             l'allure d'un lien, `.card-back-link` (main.css) en rend la couleur. -->
+        <button v-if="backLink.useBack" type="button" class="card-back-link" @click="router.back()">
+          ← {{ backLink.label }}
+        </button>
         <RouterLink v-else to="/cartes">← Cartothèque</RouterLink>
       </p>
       <p v-if="error" class="error">{{ error }}</p>
@@ -182,7 +214,7 @@ function openVariant(id) {
             </button>
           </div>
           <p class="card-credit">
-            {{ card.riftbound_id.toUpperCase() }}
+            {{ (card.riftbound_id || "").toUpperCase() }}
             <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
             · © Riot Games
           </p>
@@ -296,7 +328,9 @@ function openVariant(id) {
               <select v-model="entry.lang" aria-label="Langue du lot">
                 <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
               </select>
-              <button class="btn btn-gold btn-sm" :disabled="busy" @click="saveEntry(entry)">Enregistrer</button>
+              <button class="btn btn-gold btn-sm" :disabled="busy || !validQty(entry.qty)" @click="saveEntry(entry)">
+                Enregistrer
+              </button>
               <button class="btn btn-ghost btn-sm" :disabled="busy" @click="removeEntry(entry)">Retirer</button>
             </div>
             <p v-if="!entries.length" class="muted">Aucun exemplaire pour l'instant.</p>
@@ -316,7 +350,7 @@ function openVariant(id) {
               <select v-model="draft.lang" aria-label="Langue du nouveau lot">
                 <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
               </select>
-              <button class="btn btn-ghost btn-sm" :disabled="busy || !draft.qty" @click="addEntry">
+              <button class="btn btn-ghost btn-sm" :disabled="busy || !validQty(draft.qty, 1)" @click="addEntry">
                 + Ajouter un lot
               </button>
             </div>

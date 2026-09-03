@@ -59,6 +59,17 @@ describe("AdminGateView (/admin masqué)", () => {
     wrapper.unmount()
   })
 
+  it("statut admin encore inconnu : ni console, ni 404 (pas de clignotement)", async () => {
+    session.token = "1"
+    session.handle = "nyra"
+    session.isAdmin = null
+    const wrapper = await mountGate()
+    expect(wrapper.text()).not.toContain("404")
+    expect(wrapper.find(".admin-tabs").exists()).toBe(false)
+    expect(api).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it("un admin voit la console, chargée en différé", async () => {
     session.token = "1"
     session.handle = "admin"

@@ -3,14 +3,15 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import HomeView from "./HomeView.vue"
 import { api } from "../api.js"
+import { BANNERS } from "../banners.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, api: vi.fn() }
 })
 
-/* Les trois cartes Signature de l'éventail du héros. */
-const SIGNATURES = [
+/* Les trois cartes Overnumbered de l'éventail du héros. */
+const OVERNUMBERED = [
   "e5fe571a8f09c0a9e76345ec32b446480f54617c-1488x2078.png",
   "b4dfd543b1cfcdefba4568fe78146e0d6e46add7-1488x2078.png",
   "ae8e68af43400f61f7391c0a6ee339fd718a7540-1488x2078.png"
@@ -64,6 +65,9 @@ function mountHome() {
 describe("HomeView", () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    /* Les vues montées sans démontage laissent leur <link rel=preload> : le
+       <head> de jsdom est partagé par tous les tests du fichier. */
+    document.head.querySelectorAll('link[rel="preload"]').forEach((node) => node.remove())
   })
 
   beforeEach(() => {
@@ -92,9 +96,21 @@ describe("HomeView", () => {
     expect(wrapper.text()).not.toContain("Bêta fermée")
 
     const sources = wrapper.findAll(".fan-card img").map((img) => img.attributes("src"))
-    for (const hash of SIGNATURES) {
+    for (const hash of OVERNUMBERED) {
       expect(sources.some((src) => src.includes(hash) && src.includes("w=460"))).toBe(true)
     }
+  })
+
+  it("précharge la cinématique du héros au montage et retire la balise au démontage", async () => {
+    const wrapper = mountHome()
+    await flushPromises()
+
+    const link = document.head.querySelector('link[rel="preload"][as="image"]')
+    expect(link).not.toBeNull()
+    expect(link.getAttribute("href")).toBe(BANNERS.home)
+
+    wrapper.unmount()
+    expect(document.head.querySelector('link[rel="preload"][as="image"]')).toBeNull()
   })
 
   it("déroule les salles de la vitrine avec leurs liens et la Règle d'or", async () => {

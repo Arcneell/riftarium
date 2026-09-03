@@ -82,4 +82,13 @@ describe("zeroFillDays", () => {
   it("tolère une liste absente", () => {
     expect(zeroFillDays(undefined, ["2026-08-19"], { count: 0 })).toEqual([{ day: "2026-08-19", count: 0 }])
   })
+
+  it("niceScale ne lève pas au-delà de son plus grand palier", () => {
+    /* 2e10 dépasse le plus grand `top` de la boucle (1,5e9 × 10) : sans garde-fou,
+       `best` valait null et la lecture de `best.top` cassait le tableau de bord. */
+    const scale = niceScale(2e10)
+    expect(scale.top).toBe(2e10)
+    expect(scale.ticks[scale.ticks.length - 1]).toBe(2e10)
+    expect(scale.ticks[0]).toBe(0)
+  })
 })

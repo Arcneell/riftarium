@@ -97,7 +97,7 @@ export function domainFilterOptions() {
 }
 
 /* Coûts d'énergie proposés dans les filtres (« 7+ » regroupe tout le haut de courbe). */
-export const ENERGY_COSTS = ["0", "1", "2", "3", "4", "5", "6", "7+"]
+const ENERGY_COSTS = ["0", "1", "2", "3", "4", "5", "6", "7+"]
 
 export function energyFilterOptions() {
   return ENERGY_COSTS.map((cost) => ({
@@ -212,7 +212,7 @@ const VARIANT_ID_RE = /^([a-z0-9]+)-(\d+)([a-z*]?)-(\d+)$/i
 const VARIANT_SUFFIX_RE = /\s*\((?:alternate art|overnumbered|signature|starter|promo)\)\s*$/i
 const NAME_SEP_RE = /[\s,–—-]+/g
 
-export function variantFamily(riftboundId) {
+function variantFamily(riftboundId) {
   const ident = String(riftboundId || "")
     .trim()
     .toLowerCase()

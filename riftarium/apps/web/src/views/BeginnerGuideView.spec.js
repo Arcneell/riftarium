@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils"
+import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { describe, expect, it } from "vitest"
 import BeginnerGuideView from "./BeginnerGuideView.vue"
@@ -72,6 +72,44 @@ describe("BeginnerGuideView", () => {
     expect(wrapper.find(".guide-layout").classes()).toContain("full")
     await button.trigger("click")
     expect(wrapper.find(".guide-layout").classes()).not.toContain("full")
+  })
+
+  it("suit le retour arrière du navigateur sur ?etape=", async () => {
+    const { wrapper, router } = await mountGuide()
+    const dots = wrapper.findAll(".guide-dot")
+    await dots[3].trigger("click")
+    await flushPromises()
+    expect(router.currentRoute.value.query.etape).toBe("4")
+
+    /* Retour arrière : l'adresse redevient l'étape 1, le guide doit suivre. */
+    await router.replace({ query: {} })
+    await flushPromises()
+    expect(wrapper.text()).toContain(`Étape 1 / ${STEPS.length}`)
+
+    await router.replace({ query: { etape: "6" } })
+    await flushPromises()
+    expect(wrapper.text()).toContain(`Étape 6 / ${STEPS.length}`)
+  })
+
+  it("les pastilles d'étape ne se déclarent pas onglets", async () => {
+    const { wrapper } = await mountGuide()
+    expect(wrapper.find(".guide-dots").attributes("role")).toBeUndefined()
+    const dots = wrapper.findAll(".guide-dot")
+    expect(dots[0].attributes("role")).toBeUndefined()
+    expect(dots[0].attributes("aria-current")).toBe("true")
+    expect(dots[1].attributes("aria-current")).toBeUndefined()
+    expect(dots[0].attributes("aria-label")).toBe(STEPS[0].title)
+  })
+
+  it("Échap ferme le zoom d'une carte", async () => {
+    const { wrapper } = await mountGuide()
+    await wrapper.findAll(".guide-dot")[3].trigger("click")
+    await wrapper.findAll("button.tb-card")[0].trigger("click")
+    await flushPromises()
+    expect(wrapper.find(".tb-zoom").exists()).toBe(true)
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
+    await flushPromises()
+    expect(wrapper.find(".tb-zoom").exists()).toBe(false)
   })
 
   it("ouvre directement une étape via ?etape=", async () => {

@@ -14,7 +14,9 @@ const props = defineProps({
   readonly: { type: Boolean, default: false },
   /* Bilan des parties suivies de ce deck ({played, won, lost}), fourni par la vue
      qui liste les decks du propriétaire connecté. Jamais sur la communauté. */
-  record: { type: Object, default: null }
+  record: { type: Object, default: null },
+  /* Un like de ce deck est en cours : le bouton attend la réponse du serveur. */
+  likeBusy: { type: Boolean, default: false }
 })
 defineEmits(["like", "remove"])
 
@@ -44,7 +46,15 @@ function missingNote(deck) {
         <h3 class="deck-box-title">
           <RouterLink :to="to" :title="deck.name">{{ deck.name }}</RouterLink>
         </h3>
-        <span class="deck-legal" :class="legal.ok ? 'ok' : 'ko'" :title="legal.title">
+        <!-- role="img" : sans rôle, un aria-label posé sur un span générique est
+             ignoré par les lecteurs d'écran ; la raison remplace alors « Légal ». -->
+        <span
+          class="deck-legal"
+          :class="legal.ok ? 'ok' : 'ko'"
+          role="img"
+          :title="legal.title"
+          :aria-label="legal.title"
+        >
           <span aria-hidden="true">{{ legal.ok ? "✓" : "✕" }}</span>
           {{ legal.label }}
         </span>
@@ -112,18 +122,19 @@ function missingNote(deck) {
             :class="{ liked: deck.liked_by_me }"
             :aria-pressed="deck.liked_by_me"
             :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
+            :disabled="likeBusy"
             @click.stop="$emit('like', deck)"
           >
             <Icon name="heart" :size="16" />
-            {{ deck.likes }}
+            {{ deck.likes ?? 0 }}
           </button>
-          <span v-else class="deck-box-stat" :title="`${deck.likes} j'aime`">
+          <span v-else class="deck-box-stat" :title="`${deck.likes ?? 0} j'aime`">
             <Icon name="heart" :size="16" />
-            {{ deck.likes }}
+            {{ deck.likes ?? 0 }}
           </span>
-          <span v-if="community" class="deck-box-stat" :title="`${deck.views} vue(s)`">
+          <span v-if="community" class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
             <Icon name="eye" :size="16" />
-            {{ deck.views }}
+            {{ deck.views ?? 0 }}
           </span>
         </span>
         <div class="deck-box-buttons">

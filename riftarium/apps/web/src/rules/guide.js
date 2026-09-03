@@ -361,7 +361,6 @@ export const STEPS = [
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.hand2, hand: true },
         { key: "h5", card: CARDS.spell, spot: SPOTS.hand3, hand: true },
         { key: "rune0", card: CARDS.furyRune, spot: { x: 9.5, y: 76.5, r: -6 }, ghost: true },
-        ...runes([{ k: "runePad", d: "F", t: true }]).slice(1),
         { key: "rune1", card: CARDS.chaosRune, spot: SPOTS.runeA, tapped: true }
       ]),
       arrow: { from: { x: 22, y: 79 }, to: { x: 12, y: 78 } },
@@ -426,7 +425,7 @@ export const STEPS = [
   {
     key: "tour2-adverse",
     title: "Son tour 2 : il prend son champ de bataille",
-    ref: "144",
+    ref: "140",
     terms: ["déplacement standard", "conquête"],
     text: [
       "**Son éveil prépare Sunlit Guardian** — voilà pourquoi il ne pouvait pas bouger avant : une unité arrive épuisée et attend l'éveil suivant de son propriétaire.",
@@ -450,14 +449,13 @@ export const STEPS = [
       arrow: { from: { x: 45, y: 26 }, to: { x: 40, y: 32 } },
       control: { bfFoe: "foe" },
       foeHand: 3,
-      score: { you: 0, foe: 1 },
-      scorePulse: true
+      score: { you: 0, foe: 1 }
     }
   },
   {
     key: "deplacement",
     title: "Votre tour 3 : à l'assaut",
-    ref: "144",
+    ref: "140",
     terms: ["déplacement standard", "contesté"],
     text: [
       "Éveil (tout se redresse), canalisation (**5 runes**), pioche. Au passage, votre **légende** travaille pour vous : Jinx - Loose Cannon fait piocher 1 carte au début de votre phase de départ si votre main compte 1 carte ou moins — un filet de sécurité permanent.",

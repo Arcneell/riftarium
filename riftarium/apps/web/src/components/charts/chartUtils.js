@@ -3,6 +3,8 @@ import { onBeforeUnmount, onMounted, ref } from "vue"
 
 /* Échelle Y « propre » : 3 ou 4 ticks arrondis à des valeurs rondes (0/5/10, 0/50/100…). */
 export function niceScale(maxValue) {
+  /* Valeur absente ou NaN (charge utile partielle) : échelle 0 → 1, rendu intact. */
+  if (!Number.isFinite(maxValue)) return { top: 1, ticks: [0, 1] }
   const max = Math.max(1, Math.ceil(maxValue))
   let best = null
   for (let power = 0; power <= 9; power++) {
@@ -14,6 +16,10 @@ export function niceScale(maxValue) {
       }
     }
   }
+  /* La boucle couvre jusqu'à 5 milliards : un `max` plus grand ne trouverait
+     rien et `best.top` lèverait. On retombe alors sur une échelle
+     0 → max en deux paliers, plutôt que de casser le rendu du tableau de bord. */
+  if (!best) return { top: max, ticks: [0, max / 2, max] }
   return { top: best.top, ticks: Array.from({ length: best.divisions + 1 }, (_, i) => i * best.step) }
 }
 

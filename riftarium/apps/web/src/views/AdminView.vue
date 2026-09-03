@@ -47,6 +47,11 @@ const SECTION_LABELS = {
   collection: "Collection",
   scan: "Scan",
   profil: "Profil",
+  "profil-public": "Profil public",
+  amis: "Amis",
+  historique: "Historique",
+  statistiques: "Statistiques",
+  salon: "Salon de jeu",
   autre: "Autre"
 }
 
@@ -203,8 +208,10 @@ const decksPageCount = computed(() => Math.max(1, Math.ceil(decks.total / decks.
 function setDeckStatus(status) {
   if (decks.status === status) return
   decks.status = status
+  /* La remise à la page 1 réveille le watch : on passe par le même minuteur que
+     lui (`scheduleDecks`) pour ne déclencher qu'un seul chargement, pas deux. */
   decks.page = 1
-  loadDecks()
+  scheduleDecks()
 }
 
 watch(
@@ -227,7 +234,10 @@ watch(
   { immediate: true }
 )
 
-/* --- Actions par ligne : un seul busy à la fois, erreur affichée près de la ligne --- */
+/* --- Actions par ligne : un seul busy à la fois, erreur affichée près de la ligne.
+   Pendant une action, TOUTES les lignes sont désactivées (et pas seulement la
+   ligne en cours) : la liste est rechargée après coup, un second clic ailleurs
+   agirait sur des données en train de changer. --- */
 const busyKey = ref("")
 const rowError = reactive({ key: "", message: "" })
 
@@ -415,16 +425,16 @@ onBeforeUnmount(() => {
           <h3 class="admin-heading">Collection &amp; cartothèque</h3>
           <div class="stat-row">
             <div class="stat">
-              Entrées de collection<b>{{ stats.collection.entries_total }}</b>
+              Entrées de collection<b>{{ stats.collection?.entries_total ?? 0 }}</b>
             </div>
             <div class="stat">
-              Exemplaires<b>{{ stats.collection.cards_total }}</b>
+              Exemplaires<b>{{ stats.collection?.cards_total ?? 0 }}</b>
             </div>
             <div class="stat">
-              Cartes référencées<b>{{ stats.cards.total }}</b>
+              Cartes référencées<b>{{ stats.cards?.total ?? 0 }}</b>
             </div>
             <div class="stat">
-              Sets<b>{{ stats.cards.sets }}</b>
+              Sets<b>{{ stats.cards?.sets ?? 0 }}</b>
             </div>
           </div>
 
@@ -506,17 +516,17 @@ onBeforeUnmount(() => {
             <div class="panel">
               <h3>Dernières inscriptions</h3>
               <ul class="admin-recent">
-                <li v-for="signup in stats.recent.signups" :key="signup.handle + signup.created_at">
+                <li v-for="signup in stats.recent?.signups ?? []" :key="signup.handle + signup.created_at">
                   <b>{{ signup.handle }}</b>
                   <span class="muted mono">{{ formatDate(signup.created_at) }}</span>
                 </li>
-                <li v-if="!stats.recent.signups.length" class="muted">Aucune inscription récente.</li>
+                <li v-if="!stats.recent?.signups?.length" class="muted">Aucune inscription récente.</li>
               </ul>
             </div>
             <div class="panel">
               <h3>Derniers decks</h3>
               <ul class="admin-recent">
-                <li v-for="deck in stats.recent.decks" :key="deck.id">
+                <li v-for="deck in stats.recent?.decks ?? []" :key="deck.id">
                   <RouterLink :to="`/decks/${deck.id}`">{{ deck.name }}</RouterLink>
                   <span class="muted">par {{ deck.owner }}</span>
                   <span class="admin-badge" :class="MODERATION[deck.moderation_status]?.tone">
@@ -524,7 +534,7 @@ onBeforeUnmount(() => {
                   </span>
                   <span class="muted mono">{{ formatDate(deck.created_at) }}</span>
                 </li>
-                <li v-if="!stats.recent.decks.length" class="muted">Aucun deck récent.</li>
+                <li v-if="!stats.recent?.decks?.length" class="muted">Aucun deck récent.</li>
               </ul>
             </div>
           </div>
@@ -573,7 +583,7 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="btn btn-ghost btn-sm"
-                :disabled="busyKey === `user:${user.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="openSuspend(user)"
               >
                 Suspendre
@@ -582,7 +592,7 @@ onBeforeUnmount(() => {
                 v-if="user.suspended_until"
                 type="button"
                 class="btn btn-ghost btn-sm"
-                :disabled="busyKey === `user:${user.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="liftSuspension(user)"
               >
                 Lever la suspension
@@ -590,7 +600,7 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="btn btn-ghost btn-sm admin-danger"
-                :disabled="busyKey === `user:${user.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="openRemoval(user)"
               >
                 Supprimer
@@ -666,7 +676,7 @@ onBeforeUnmount(() => {
                 v-if="deck.moderation_status !== 'published' && deck.moderation_status !== 'approved'"
                 type="button"
                 class="btn btn-ghost btn-sm"
-                :disabled="busyKey === `deck:${deck.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="moderateDeck(deck, 'approved')"
               >
                 Approuver
@@ -675,7 +685,7 @@ onBeforeUnmount(() => {
                 v-if="deck.moderation_status !== 'rejected'"
                 type="button"
                 class="btn btn-ghost btn-sm"
-                :disabled="busyKey === `deck:${deck.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="moderateDeck(deck, 'rejected')"
               >
                 Rejeter
@@ -683,7 +693,7 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="btn btn-ghost btn-sm admin-danger"
-                :disabled="busyKey === `deck:${deck.id}`"
+                :disabled="Boolean(busyKey)"
                 @click="openDeckRemoval(deck)"
               >
                 Supprimer

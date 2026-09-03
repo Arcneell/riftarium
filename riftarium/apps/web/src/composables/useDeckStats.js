@@ -10,7 +10,11 @@ export function useDeckStats(cards) {
   /* Courbe d'énergie : 8 paniers, les coûts ≥ 7 regroupés dans « 7+ ». */
   const curve = computed(() => {
     const buckets = Array(8).fill(0)
-    for (const entry of mainEntries.value) buckets[Math.min(entry.card.energy ?? 0, 7)] += entry.qty
+    /* Borné des deux côtés : une énergie négative ou aberrante dans les données
+       source sortirait du tableau (buckets[-1] devient une propriété fantôme). */
+    for (const entry of mainEntries.value) {
+      buckets[Math.min(Math.max(entry.card.energy ?? 0, 0), 7)] += entry.qty
+    }
     const max = Math.max(...buckets, 1)
     return buckets.map((count, cost) => ({ cost, count, height: (count / max) * 100 }))
   })

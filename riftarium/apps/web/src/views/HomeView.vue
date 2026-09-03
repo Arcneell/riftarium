@@ -9,8 +9,9 @@ import CardRiver from "../components/CardRiver.vue"
 const cardCount = ref(null)
 const setCount = ref(null)
 
-/* Trois cartes « Signature » (signées par leur illustrateur) :
-   Ahri - Nine-Tailed Fox, Lee Sin - Blind Monk, Kai'Sa - Daughter of the Void.
+/* Trois cartes « Overnumbered » (numéro au-delà de la taille du set), sans
+   signature ajoutée : Ahri - Nine-Tailed Fox, Lee Sin - Blind Monk,
+   Kai'Sa - Daughter of the Void.
    --halo : chaque carte émet la lumière de son illustration. */
 const FAN = [
   {
@@ -28,17 +29,6 @@ const FAN = [
 ]
 const cardImg = (hash) =>
   `https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/${hash}?auto=format&fit=max&w=460&accountingTag=RB`
-
-/* Précharge la cinématique du héros dès l'évaluation du bundle : un fond CSS n'est
-   découvert qu'au premier rendu, trop tard pour le LCP de la page d'accueil. */
-if (typeof document !== "undefined" && window.location.pathname === "/") {
-  const link = document.createElement("link")
-  link.rel = "preload"
-  link.as = "image"
-  link.href = BANNERS.home
-  link.fetchPriority = "high"
-  document.head.appendChild(link)
-}
 
 /* L'éventail du héros est masqué par le CSS sous 761 px : sans ce v-if, le
    téléphone téléchargerait quand même trois visuels de 460 px de large pour rien.
@@ -95,12 +85,29 @@ const HALLS = [
   }
 ]
 
+/* Précharge la cinématique du héros : un fond CSS n'est découvert qu'au premier
+   rendu, trop tard pour le LCP. Posé au montage et retiré au démontage, pour ne
+   pas laisser une balise orpheline dans le <head> après navigation. */
+let preload = null
+
 onBeforeUnmount(() => {
   fanQuery?.removeEventListener?.("change", onFanQuery)
+  preload?.remove()
+  preload = null
 })
 
 onMounted(async () => {
   fanQuery?.addEventListener?.("change", onFanQuery)
+  if (typeof document !== "undefined") {
+    preload = document.createElement("link")
+    /* setAttribute et non les propriétés : `as` et `fetchpriority` ne sont pas
+       reflétées partout (jsdom compris) et la balise partirait incomplète. */
+    preload.setAttribute("rel", "preload")
+    preload.setAttribute("as", "image")
+    preload.setAttribute("href", BANNERS.home)
+    preload.setAttribute("fetchpriority", "high")
+    document.head.appendChild(preload)
+  }
   try {
     const [sets, cards] = await Promise.all([api("/api/sets"), api("/api/cards?size=1")])
     setCount.value = sets.length
@@ -147,7 +154,7 @@ onMounted(async () => {
       <div v-if="showFan" class="hero-fan" aria-hidden="true">
         <div v-for="card in FAN" :key="card.hash" v-tilt class="fan-card" :style="card.style">
           <!-- Décoratives : priorité basse pour laisser la bande passante à la cinématique (LCP). -->
-          <img :src="cardImg(card.hash)" alt="" loading="eager" fetchpriority="low" />
+          <img :src="cardImg(card.hash)" alt="" width="1488" height="2078" loading="eager" fetchpriority="low" />
           <span class="fan-foil"></span>
         </div>
       </div>
