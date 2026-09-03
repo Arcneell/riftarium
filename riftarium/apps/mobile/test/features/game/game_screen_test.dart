@@ -84,7 +84,8 @@ void main() {
     expect(game!.mode, GameMode.duel);
     expect(game.players.length, 2);
     expect(game.players.every((player) => player.legend == null), isTrue);
-    expect(find.text('Tour suivant'), findsOneWidget);
+    // La puce centrale annonce le joueur actif : le suivi du tour se lit.
+    expect(find.text('AU TOUR DE'), findsOneWidget);
     expect(find.byType(PlayerPanel), findsNWidgets(2));
   });
 
@@ -109,17 +110,21 @@ void main() {
     expect(gameOf(tester)!.scoreOfTeam(1), 0);
   });
 
-  testWidgets('« Tour suivant » passe la main et « annuler » la rend', (
+  testWidgets('la puce du joueur actif passe la main, « annuler » la rend', (
     tester,
   ) async {
     await tester.pumpWidget(gameApp(tester: tester));
     await tester.pumpAndSettle();
     await startGame(tester);
 
-    final first = gameOf(tester)!.activePlayer.id;
-    await tester.tap(find.text('Tour suivant'));
+    final game = gameOf(tester)!;
+    final first = game.activePlayer.id;
+    // La puce porte le nom du joueur actif…
+    expect(find.byTooltip('Passer au joueur suivant'), findsOneWidget);
+    await tester.tap(find.byTooltip('Passer au joueur suivant'));
     await tester.pumpAndSettle();
 
+    // …et l'appui passe la main : elle affiche le suivant.
     expect(gameOf(tester)!.activePlayer.id, isNot(first));
     expect(gameOf(tester)!.turnNumber, 2);
 
@@ -231,6 +236,85 @@ void main() {
     final game = gameOf(tester)!;
     expect(game.scoreOfTeam(1), 1);
     expect(game.scoreOfTeam(0), 0);
+  });
+
+  testWidgets('à quatre sur petit écran, chaque panneau garde sa barre d’XP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(gameApp(tester: tester));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guerre'));
+    await tester.pumpAndSettle();
+    await startGame(tester);
+
+    // Taille téléphone : les quatre panneaux se partagent l'écran. Un
+    // débordement ferait échouer le test ; l'XP doit rester visible partout.
+    tester.view.physicalSize = const Size(400, 780);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlayerPanel), findsNWidgets(4));
+    expect(find.byType(XpBar), findsNWidgets(4));
+    expect(find.byTooltip('Gagner 1 XP'), findsNWidgets(4));
+
+    // L'ordre des tours fait le tour de la table : J1 bas-gauche, J2
+    // bas-droite, J3 haut-droite, J4 haut-gauche — pas de diagonale.
+    final j1 = tester.getCenter(panelOf('Joueur 1'));
+    final j2 = tester.getCenter(panelOf('Joueur 2'));
+    final j3 = tester.getCenter(panelOf('Joueur 3'));
+    final j4 = tester.getCenter(panelOf('Joueur 4'));
+    expect(j1.dy, greaterThan(j3.dy));
+    expect(j2.dy, greaterThan(j4.dy));
+    expect(j1.dx, lessThan(j2.dx));
+    expect(j3.dx, greaterThan(j4.dx));
+
+    // Même exigence en 2c2, où les panneaux sont encore plus étroits.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Quitter'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(520, 2600);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chambre magmatique'));
+    await tester.pumpAndSettle();
+    await startGame(tester);
+
+    tester.view.physicalSize = const Size(400, 780);
+    await tester.pumpAndSettle();
+    expect(find.byType(XpBar), findsNWidgets(4));
+  });
+
+  testWidgets('la table retient ses joueurs pour la partie suivante', (
+    tester,
+  ) async {
+    final store = InMemoryGameStore();
+    await tester.pumpWidget(gameApp(tester: tester, store: store));
+    await tester.pumpAndSettle();
+
+    // Trois joueurs nommés, puis la partie démarre.
+    await tester.tap(find.text('Escarmouche'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'Nathan');
+    await tester.enterText(find.byType(TextField).at(1), 'Léa');
+    await startGame(tester);
+    expect(gameOf(tester), isNotNull);
+
+    // Quitter efface la partie en cours, pas la table.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quitter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Quitter'));
+    await tester.pumpAndSettle();
+    expect(gameOf(tester), isNull);
+
+    // La configuration revient préremplie : noms retrouvés, et le format
+    // aussi (l'escarmouche affiche trois champs de nom).
+    expect(find.widgetWithText(TextField, 'Nathan'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Léa'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(3));
   });
 
   testWidgets('une partie sauvegardée se reprend', (tester) async {

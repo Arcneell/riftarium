@@ -42,7 +42,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Tour suivant'), findsOneWidget);
+    expect(find.byTooltip('Passer au joueur suivant'), findsOneWidget);
     await tapHalf(tester, panelOf('ezreal'));
     await settle(tester);
 
@@ -74,8 +74,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('L’hôte tient le compte.'), findsOneWidget);
-    // Aucun geste de comptage : ni « Tour suivant », ni point marqué.
-    expect(find.text('Tour suivant'), findsNothing);
+    // Aucun geste de comptage : la puce du tour est en lecture seule,
+    // et aucun point ne se marque.
+    expect(find.byTooltip('Passer au joueur suivant'), findsNothing);
     await tapHalf(tester, panelOf('ezreal'));
     await settle(tester);
     expect(server.on('PUT', '/play/matches/1/state'), isEmpty);

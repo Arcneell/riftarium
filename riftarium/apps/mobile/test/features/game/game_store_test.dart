@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riftarium_mobile/features/game/data/game_store.dart';
 import 'package:riftarium_mobile/features/game/domain/game_engine.dart';
+import 'package:riftarium_mobile/features/game/domain/saved_table.dart';
 import 'package:riftarium_mobile/features/game/domain/game_mode.dart';
 
 void main() {
@@ -66,4 +67,28 @@ void main() {
       expect(await store.read(), isNull);
     },
   );
+
+  test('la dernière table survit à l’effacement de la partie', () async {
+    final directory = await Directory.systemTemp.createTemp('riftarium-game');
+    addTearDown(() => directory.delete(recursive: true));
+    final store = FileGameStore(directory: () async => directory);
+
+    expect(await store.readTable(), isNull);
+    final game = makeGame();
+    final table = SavedTable(mode: game.mode, players: game.players);
+    expect(await store.writeTable(table), isTrue);
+
+    // Quitter la partie efface la reprise, pas la table.
+    await store.write(game);
+    await store.clear();
+    expect(await store.read(), isNull);
+
+    final restored = await store.readTable();
+    expect(restored, isNotNull);
+    expect(restored!.mode, game.mode);
+    expect(
+      restored.players.map((player) => player.name),
+      game.players.map((player) => player.name),
+    );
+  });
 }
