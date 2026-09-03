@@ -1,1 +1,7 @@
 include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Un `Future` lancé sans être attendu se perd, avec son erreur : soit on
+    # l'attend, soit on écrit `unawaited(...)` pour dire que c'est voulu.
+    unawaited_futures: true

@@ -132,7 +132,7 @@ class RiftPanel extends StatelessWidget {
   }
 }
 
-/// Titre de section : sur-titre mono doré facultatif + Marcellus.
+/// Titre de section : sur-titre mono doré facultatif + Cinzel.
 class SectionTitle extends StatelessWidget {
   const SectionTitle({
     super.key,

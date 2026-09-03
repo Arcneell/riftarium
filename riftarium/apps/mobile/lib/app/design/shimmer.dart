@@ -2,20 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'tokens.dart';
 
-/// Squelette de chargement : surface parchemin traversée d'un reflet lent.
+/// Squelette de chargement : surface nuit traversée d'un reflet lent. Prend
+/// la place que son parent lui donne (il remplace un visuel en attente).
 class Shimmer extends StatefulWidget {
-  const Shimmer({
-    super.key,
-    this.width,
-    this.height,
-    this.borderRadius = RiftRadius.sm,
-    this.child,
-  });
+  const Shimmer({super.key, this.borderRadius = RiftRadius.sm});
 
-  final double? width;
-  final double? height;
   final double borderRadius;
-  final Widget? child;
 
   @override
   State<Shimmer> createState() => _ShimmerState();
@@ -35,31 +27,28 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final base = RiftColors.paper2;
-    final glow = const Color(0xFF1C3050);
+    const colors = [
+      RiftColors.paper2,
+      RiftColors.shimmerGlow,
+      RiftColors.paper2,
+    ];
     final reduce = MediaQuery.disableAnimationsOf(context);
-    return SizedBox(
-      width: widget.width,
-      height: widget.height,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-        child: reduce
-            ? ColoredBox(color: base, child: widget.child)
-            : AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) => DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment(-1 + 2 * _controller.value * 1.5, 0),
-                      end: Alignment(1 + 2 * _controller.value * 1.5, 0),
-                      colors: [base, glow, base],
-                    ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      child: reduce
+          ? const ColoredBox(color: RiftColors.paper2)
+          : AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) => DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment(-1 + 2 * _controller.value * 1.5, 0),
+                    end: Alignment(1 + 2 * _controller.value * 1.5, 0),
+                    colors: colors,
                   ),
-                  child: child,
                 ),
-                child: widget.child,
               ),
-      ),
+            ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'design/tokens.dart';
@@ -7,33 +8,41 @@ import 'design/typography.dart';
 export 'design/tokens.dart';
 export 'design/typography.dart';
 
-/// Compatibilité : anciens noms utilisés dans les écrans de la phase 1.
-const Color kRiftariumGold = RiftColors.gold;
-const Color kRiftariumParchment = RiftColors.paper;
-const Color kRiftariumInk = RiftColors.ink;
+/// Styles de texte Riftarium. Le thème est unique (nuit de Piltover) : les
+/// couleurs ne dépendent pas du contexte, gardé en paramètre pour que les
+/// écrans continuent d'écrire `riftText(context)`.
+RiftTextStyles riftText(BuildContext context) => riftTextStyles;
 
-/// Styles de texte Riftarium pour le thème courant.
-RiftTextStyles riftText(BuildContext context) {
-  final dark = Theme.of(context).brightness == Brightness.dark;
-  return RiftTextStyles(
-    ink: dark ? RiftColors.darkInk : RiftColors.ink,
-    muted: dark ? RiftColors.darkMuted : RiftColors.muted,
-  );
-}
+/// Styles de texte du thème unique.
+const riftTextStyles = RiftTextStyles(
+  ink: RiftColors.ink,
+  muted: RiftColors.muted,
+);
 
-ThemeData buildTheme(Brightness brightness) {
-  final dark = brightness == Brightness.dark;
-  final ink = dark ? RiftColors.darkInk : RiftColors.ink;
-  final muted = dark ? RiftColors.darkMuted : RiftColors.muted;
-  final paper = dark ? RiftColors.darkPaper : RiftColors.paper;
-  final paper2 = dark ? RiftColors.darkPaper2 : RiftColors.paper2;
-  final line = dark ? RiftColors.darkLine : RiftColors.line;
-  final text = RiftTextStyles(ink: ink, muted: muted);
+/// Thème unique de l'application : nuit de Piltover. Les cartes sont la source
+/// de lumière, l'écrin reste sombre — il n'y a donc pas de variante claire.
+///
+/// Le résultat est mémoïsé : assembler une centaine d'objets à chaque
+/// reconstruction serait du gâchis. La clé est la plateforme, parce que
+/// `ThemeData` y fige `defaultTargetPlatform` (les widgets adaptatifs le
+/// relisent, et les tests le surchargent).
+ThemeData buildTheme() =>
+    _cache.putIfAbsent(defaultTargetPlatform, _buildTheme);
+
+final _cache = <TargetPlatform, ThemeData>{};
+
+ThemeData _buildTheme() {
+  const ink = RiftColors.ink;
+  const muted = RiftColors.muted;
+  const paper = RiftColors.paper;
+  const paper2 = RiftColors.paper2;
+  const line = RiftColors.line;
+  const text = riftTextStyles;
 
   final scheme =
       ColorScheme.fromSeed(
         seedColor: RiftColors.gold,
-        brightness: brightness,
+        brightness: Brightness.dark,
       ).copyWith(
         primary: RiftColors.gold,
         onPrimary: Colors.white,
@@ -57,7 +66,7 @@ ThemeData buildTheme(Brightness brightness) {
   final base = ThemeData(
     colorScheme: scheme,
     useMaterial3: true,
-    brightness: brightness,
+    brightness: Brightness.dark,
     fontFamily: RiftFonts.body,
     scaffoldBackgroundColor: paper,
     canvasColor: paper,
@@ -93,41 +102,6 @@ ThemeData buildTheme(Brightness brightness) {
       scrolledUnderElevation: 0,
       centerTitle: false,
       titleTextStyle: text.displaySmall,
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: RiftColors.paper2.withValues(alpha: 0.94),
-      surfaceTintColor: Colors.transparent,
-      indicatorColor: RiftColors.gold.withValues(alpha: 0.18),
-      height: 64,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => text.small.copyWith(
-          fontSize: 11.5,
-          fontVariations: RiftFonts.weight(
-            states.contains(WidgetState.selected) ? 600 : 500,
-          ),
-          color: states.contains(WidgetState.selected)
-              ? RiftColors.goldDeep
-              : muted,
-        ),
-      ),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(
-          color: states.contains(WidgetState.selected)
-              ? RiftColors.goldDeep
-              : muted,
-          size: 24,
-        ),
-      ),
-    ),
-    cardTheme: CardThemeData(
-      color: RiftColors.paper2,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(RiftRadius.md),
-        side: BorderSide(color: line),
-      ),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: Colors.transparent,
@@ -221,10 +195,10 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     // Les widgets Cupertino rendus dans la MaterialApp héritent de ce thème.
     cupertinoOverrideTheme: CupertinoThemeData(
-      brightness: brightness,
+      brightness: Brightness.dark,
       primaryColor: RiftColors.gold,
       scaffoldBackgroundColor: paper,
-      barBackgroundColor: RiftColors.paper2.withValues(alpha: 0.92),
+      barBackgroundColor: paper2.withValues(alpha: 0.92),
       textTheme: CupertinoTextThemeData(
         primaryColor: RiftColors.gold,
         textStyle: text.body,

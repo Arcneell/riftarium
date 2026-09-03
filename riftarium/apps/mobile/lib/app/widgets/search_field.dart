@@ -11,11 +11,17 @@ class RiftSearchField extends StatelessWidget {
     required this.controller,
     this.hintText = 'Jinx, ogn-202, réaction…',
     this.onSubmitted,
+    this.maxLength,
   });
 
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String>? onSubmitted;
+
+  /// Longueur maximale saisissable (null : sans limite). Le compteur natif
+  /// reste masqué : la borne évite d'envoyer une requête que l'API refuserait,
+  /// elle n'invite pas à compter les caractères.
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +40,10 @@ class RiftSearchField extends StatelessWidget {
         autocorrect: false,
         textInputAction: TextInputAction.search,
         onSubmitted: onSubmitted,
+        maxLength: maxLength,
         decoration: InputDecoration(
           hintText: hintText,
+          counterText: '',
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 13),
           prefixIcon: Icon(Icons.search, size: 20, color: text.muted),

@@ -4,18 +4,20 @@ import 'package:flutter/widgets.dart';
 /// `apps/web/src/assets/main.css` (`:root`). Nuit de Piltover en fond, laiton
 /// pour la matière, sarcelle hextech pour les interactions, une couleur par
 /// domaine de jeu. Les cartes sont la source de lumière, l'écrin reste sombre :
-/// clair et sombre partagent donc les mêmes valeurs (les alias dark* restent
-/// pour les écrans existants).
+/// il n'y a qu'un thème (voir `buildTheme`), pas de variante claire.
 abstract final class RiftColors {
   // Fonds (nuit)
   static const paper = Color(0xFF0A1428);
   static const paper2 = Color(0xFF13233F);
-  static const surface = Color(0xB813213B); // rgba(19,33,59,.72)
+
   /// Surface opaque des champs de saisie et fonds pleins (ex-parchemin clair).
   static const surfaceSolid = Color(0xFF101D33);
   // Filets laiton
   static const line = Color(0x29C9A75C); // rgba(201,167,92,.16)
   static const lineStrong = Color(0x66C9A75C); // rgba(201,167,92,.4)
+
+  /// Reflet qui traverse un squelette de chargement (`Shimmer`).
+  static const shimmerGlow = Color(0xFF1C3050);
 
   /// Nuit profonde : voiles, scrims et fonds d'écrans immersifs (l'ancien
   /// « inkStrong » du thème parchemin, qui désignait l'encre la plus sombre).
@@ -25,6 +27,11 @@ abstract final class RiftColors {
   static const ink = Color(0xFFD7E0EC);
   static const inkStrong = Color(0xFFF2EAD6);
   static const muted = Color(0xFF94A3B9);
+
+  /// Blanc pur posé sur un accent saturé ou une illustration : liserés de
+  /// surbrillance, texte d'un visuel de carte agrandi. À réserver au premier
+  /// plan — un fond ne se code jamais en blanc (voir `design/README.md`).
+  static const onAccent = Color(0xFFFFFFFF);
 
   // Laiton : goldDeep sert aux liens et intertitres (clair sur nuit)
   static const gold = Color(0xFFC9A75C);
@@ -59,14 +66,6 @@ abstract final class RiftColors {
   static const prism = LinearGradient(
     colors: [fury, order, body, calm, mind, chaos],
   );
-
-  // Alias historiques du mode sombre : mêmes valeurs que le thème unique.
-  static const darkPaper = paper;
-  static const darkPaper2 = paper2;
-  static const darkSurface = surface;
-  static const darkLine = line;
-  static const darkInk = ink;
-  static const darkMuted = muted;
 
   static Color domain(String name) => switch (name.toLowerCase()) {
     'fury' || 'fureur' => fury,
@@ -116,17 +115,12 @@ abstract final class RiftMotion {
   static const slow = Duration(milliseconds: 520);
   static const foil = Duration(seconds: 7);
   static const ease = Curves.easeOutCubic;
-  static const easeIn = Curves.easeInOutCubic;
 
   /// Décalage entre deux éléments d'une liste qui se révèle.
   static const stagger = Duration(milliseconds: 45);
 }
 
 abstract final class RiftSpace {
-  static const xs = 4.0;
-  static const sm = 8.0;
-  static const md = 16.0;
-  static const lg = 24.0;
-  static const xl = 32.0;
+  /// Marges latérales d'un écran : tout contenu s'aligne dessus.
   static const page = EdgeInsets.symmetric(horizontal: 18);
 }

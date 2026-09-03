@@ -5,12 +5,14 @@ Tout écran passe par ces briques ; pas de couleur ni de police hors tokens.
 
 ## Voix
 
-- **Matière** : parchemin (`RiftColors.paper`) et encre bleu nuit (`ink`). L'or
+- **Thème unique** : nuit de Piltover, pas de variante claire (`buildTheme()`,
+  `themeMode: ThemeMode.dark`). Les cartes sont la source de lumière.
+- **Matière** : nuit (`RiftColors.paper`, `paper2`), texte lunaire (`ink`). L'or
   (`gold`) est l'accent : titres, filets, bouton principal. Le hex (sarcelle,
   `hex`) marque l'interaction : liens, focus, action secondaire. Les six domaines
   ont leur couleur (`RiftColors.domain(name)`), le prisme (`prism`) sert aux
   barres de progression.
-- **Typo** (`riftText(context)`) : Marcellus pour les titres (`displayLarge/
+- **Typo** (`riftText(context)`) : Cinzel pour les titres (`displayLarge/
   Medium/Small`), Outfit pour le texte (`body`, `bodyStrong`, `small`, `title`),
   IBM Plex Mono pour les données (`mono`, `monoStrong`, `eyebrow`). Sur-titre
   toujours en capitales espacées via `eyebrow`.
@@ -25,13 +27,14 @@ Tout écran passe par ces briques ; pas de couleur ni de police hors tokens.
 
 | Brique | Usage |
 | --- | --- |
-| `PageBanner(title, art, eyebrow, actions)` | Premier sliver de chaque écran d'onglet : illustration `RiftBanners.*` fondue dans le parchemin, titre Marcellus. Toujours `CustomScrollView` + `PageBanner` + slivers. |
+| `PageBanner(title, art, eyebrow, actions)` | Premier sliver de chaque écran d'onglet : illustration `RiftBanners.*` fondue dans la nuit, titre Cinzel. Toujours `CustomScrollView` + `PageBanner` + slivers. |
 | `GoldButton` | Action principale, une par écran. `GhostButton` pour la secondaire. |
 | `RiftPanel` | Bloc de contenu (stat, cas pratique, deck). `raised: true` pour un panneau cliquable mis en avant. |
 | `SectionTitle(title, eyebrow, trailing)` | Titre de section dans une liste. |
 | `DomainChip`, `MonoBadge`, `PrismBar`, `GoldRule` | Étiquettes et filets. |
 | `CardImage(card, heroTag, foil, thumbWidth)` | Tout visuel de carte. Vignette CDN redimensionnée (`CardArtSize.tile` en grille, `detail` en fiche, `zoom` en plein écran), cache 30 jours, squelette, fondu. `foil: true` pour une carte possédée dans la collection (`foilIntensity` 0.6) ; les variantes foil (`card.foil`) ajoutent la teinte prismatique. |
 | `precacheCardThumbs(context, cards)` | À appeler après chaque page chargée pour la page suivante. |
+| `RiftRichText(text)` | Tout texte de carte ou de règle : mots-clés en pastille de famille, glyphes officiels (`RiftGlyph`, cache mémoire, repli `[R]` hors ligne), `**gras**`. `breakGluedAbilities: true` pour une carte, `markdownBold: true, shortTokens: true` pour une règle ou un guide ; `riftRichSpans(...)` pour composer avec un préfixe (numéro de règle). Jamais de second parseur. |
 | `Reveal(index, child)` | Envelopper chaque tuile d'une grille / ligne d'une liste. |
 | `SignInRequired`, `ErrorView`, `EmptyView`, `LoadingView` | États. `EmptyView` doit inviter à agir (bouton), jamais constater. |
 | `ProfileAction` | Avatar en haut à droite des bannières → profil. |

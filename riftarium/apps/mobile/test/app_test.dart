@@ -4,6 +4,8 @@ import 'package:riftarium_mobile/app/router.dart';
 import 'package:riftarium_mobile/core/api_client.dart';
 import 'package:riftarium_mobile/core/token_store.dart';
 import 'package:riftarium_mobile/features/auth/application/auth_controller.dart';
+import 'package:riftarium_mobile/app/widgets/not_found_screen.dart';
+import 'package:riftarium_mobile/features/auth/ui/login_screen.dart';
 import 'package:riftarium_mobile/features/auth/ui/splash_screen.dart';
 import 'package:riftarium_mobile/features/home/ui/home_screen.dart';
 import 'package:riftarium_mobile/features/profile/ui/profile_screen.dart';
@@ -86,5 +88,90 @@ void main() {
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('ezreal'), findsWidgets);
     expect(find.text('ezreal@piltover.re'), findsOneWidget);
+  });
+
+  testWidgets('un lien inconnu ouvre l’écran « Page introuvable »', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        store: InMemoryTokenStore(),
+        adapter: FakeHttpAdapter({}),
+        initialLocation: '/inconnu',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NotFoundScreen), findsOneWidget);
+    expect(find.text('/inconnu'), findsOneWidget);
+  });
+
+  testWidgets('le lien profond survit à l’écran d’attente', (tester) async {
+    final store = InMemoryTokenStore('jwt');
+    final adapter = FakeHttpAdapter({
+      'GET /auth/me': const FakeResponse(200, profileJson),
+    });
+
+    await tester.pumpWidget(
+      app(store: store, adapter: adapter, initialLocation: '/inconnu'),
+    );
+    // La restauration passe par l’attente : la destination est mise de côté.
+    expect(find.byType(SplashScreen), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    expect(find.byType(NotFoundScreen), findsOneWidget);
+    expect(find.text('/inconnu'), findsOneWidget);
+  });
+
+  testWidgets('un numéro de deck illisible ne mène pas au deck 0', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        store: InMemoryTokenStore(),
+        adapter: FakeHttpAdapter({}),
+        initialLocation: '/decks/abc',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NotFoundScreen), findsOneWidget);
+    expect(find.textContaining('invalide'), findsOneWidget);
+  });
+
+  testWidgets('sans session : le scanner renvoie vers la connexion', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        store: InMemoryTokenStore(),
+        adapter: FakeHttpAdapter({}),
+        initialLocation: AppRoutes.scan,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('avec une session : /connexion repart vers « from »', (
+    tester,
+  ) async {
+    final store = InMemoryTokenStore('jwt');
+    final adapter = FakeHttpAdapter({
+      'GET /auth/me': const FakeResponse(200, profileJson),
+    });
+
+    await tester.pumpWidget(
+      app(
+        store: store,
+        adapter: adapter,
+        initialLocation: AppRoutes.loginFrom(AppRoutes.profile),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.byType(ProfileScreen), findsOneWidget);
   });
 }

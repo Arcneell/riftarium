@@ -98,7 +98,6 @@ class AdaptiveTextField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.placeholder,
-    this.errorText,
     this.obscureText = false,
     this.keyboardType,
     this.textInputAction,
@@ -110,7 +109,6 @@ class AdaptiveTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? placeholder;
-  final String? errorText;
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -147,27 +145,12 @@ class AdaptiveTextField extends StatelessWidget {
             onSubmitted: onSubmitted,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
-          if (errorText != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 6),
-              child: Text(
-                errorText!,
-                style: const TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontSize: 13,
-                ),
-              ),
-            ),
         ],
       );
     }
     return TextField(
       controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: placeholder,
-        errorText: errorText,
-      ),
+      decoration: InputDecoration(labelText: label, hintText: placeholder),
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
