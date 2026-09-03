@@ -122,8 +122,8 @@ void main() {
       final file = File('assets/rules/guides-fr.json');
       final real = parseGuidesDocument(file.readAsStringSync());
 
-      expect(real.categories, hasLength(5));
-      expect(real.topics, hasLength(42));
+      expect(real.categories, hasLength(6));
+      expect(real.topics, hasLength(47));
       expect(real.steps, hasLength(17));
       expect(real.topics.every((topic) => topic.slug.isNotEmpty), isTrue);
       expect(real.topics.every((topic) => topic.details.isNotEmpty), isTrue);
