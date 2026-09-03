@@ -306,6 +306,27 @@ describe("useCardScanner", () => {
       expect(scanner.state.value).toBe("locked")
       scanner.stop()
     })
+
+    it("sans caméra : ni la reprise différée ni resume ne relancent une boucle à vide", async () => {
+      /* Desktop (ou photo importée caméra coupée) : grabHashes ne rendra jamais rien.
+         Relancer la boucle la ferait tourner toutes les 250 ms jusqu'à la navigation. */
+      const grabHashes = vi.fn(() => null)
+      const { scanner, addCard } = makeScanner({ canLoop: () => false, grabHashes })
+      scanner.autoAdd.value = true
+      await scanner.scanOnce({ hexes: [ZERO] })
+      expect(addCard).toHaveBeenCalledTimes(1)
+      expect(scanner.state.value).toBe("locked")
+
+      /* Aucune reprise n'est armée : le résultat et le toast restent à l'écran. */
+      await vi.advanceTimersByTimeAsync(AUTO_RESUME_DELAY * 3)
+      expect(scanner.state.value).toBe("locked")
+      expect(grabHashes).not.toHaveBeenCalled()
+
+      scanner.pause()
+      scanner.resume()
+      await frames(10)
+      expect(grabHashes).not.toHaveBeenCalled()
+    })
   })
 
   describe("mode ajout automatique", () => {

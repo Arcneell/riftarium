@@ -342,6 +342,47 @@ describe("ScanView", () => {
     }
   })
 
+  it("index indisponible : le bouton « Réessayer » relance le chargement et débloque l'écran", async () => {
+    let premierAppel = true
+    api.mockImplementation((path) => {
+      if (path.startsWith("/api/cards/hashes")) {
+        if (premierAppel) {
+          premierAppel = false
+          return Promise.reject(new Error("Service indisponible"))
+        }
+        return Promise.resolve({ algo: "dhash16-hv-art", count: HASH_ITEMS.length, items: HASH_ITEMS })
+      }
+      return Promise.resolve(fakeCard(path.split("/").pop()))
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.get(".error").text()).toContain("Service indisponible")
+    /* Sans ce bouton, l'écran n'offrait plus rien : ni caméra, ni import, ni recours. */
+    await wrapper.get(".scan-recover button").trigger("click")
+    await flushPromises()
+    expect(wrapper.find(".error").exists()).toBe(false)
+    expect(wrapper.find(".scan-import input").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("échec après getUserMedia : les pistes sont coupées, pas seulement le message affiché", async () => {
+    const stop = vi.fn()
+    const track = { stop, getCapabilities: () => ({}) }
+    /* Panne survenant une fois le flux obtenu : sans stopCamera dans le catch, la LED
+       restait allumée et la caméra confisquée aux autres onglets. */
+    const stream = {
+      getTracks: () => [track],
+      getVideoTracks: () => {
+        throw new Error("piste illisible")
+      }
+    }
+    setMediaDevices({ getUserMedia: vi.fn().mockResolvedValue(stream) })
+    const { wrapper } = await mountView()
+    expect(stop).toHaveBeenCalled()
+    expect(wrapper.find(".scan-nocam").text()).toContain("Caméra indisponible")
+    expect(wrapper.find(".scan-stage").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("photo illisible : message d'erreur, l'import reste disponible", async () => {
     scanFile.mockRejectedValue(new Error("boom"))
     const { wrapper } = await mountView()

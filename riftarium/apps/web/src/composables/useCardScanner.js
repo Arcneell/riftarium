@@ -73,6 +73,11 @@ export function useCardScanner({
   grabCodeImage,
   readText = null,
   vibrate = null,
+  /* Y a-t-il une source d'images continue ? Sur desktop (ou après un import de photo,
+     caméra coupée), grabHashes ne rendra jamais rien : relancer la boucle ferait tourner un
+     tick toutes les 250 ms indéfiniment, sans jamais pouvoir verrouiller. La vue répond
+     « caméra allumée ? ». */
+  canLoop = () => true,
   now = () => Date.now()
 } = {}) {
   /* idle : rien ne tourne. scanning : boucle active. locked : résultat affiché.
@@ -189,10 +194,18 @@ export function useCardScanner({
   function resume() {
     if (autoResumePending) {
       autoResumePending = false
-      start()
+      /* Sans source d'images, il n'y a pas de boucle à reprendre : le résultat reste
+         affiché et l'utilisateur repart par un nouvel import. */
+      if (canLoop()) start()
       return
     }
     if (state.value !== "paused") return
+    if (!canLoop()) {
+      /* Pause tombée pendant une passe unique alors qu'aucune caméra ne tourne : reprendre
+         la boucle l'aurait fait tourner à vide jusqu'à la navigation. */
+      state.value = "idle"
+      return
+    }
     state.value = "scanning"
     /* Le compte à rebours du conseil repart de zéro : une pause longue ne doit pas faire
        apparaître « rapprochez-vous » dès la première image. */
@@ -411,7 +424,10 @@ export function useCardScanner({
       if (mine !== epoch) return
       error.value = addError?.message || "Ajout impossible."
     }
-    /* Reprise armée dans les deux cas : un ajout raté ne doit pas figer le mode automatique. */
+    /* Reprise armée dans les deux cas : un ajout raté ne doit pas figer le mode automatique.
+       Mais seulement s'il y a une boucle à reprendre : sans caméra (import de photo), on
+       laisse le résultat et le toast à l'écran. */
+    if (!canLoop()) return
     resumeTimer = setTimeout(() => {
       resumeTimer = null
       if (state.value === "locked") start()

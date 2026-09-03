@@ -2,9 +2,9 @@
 
    Stratégies, volontairement simples et sans dépendance :
    - Précache à l'installation : le shell de l'application (/), les règles
-     officielles (/data/rules-fr.json) et les bundles émis par Vite (liste
-     injectée au build), pour pouvoir consulter une règle en pleine partie
-     même sans réseau — y compris sans avoir jamais ouvert la page.
+     officielles (/data/rules-fr.json) et les seuls bundles utiles hors ligne
+     (liste injectée au build), pour pouvoir consulter une règle en pleine
+     partie même sans réseau — y compris sans avoir jamais ouvert la page.
    - /assets/*   : cache-first — les bundles Vite sont fingerprintés, donc
      immuables ; une fois en cache, plus besoin du réseau.
    - /ocr/*      : cache-first — moteur OCR du scanner (worker, wasm, modèle),
@@ -17,33 +17,53 @@
      au front qui les gère déjà.
 
    Incrémenter VERSION à chaque changement de stratégie ou de précache :
-   l'activation supprime les caches des versions précédentes. */
+   l'activation supprime les caches des versions précédentes. Aussi quand
+   tesseract.js change de version — moins critique depuis que /ocr/ porte la
+   version du moteur dans son chemin, mais un cache d'un ancien moteur reste
+   du poids mort dans le quota du navigateur. */
 
-const VERSION = 2
+const VERSION = 3
 const CACHE = `riftarium-v${VERSION}`
 
-/* Rempli au build par le plugin `inject-sw-precache` (vite.config.js) avec la
-   liste des bundles fingerprintés émis dans /assets/ (~800 Ko au total). Sans
-   ce précache, les chunks des routes jamais visitées (chargés à la demande
-   par le routeur) manqueraient hors ligne. Liste vide en dev. */
+/* Rempli au build par le plugin `inject-sw-precache` (vite.config.js) avec les
+   bundles fingerprintés nécessaires hors ligne : le shell (chunk d'entrée + ses
+   imports statiques + la feuille de style + les polices latines) et les routes
+   des règles : une vingtaine de fichiers, ~560 Ko, là où tout /assets/ en
+   comptait 66 pour ~900 Ko — la cartothèque, les decks, le scan et les
+   statistiques n'ont aucun sens sans réseau. Sans ce précache, les chunks des
+   routes jamais visitées (chargés à la demande par le routeur) manqueraient
+   hors ligne. Liste vide en dev. */
 const ASSETS = []
 
-/* Le shell ("/" sert index.html) + les règles + les bundles. */
-const PRECACHE = ["/", "/data/rules-fr.json", ...ASSETS]
+/* Shell critique : sans lui il n'y a rien à afficher hors ligne. Le chunk et la
+   feuille de style d'entrée en font partie (index-*.js / index-*.css). */
+const isCritical = (asset) => /^\/assets\/index-[^/]+\.(?:js|css)$/.test(asset)
+const CRITICAL = ["/", "/data/rules-fr.json", ...ASSETS.filter(isCritical)]
+const OPTIONAL = ASSETS.filter((asset) => !isCritical(asset))
+
+async function precache() {
+  const cache = await caches.open(CACHE)
+  /* Le shell en tout ou rien : mieux vaut échouer l'installation que laisser un
+     service worker actif incapable de servir la moindre page hors ligne. */
+  await cache.addAll(CRITICAL)
+  /* Le reste fichier par fichier : `addAll` est atomique, un seul 404 (chunk
+     retiré, déploiement en cours de bascule) faisait échouer le précache des
+     dizaines d'autres — et donc tout le mode hors ligne. */
+  await Promise.allSettled(OPTIONAL.map((asset) => cache.add(asset)))
+  /* Le nouveau SW prend la main sans attendre la fermeture des onglets. */
+  await self.skipWaiting()
+}
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      /* Le nouveau SW prend la main sans attendre la fermeture des onglets. */
-      .then(() => self.skipWaiting())
-  )
+  event.waitUntil(precache())
 })
 
 /* Purge les bundles d'un déploiement précédent : le nom du cache ne change
-   qu'avec VERSION, mais chaque build émet de nouveaux fichiers fingerprintés —
-   tout /assets/* absent du précache courant est obsolète. */
+   qu'avec VERSION, mais chaque build émet de nouveaux fichiers fingerprintés.
+   Tout /assets/* absent du précache courant est soit obsolète, soit un chunk
+   mis en cache à la volée par une visite en ligne (ASSETS n'est qu'un
+   sous-ensemble) : dans les deux cas, le jeter à l'activation est sans risque —
+   il sera refetché au prochain besoin. */
 async function dropStaleAssets() {
   const cache = await caches.open(CACHE)
   const keep = new Set(ASSETS.map((asset) => new URL(asset, self.location.origin).href))
@@ -93,7 +113,10 @@ async function staleWhileRevalidate(request) {
       if (response.ok) cache.put(request, response.clone())
       return response
     })
-    .catch(() => cached)
+    /* Hors ligne au premier passage : sans repli explicite, la promesse rendue à
+       respondWith valait `undefined` — ce que le navigateur traite comme une
+       erreur réseau opaque, sans rien remonter à la page. */
+    .catch(() => cached ?? Response.error())
   return cached ?? refresh
 }
 

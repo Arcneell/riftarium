@@ -11,6 +11,9 @@ RUN npm run build
 
 FROM nginx:1.31-alpine
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+# En-têtes de sécurité partagés, inclus par nginx.conf. Hors de conf.d/ : tous les
+# *.conf de ce dossier sont chargés dans le contexte http par nginx.conf principal.
+COPY apps/web/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=build /build/dist /usr/share/nginx/html
 COPY data/rules-fr.json /usr/share/nginx/html/data/rules-fr.json
 RUN sed -i '/^user /d' /etc/nginx/nginx.conf \
