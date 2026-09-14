@@ -110,8 +110,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" title="Prise en main">
-    <template #eyebrow> <RouterLink to="/regles">Règles</RouterLink> › Prise en main </template>
+  <PageBanner :art="BANNERS.rules" title="Sur le plateau">
+    <template #eyebrow>
+      <RouterLink to="/regles">Règles</RouterLink> › <RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink> ›
+      Sur le plateau
+    </template>
   </PageBanner>
 
   <section>
@@ -347,18 +350,18 @@ onBeforeUnmount(() => {
   <section style="padding-top: 0">
     <div class="wrap cols-2">
       <div class="panel" v-reveal>
+        <h3 style="margin-bottom: 10px">Guide en chapitres</h3>
+        <p class="muted" style="font-size: 0.95rem; margin-bottom: 16px">
+          Relire une notion : victoire, runes, combat, chaîne…
+        </p>
+        <RouterLink class="btn" to="/regles/debutant">Retour au guide</RouterLink>
+      </div>
+      <div class="panel" v-reveal="1">
         <h3 style="margin-bottom: 10px">Aide avancée</h3>
         <p class="muted" style="font-size: 0.95rem; margin-bottom: 16px">
           Chaque mécanique en détail : timing, combat, mots-clés.
         </p>
         <RouterLink class="btn" to="/regles/avancee">Ouvrir l'aide avancée</RouterLink>
-      </div>
-      <div class="panel" v-reveal="1">
-        <h3 style="margin-bottom: 10px">Règles officielles</h3>
-        <p class="muted" style="font-size: 0.95rem; margin-bottom: 16px">
-          Le texte officiel intégral, en dernier recours.
-        </p>
-        <RouterLink class="btn" to="/regles/officielles">Ouvrir les règles officielles</RouterLink>
       </div>
     </div>
   </section>

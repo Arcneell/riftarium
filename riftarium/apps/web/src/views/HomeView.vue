@@ -79,7 +79,7 @@ const HALLS = [
     flip: false,
     eyebrow: "Pendant la partie",
     title: "Une règle, tout de suite",
-    text: "Un doute en pleine partie ? Le guide du débutant montre le jeu sur un plateau animé, l'aide avancée explique chaque mécanique avec des cas concrets, et le texte officiel complet se cherche en français.",
+    text: "Un doute en pleine partie ? Le guide en chapitres explique l'essentiel, le plateau animé rejoue une partie, l'aide avancée détaille chaque mécanique, et le texte officiel se cherche en français.",
     links: [{ to: "/regles", label: "Ouvrir les règles", gold: true }],
     plaque: true
   }
