@@ -23,6 +23,7 @@ describe("sectionOf", () => {
       "/": "home",
       "/regles": "regles",
       "/regles/debutant": "regles",
+      "/regles/debutant/plateau": "regles",
       "/regles/officielles": "regles",
       "/communaute": "communaute",
       "/collection": "collection",

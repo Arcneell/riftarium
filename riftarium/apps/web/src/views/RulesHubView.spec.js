@@ -11,6 +11,7 @@ function makeRouter() {
     routes: [
       { path: "/regles", component: RulesHubView },
       { path: "/regles/debutant", component: stub },
+      { path: "/regles/debutant/plateau", component: stub },
       { path: "/regles/avancee", component: stub },
       { path: "/regles/officielles", component: stub }
     ]
@@ -31,6 +32,7 @@ describe("RulesHubView", () => {
     const links = wrapper.findAll("a.tier").map((a) => a.attributes("href"))
     expect(links).toEqual(["/regles/debutant", "/regles/avancee", "/regles/officielles"])
     expect(wrapper.text()).toContain("Dernier recours")
+    expect(wrapper.text()).toContain("Apprendre à jouer")
     expect(wrapper.text()).toContain("Règle d'or")
     expect(wrapper.get(".page-banner").attributes("style")).toContain("bf44d943")
     expect(wrapper.get(".splash-credit").text()).toContain("© Riot Games")

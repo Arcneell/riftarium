@@ -41,10 +41,26 @@ export const router = createRouter({
     },
     {
       path: "/regles/debutant",
-      component: () => import("./views/BeginnerGuideView.vue"),
+      component: () => import("./views/LearnGuideView.vue"),
       meta: {
         title: "Apprendre à jouer à Riftbound",
-        description: "Guide animé du débutant Riftbound : plateau, tour, combat et score, en quelques minutes."
+        description: "Guide Riftbound en chapitres courts : victoire, tour, runes, combat et chaîne."
+      }
+    },
+    {
+      path: "/regles/debutant/plateau",
+      component: () => import("./views/BeginnerGuideView.vue"),
+      meta: {
+        title: "Riftbound sur le plateau",
+        description: "Une partie de Riftbound rejouée étape par étape sur un plateau animé."
+      }
+    },
+    {
+      path: "/regles/debutant/:slug",
+      component: () => import("./views/LearnGuideView.vue"),
+      meta: {
+        title: "Apprendre à jouer à Riftbound",
+        description: "Chapitre du guide Riftbound : notions essentielles pour la première partie."
       }
     },
     {

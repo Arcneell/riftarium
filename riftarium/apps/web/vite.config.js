@@ -114,6 +114,7 @@ const copyOcrAssets = {
 const OFFLINE_ROUTES = [
   "views/RulesView.vue", // texte officiel des règles
   "views/RulesHubView.vue",
+  "views/LearnGuideView.vue",
   "views/BeginnerGuideView.vue",
   "views/AdvancedHelpView.vue",
   "views/AdvancedTopicView.vue"

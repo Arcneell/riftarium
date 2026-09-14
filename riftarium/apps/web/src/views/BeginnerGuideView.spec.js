@@ -6,18 +6,19 @@ import { STEPS } from "../rules/guide.js"
 
 const stub = { template: "<div />" }
 
-async function mountGuide() {
+async function mountGuide(path = "/regles/debutant/plateau") {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: "/", component: stub },
       { path: "/regles", component: stub },
-      { path: "/regles/debutant", component: BeginnerGuideView },
+      { path: "/regles/debutant", component: stub },
+      { path: "/regles/debutant/plateau", component: BeginnerGuideView },
       { path: "/regles/avancee", component: stub },
       { path: "/regles/officielles", component: stub }
     ]
   })
-  await router.push("/regles/debutant")
+  await router.push(path)
   const wrapper = mount(BeginnerGuideView, {
     global: { plugins: [router], stubs: { Icon: true }, directives: { reveal: {} } }
   })
@@ -117,12 +118,13 @@ describe("BeginnerGuideView", () => {
       history: createMemoryHistory(),
       routes: [
         { path: "/regles", component: stub },
-        { path: "/regles/debutant", component: BeginnerGuideView },
+        { path: "/regles/debutant", component: stub },
+        { path: "/regles/debutant/plateau", component: BeginnerGuideView },
         { path: "/regles/avancee", component: stub },
         { path: "/regles/officielles", component: stub }
       ]
     })
-    await router.push("/regles/debutant?etape=13")
+    await router.push("/regles/debutant/plateau?etape=13")
     const wrapper = mount(BeginnerGuideView, {
       global: { plugins: [router], stubs: { Icon: true }, directives: { reveal: {} } }
     })

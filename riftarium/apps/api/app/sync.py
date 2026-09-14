@@ -82,7 +82,9 @@ def run_sync(db: Session) -> dict:
     wanted = {s.strip().upper() for s in settings.sync_sets.split(",") if s.strip()}
     counts = {"sets": 0, "cards": 0}
 
-    with httpx.Client(timeout=30, headers=HEADERS) as client:
+    # 90 s : Riftcodex est parfois lent au premier `/sets` (30 s timeoutait au
+    # démarrage Docker, base restante vide). Les pages suivantes restent courtes.
+    with httpx.Client(timeout=90, headers=HEADERS) as client:
         sets_payload = client.get(f"{base}/sets", params={"size": 50}).raise_for_status().json()
         for item in sets_payload.get("items", []):
             if item["set_id"].upper() in wanted:

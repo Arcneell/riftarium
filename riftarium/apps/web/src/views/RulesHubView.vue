@@ -3,6 +3,7 @@ import { onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
 import { RULE_COUNTS } from "../stats.js"
+import { CHAPTERS, chapterPath } from "../rules/learn.js"
 import { TOPICS } from "../rules/topics.js"
 import { useOnline } from "../composables/useOnline.js"
 import PageBanner from "../components/PageBanner.vue"
@@ -18,18 +19,15 @@ onMounted(() => {
   }
 })
 
-/* Trois portes, dans l'ordre d'un apprentissage : le numéral romain porte la
-   séquence, la couleur porte la destination (hex = tutoriel, or = aide,
-   champagne = texte de référence). */
 const TIERS = [
   {
     to: "/regles/debutant",
     chip: "var(--hex)",
     numeral: "I",
     kicker: "Commencer ici",
-    title: "Guide du débutant",
-    text: "Un tutoriel animé sur un plateau : placer ses cartes, jouer un tour, combattre, marquer.",
-    go: "Apprendre à jouer",
+    title: "Apprendre à jouer",
+    text: `${CHAPTERS.length} chapitres courts : comment on gagne, comment on paie, comment on combat. Puis une partie rejouée sur le plateau.`,
+    go: "Ouvrir le guide",
     big: true
   },
   {
@@ -52,8 +50,8 @@ const TIERS = [
   }
 ]
 
-/* Les mécaniques qu'on cherche le plus souvent en cours de partie : raccourcis
-   vers leur page d'aide, résolus depuis TOPICS pour ne jamais pointer dans le vide. */
+const CHAPTER_PREVIEWS = CHAPTERS.slice(0, 6)
+
 const QUICK_SLUGS = [
   "reaction",
   "la-chaine",
@@ -94,7 +92,28 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
         </RouterLink>
       </div>
 
-      <div class="quick-topics" v-reveal="1">
+      <div class="learn-hub-chapters" v-reveal="1">
+        <p class="eyebrow">Chapitres du guide</p>
+        <div class="learn-hub-grid">
+          <RouterLink
+            v-for="(item, i) in CHAPTER_PREVIEWS"
+            :key="item.slug"
+            class="learn-hub-card"
+            :to="chapterPath(item.slug)"
+          >
+            <span class="mono">{{ i + 1 }}</span>
+            <b>{{ item.title }}</b>
+            <span>{{ item.summary }}</span>
+          </RouterLink>
+          <RouterLink class="learn-hub-card more" to="/regles/debutant">
+            <span class="mono">+</span>
+            <b>Tous les chapitres</b>
+            <span>{{ CHAPTERS.length }} leçons, puis le plateau animé</span>
+          </RouterLink>
+        </div>
+      </div>
+
+      <div class="quick-topics" v-reveal="2">
         <p class="eyebrow">Accès rapide</p>
         <div class="quick-topics-row">
           <RouterLink
@@ -108,7 +127,7 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
         </div>
       </div>
 
-      <div class="golden-rule" v-reveal="2">
+      <div class="golden-rule" v-reveal="3">
         <p class="eyebrow">Règle 002 — la Règle d'or</p>
         <p class="golden-rule-text">
           « Ce qui est inscrit sur une carte a priorité sur ce qui est inscrit dans les règles du jeu. »
