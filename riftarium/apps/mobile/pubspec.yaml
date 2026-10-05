@@ -8,16 +8,16 @@ environment:
 
 dependencies:
   cached_network_image: ^3.4.1
-  camera: ^0.12.0+2
+  camera: ^0.12.1
   # Police des icônes CupertinoIcons (barre d'onglets iOS) : sans ce paquet,
   # les glyphes Cupertino sont invisibles sur appareil.
   cupertino_icons: ^1.0.8
-  dio: ^5.11.0
+  dio: ^5.11.1
   flutter:
     sdk: flutter
-  flutter_cache_manager: ^3.4.2
+  flutter_cache_manager: ^3.4.5
   flutter_riverpod: ^2.6.1
-  flutter_secure_storage: ^11.0.0
+  flutter_secure_storage: ^11.2.0
   flutter_svg: ^2.3.0
   go_router: ^17.5.0
   google_mlkit_text_recognition: ^0.16.0
