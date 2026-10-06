@@ -85,6 +85,7 @@ watch(() => props.sets, load, { immediate: true })
   grid-template-columns: repeat(var(--wall-cols), minmax(0, 1fr));
   --wall-cols: 12;
   gap: var(--space-3);
+  padding-bottom: var(--space-3); /* = gap : un tiers de piste = une copie + un interstice, boucle sans saut */
   animation: wall-scroll 120s linear infinite;
 }
 .wall-track img {

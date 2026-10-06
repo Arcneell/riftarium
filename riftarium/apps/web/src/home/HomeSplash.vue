@@ -47,7 +47,7 @@ const format = (n) => n.toLocaleString("fr-FR")
 .splash-art {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: -2; /* calques : image (-2), dégradés ::before (-1), puis texte */
   width: 100%;
   height: 100%;
   object-fit: cover;
