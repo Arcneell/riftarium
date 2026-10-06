@@ -1,22 +1,27 @@
 <script setup>
-import { onMounted, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { api } from "../api.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
-import { BANNERS } from "../banners.js"
-import CardTile from "../components/CardTile.vue"
-import PageBanner from "../components/PageBanner.vue"
+import CollectionStats from "../collection/CollectionStats.vue"
+import CardTile from "../ui/CardTile.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 
 /* Wishlist : la liste complète tient en une page (pas de pagination côté API).
    Après chaque modification, on recharge la liste : total et valeur restent
    ceux du serveur, sans recalcul approximatif côté client. */
 const list = ref({ total: 0, value_eur: null, items: [] })
 const loading = ref(true)
+/* « — » dans les statistiques tant que la liste n'a jamais été reçue. */
+const loaded = ref(false)
 const error = ref("")
 const busyId = ref(null)
 
 async function refresh() {
   try {
     list.value = await api("/api/wishlist")
+    loaded.value = true
     error.value = ""
   } catch (e) {
     error.value = e.message
@@ -67,74 +72,147 @@ async function removeItem(item) {
 }
 
 onMounted(refresh)
+
+const stats = computed(() => [
+  { label: "Cartes souhaitées", value: loaded.value ? list.value.total : null },
+  { label: "Valeur estimée", value: loaded.value ? formatEur(list.value.value_eur) || null : null, title: PRICE_NOTE }
+])
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.collection" title="Ma wishlist" />
+  <div class="wrap cards-wrap souhait-page">
+    <h1 class="souhait-title">Ma wishlist</h1>
 
-  <section>
-    <div class="wrap cards-wrap">
-      <div class="stat-row">
-        <div class="stat" v-reveal>
-          Cartes souhaitées<b>{{ list.total }}</b>
-        </div>
-        <div class="stat" v-reveal="1" :title="PRICE_NOTE">
-          Valeur estimée<b>{{ formatEur(list.value_eur) || "—" }}</b>
-        </div>
-      </div>
+    <CollectionStats :items="stats" />
 
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-if="loading" class="muted mono" style="font-size: 0.82rem">Chargement de votre wishlist…</p>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-      <div v-if="list.items.length" class="grid-cards">
-        <div v-for="item in list.items" :key="item.card.id" class="wish-cell">
-          <CardTile :card="item.card" :preview="false" />
-          <div class="wish-controls">
-            <div class="wish-stepper" role="group" :aria-label="`Quantité souhaitée de ${item.card.name}`">
-              <button
-                type="button"
-                :disabled="Boolean(busyId) || item.qty <= 1"
-                aria-label="Un exemplaire de moins"
-                @click="setQty(item, item.qty - 1)"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                inputmode="numeric"
-                min="1"
-                max="99"
-                :value="item.qty"
-                :aria-label="`Quantité souhaitée de ${item.card.name}`"
-                :disabled="Boolean(busyId)"
-                @change="setQty(item, $event.target.value, $event.target)"
-              />
-              <button
-                type="button"
-                :disabled="Boolean(busyId) || item.qty >= 99"
-                aria-label="Un exemplaire de plus"
-                @click="setQty(item, item.qty + 1)"
-              >
-                +
-              </button>
-            </div>
-            <button
-              type="button"
-              class="wish-remove"
-              :aria-label="`Retirer ${item.card.name} de ma liste de souhaits`"
-              :disabled="Boolean(busyId)"
-              @click="removeItem(item)"
-            >
-              Retirer
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <p v-else-if="!loading && !error" class="muted wish-empty">
-        Votre wishlist est vide. Le cœur sur la fiche d'une carte de la
-        <RouterLink to="/cartes">cartothèque</RouterLink> l'ajoute ici.
-      </p>
+    <div v-if="loading" class="souhait-grid">
+      <RiftSkeleton v-for="n in 6" :key="n" block />
     </div>
-  </section>
+
+    <div v-else-if="list.items.length" class="souhait-grid">
+      <div v-for="item in list.items" :key="item.card.id" class="souhait-cell">
+        <CardTile :card="item.card" :preview="false" />
+        <div class="souhait-controls">
+          <div class="souhait-stepper" role="group" :aria-label="`Quantité souhaitée de ${item.card.name}`">
+            <RiftButton
+              variant="ghost"
+              size="sm"
+              :disabled="Boolean(busyId) || item.qty <= 1"
+              aria-label="Un exemplaire de moins"
+              @click="setQty(item, item.qty - 1)"
+            >
+              −
+            </RiftButton>
+            <input
+              type="number"
+              class="souhait-qty"
+              inputmode="numeric"
+              min="1"
+              max="99"
+              :value="item.qty"
+              :aria-label="`Quantité souhaitée de ${item.card.name}`"
+              :disabled="Boolean(busyId)"
+              @change="setQty(item, $event.target.value, $event.target)"
+            />
+            <RiftButton
+              variant="ghost"
+              size="sm"
+              :disabled="Boolean(busyId) || item.qty >= 99"
+              aria-label="Un exemplaire de plus"
+              @click="setQty(item, item.qty + 1)"
+            >
+              +
+            </RiftButton>
+          </div>
+          <RiftButton
+            variant="ghost"
+            size="sm"
+            class="souhait-remove"
+            :aria-label="`Retirer ${item.card.name} de ma liste de souhaits`"
+            :disabled="Boolean(busyId)"
+            @click="removeItem(item)"
+          >
+            Retirer
+          </RiftButton>
+        </div>
+      </div>
+    </div>
+
+    <RiftEmpty v-else-if="!error" title="Votre wishlist est vide" text="Le cœur sur la fiche d'une carte l'ajoute ici.">
+      <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
+    </RiftEmpty>
+  </div>
 </template>
+
+<style scoped>
+.souhait-page {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+/* main.css colore et anime les h1 : on neutralise pour la page. */
+.souhait-title {
+  margin: 0;
+  background: none;
+  color: var(--ink);
+  animation: none;
+  font-weight: 700;
+}
+.souhait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+.souhait-grid :deep(.rift-skeleton-block) {
+  height: auto;
+  aspect-ratio: 0.716;
+}
+.souhait-cell {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+.souhait-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.souhait-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* main.css donne width:100% et un halo de focus aux input : largeur explicite, halo coupé. */
+.souhait-qty {
+  width: 56px;
+  min-height: 36px;
+  padding: 0 var(--space-1);
+  text-align: center;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--ink);
+}
+.souhait-qty:focus {
+  border-color: var(--bronze-light);
+  box-shadow: none;
+  outline: none;
+}
+.souhait-qty:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+/* Cibles tactiles : 44 px de haut pour le stepper sous 767 px (après les règles de base). */
+@media (max-width: 767px) {
+  .souhait-stepper .rift-btn,
+  .souhait-qty {
+    min-height: 44px;
+  }
+}
+</style>

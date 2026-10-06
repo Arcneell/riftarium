@@ -274,8 +274,21 @@ Chaque PR :
 
 - Résumé chiffré et complétion par set (barres Forgées).
 - Classeur actuel (pochettes, cartes manquantes en fantôme) rhabillé ;
-  édition des lots dans une `RiftModal`.
+  l'édition fine des lots reste sur la fiche carte (`CardCollectionPanel`, PR 3),
+  l'inventaire couvre l'état et la langue en masse (pas de `RiftModal` d'édition
+  des lots).
 - Wishlist avec les mêmes composants.
+- **Livré** : la page est découpée dans `src/collection/` (page, stats,
+  classeur, inventaire, composable) ; les classes neuves portent les préfixes
+  `classeur-`, `inventaire-`, `collection-page-`, `collection-stats-` et
+  `souhait-` (les anciens `binder-`, `pocket`, `wish-`… de `main.css` sont
+  retirés). Le tournage de page est raccourci (fondu et glissement, 200 ms au
+  plus) et la cascade d'apparition des pochettes est supprimée ; le classeur
+  reste monté entre les deux affichages, et l'inventaire a une sélection dont la
+  tuile est inerte. L'édition fine des lots n'est pas dans une `RiftModal` : elle
+  reste sur la fiche carte, l'inventaire ne propose que l'état et la langue en
+  masse. Après une opération de masse, les statistiques sont rechargées et le
+  classeur recharge sa double page.
 
 ### PR 5 : decks et communauté
 
