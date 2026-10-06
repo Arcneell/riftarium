@@ -59,11 +59,15 @@ function applyState(state, message) {
    qu'à cette condition (une erreur laissait auparavant le formulaire vidé). */
 async function mutate(request, message) {
   if (busy.value) return false
+  const cardId = props.card.id
   busy.value = true
   saved.value = ""
   error.value = ""
   try {
-    applyState(await request(), message)
+    const state = await request()
+    /* Réponse tardive : la fiche a changé de carte entre-temps, on l'oublie. */
+    if (props.card.id !== cardId) return false
+    applyState(state, message)
     return true
   } catch (e) {
     error.value = e.message
@@ -136,7 +140,7 @@ async function toggleWish() {
     <template v-else>
       <RiftButton
         variant="secondary"
-        class="wish-toggle"
+        class="panel-wish"
         :class="{ on: wished }"
         :aria-pressed="wished"
         :disabled="wishBusy"
@@ -248,8 +252,16 @@ async function toggleWish() {
   font-family: var(--font-body);
   font-size: 14px;
 }
+.panel-wish.on {
+  border-color: var(--blood-text);
+  color: var(--blood-text);
+}
+.panel-lot input:focus,
+.panel-lot select:focus,
 .panel-lot input:focus-visible,
 .panel-lot select:focus-visible {
+  box-shadow: none;
+  border-color: var(--bronze-light);
   outline: 2px solid var(--bronze-light);
   outline-offset: 1px;
 }

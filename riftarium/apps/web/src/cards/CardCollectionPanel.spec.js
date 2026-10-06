@@ -51,7 +51,7 @@ describe("CardCollectionPanel", () => {
 
   it("visiteur non connecté : pas de bouton wishlist, seulement l'invitation à se connecter", async () => {
     const { wrapper } = await mountPanel()
-    expect(wrapper.find(".wish-toggle").exists()).toBe(false)
+    expect(wrapper.find(".panel-wish").exists()).toBe(false)
     expect(wrapper.find(".panel-add").exists()).toBe(false)
     const link = wrapper.get("a[href='/connexion']")
     expect(wrapper.text()).toContain("Connectez-vous pour suivre vos exemplaires et votre wishlist")
@@ -68,7 +68,7 @@ describe("CardCollectionPanel", () => {
     })
     const { wrapper, patches } = await mountPanel()
 
-    const toggle = wrapper.get(".wish-toggle")
+    const toggle = wrapper.get(".panel-wish")
     expect(toggle.text()).toContain("Ajouter à la wishlist")
     expect(toggle.attributes("aria-pressed")).toBe("false")
 
@@ -155,7 +155,7 @@ describe("CardCollectionPanel", () => {
 
     expect(wrapper.find(".panel-error").exists()).toBe(false)
     expect(wrapper.text()).toContain("Aucun exemplaire pour l'instant.")
-    expect(wrapper.find(".wish-toggle").exists()).toBe(true)
+    expect(wrapper.find(".panel-wish").exists()).toBe(true)
     expect(wrapper.find(".panel-add").exists()).toBe(true)
     wrapper.unmount()
   })
@@ -186,6 +186,35 @@ describe("CardCollectionPanel", () => {
     await flushPromises()
     expect(wrapper.findAll(".panel-lot:not(.panel-add)")).toHaveLength(1)
     expect(wrapper.get(".panel-lot:not(.panel-add) input[type=number]").element.value).toBe("2")
+    wrapper.unmount()
+  })
+
+  it("une réponse tardive d'une ancienne carte n'émet rien et n'écrase pas les lots", async () => {
+    login()
+    let resolvePost
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/collection/ogn-037-298/entries" && options.method === "POST") {
+        return new Promise((resolve) => {
+          resolvePost = resolve
+        })
+      }
+      if (path === "/api/collection/ogn-001-298") {
+        return Promise.resolve({ entries: [{ id: 9, qty: 2, condition: "NM", lang: "FR" }], total_qty: 2 })
+      }
+      return Promise.resolve({ entries: [], total_qty: 0 })
+    })
+    const { wrapper, patches } = await mountPanel()
+
+    await wrapper.get(".panel-add button").trigger("click")
+    await wrapper.setProps({ card: card({ id: "ogn-001-298" }) })
+    await flushPromises()
+    resolvePost({ entries: [{ id: 1, qty: 1, condition: "NM", lang: "EN" }], total_qty: 1 })
+    await flushPromises()
+
+    expect(patches).toEqual([])
+    expect(wrapper.findAll(".panel-lot:not(.panel-add)")).toHaveLength(1)
+    expect(wrapper.get(".panel-lot:not(.panel-add) input[type=number]").element.value).toBe("2")
+    expect(wrapper.find(".panel-saved").exists()).toBe(false)
     wrapper.unmount()
   })
 })
