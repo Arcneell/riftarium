@@ -16,6 +16,8 @@ import RiftChip from "../ui/RiftChip.vue"
 const { restoreScroll } = useScrollMemory()
 
 const pageSize = ref(30)
+/* Tant que l'inventaire n'a pas répondu, les statistiques affichent « — » et non des zéros. */
+const statsLoaded = ref(false)
 let firstLoad = true
 /* Taille de page de la dernière requête : évite un rechargement identique à l'entrée. */
 let loadedSize = 0
@@ -46,6 +48,7 @@ const filters = useQuerySyncedFilters(
     enabled: () => filters.state.vue === "inventaire",
     onLoaded: (data) => {
       if (filters.state.page > 1 && !data.items.length) filters.state.page = 1
+      statsLoaded.value = true
       if (firstLoad) {
         firstLoad = false
         restoreScroll()
@@ -75,12 +78,16 @@ const sets = ref([])
 const binderVersion = ref(0)
 const progress = ref(null) // { sets: [...], overall: {...} } — null tant que rien n'est chargé
 
+const progressError = ref("")
+
 async function loadProgress() {
   try {
     const data = await api("/api/collection/sets")
     if (data && Array.isArray(data.sets) && data.overall) progress.value = data
-  } catch {
-    /* progression indisponible : la stat reste masquée, le classeur attend */
+    progressError.value = ""
+  } catch (e) {
+    /* la stat de complétion reste masquée ; le classeur affiche l'erreur s'il n'a rien. */
+    progressError.value = e.message
   }
 }
 
@@ -92,9 +99,13 @@ function missingText(row) {
 
 const stats = computed(() => {
   const items = [
-    { label: "Cartes", value: result.value.total_cards },
-    { label: "Uniques", value: result.value.unique_cards },
-    { label: "Valeur estimée", value: formatEur(result.value.value_eur) || null, title: PRICE_NOTE }
+    { label: "Cartes", value: statsLoaded.value ? result.value.total_cards : null },
+    { label: "Uniques", value: statsLoaded.value ? result.value.unique_cards : null },
+    {
+      label: "Valeur estimée",
+      value: statsLoaded.value ? formatEur(result.value.value_eur) || null : null,
+      title: PRICE_NOTE
+    }
   ]
   const overall = progress.value?.overall
   if (overall) {
@@ -144,6 +155,7 @@ onMounted(async () => {
       :progress="progress"
       :active="state.vue === 'classeur'"
       :version="binderVersion"
+      :progress-error="progressError"
     />
     <CollectionInventory
       v-if="state.vue === 'inventaire'"

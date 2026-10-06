@@ -49,6 +49,22 @@ async function mountView() {
 }
 
 describe("WishlistView", () => {
+  it("statistiques : « — » avant le premier chargement", async () => {
+    api.mockImplementation(() => new Promise(() => {}))
+    const { wrapper } = await mountView()
+    const stats = wrapper.findAll(".rift-stat")
+    expect(stats).toHaveLength(2)
+    for (const stat of stats) expect(stat.text()).toContain("—")
+    wrapper.unmount()
+  })
+
+  it("erreur de chargement : annoncée par role=alert", async () => {
+    api.mockImplementation(() => Promise.reject(new Error("Serveur indisponible")))
+    const { wrapper } = await mountView()
+    expect(wrapper.get("[role=alert]").text()).toContain("Serveur indisponible")
+    wrapper.unmount()
+  })
+
   beforeEach(() => {
     api.mockReset()
     api.mockImplementation((path, options = {}) => {

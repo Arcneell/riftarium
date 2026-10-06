@@ -54,11 +54,11 @@ describe("CollectionBinder", () => {
   it("classeur par défaut : ouvre le premier set incomplet, pochettes pleines et fantômes", async () => {
     const wrapper = await mountBinder()
 
-    const tabs = wrapper.findAll("[role=tab]")
+    const tabs = wrapper.findAll(".classeur-tab")
     expect(tabs).toHaveLength(2)
     expect(tabs[0].text()).toContain("Origins")
     expect(tabs[0].text()).toContain("50 %")
-    expect(tabs[0].attributes("aria-selected")).toBe("true")
+    expect(tabs[0].attributes("aria-pressed")).toBe("true")
     expect(tabs[1].text()).toContain("✓")
 
     expect(wrapper.get("h2").text()).toBe("Origins")
@@ -94,16 +94,44 @@ describe("CollectionBinder", () => {
     wrapper.unmount()
   })
 
-  it("onglet d'un set complet : ✓ et aria-selected", async () => {
+  it("sets : boutons aria-pressed dans un groupe, sans rôle tablist ni tab", async () => {
     const wrapper = await mountBinder()
-    const done = wrapper.findAll("[role=tab]")[1]
+    const group = wrapper.get('[role="group"][aria-label="Sets du classeur"]')
+    expect(wrapper.find("[role=tablist]").exists()).toBe(false)
+    expect(wrapper.find("[role=tab]").exists()).toBe(false)
+    expect(group.findAll("button")).toHaveLength(2)
+    wrapper.unmount()
+  })
+
+  it("set complet : ✓ lisible par un lecteur d'écran, aria-pressed au clic", async () => {
+    const wrapper = await mountBinder()
+    const done = wrapper.findAll(".classeur-tab")[1]
     expect(done.text()).toContain("✓")
     expect(done.text()).not.toContain("%")
-    expect(done.attributes("aria-selected")).toBe("false")
+    expect(done.get(".sr-only").text()).toContain("set complet")
+    expect(done.attributes("aria-pressed")).toBe("false")
     await done.trigger("click")
     await flushPromises()
-    expect(wrapper.findAll("[role=tab]")[1].attributes("aria-selected")).toBe("true")
-    expect(wrapper.findAll("[role=tab]")[0].attributes("aria-selected")).toBe("false")
+    expect(wrapper.findAll(".classeur-tab")[1].attributes("aria-pressed")).toBe("true")
+    expect(wrapper.findAll(".classeur-tab")[0].attributes("aria-pressed")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("le compteur X / Y est annoncé poliment", async () => {
+    const wrapper = await mountBinder()
+    expect(wrapper.get(".classeur-count").attributes("aria-live")).toBe("polite")
+    wrapper.unmount()
+  })
+
+  it("progression indisponible : message d'erreur à la place du squelette sans fin", async () => {
+    const router = await makeRouter("/collection")
+    const wrapper = mount(CollectionBinder, {
+      props: { progress: null, progressError: "Serveur indisponible", active: true },
+      global: { plugins: [router], components: { Icon: { template: "<i />" } } }
+    })
+    await flushPromises()
+    expect(wrapper.get("[role=alert]").text()).toContain("Serveur indisponible")
+    expect(wrapper.find(".shimmer").exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -134,14 +162,14 @@ describe("CollectionBinder", () => {
     wrapper.unmount()
   })
 
-  it("flèches ignorées sur un onglet de set focalisé", async () => {
+  it("flèches : un bouton de set focalisé n'a pas de flèches natives, la double page tourne", async () => {
     const wrapper = await mountBinder()
     api.mockClear()
     wrapper
-      .findAll("[role=tab]")[0]
+      .findAll(".classeur-tab")[0]
       .element.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }))
     await flushPromises()
-    expect(api).not.toHaveBeenCalled()
+    expect(api.mock.calls.some(([path]) => String(path).includes("page=2"))).toBe(true)
     wrapper.unmount()
   })
 

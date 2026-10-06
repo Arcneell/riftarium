@@ -175,6 +175,45 @@ describe("CollectionInventory", () => {
     wrapper.unmount()
   })
 
+  it("badge Filtres : le tri n'est pas compté comme un filtre", async () => {
+    const { wrapper } = await mountInventory("/collection?sort=price_desc")
+    expect(byText(wrapper, ".inventaire-toolbar button", "Filtres").text()).toBe("Filtres")
+    wrapper.unmount()
+    const second = await mountInventory("/collection?sort=price_desc&q=feu")
+    expect(byText(second.wrapper, ".inventaire-toolbar button", "Filtres").text()).toBe("Filtres (1)")
+    second.wrapper.unmount()
+  })
+
+  it("accessibilité : barre de masse en group, compteurs annoncés poliment", async () => {
+    const { wrapper } = await mountInventory()
+    expect(wrapper.get(".inventaire-total").attributes("aria-live")).toBe("polite")
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    const bar = wrapper.get(".inventaire-bulk")
+    expect(bar.attributes("role")).toBe("group")
+    expect(bar.attributes("aria-label")).toBe("Opérations sur la sélection")
+    expect(wrapper.get(".inventaire-count").attributes("aria-live")).toBe("polite")
+    wrapper.unmount()
+  })
+
+  it("« Retirer de la collection » est marqué comme destructif", async () => {
+    const { wrapper } = await mountInventory()
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    expect(byText(wrapper, ".inventaire-bulk button", "Retirer").classes()).toContain("inventaire-danger")
+    wrapper.unmount()
+  })
+
+  it("après un retrait réussi, le focus revient sur « Terminer la sélection »", async () => {
+    const { wrapper } = await mountInventory()
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    await wrapper.get("button.inventaire-pick").trigger("click")
+    await byText(wrapper, ".inventaire-bulk button", "Retirer").trigger("click")
+    modalButton("Retirer").click()
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+    expect(document.activeElement).toBe(byText(wrapper, ".inventaire-toolbar button", "Terminer").element)
+    wrapper.unmount()
+  })
+
   it("chaque bouton de sélection porte le nom de sa carte (le contenu est inert)", async () => {
     const { wrapper } = await mountInventory()
     await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")

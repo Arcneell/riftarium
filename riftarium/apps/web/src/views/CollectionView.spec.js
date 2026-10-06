@@ -220,6 +220,26 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("statistiques : « — » tant que rien n'est chargé, au lieu de zéros", async () => {
+    api.mockImplementation(() => new Promise(() => {}))
+    const { wrapper } = await mountView()
+    const stats = wrapper.findAll(".rift-stat")
+    expect(stats).toHaveLength(3)
+    for (const stat of stats) expect(stat.text()).toContain("—")
+    wrapper.unmount()
+  })
+
+  it("échec de /api/collection/sets : le classeur affiche une erreur, pas un squelette sans fin", async () => {
+    const original = api.getMockImplementation()
+    api.mockImplementation((path) =>
+      path === "/api/collection/sets" ? Promise.reject(new Error("Serveur indisponible")) : original(path)
+    )
+    const { wrapper } = await mountView()
+    expect(wrapper.findComponent(CollectionBinder).get("[role=alert]").text()).toContain("Serveur indisponible")
+    expect(wrapper.find(".shimmer").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("entrée directe en inventaire : une seule requête, un vrai changement de taille recharge", async () => {
     const { wrapper } = await mountView("/collection?vue=inventaire")
     await new Promise((resolve) => setTimeout(resolve, 400))

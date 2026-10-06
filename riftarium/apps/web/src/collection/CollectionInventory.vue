@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, unref, watch } from "vue"
+import { computed, nextTick, onMounted, reactive, ref, unref, watch } from "vue"
 import { api, session, CONDITIONS, LANGS } from "../api.js"
 import ActiveFilters from "../cards/ActiveFilters.vue"
 import CardFilters from "../cards/CardFilters.vue"
@@ -31,6 +31,8 @@ const loading = computed(() => unref(props.filters.loading))
 const error = computed(() => unref(errorRef))
 const activeCount = computed(() => unref(props.filters.activeCount))
 const pageCount = computed(() => unref(props.filters.pageCount))
+/* Le tri a ses propres puces : le badge ne compte que les filtres de la feuille. */
+const filterCount = computed(() => activeCount.value - (state.sort ? 1 : 0))
 
 function setPageError(message) {
   errorRef.value = message
@@ -70,6 +72,7 @@ const selected = ref(new Set())
 const bulk = reactive({ condition: "", lang: "", busy: false })
 const pendingRemove = ref(false)
 const removeError = ref("")
+const endButton = ref(null)
 
 function lotsTitle(item) {
   return item.entries.map((entry) => `${entry.qty}× ${entry.condition} ${entry.lang}`).join(", ")
@@ -139,6 +142,12 @@ async function applyBulk(payload) {
     }
     await load()
     emit("changed")
+    /* La modale ferme et rend le focus à « Retirer » (désormais désactivé) : on le pose sur
+       « Terminer la sélection », seule action utile restante. */
+    if (payload.remove) {
+      await nextTick()
+      endButton.value?.$el?.focus()
+    }
   } catch (e) {
     if (payload.remove) removeError.value = e.message
     else setPageError(e.message)
@@ -152,7 +161,7 @@ async function applyBulk(payload) {
   <div class="inventaire">
     <div class="inventaire-toolbar">
       <RiftButton variant="secondary" size="sm" @click="sheetOpen = true">
-        Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
+        Filtres<template v-if="filterCount"> ({{ filterCount }})</template>
       </RiftButton>
       <div class="inventaire-sort" role="group" aria-label="Trier par prix">
         <RiftChip
@@ -164,7 +173,7 @@ async function applyBulk(payload) {
         />
       </div>
       <div class="inventaire-actions">
-        <RiftButton variant="ghost" size="sm" @click="toggleSelectMode">
+        <RiftButton ref="endButton" variant="ghost" size="sm" @click="toggleSelectMode">
           {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
         </RiftButton>
         <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
@@ -176,8 +185,8 @@ async function applyBulk(payload) {
 
     <ActiveFilters :state="state" :sets="sets" @update="setFilter" @reset="reset" />
 
-    <div v-if="selectMode" class="inventaire-bulk" role="toolbar" aria-label="Opérations sur la sélection">
-      <span class="inventaire-count">{{ selected.size }} carte(s)</span>
+    <div v-if="selectMode" class="inventaire-bulk" role="group" aria-label="Opérations sur la sélection">
+      <span class="inventaire-count" aria-live="polite">{{ selected.size }} carte(s)</span>
       <RiftButton variant="ghost" size="sm" @click="selectPage">Toute la page</RiftButton>
       <span class="inventaire-sep" aria-hidden="true"></span>
       <RiftButton
@@ -224,12 +233,20 @@ async function applyBulk(payload) {
         Appliquer la langue
       </RiftButton>
       <span class="inventaire-sep" aria-hidden="true"></span>
-      <RiftButton variant="ghost" size="sm" :disabled="!selected.size || bulk.busy" @click="askRemove">
+      <RiftButton
+        variant="ghost"
+        size="sm"
+        class="inventaire-danger"
+        :disabled="!selected.size || bulk.busy"
+        @click="askRemove"
+      >
         Retirer de la collection
       </RiftButton>
     </div>
 
-    <p class="inventaire-total">{{ result.total }} carte(s) unique(s) <span v-if="loading">— chargement…</span></p>
+    <p class="inventaire-total" aria-live="polite">
+      {{ result.total }} carte(s) unique(s) <span v-if="loading">— chargement…</span>
+    </p>
     <p v-if="error" class="inventaire-error" role="alert">{{ error }}</p>
 
     <div
@@ -354,6 +371,11 @@ async function applyBulk(payload) {
   text-transform: uppercase;
   color: var(--bronze-light);
 }
+/* Action destructive : bordure et texte en rouge sang. */
+.inventaire-bulk .inventaire-danger {
+  border: 1px solid var(--blood-text);
+  color: var(--blood-text);
+}
 .inventaire-sep {
   width: 1px;
   align-self: stretch;
@@ -379,6 +401,12 @@ async function applyBulk(payload) {
   border-color: var(--bronze-light);
   outline: 2px solid var(--bronze-light);
   outline-offset: 1px;
+}
+/* Sous 560 px, 16 px minimum : iOS zoomerait sur le champ sinon. */
+@media (max-width: 560px) {
+  .inventaire-bulk select {
+    font-size: 16px;
+  }
 }
 .inventaire-total {
   margin: 0;

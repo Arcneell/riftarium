@@ -15,7 +15,9 @@ const props = defineProps({
   progress: { type: Object, default: null }, // { sets: [...], overall }
   active: { type: Boolean, default: true },
   /* Incrémentée par la page quand les données ont changé : la double page est rechargée. */
-  version: { type: Number, default: 0 }
+  version: { type: Number, default: 0 },
+  /* Message d'échec du chargement de la progression : remplace le squelette sans fin. */
+  progressError: { type: String, default: "" }
 })
 
 const {
@@ -81,14 +83,10 @@ watch(
   }
 )
 
-/* Un onglet de set focalisé garde ses flèches natives. */
-function onWindowKeydown(event) {
-  if (event.target?.getAttribute?.("role") === "tab") return
-  onKeydown(event)
-}
-
-onMounted(() => window.addEventListener("keydown", onWindowKeydown))
-onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown))
+/* Les boutons de set n'ont aucune flèche native (contrairement à un tablist) :
+   les flèches feuillettent partout, sauf dans un champ (géré par onKeydown). */
+onMounted(() => window.addEventListener("keydown", onKeydown))
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
 </script>
 
 <template>
@@ -97,22 +95,27 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown))
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
     </RiftEmpty>
 
+    <p v-else-if="!progress && progressError" class="classeur-error" role="alert">
+      Impossible de charger le classeur : {{ progressError }}
+    </p>
+
     <template v-else>
-      <div v-if="progress" class="classeur-tabs" role="tablist" aria-label="Sets du classeur">
+      <div v-if="progress" class="classeur-tabs" role="group" aria-label="Sets du classeur">
         <button
           v-for="row in sets"
           :key="row.set_id"
           type="button"
-          role="tab"
           class="classeur-tab"
           :class="{ active: row.set_id === binderSet, done: !row.missing }"
-          :aria-selected="row.set_id === binderSet"
+          :aria-pressed="row.set_id === binderSet"
           :title="missingText(row)"
           @click="selectSet(row.set_id)"
         >
           <span class="classeur-tab-top">
             <span class="classeur-tab-name">{{ row.name }}</span>
-            <span v-if="!row.missing" class="classeur-tab-pct" aria-hidden="true">✓</span>
+            <span v-if="!row.missing" class="classeur-tab-pct">
+              <span aria-hidden="true">✓</span><span class="sr-only"> set complet</span>
+            </span>
             <span v-else class="classeur-tab-pct">{{ percentOf(row) }} %</span>
           </span>
           <span class="classeur-tab-bar" aria-hidden="true"><b :style="{ width: `${percentOf(row)}%` }"></b></span>
@@ -221,7 +224,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown))
         >
           ← Tourner
         </RiftButton>
-        <span class="classeur-count">{{ spread.page }} / {{ spread.pages }}</span>
+        <span class="classeur-count" aria-live="polite">{{ spread.page }} / {{ spread.pages }}</span>
         <RiftButton
           variant="ghost"
           size="sm"

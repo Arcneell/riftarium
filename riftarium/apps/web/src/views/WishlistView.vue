@@ -13,12 +13,15 @@ import RiftSkeleton from "../ui/RiftSkeleton.vue"
    ceux du serveur, sans recalcul approximatif côté client. */
 const list = ref({ total: 0, value_eur: null, items: [] })
 const loading = ref(true)
+/* « — » dans les statistiques tant que la liste n'a jamais été reçue. */
+const loaded = ref(false)
 const error = ref("")
 const busyId = ref(null)
 
 async function refresh() {
   try {
     list.value = await api("/api/wishlist")
+    loaded.value = true
     error.value = ""
   } catch (e) {
     error.value = e.message
@@ -71,8 +74,8 @@ async function removeItem(item) {
 onMounted(refresh)
 
 const stats = computed(() => [
-  { label: "Cartes souhaitées", value: list.value.total },
-  { label: "Valeur estimée", value: formatEur(list.value.value_eur) || null, title: PRICE_NOTE }
+  { label: "Cartes souhaitées", value: loaded.value ? list.value.total : null },
+  { label: "Valeur estimée", value: loaded.value ? formatEur(list.value.value_eur) || null : null, title: PRICE_NOTE }
 ])
 </script>
 
@@ -82,7 +85,7 @@ const stats = computed(() => [
 
     <CollectionStats :items="stats" />
 
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
 
     <div v-if="loading" class="souhait-grid">
       <RiftSkeleton v-for="n in 6" :key="n" block />
@@ -204,5 +207,12 @@ const stats = computed(() => [
 .souhait-qty:focus-visible {
   outline: 2px solid var(--bronze-light);
   outline-offset: 2px;
+}
+/* Cibles tactiles : 44 px de haut pour le stepper sous 767 px (après les règles de base). */
+@media (max-width: 767px) {
+  .souhait-stepper .rift-btn,
+  .souhait-qty {
+    min-height: 44px;
+  }
 }
 </style>
