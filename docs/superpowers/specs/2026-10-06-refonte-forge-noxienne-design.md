@@ -211,7 +211,7 @@ Chaque PR :
 
 ### PR 1 : socle et coquille (`feat/refonte-socle`)
 
-- `src/styles/`, et les composants de `src/ui/` utilisés par la coquille (`RiftButton`, `RiftField`, `RiftTabs`, `RiftModal`, `RiftSheet`, `RiftText`, `RiftGlyph`) ; `RiftPanel`, `RiftChip`, `RiftEmpty` et `RiftSkeleton` arrivent en PR 2, `RiftStat` et `CardTile` en PR 3, avec leur premier usage ; redirection des
+- `src/styles/`, et les composants de `src/ui/` utilisés par la coquille (`RiftButton`, `RiftField`, `RiftTabs`, `RiftModal`, `RiftSheet`, `RiftText`, `RiftGlyph`) ; `RiftPanel` et `RiftSkeleton` arrivent en PR 2, `RiftChip`, `RiftEmpty`, `RiftStat` et `CardTile` en PR 3, avec leur premier usage ; redirection des
   anciennes variables de `main.css`.
 - `App.vue` réécrit : rail, barre haute, onglets mobiles, `RiftSheet` du
   compte, recherche universelle, pied de page.
@@ -238,6 +238,9 @@ Chaque PR :
 - **Connecté** : les mêmes blocs avec ses données (complétion de collection,
   dernier deck modifié, dernier match). Si une donnée manque à l'API, l'endpoint
   est ajouté dans cette PR (§6).
+- Composants livrés : `RiftPanel` et `RiftSkeleton` ; `RiftChip` et `RiftEmpty`, sans
+  usage sur l'accueil, arrivent en PR 3 avec leur premier consommateur. La rivière de
+  cartes (`CardRiver`) est remplacée par le mur.
 
 ### PR 3 : cartothèque et fiche carte
 
