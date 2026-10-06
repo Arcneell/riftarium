@@ -1,26 +1,27 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue"
 import { api } from "../api.js"
-import {
-  cardsQuery,
-  domainFilterOptions,
-  energyFilterOptions,
-  rarityFilterOptions,
-  typeFilterOptions
-} from "../cardText.js"
+import ActiveFilters from "../cards/ActiveFilters.vue"
+import CardFilters from "../cards/CardFilters.vue"
+import { cardsQuery } from "../cardText.js"
+import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { useScrollMemory } from "../composables/useScrollMemory.js"
-import { BANNERS } from "../banners.js"
-import CardTile from "../components/CardTile.vue"
-import FilterSelect from "../components/FilterSelect.vue"
-import PageBanner from "../components/PageBanner.vue"
+import CardTile from "../ui/CardTile.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftSheet from "../ui/RiftSheet.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 
+/* Cartothèque Forgée : filtres en panneau (feuille sur petit écran), filtres actifs en
+   puces, grille de vignettes. L'état des filtres vit dans l'URL. */
 const { restoreScroll } = useScrollMemory()
+const breakpoint = useBreakpoint()
+const desktop = computed(() => breakpoint.value === "desktop")
 
 const grid = ref(null)
 const { tileMin, size } = useGridMeasure(grid)
-
 let firstLoad = true
 
 const { state, result, loading, error, activeCount, pageCount, setFilter, reset, load, scheduleLoad } =
@@ -47,13 +48,16 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
   )
 
 const sets = ref([])
-const domainOptions = computed(() => domainFilterOptions())
-const typeOptions = computed(() => typeFilterOptions())
-const rarityOptions = computed(() => rarityFilterOptions())
-const energyOptions = computed(() => energyFilterOptions())
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
+const panelOpen = ref(true)
+const sheetOpen = ref(false)
 
-/* La taille de page suit la grille : on recharge, sauf si la page courante n'existe plus. */
+/* La saisie de `q` passe aussi par setFilter : l’état change, le watcher de signature du composable
+   débounce le chargement et ramène à la page 1. */
+function update(key, value) {
+  setFilter(key, value)
+}
+
 watch(size, () => {
   if (state.page > pageCount.value) state.page = 1
   else scheduleLoad()
@@ -64,91 +68,154 @@ onMounted(async () => {
   try {
     sets.value = await api("/api/sets")
   } catch {
-    /* filtre sets indisponible */
+    /* filtre des sets indisponible : les autres facettes restent utilisables */
   }
 })
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.cards" title="Toutes les cartes du jeu" />
-
-  <section>
-    <div class="wrap cards-wrap">
-      <div class="filter-board">
-        <label class="search filter-search">
-          <Icon name="search" :size="18" />
-          <input
-            type="search"
-            inputmode="search"
-            enterkeyhint="search"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            v-model="state.q"
-            placeholder="Jinx, ogn-202, reaction…"
-            aria-label="Rechercher une carte"
-          />
-        </label>
-        <FilterSelect
-          label="Domaines"
-          :options="domainOptions"
-          :model-value="state.domain"
-          @update:model-value="setFilter('domain', $event)"
-        />
-        <FilterSelect
-          label="Types"
-          :options="typeOptions"
-          :model-value="state.type"
-          @update:model-value="setFilter('type', $event)"
-        />
-        <FilterSelect
-          label="Raretés"
-          :options="rarityOptions"
-          :model-value="state.rarity"
-          @update:model-value="setFilter('rarity', $event)"
-        />
-        <FilterSelect
-          label="Coût"
-          :options="energyOptions"
-          :model-value="state.energy"
-          @update:model-value="setFilter('energy', $event)"
-        />
-        <FilterSelect
-          label="Sets"
-          :options="setOptions"
-          :model-value="state.set_id"
-          @update:model-value="setFilter('set_id', $event)"
-        />
-        <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
-          Réinitialiser ({{ activeCount }})
-        </button>
+  <section class="cards-page" :class="{ 'with-panel': desktop && panelOpen }">
+    <header class="cards-head">
+      <div>
+        <h1>Cartes</h1>
+        <p class="cards-count">{{ result.total }} carte{{ result.total > 1 ? "s" : "" }}</p>
       </div>
+      <RiftButton v-if="desktop" variant="ghost" size="sm" @click="panelOpen = !panelOpen">
+        {{ panelOpen ? "Masquer les filtres" : "Filtres" }}
+      </RiftButton>
+      <RiftButton v-else variant="secondary" size="sm" @click="sheetOpen = true">
+        Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
+      </RiftButton>
+    </header>
 
-      <p class="muted mono" style="font-size: 0.82rem; margin-bottom: 18px">
-        {{ result.total }} carte(s) <span v-if="loading">— chargement…</span>
-      </p>
-      <p v-if="error" class="error">{{ error }}</p>
+    <aside v-if="desktop && panelOpen" class="filters-panel" aria-label="Filtres">
+      <CardFilters :state="state" :sets="setOptions" @update="update" />
+    </aside>
 
-      <div ref="grid" class="grid-cards" :style="{ '--tile-min': `${tileMin}px` }">
+    <div class="cards-main">
+      <ActiveFilters :state="state" :sets="setOptions" @update="update" @reset="reset" />
+      <p v-if="error" class="cards-error" role="alert">{{ error }}</p>
+
+      <div v-if="loading && !result.items.length" class="cards-grid" :style="{ '--tile-min': `${tileMin}px` }">
+        <RiftSkeleton v-for="n in 12" :key="n" block />
+      </div>
+      <div
+        v-show="result.items.length"
+        ref="grid"
+        class="cards-grid"
+        :class="{ reloading: loading }"
+        :style="{ '--tile-min': `${tileMin}px` }"
+      >
         <CardTile v-for="card in result.items" :key="card.id" :card="card" />
       </div>
 
-      <!-- Même état vide que l'inventaire de la collection : dire pourquoi la
-           grille est vide, et proposer la sortie. -->
-      <div v-if="!loading && !error && !result.items.length" class="col-empty">
-        <p class="col-empty-title">Aucune carte ne correspond aux filtres</p>
-        <div v-if="activeCount" class="col-empty-actions">
-          <button class="btn btn-ghost" @click="reset">Réinitialiser les filtres</button>
-        </div>
-      </div>
+      <RiftEmpty v-if="!loading && !error && !result.items.length" title="Aucune carte ne correspond aux filtres">
+        <RiftButton v-if="activeCount" variant="secondary" size="sm" @click="reset">
+          Réinitialiser les filtres
+        </RiftButton>
+      </RiftEmpty>
 
-      <div class="pager" v-if="pageCount > 1">
-        <button class="btn btn-ghost btn-sm" :disabled="state.page <= 1" @click="state.page--">← Précédent</button>
+      <nav v-if="pageCount > 1" class="cards-pager" aria-label="Pagination">
+        <RiftButton variant="ghost" size="sm" :disabled="state.page <= 1" @click="state.page--">← Précédent</RiftButton>
         <span>page {{ state.page }} / {{ pageCount }}</span>
-        <button class="btn btn-ghost btn-sm" :disabled="state.page >= pageCount" @click="state.page++">
+        <RiftButton variant="ghost" size="sm" :disabled="state.page >= pageCount" @click="state.page++">
           Suivant →
-        </button>
-      </div>
+        </RiftButton>
+      </nav>
     </div>
   </section>
+
+  <RiftSheet v-if="sheetOpen && !desktop" title="Filtres" @close="sheetOpen = false">
+    <CardFilters :state="state" :sets="setOptions" @update="update" />
+    <div class="sheet-foot">
+      <RiftButton block @click="sheetOpen = false">Voir les {{ result.total }} cartes</RiftButton>
+    </div>
+  </RiftSheet>
 </template>
+
+<style scoped>
+.cards-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "main";
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+.cards-page.with-panel {
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-areas: "head head" "panel main";
+}
+.cards-head {
+  grid-area: head;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.cards-head h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  text-transform: uppercase;
+  background: none;
+  color: var(--ink);
+  animation: none;
+}
+.cards-count {
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.filters-panel {
+  grid-area: panel;
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  align-self: start;
+  max-height: calc(100dvh - var(--topbar-h) - var(--space-6));
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.cards-main {
+  grid-area: main;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-min, 180px), 1fr));
+  gap: var(--space-4);
+  transition: opacity var(--t-base);
+}
+.cards-grid.reloading {
+  opacity: 0.55;
+}
+.cards-error {
+  color: var(--blood-text);
+}
+.cards-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  font-family: var(--font-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.sheet-foot {
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  background: var(--bg-raised);
+}
+@media (max-width: 767px) {
+  .cards-page {
+    padding: var(--space-4);
+  }
+}
+</style>
