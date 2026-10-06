@@ -1,67 +1,78 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session, setSession } from "./api.js"
-import Logo from "./components/Logo.vue"
-import UserAvatar from "./components/UserAvatar.vue"
-import TraceursNotice from "./components/TraceursNotice.vue"
 import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
+import TraceursNotice from "./components/TraceursNotice.vue"
+import { useBreakpoint } from "./composables/useBreakpoint.js"
 import { useOnline } from "./composables/useOnline.js"
-import {
-  LEGAL_NAV,
-  CLOSED_BETA,
-  SHOW_DONATIONS,
-  RIOT_DISCLAIMER_EN,
-  RIOT_GENERAL_DISCLAIMER_EN,
-  CONTACT_EMAIL,
-  CONTACT_MAILTO
-} from "./legal.js"
+import AccountSheet from "./shell/AccountSheet.vue"
+import AppFooter from "./shell/AppFooter.vue"
+import AppRail from "./shell/AppRail.vue"
+import AppTabbar from "./shell/AppTabbar.vue"
+import AppTopbar from "./shell/AppTopbar.vue"
+import { activeSection } from "./shell/navigation.js"
+import { clearPageCrumb } from "./shell/pageCrumb.js"
+import SearchPalette from "./shell/SearchPalette.vue"
+import RiftTabs from "./ui/RiftTabs.vue"
 
 const router = useRouter()
 const route = useRoute()
-const menuOpen = ref(false)
-/* Menu du compte (desktop) : Profil, Wishlist, Administration, Déconnexion regroupés
-   derrière l'avatar — six liens de section plus quatre entrées de compte ne tenaient
-   plus sur une ligne à 1 280 px. Dans le tiroir mobile, ces entrées restent à plat. */
-const accountOpen = ref(false)
-const accountRef = ref(null)
+const breakpoint = useBreakpoint()
+const mobile = computed(() => breakpoint.value === "mobile")
+const section = computed(() => activeSection(route.path))
 
-/* Le tiroir et son voile sont en position: fixed, mais l'en-tête porte un
-   backdrop-filter : il devient bloc conteneur et les bornerait à la hauteur de la
-   barre (panneau coupé au bout de quelques dizaines de pixels). Sous 980 px, on
-   les sort donc dans <body> ; au-dessus, la barre reprend sa place dans l'en-tête. */
-const drawerQuery = typeof window !== "undefined" ? window.matchMedia("(max-width: 980px)") : null
-const drawerMode = ref(drawerQuery?.matches ?? false)
-
-function onDrawerQuery(event) {
-  drawerMode.value = event.matches
-  if (!event.matches) menuOpen.value = false
-  accountOpen.value = false
+/* Rail replié : choix mémorisé s'il existe, sinon replié sur tablette seulement.
+   Stockage indisponible (navigation privée) : le choix vit le temps de la session. */
+const RAIL_KEY = "riftarium_rail_collapsed"
+function readRailPref() {
+  try {
+    const value = localStorage.getItem(RAIL_KEY)
+    return value === null ? null : value === "1"
+  } catch {
+    return null
+  }
 }
+const railPref = ref(readRailPref())
+const railCollapsed = computed(() => railPref.value ?? breakpoint.value === "tablet")
+function toggleRail() {
+  railPref.value = !railCollapsed.value
+  try {
+    localStorage.setItem(RAIL_KEY, railPref.value ? "1" : "0")
+  } catch {
+    /* stockage bloqué : le choix n'est pas persisté */
+  }
+}
+
+const searchOpen = ref(false)
+const accountOpen = ref(false)
 
 watch(
   () => route.fullPath,
   () => {
-    menuOpen.value = false
+    searchOpen.value = false
     accountOpen.value = false
   }
 )
+watch(
+  () => route.path,
+  () => clearPageCrumb()
+)
 
-/* Clic hors du menu du compte : fermeture (pointerdown, pour précéder la navigation du lien cliqué). */
-function onPointerDown(event) {
-  if (accountOpen.value && accountRef.value && !accountRef.value.contains(event.target)) accountOpen.value = false
+function isEditable(element) {
+  return Boolean(element && (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName)))
 }
 
-/* Tiroir latéral : tant qu'il est ouvert, la page derrière ne défile plus
-   (sinon le scroll « traverse » le panneau sur iOS et Android). */
-watch(menuOpen, (open) => {
-  document.body.classList.toggle("nav-locked", open)
-})
-
+/* Ctrl/⌘ K partout ; « / » seulement hors d'un champ (sinon on ne pourrait plus le taper). */
 function onKeydown(event) {
-  if (event.key === "Escape") {
-    menuOpen.value = false
-    accountOpen.value = false
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault()
+    searchOpen.value = !searchOpen.value
+    return
+  }
+  if (event.key === "/" && !searchOpen.value && !isEditable(event.target)) {
+    event.preventDefault()
+    searchOpen.value = true
   }
 }
 
@@ -86,8 +97,6 @@ onMounted(async () => {
   window.addEventListener("riftarium:session-expired", onSessionExpired)
   window.addEventListener("riftarium:offline-page", onOfflinePage)
   window.addEventListener("keydown", onKeydown)
-  window.addEventListener("pointerdown", onPointerDown)
-  drawerQuery?.addEventListener("change", onDrawerQuery)
   if (!session.token) return
   try {
     const me = await api("/api/auth/me")
@@ -105,215 +114,64 @@ onBeforeUnmount(() => {
   window.removeEventListener("riftarium:session-expired", onSessionExpired)
   window.removeEventListener("riftarium:offline-page", onOfflinePage)
   window.removeEventListener("keydown", onKeydown)
-  window.removeEventListener("pointerdown", onPointerDown)
-  drawerQuery?.removeEventListener("change", onDrawerQuery)
-  document.body.classList.remove("nav-locked")
 })
-
-/* Garde de réentrance : deux clics rapides enverraient deux POST /logout et
-   deux router.push. Le bouton est désactivé le temps de l'appel. */
-const loggingOut = ref(false)
-
-async function logout() {
-  if (loggingOut.value) return
-  loggingOut.value = true
-  try {
-    await api("/api/auth/logout", { method: "POST" })
-  } catch {
-    /* on ferme la session locale même si le cookie a déjà expiré */
-  }
-  setSession(null, null)
-  loggingOut.value = false
-  router.push("/")
-}
 </script>
 
 <template>
-  <header class="top">
-    <div class="top-in">
-      <RouterLink class="brand" to="/" aria-label="Riftarium — accueil">
-        <Logo />
-        <span class="brand-name">Riftarium</span>
-      </RouterLink>
-      <button
-        class="burger"
-        type="button"
-        @click="menuOpen = !menuOpen"
-        :aria-expanded="menuOpen"
-        aria-controls="nav-principale"
-        aria-label="Menu"
-      >
-        <Icon name="menu" :size="20" />
-      </button>
-      <Teleport to="body" :disabled="!drawerMode">
-        <Transition name="scrim">
-          <div v-if="menuOpen" class="nav-scrim" @click="menuOpen = false"></div>
-        </Transition>
-        <nav id="nav-principale" class="nav" :class="{ open: menuOpen }" aria-label="Navigation principale">
-          <button class="nav-close" type="button" @click="menuOpen = false" aria-label="Fermer le menu">
-            <Icon name="x" :size="20" />
-          </button>
-          <RouterLink to="/cartes">Cartes</RouterLink>
-          <RouterLink to="/regles">Règles</RouterLink>
-          <RouterLink to="/collection">Collection</RouterLink>
-          <RouterLink to="/scan">Scanner</RouterLink>
-          <RouterLink to="/decks">Decks</RouterLink>
-          <RouterLink to="/communaute">Communauté</RouterLink>
-          <!-- Tiroir mobile : entrées de compte à plat (la place ne manque pas). -->
-          <template v-if="session.token && drawerMode">
-            <RouterLink to="/historique">Historique</RouterLink>
-            <RouterLink to="/statistiques">Statistiques</RouterLink>
-            <RouterLink to="/amis">Amis</RouterLink>
-            <RouterLink to="/wishlist">Wishlist</RouterLink>
-            <RouterLink v-if="session.isAdmin" class="nav-admin" to="/admin">Administration</RouterLink>
-            <RouterLink class="nav-profile" to="/profil" :title="`Profil de ${session.handle}`">
-              <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
-              <span>{{ session.handle }}</span>
-            </RouterLink>
-            <button class="btn btn-ghost btn-sm" :disabled="loggingOut" @click="logout">Déconnexion</button>
-          </template>
-          <!-- Desktop : un seul bouton (avatar + pseudo) qui déroule les entrées de compte. -->
-          <div v-else-if="session.token" ref="accountRef" class="account">
-            <button
-              type="button"
-              class="account-btn"
-              :class="{ open: accountOpen }"
-              :aria-expanded="accountOpen"
-              aria-haspopup="menu"
-              aria-controls="menu-compte"
-              :title="`Compte de ${session.handle}`"
-              @click="accountOpen = !accountOpen"
-            >
-              <UserAvatar :src="session.avatarUrl" :handle="session.handle" :size="28" />
-              <span class="account-name">{{ session.handle }}</span>
-              <Icon name="chevron" :size="14" />
-            </button>
-            <Transition name="account">
-              <div v-if="accountOpen" id="menu-compte" class="account-menu" role="menu" aria-label="Mon compte">
-                <RouterLink role="menuitem" to="/profil">Profil</RouterLink>
-                <RouterLink role="menuitem" to="/historique">Historique</RouterLink>
-                <RouterLink role="menuitem" to="/statistiques">Statistiques</RouterLink>
-                <RouterLink role="menuitem" to="/amis">Amis</RouterLink>
-                <RouterLink role="menuitem" to="/wishlist">Wishlist</RouterLink>
-                <RouterLink v-if="session.isAdmin" role="menuitem" class="nav-admin" to="/admin"
-                  >Administration</RouterLink
-                >
-                <button role="menuitem" type="button" :disabled="loggingOut" @click="logout">Déconnexion</button>
-              </div>
-            </Transition>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <div class="shell" :class="{ 'shell--mobile': mobile, 'shell--collapsed': !mobile && railCollapsed }">
+    <AppRail v-if="!mobile" :collapsed="railCollapsed" @toggle="toggleRail" />
+    <div class="shell-main">
+      <AppTopbar :mobile="mobile" @search="searchOpen = true" @account="accountOpen = true" />
+      <RiftTabs v-if="mobile && section?.children" :items="section.children" :label="section.label" />
+      <EmailVerifyNotice />
+      <div v-if="offlinePage" class="verify-notice" role="status">
+        <p>Hors ligne : cette page n'est pas disponible sans connexion. Les règles restent consultables.</p>
+      </div>
+      <main id="contenu" class="shell-content">
+        <RouterView v-slot="{ Component, route: viewRoute }">
+          <div class="page" :key="viewRoute.path">
+            <component :is="Component" />
           </div>
-          <RouterLink v-else class="btn btn-gold btn-sm" to="/connexion">Connexion</RouterLink>
-        </nav>
-      </Teleport>
-      <span class="beta-mark" :title="CLOSED_BETA ? 'Bêta fermée, non indexée, accès sur invitation' : 'Bêta'">{{
-        CLOSED_BETA ? "bêta fermée" : "bêta"
-      }}</span>
+        </RouterView>
+      </main>
+      <AppFooter />
     </div>
-  </header>
-  <div class="prism"></div>
-  <EmailVerifyNotice />
-  <div v-if="offlinePage" class="verify-notice" role="status">
-    <p>Hors ligne : cette page n'est pas disponible sans connexion. Les règles restent consultables.</p>
+    <AppTabbar v-if="mobile" />
   </div>
-
-  <main>
-    <RouterView v-slot="{ Component, route: viewRoute }">
-      <Transition name="page" mode="out-in">
-        <div class="page" :key="viewRoute.path">
-          <component :is="Component" />
-        </div>
-      </Transition>
-    </RouterView>
-  </main>
-
-  <footer>
-    <div class="footer-in">
-      <div class="footer-grid">
-        <div class="footer-about">
-          <div class="footer-brand"><Logo /><b>Riftarium</b></div>
-          <p>
-            Un site fan-made pour Riftbound : cartes, règles officielles, collection et decks. Développé par un joueur,
-            gratuit, au code source ouvert.
-          </p>
-          <p v-if="CLOSED_BETA" class="footer-contact">
-            Bêta fermée : accès sur invitation, pour tests et retours de bugs.
-          </p>
-          <p class="footer-contact">
-            Contact :
-            <a :href="CONTACT_MAILTO">{{ CONTACT_EMAIL }}</a>
-          </p>
-        </div>
-        <div>
-          <p class="foot-head">Explorer</p>
-          <ul>
-            <li><RouterLink to="/cartes">Cartothèque</RouterLink></li>
-            <li><RouterLink to="/regles">Règles</RouterLink></li>
-            <li><RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink></li>
-            <li><RouterLink to="/decks">Deck builder</RouterLink></li>
-            <li><RouterLink to="/communaute">Decks de la communauté</RouterLink></li>
-            <li><RouterLink to="/scan">Scanner une carte</RouterLink></li>
-          </ul>
-        </div>
-        <div v-if="session.token">
-          <p class="foot-head">Mon compte</p>
-          <ul>
-            <li><RouterLink to="/collection">Ma collection</RouterLink></li>
-            <li><RouterLink to="/wishlist">Ma wishlist</RouterLink></li>
-            <li><RouterLink to="/historique">Mes parties suivies</RouterLink></li>
-            <li><RouterLink to="/statistiques">Mes statistiques</RouterLink></li>
-            <li><RouterLink to="/amis">Mes amis</RouterLink></li>
-            <li><RouterLink to="/profil">Mon profil</RouterLink></li>
-          </ul>
-        </div>
-        <div>
-          <p class="foot-head">Le projet</p>
-          <ul>
-            <li>
-              <a href="https://github.com/Arcneell/riftarium" target="_blank" rel="noopener">Code source (GitHub)</a>
-            </li>
-            <li>
-              <a href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener">Signaler un bug</a>
-            </li>
-            <li>
-              <!-- Toujours la dernière release : l'asset garde le nom fixe riftarium.apk. -->
-              <a
-                href="https://github.com/Arcneell/riftarium/releases/latest/download/riftarium.apk"
-                title="Version de test signée hors Play Store : autoriser l'installation de sources inconnues."
-                >Application Android (APK)</a
-              >
-            </li>
-            <li><a href="https://api.riftcodex.com/docs" target="_blank" rel="noopener">Données : API Riftcodex</a></li>
-            <li>
-              <a href="https://playriftbound.com/fr-fr/" target="_blank" rel="noopener">Site officiel Riftbound</a>
-            </li>
-            <li v-if="SHOW_DONATIONS">
-              <a href="https://ko-fi.com/arcneell" target="_blank" rel="noopener" class="footer-support"
-                >Soutenir le projet (Ko-fi)</a
-              >
-            </li>
-          </ul>
-        </div>
-        <div>
-          <p class="foot-head">Légal</p>
-          <ul>
-            <li v-for="item in LEGAL_NAV" :key="item.key">
-              <RouterLink :to="item.path">{{ item.label }}</RouterLink>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <!-- Avertissements Riot dans leur version anglaise, la seule que la politique
-           « Legal Jibber Jabber » impose de reproduire. La traduction française
-           reste sur les pages légales, où elle a la place d'être lue. -->
-      <div class="footer-legal">
-        <p>{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
-        <p>{{ RIOT_DISCLAIMER_EN }}</p>
-        <p class="footer-legal-wide">
-          Visuels et textes officiels © Riot Games, Inc., servis depuis le CDN de Riot. Détail sur les
-          <RouterLink to="/mentions-legales">mentions légales</RouterLink>.
-        </p>
-      </div>
-    </div>
-  </footer>
+  <SearchPalette v-if="searchOpen" @close="searchOpen = false" />
+  <AccountSheet v-if="accountOpen" @close="accountOpen = false" />
   <TraceursNotice />
 </template>
+
+<style scoped>
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: -60px;
+  z-index: var(--z-overlay);
+  padding: var(--space-2) var(--space-3);
+  background: var(--blood);
+  color: #fff;
+}
+.skip-link:focus {
+  top: var(--space-2);
+}
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: var(--rail-w);
+}
+.shell--collapsed .shell-main {
+  margin-left: var(--rail-w-collapsed);
+}
+.shell--mobile .shell-main {
+  margin-left: 0;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+}
+.shell-content {
+  flex: 1;
+}
+</style>

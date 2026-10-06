@@ -161,20 +161,6 @@ section {
 .page {
   min-height: 40vh;
 }
-.page-enter-active,
-.page-leave-active {
-  transition:
-    opacity 0.22s ease,
-    transform 0.22s ease;
-}
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(14px);
-}
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
 
 /* ---------- Tilt 3D (cartes) ---------- */
 .tilt {
@@ -214,233 +200,6 @@ section {
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
-}
-
-/* ---------- Bandeau prisme ---------- */
-.prism {
-  height: 3px;
-  background: var(--prism);
-  opacity: 0.8;
-}
-
-/* ---------- En-tête ---------- */
-.top {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(10, 20, 40, 0.78);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--line);
-}
-/* viewport-fit=cover : en PWA installée, le contenu passe sous la barre d'état
-   et sous les encoches en paysage. Les insets valent 0 partout ailleurs, donc
-   le rendu desktop est inchangé. */
-.top-in {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(28px + env(safe-area-inset-right, 0px)) 12px
-    calc(28px + env(safe-area-inset-left, 0px));
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.brand .logo {
-  width: 42px;
-  height: 42px;
-  transition: transform 0.5s cubic-bezier(0.22, 0.8, 0.32, 1);
-}
-.brand:hover .logo {
-  transform: rotate(24deg);
-}
-.brand-name {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  letter-spacing: 0.1em;
-  color: var(--ink-strong);
-}
-
-.nav {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-  align-items: center;
-}
-.nav a {
-  color: var(--muted);
-  font-size: 0.93rem;
-  padding: 8px 16px;
-  border-radius: var(--r-full);
-  transition:
-    color 0.2s,
-    background 0.2s;
-}
-.nav a:hover {
-  color: var(--ink-strong);
-  background: rgba(176, 138, 62, 0.12);
-}
-.nav a.router-link-active:not(.brand):not(.btn) {
-  color: var(--ink-strong);
-  background: rgba(176, 138, 62, 0.18);
-}
-.nav a.btn-gold {
-  color: #fdf8ec;
-}
-.nav a.btn-gold:hover {
-  color: #fff;
-}
-.nav .chip {
-  border-radius: var(--r-full);
-}
-.nav-profile {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 14px 4px 4px;
-  font-weight: 600;
-}
-.nav-profile .avatar {
-  flex-shrink: 0;
-}
-
-/* Menu du compte (desktop) : bouton-pilule avatar + pseudo, panneau déroulant ancré à droite. */
-.account {
-  position: relative;
-  flex-shrink: 0;
-}
-.account-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 4px 10px 4px 4px;
-  border-radius: var(--r-full);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-strong);
-  font: inherit;
-  font-size: 0.93rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    border-color 0.2s;
-}
-.account-btn:hover,
-.account-btn.open {
-  background: rgba(176, 138, 62, 0.12);
-  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
-}
-.account-btn svg {
-  color: var(--muted);
-  transition: transform 0.2s;
-}
-.account-btn.open svg {
-  transform: rotate(180deg);
-}
-.account-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  min-width: 200px;
-  display: grid;
-  gap: 2px;
-  padding: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--line-strong);
-  background: var(--paper);
-  box-shadow: 0 14px 34px rgba(10, 20, 40, 0.18);
-  z-index: 60;
-}
-.account-menu a,
-.account-menu button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.93rem;
-  cursor: pointer;
-}
-.account-menu a:hover,
-.account-menu button:hover,
-.account-menu a:focus-visible,
-.account-menu button:focus-visible {
-  background: rgba(176, 138, 62, 0.14);
-  color: var(--ink-strong);
-}
-.account-menu button {
-  color: var(--fury-text);
-}
-.account-enter-active,
-.account-leave-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-}
-.account-enter-from,
-.account-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-/* Largeurs intermédiaires (981–1140 px) : six liens de section + compte tiennent à
-   condition de retirer le pseudo (l'avatar suffit, le pseudo est dans le menu et le titre)
-   et la mention « bêta », que le pied de page répète. */
-@media (max-width: 1140px) {
-  .account-name {
-    display: none;
-  }
-  .top .beta-mark {
-    display: none;
-  }
-}
-
-.beta-mark {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  /* Texte opaque (l'ancienne opacité 0.4 rendait la mention illisible), cadre laissé discret. */
-  color: var(--gold-deep);
-  pointer-events: none;
-  user-select: none;
-  padding: 3px 8px 2px;
-  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--paper) 35%, transparent);
-  white-space: nowrap;
-}
-
-.burger {
-  display: none;
-  margin-left: auto;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--line-strong);
-  color: var(--gold-deep);
-  font-size: 1.15rem;
-}
-
-/* Tiroir de navigation mobile : voile et bouton de fermeture n'existent
-   qu'en dessous de 980 px, où .nav bascule en panneau latéral. */
-.nav-close {
-  display: none;
-}
-.nav-scrim {
-  display: none;
 }
 
 /* ---------- Boutons ---------- */
@@ -2384,102 +2143,6 @@ main {
   min-height: calc(100dvh - 70px);
 }
 
-/* ---------- Pied de page ---------- */
-footer {
-  margin-top: 64px;
-  border-top: 1px solid var(--line-strong);
-  background: var(--paper-2);
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.footer-in {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 28px 24px;
-}
-/* Colonnes en flex : la colonne « Mon compte » n'existe que connecté, la
-   rangée se répartit d'elle-même ; chaque catégorie tient en 5-6 liens. */
-.footer-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 32px 44px;
-  margin-bottom: 28px;
-}
-.footer-about {
-  flex: 2 1 250px;
-  max-width: 330px;
-}
-.footer-grid > div:not(.footer-about) {
-  flex: 1 1 150px;
-}
-/* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
-.footer-grid .foot-head {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 16px;
-}
-.footer-grid ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.footer-grid ul a {
-  white-space: nowrap;
-}
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.footer-brand .logo {
-  width: 34px;
-  height: 34px;
-}
-.footer-brand b {
-  font-family: var(--font-display);
-  color: var(--ink-strong);
-  font-size: 1.05rem;
-  letter-spacing: 0.08em;
-}
-.footer-contact {
-  margin-top: 14px;
-}
-/* Lien de soutien (Ko-fi) : discret mais repérable. */
-.footer-support {
-  color: var(--gold-deep);
-  font-weight: 600;
-}
-.footer-in > p {
-  margin-bottom: 8px;
-  max-width: 100ch;
-  font-size: 0.76rem;
-}
-/* Mentions Riot : disclaimers EN/FR côte à côte, tout le contenu conservé mais compact. */
-.footer-legal {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 24px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-  font-size: 0.62rem;
-  line-height: 1.4;
-  color: var(--muted);
-}
-.footer-legal .footer-legal-wide {
-  grid-column: 1 / -1;
-}
-@media (max-width: 760px) {
-  .footer-legal {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .traceurs-notice {
   position: fixed;
   z-index: 80;
@@ -2538,13 +2201,14 @@ footer {
 /* Bandeau discret : adresse e-mail du compte non vérifiée. */
 .verify-notice {
   display: flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
-  padding: 10px 18px;
-  background: rgba(171, 124, 26, 0.1);
-  border-bottom: 1px solid var(--line);
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-3) var(--space-5) 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--blood);
+  font-size: 14px;
 }
 .verify-notice p {
   margin: 0;
@@ -2731,132 +2395,6 @@ footer {
   }
 }
 
-/* Palier intermédiaire : la barre complète est resserrée avant de basculer en
-   menu déroulant, sinon elle déborde entre 980 et 1 140 px pour un visiteur
-   connecté (liens + profil + déconnexion + marque bêta). */
-@media (max-width: 1140px) {
-  .nav {
-    gap: 2px;
-  }
-  .nav a {
-    padding: 8px 10px;
-    font-size: 0.86rem;
-  }
-  .nav-profile {
-    padding: 4px 8px 4px 4px;
-  }
-  .brand-name {
-    font-size: 1.15rem;
-  }
-  .beta-mark {
-    letter-spacing: 0.12em;
-  }
-}
-
-/* Navigation en tiroir latéral dès que la barre complète ne tient plus : une fois
-   connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px.
-   Le panneau glisse depuis la droite (pouce à portée) plutôt que de tomber du haut. */
-@media (max-width: 980px) {
-  .burger {
-    display: grid;
-    place-items: center;
-  }
-  .nav-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    /* au-dessus du bandeau traceurs (80), qui sinon flottait sur le tiroir */
-    z-index: 85;
-    background: rgba(3, 7, 16, 0.6);
-    backdrop-filter: blur(2px);
-  }
-  .scrim-enter-active,
-  .scrim-leave-active {
-    transition: opacity 0.28s ease;
-  }
-  .scrim-enter-from,
-  .scrim-leave-to {
-    opacity: 0;
-  }
-  .nav {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: auto;
-    width: min(310px, 84vw);
-    margin-left: 0;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 4px;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
-      calc(24px + env(safe-area-inset-bottom, 0px)) 16px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    background: rgba(13, 24, 44, 0.98);
-    backdrop-filter: blur(18px);
-    border-left: 1px solid var(--line-strong);
-    box-shadow: -20px 0 56px rgba(0, 0, 0, 0.5);
-    transform: translateX(101%);
-    /* visibility retardée : le panneau reste focusable pendant la fermeture,
-       puis sort de l'ordre de tabulation une fois hors écran. */
-    transition:
-      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
-      visibility 0s linear 0.28s;
-    /* au-dessus de l'en-tête collant (50), du bandeau traceurs (80) et du voile (85) */
-    z-index: 90;
-    visibility: hidden;
-  }
-  .nav.open {
-    transform: none;
-    visibility: visible;
-    transition:
-      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
-      visibility 0s;
-  }
-  /* flex-shrink: 0 — sur un écran court, les entrées se tassaient au lieu de
-     laisser le panneau défiler. */
-  .nav a {
-    flex: 0 0 auto;
-    padding: 13px 16px;
-    text-align: left;
-    font-size: 1rem;
-  }
-  .nav .btn {
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    padding-left: 16px;
-  }
-  .nav-profile {
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    padding: 10px 16px;
-    margin-top: 8px;
-    border-top: 1px solid var(--line);
-    border-radius: 0;
-  }
-  .nav-close {
-    display: grid;
-    place-items: center;
-    align-self: flex-end;
-    flex: 0 0 auto;
-    margin-bottom: 6px;
-    width: 42px;
-    height: 42px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--line-strong);
-    color: var(--gold-deep);
-    background: transparent;
-  }
-  .beta-mark {
-    position: absolute;
-    top: 50%;
-    right: 70px;
-    transform: translateY(-50%);
-  }
-}
-
 @media (max-width: 760px) {
   .filter-search {
     flex-basis: 100%;
@@ -2879,12 +2417,6 @@ footer {
   }
   .hero-fan {
     display: none;
-  }
-  .footer-grid {
-    gap: 24px 32px;
-  }
-  .footer-about {
-    max-width: none;
   }
   .traceurs-notice {
     flex-direction: column;
@@ -7771,18 +7303,6 @@ button.deck-box-stat:hover,
     animation: none;
   }
 
-  /* Pied de page : 19 liens de 16 px de haut, collés les uns aux autres. */
-  .footer-grid ul {
-    gap: 2px;
-  }
-  .footer-grid ul a {
-    display: block;
-    padding: 12px 0;
-  }
-  .footer-in {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  }
-
   /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
      bouton qu'au-delà de 600 px défilés). */
   .rules-back-top {
@@ -7946,7 +7466,6 @@ button.deck-box-stat:hover,
   .guide-term,
   .topic-example span,
   .card-credit,
-  .footer-legal,
   .chart-table th,
   .curve-legend,
   .row-lack {
