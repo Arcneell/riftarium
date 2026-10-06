@@ -213,7 +213,7 @@ reste disponible en secours manuel.
 Une application native iOS et Android en Flutter est en cours dans
 `apps/mobile` ; elle consomme la même API que le site. Organisation, toolchain,
 contrat d'API et feuille de route : [`WORKFLOW.md`](../WORKFLOW.md) à la racine
-du dépôt. La PWA et le scan web restent en place tant qu'elle n'est pas publiée.
+du dépôt. La PWA reste en place tant qu'elle n'est pas publiée ; le scan web a été retiré.
 
 ## Aperçu de partage
 

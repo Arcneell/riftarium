@@ -78,6 +78,7 @@ Les noms sont neufs et décrivent leur rôle.
 | `--line` | `#2f2721` | séparateurs discrets |
 | `--blood` | `#b3262b` | action principale, liseré du rail, onglet actif |
 | `--blood-bright` | `#d23a33` | accent textuel sur fond noir |
+| `--blood-text` | `#e0605a` | accent dans du texte courant (≥ 5,3:1) ; `--blood-bright` est réservé aux grands titres et graphismes |
 | `--bronze` | `#8a6e4b` | filets, bordures, boutons secondaires |
 | `--bronze-light` | `#d6b98c` | intertitres, prix, focus |
 | `--ink` | `#e9e2d8` | texte |
@@ -210,7 +211,7 @@ Chaque PR :
 
 ### PR 1 : socle et coquille (`feat/refonte-socle`)
 
-- `src/styles/`, `src/ui/` (tous les composants du §3.3), redirection des
+- `src/styles/`, et les composants de `src/ui/` utilisés par la coquille (`RiftButton`, `RiftField`, `RiftTabs`, `RiftModal`, `RiftSheet`, `RiftText`, `RiftGlyph`) ; `RiftPanel`, `RiftChip`, `RiftEmpty` et `RiftSkeleton` arrivent en PR 2, `RiftStat` et `CardTile` en PR 3, avec leur premier usage, redirection des
   anciennes variables de `main.css`.
 - `App.vue` réécrit : rail, barre haute, onglets mobiles, `RiftSheet` du
   compte, recherche universelle, pied de page.

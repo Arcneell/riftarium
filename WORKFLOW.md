@@ -9,7 +9,7 @@ dans son propre `README.md`.
 
 - **La PWA n'est plus la cible mobile.** Elle reste servie par le site tant que
   l'application n'est pas publiée (icône iOS capricieuse, premier chargement
-  lent à cause du moteur OCR tesseract.js de 15 Mo, service worker complexe pour
+  lent à cause du moteur OCR tesseract.js de 15 Mo, retiré depuis, service worker complexe pour
   peu de gain).
 - **Cible mobile : une application native iOS + Android en Flutter**, dans
   `riftarium/apps/mobile`. Une seule base de code Dart, rendu natif, caméra et
@@ -58,9 +58,10 @@ CLAUDE.md        pointeur vers ce fichier pour Claude Code
 4. **Ne pas modifier `apps/web` ou `apps/api` pour un besoin mobile**, sauf
    changement de contrat d'API décrit en §6 : dans ce cas l'API bouge d'abord,
    avec tests pytest, en restant compatible avec le web existant.
-5. **Ne pas retirer** le scanner web (`scanOcr.js`, `useCardScanner.js`,
-   `ScanView.vue`, `/ocr/*`), le service worker (`public/sw.js`) ni le manifest
+5. **Ne pas retirer** le service worker (`public/sw.js`) ni le manifest
    (`site.webmanifest`) tant que l'application n'est pas en store (§8, phase 9).
+   Le scanner web (tesseract.js, `/scan`, `/ocr/*`) a été retiré avec la refonte
+   « Forge noxienne » (octobre 2026) : le scan est réservé à l'application mobile.
 6. Secrets et signatures hors git : `android/key.properties`, `*.jks`,
    `*.keystore`, profils et certificats iOS. Les `.gitignore` de `apps/mobile`,
    `android/` et `ios/` générés par Flutter les couvrent ; vérifier avant d'ajouter
@@ -184,8 +185,8 @@ docker compose -f compose.yaml config --quiet && python scripts/check_compose_se
 - **Règles officielles** : `data/rules-fr.json` embarqué dans l'app comme asset
   (consultation hors ligne, comme le service worker le permettait) ; rafraîchi
   depuis `https://riftarium.re/data/rules-fr.json` quand le réseau est là.
-- **Scan** : le web identifie par empreinte dHash côté client + lecture OCR du
-  code collector, contre l'index `GET /api/cards/hashes`. Le mobile lit le code
+- **Scan** : le scanner web a été retiré (octobre 2026) ; l'index
+  `GET /api/cards/hashes` reste servi pour le mobile. Le mobile lit le code
   collector avec ML Kit (natif, instantané) ; la dHash n'est réimplémentée en
   Dart (paquet `image`) que si la lecture du code ne suffit pas.
 
@@ -216,6 +217,10 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   révélations en cascade, squelettes, boutons or, puces de domaine). **Lire
   `lib/app/design/README.md` avant tout écran.** iOS garde ses gestes et
   transitions ; l'habillage est celui de la marque sur les deux plateformes.
+- **Charte à venir** : le site est passé à la charte « Forge noxienne » (noir, rouge
+  sang, bronze ; Cinzel + Barlow ; rail latéral). `lib/app/design/` devra la reprendre
+  dans un chantier dédié ; référence : `apps/web/README.md` et la spec
+  `docs/superpowers/specs/2026-10-06-refonte-forge-noxienne-design.md`.
 - **Images** : jamais d'URL de carte brute. `CardImage` redimensionne via le CDN
   (`w=`), met en cache 30 jours (`riftImageCache`) et `precacheCardThumbs`
   précharge la page suivante d'une grille.
@@ -295,8 +300,8 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
       signature) côté site et passer l'intent-filter en `autoVerify` ; iOS :
       entitlement Associated Domains + `apple-app-site-association` (Team ID).
       Régénérer les icônes depuis un visuel ≥ 1024 px.
-- [ ] **Phase 9 : après publication.** Décider du retrait du service worker, du
-      manifest PWA et du scanner web (15 Mo d'OCR). Décision à reprendre, pas acquise.
+- [ ] **Phase 9 : après publication.** Décider du retrait du service worker et du
+      manifest PWA (le scanner web est déjà retiré). Décision à reprendre, pas acquise.
 
 ## 9. Workflow git
 
