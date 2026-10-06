@@ -258,6 +258,18 @@ Chaque PR :
     `RiftStat` (énergie, puissance, rune), le texte via `RiftText` dans un
     `RiftPanel`, puis les métadonnées (set, numéro, artiste, rareté).
 
+- **Livré** :
+  - composants : `RiftChip`, `RiftEmpty`, `RiftStat`, `CardTile` (`src/ui/`),
+    plus `CardFilters`, `ActiveFilters` et `CardCollectionPanel`
+    (`src/cards/`) ;
+  - la nouvelle vignette a pour classe racine `rift-tile` et la fiche utilise le
+    préfixe `fiche-`, pour éviter toute collision avec les anciennes classes
+    globales ;
+  - l'ancienne vignette (`components/CardTile.vue`) et `FilterSelect` restent
+    pour les pages collection, wishlist et decks jusqu'à leurs PR ;
+  - les styles de l'ancienne liste et de l'ancienne fiche sont retirés de
+    `main.css`.
+
 ### PR 4 : collection et wishlist
 
 - Résumé chiffré et complétion par set (barres Forgées).
