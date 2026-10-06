@@ -1,0 +1,83 @@
+/* ============================================================
+   Riftarium — tokens « Forge noxienne »
+   Noir de forge, rouge sang pour l'action, bronze pour la matière.
+   Seul endroit où une couleur, une police ou une dimension de
+   coquille est définie. Les composants consomment ces variables.
+   ============================================================ */
+:root {
+  /* Fonds */
+  --bg: #0d0d0f;
+  --bg-raised: #17120f;
+  --bg-sunken: #110e0c;
+  --line: #2f2721;
+
+  /* Sang : action principale, liseré, rubrique active.
+     --blood-bright : grands titres et graphismes seulement (3,9:1).
+     --blood-text : accent du texte courant (≥ 5,3:1). */
+  --blood: #b3262b;
+  --blood-bright: #d23a33;
+  --blood-text: #e0605a;
+
+  /* Bronze : filets, bordures (--bronze), intertitres, prix, focus (--bronze-light). */
+  --bronze: #8a6e4b;
+  --bronze-light: #d6b98c;
+
+  /* Texte */
+  --ink: #e9e2d8;
+  --ink-muted: #9a8f80;
+
+  /* Domaines officiels (pastilles, graphiques) et variantes texte (≥ 4,5:1). */
+  --fury: #cf4437;
+  --calm: #178f7f;
+  --mind: #7355cf;
+  --body: #3f8f50;
+  --chaos: #c2439b;
+  --order: #ab7c1a;
+  --fury-text: #f0705f;
+  --calm-text: #3ecfbb;
+  --mind-text: #a68df5;
+  --body-text: #6cc47e;
+  --chaos-text: #e77ac4;
+  --order-text: #d9a94e;
+
+  /* Familles officielles des mots-clés. */
+  --kw-timing: #24705f;
+  --kw-combat: #cc356e;
+  --kw-state: #94b42a;
+  --kw-utility: #6c6d6c;
+
+  /* Polices */
+  --font-display: "Cinzel", Georgia, serif;
+  --font-label: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Barlow", system-ui, sans-serif;
+
+  /* Espacements */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Formes : la signature vient des angles coupés, pas de l'arrondi. */
+  --radius-s: 2px;
+  --radius-m: 4px;
+  --radius-card: 10px;
+  --cut: 10px;
+
+  /* Ombres et durées */
+  --shadow-deep: 0 18px 40px rgba(0, 0, 0, 0.55);
+  --t-fast: 150ms;
+  --t-base: 200ms;
+
+  /* Coquille */
+  --rail-w: 220px;
+  --rail-w-collapsed: 64px;
+  --topbar-h: 52px;
+  --tabbar-h: 60px;
+  --z-topbar: 30;
+  --z-rail: 40;
+  --z-tabbar: 50;
+  --z-overlay: 100;
+}

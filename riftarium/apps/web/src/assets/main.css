@@ -1,307 +1,10 @@
 /* ============================================================
-   Riftarium — thème « Vitrine hextech »
-   Nuit de Piltover : bleu abyssal en fond, laiton pour la
-   matière, sarcelle hextech pour l'interaction. Les cartes
-   sont la source de lumière, l'écrin reste sombre et discret.
-   Les noms de variables datent du thème parchemin : --paper
-   désigne toujours le fond de page, --ink le texte.
+   Ancienne feuille globale — en cours de démantèlement.
+   Chaque PR de la refonte « Forge noxienne » supprime la tranche
+   des pages qu'elle réécrit. Les anciennes variables pointent
+   vers les tokens de src/styles/tokens.css, pour que les pages
+   pas encore refaites prennent déjà la palette.
    ============================================================ */
-
-/* Polices auto-hébergées (latin + latin-ext) — pas de requête vers Google. */
-@font-face {
-  font-family: "Marcellus";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/marcellus-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Marcellus";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/marcellus-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-600.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-600.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-700.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-700.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-600.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-ext-600.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Cinzel (police variable, graisses 400 à 900) : capitales épigraphiques pour
-   les titres — les bas-de-casse sortent en petites capitales, c'est voulu. */
-@font-face {
-  font-family: "Cinzel";
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url("./fonts/cinzel-latin-var.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Cinzel";
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url("./fonts/cinzel-latin-ext-var.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-
-:root {
-  /* Fonds : nuit de Piltover. --paper reste le fond de page, --paper-2 les
-     surfaces posées dessus, --surface les panneaux translucides (verre). */
-  --paper: #0a1428;
-  --paper-2: #13233f;
-  --surface: rgba(19, 33, 59, 0.72);
-  /* Surface opaque des champs de saisie et fonds pleins (ex-#fdfaf2). */
-  --surface-solid: #101d33;
-  /* Filets laiton. */
-  --line: rgba(201, 167, 92, 0.16);
-  --line-strong: rgba(201, 167, 92, 0.4);
-
-  /* Texte : bleu-clair lunaire, champagne pour les titres. */
-  --ink: #d7e0ec;
-  --ink-strong: #f2ead6;
-  /* Contraste ≥ 4.5:1 sur les deux fonds nuit. */
-  --muted: #94a3b9;
-
-  /* Laiton : --gold-deep sert aux liens et intertitres (clair sur nuit). */
-  --gold: #c9a75c;
-  --gold-deep: #dcc07e;
-  --gold-soft: #a98338;
-  --gold-grad: linear-gradient(135deg, #d9bd82 0%, #b08a3e 55%, #8a6a2f 100%);
-
-  /* Hex : l'énergie hextech, éclaircie pour la nuit. --hex-soft est le fond
-     des états « activé » (interrupteurs), sombre teinté sarcelle. */
-  --hex: #35e0d0;
-  --hex-soft: #143c3f;
-
-  --fury: #cf4437;
-  --calm: #178f7f;
-  --mind: #7355cf;
-  --body: #3f8f50;
-  --chaos: #c2439b;
-  --order: #ab7c1a;
-
-  /* Variantes « texte » des couleurs de domaine : éclaircies juste ce qu'il faut
-     pour un contraste ≥ 4.5:1 sur fond nuit. Réservées au texte — les pastilles
-     et chips graphiques gardent les teintes d'origine ci-dessus. */
-  --fury-text: #f0705f;
-  --calm-text: #3ecfbb;
-  --mind-text: #a68df5;
-  --body-text: #6cc47e;
-  --chaos-text: #e77ac4;
-  --order-text: #d9a94e;
-  --hex-text: #43d6c6;
-
-  --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
-
-  --r-sm: 12px;
-  --r: 18px;
-  --r-lg: 28px;
-  --r-full: 999px;
-
-  --shadow: 0 16px 40px rgba(2, 6, 16, 0.5);
-  --shadow-soft: 0 8px 22px rgba(2, 6, 16, 0.38);
-  --glow-hex: 0 0 0 3px rgba(53, 224, 208, 0.18);
-  --glow-gold: 0 10px 30px rgba(201, 167, 92, 0.24);
-
-  --font-display: "Cinzel", "Marcellus", serif;
-  --font-body: "Outfit", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-  /* Le défilement animé n'est pas une transition CSS : il faut le couper à part,
-     sinon chaque ancre des règles reste un long glissement. */
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-html {
-  scroll-behavior: smooth;
-  /* En-tête collant (~67 px) : sans cette réserve, une ancre (scrollIntoView du
-     lecteur de règles) amenait la cible juste sous la barre, donc invisible. */
-  scroll-padding-top: 84px;
-}
-
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 16.5px;
-  line-height: 1.7;
-  /* dvh : sur mobile, 100vh inclut la barre d'adresse rétractable et créait un
-     défilement d'une cinquantaine de pixels sur des pages pourtant courtes. */
-  min-height: 100dvh;
-  overflow-x: hidden;
-}
-
-/* Défilement de la page bloqué : posé par le tiroir de navigation ET par toute
-   modale (ModalDialog). Règle globale et non cantonnée au palier mobile — sur
-   desktop aussi, la page défilait derrière une modale ouverte. */
-body.nav-locked {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-/* Fond décoratif sur un calque fixe composité : zéro repaint au défilement. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(1200px 620px at 85% -8%, rgba(53, 224, 208, 0.07) 0%, transparent 60%),
-    radial-gradient(1000px 560px at -8% 30%, rgba(201, 167, 92, 0.07) 0%, transparent 55%),
-    radial-gradient(900px 500px at 60% 110%, rgba(115, 85, 207, 0.06) 0%, transparent 60%);
-}
-
-::selection {
-  background: rgba(176, 138, 62, 0.3);
-}
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--paper-2);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--gold-soft);
-  border: 3px solid var(--paper-2);
-  border-radius: var(--r-full);
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-a {
-  color: var(--gold-deep);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-a:hover {
-  color: var(--hex);
-}
 /* Bouton habillé en lien (retour d'historique de la fiche carte). */
 .card-back-link {
   color: var(--gold-deep);
@@ -310,21 +13,32 @@ a:hover {
 .card-back-link:hover {
   color: var(--hex);
 }
-button {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-:focus-visible {
-  outline: 2px solid var(--hex);
-  outline-offset: 3px;
-  border-radius: 4px;
+
+:root {
+  --paper: var(--bg);
+  --paper-2: var(--bg-raised);
+  --surface: rgba(23, 18, 15, 0.86);
+  --surface-solid: var(--bg-sunken);
+  --line-strong: rgba(138, 110, 75, 0.55);
+  --ink-strong: #f4ede2;
+  --muted: var(--ink-muted);
+  --gold: var(--bronze);
+  --gold-deep: var(--bronze-light);
+  --gold-soft: #6f5639;
+  --gold-grad: linear-gradient(135deg, #c9343a 0%, #b3262b 55%, #8f1c21 100%);
+  --hex: var(--blood-text);
+  --hex-soft: #3a1416;
+  --hex-text: var(--blood-text);
+  --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
+  --r-sm: 4px;
+  --r: 6px;
+  --r-lg: 8px;
+  --r-full: 999px;
+  --shadow: var(--shadow-deep);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.45);
+  --glow-hex: 0 0 0 3px rgba(210, 58, 51, 0.25);
+  --glow-gold: 0 10px 30px rgba(179, 38, 43, 0.25);
+  --font-mono: var(--font-label);
 }
 
 .wrap {
@@ -1873,56 +1587,6 @@ textarea {
 
 .card-text {
   line-height: 1.75;
-}
-.rb-glyph {
-  display: inline-block;
-  width: 1.12em;
-  height: 1.12em;
-  vertical-align: -0.2em;
-  margin: 0 0.1em;
-}
-/* Les glyphes officiels sont blancs : on les teinte à l'encre via un masque. */
-.rb-glyph.ink {
-  background-color: currentColor;
-  -webkit-mask: var(--glyph) center / contain no-repeat;
-  mask: var(--glyph) center / contain no-repeat;
-}
-/* Sur fond clair, Riot inverse la pastille d'énergie (disque sombre, chiffre clair). */
-.rb-glyph.energy {
-  filter: invert(1) saturate(0) brightness(1.12);
-}
-
-.rb-kw {
-  display: inline-block;
-  margin: 0 0.14em;
-  padding: 0.05em 0.5em;
-  border-radius: 3px;
-  background: var(--kw, #6c6d6c);
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 0.78em;
-  font-style: italic;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  vertical-align: 0.06em;
-  white-space: nowrap;
-}
-.rb-kw.timing {
-  --kw: #24705f;
-}
-.rb-kw.combat {
-  --kw: #cc356e;
-}
-.rb-kw.state {
-  --kw: #94b42a;
-}
-.rb-kw.utility {
-  --kw: #6c6d6c;
-}
-.rb-kw.arrow {
-  padding-right: 0.85em;
-  clip-path: polygon(0 0, calc(100% - 0.45em) 0, 100% 50%, calc(100% - 0.45em) 100%, 0 100%);
 }
 
 .variant-switch {

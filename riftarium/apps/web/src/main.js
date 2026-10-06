@@ -2,6 +2,10 @@ import { createApp } from "vue"
 import App from "./App.vue"
 import Icon from "./components/Icon.vue"
 import { router } from "./router.js"
+import "./styles/fonts.css"
+import "./styles/tokens.css"
+import "./styles/base.css"
+/* Ancienne feuille globale : rétrécit à chaque PR de la refonte, puis disparaît. */
 import "./assets/main.css"
 
 const app = createApp(App)
