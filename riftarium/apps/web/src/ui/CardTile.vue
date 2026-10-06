@@ -33,6 +33,7 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
         <span v-if="foil" class="tile-foil" aria-hidden="true"></span>
         <span v-if="badge" class="tile-badge">{{ badge }}</span>
         <span v-if="card.owned_qty" class="tile-owned">×{{ card.owned_qty }}</span>
+        <slot name="overlay"></slot>
       </span>
       <span class="tile-name">{{ card.name }}</span>
       <span class="tile-meta">

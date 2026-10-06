@@ -5,13 +5,14 @@ import { readDefaults, writeDefaults } from "./collectionDefaults.js"
 /* Exemplaires possédés d'une carte : lots, total, compteur +/−, lots détaillés.
    `cardId` est une ref (ou un getter) ; `onChange({ id, owned_qty })` prévient le parent
    après chaque mutation réussie. `autoload: false` laisse l'appelant charger les lots
-   à la demande (compteur de vignette : premier « − »). */
-export function useOwnedCopies(cardId, { onChange, autoload = true } = {}) {
+   à la demande (compteur de vignette : premier « − »). `defaults` : objet réactif de préférences
+   partagé entre plusieurs instances (cartothèque) ; sans lui, chaque instance a le sien. */
+export function useOwnedCopies(cardId, { onChange, autoload = true, defaults: shared } = {}) {
   const entries = ref([])
   const loading = ref(false)
   const busy = ref(false)
   const error = ref("")
-  const defaults = reactive(readDefaults())
+  const defaults = shared ?? reactive(readDefaults())
   const total = computed(() => entries.value.reduce((sum, entry) => sum + entry.qty, 0))
 
   /* Jeton de séquence unique pour chargements et mutations : seule la dernière opération

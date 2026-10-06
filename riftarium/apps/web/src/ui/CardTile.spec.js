@@ -50,3 +50,14 @@ describe("CardTile", () => {
     ).toContain("landscape")
   })
 })
+
+describe("CardTile slot overlay", () => {
+  it("rend le slot overlay dans l'illustration", () => {
+    const wrapper = mount(CardTile, {
+      props: { card: base },
+      slots: { overlay: '<b class="over">+</b>' },
+      global: { stubs: { RouterLink: RouterLinkStub } }
+    })
+    expect(wrapper.get(".tile-art .over").exists()).toBe(true)
+  })
+})
