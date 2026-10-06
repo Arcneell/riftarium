@@ -191,8 +191,18 @@ const stats = computed(() => [
   min-height: 36px;
   padding: 0 var(--space-1);
   text-align: center;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--ink);
 }
 .souhait-qty:focus {
+  border-color: var(--bronze-light);
   box-shadow: none;
+  outline: none;
+}
+.souhait-qty:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
 }
 </style>
