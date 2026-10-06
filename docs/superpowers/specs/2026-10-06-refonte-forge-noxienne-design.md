@@ -276,6 +276,14 @@ Chaque PR :
 - Classeur actuel (pochettes, cartes manquantes en fantôme) rhabillé ;
   édition des lots dans une `RiftModal`.
 - Wishlist avec les mêmes composants.
+- **Livré** : la page est découpée dans `src/collection/` (page, stats,
+  classeur, inventaire, composables) ; les classes neuves portent les préfixes
+  `classeur-`, `inventaire-`, `collection-page-`, `collection-stats-` et
+  `souhait-` (les anciens `binder-`, `pocket`, `wish-`… de `main.css` sont
+  retirés). Le tournage de page est raccourci (fondu et glissement, 200 ms au
+  plus) et la cascade d'apparition des pochettes est supprimée ; le classeur
+  reste monté entre les deux affichages, et l'inventaire a une sélection dont la
+  tuile est inerte.
 
 ### PR 5 : decks et communauté
 
