@@ -22,13 +22,6 @@ defineProps({
     <g v-if="name === 'chevron'">
       <path d="M6 9.5l6 6 6-6" />
     </g>
-    <!-- appareil photo (scanner de cartes) -->
-    <g v-else-if="name === 'camera'">
-      <path
-        d="M4 8.2h3.2l1.6-2.4h6.4l1.6 2.4H20a1.6 1.6 0 0 1 1.6 1.6v8.6A1.6 1.6 0 0 1 20 20H4a1.6 1.6 0 0 1-1.6-1.6V9.8A1.6 1.6 0 0 1 4 8.2Z"
-      />
-      <circle cx="12" cy="13.6" r="3.4" />
-    </g>
     <!-- accueil -->
     <g v-else-if="name === 'home'">
       <path d="M3.5 11.2 12 4l8.5 7.2" />

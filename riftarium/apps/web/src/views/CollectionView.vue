@@ -497,7 +497,7 @@ onMounted(async () => {
                 <p v-else class="binder-empty-title">Classeur vide</p>
                 <p class="muted">
                   <template v-if="binderOwned === '0'">Ce set est complet — votre classeur est plein.</template>
-                  <template v-else>Ouvrez une fiche carte ou scannez vos cartes pour remplir les pochettes.</template>
+                  <template v-else>Ouvrez une fiche carte pour remplir les pochettes.</template>
                 </p>
               </div>
 
@@ -597,14 +597,6 @@ onMounted(async () => {
             <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
               {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
             </button>
-            <RouterLink
-              class="btn btn-ghost btn-sm scan-entry"
-              to="/scan"
-              title="Identifier une carte avec l'appareil photo"
-            >
-              <Icon name="camera" :size="16" />
-              Scanner
-            </RouterLink>
             <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
             <a v-if="session.token" class="btn btn-ghost btn-sm" href="/api/collection/export.csv" download>
               Exporter (CSV)
@@ -690,12 +682,9 @@ onMounted(async () => {
 
         <div v-if="!loading && !result.items.length && !result.unique_cards" class="col-empty">
           <p class="col-empty-title">Votre vitrine est encore vide</p>
-          <p class="muted">
-            Notez vos exemplaires depuis une fiche carte, ou scannez vos cartes pour les ajouter d'un geste.
-          </p>
+          <p class="muted">Notez vos exemplaires depuis une fiche carte.</p>
           <div class="col-empty-actions">
             <RouterLink class="btn" to="/cartes">Parcourir les cartes</RouterLink>
-            <RouterLink class="btn btn-ghost" to="/scan">Scanner une carte</RouterLink>
           </div>
         </div>
         <div v-else-if="!loading && !result.items.length" class="col-empty">
