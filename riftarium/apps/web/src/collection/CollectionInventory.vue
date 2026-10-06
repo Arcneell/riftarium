@@ -21,7 +21,8 @@ const props = defineProps({
   filters: { type: Object, required: true },
   sets: { type: Array, default: () => [] }
 })
-const emit = defineEmits(["page-size"])
+/* `changed` : une opération de masse a réussi, la page rafraîchit statistiques et classeur. */
+const emit = defineEmits(["page-size", "changed"])
 
 /* L'erreur de page est partagée avec la page (ref de useQuerySyncedFilters). */
 const { state, setFilter, reset, load, error: errorRef } = props.filters
@@ -137,6 +138,7 @@ async function applyBulk(payload) {
       pendingRemove.value = false
     }
     await load()
+    emit("changed")
   } catch (e) {
     if (payload.remove) removeError.value = e.message
     else setPageError(e.message)
@@ -253,6 +255,7 @@ async function applyBulk(payload) {
           type="button"
           class="inventaire-pick"
           :class="{ selected: selected.has(item.card.id) }"
+          :aria-label="item.card.name"
           :aria-pressed="selected.has(item.card.id)"
           @click.capture="onPickClick($event, item)"
           @keydown.enter.prevent="onPickEnter($event, item)"

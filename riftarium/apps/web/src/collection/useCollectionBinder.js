@@ -62,6 +62,14 @@ export function useCollectionBinder({ active, isBlocked }) {
 
   watch([binderSet, binderPage, binderOwned], loadBinder)
 
+  /* Données périmées (opération de masse ailleurs) : on oublie la double page et on
+     abandonne la requête en vol ; le composant recharge s'il est actif. */
+  function invalidate() {
+    seq++
+    spread.value = null
+    binderLoading.value = false
+  }
+
   function selectSet(setId) {
     if (setId === binderSet.value) return
     turnDir.value = 1
@@ -115,6 +123,7 @@ export function useCollectionBinder({ active, isBlocked }) {
     setGhostFilter,
     turnPage,
     loadBinder,
+    invalidate,
     onKeydown
   }
 }

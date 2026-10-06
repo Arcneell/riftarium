@@ -175,6 +175,32 @@ describe("CollectionInventory", () => {
     wrapper.unmount()
   })
 
+  it("chaque bouton de sélection porte le nom de sa carte (le contenu est inert)", async () => {
+    const { wrapper } = await mountInventory()
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    const labels = wrapper.findAll("button.inventaire-pick").map((button) => button.attributes("aria-label"))
+    expect(labels).toEqual(["Carte 1", "Carte 2"])
+    wrapper.unmount()
+  })
+
+  it("émet changed après une opération de masse réussie, pas après un échec", async () => {
+    const { wrapper } = await mountInventory()
+    const inventory = wrapper.findComponent(CollectionInventory)
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    await wrapper.get("button.inventaire-pick").trigger("click")
+    api.mockImplementation((path) =>
+      path === "/api/collection/bulk" ? Promise.reject(new Error("Refusé")) : defaultApi(path)
+    )
+    await byText(wrapper, ".inventaire-bulk button", "+1").trigger("click")
+    await flushPromises()
+    expect(inventory.emitted("changed")).toBeUndefined()
+    api.mockImplementation(defaultApi)
+    await byText(wrapper, ".inventaire-bulk button", "+1").trigger("click")
+    await flushPromises()
+    expect(inventory.emitted("changed")).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it("en mode sélection, Entrée sur une cellule coche sans naviguer", async () => {
     const { wrapper, router } = await mountInventory()
     await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")

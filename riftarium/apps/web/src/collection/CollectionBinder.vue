@@ -13,7 +13,9 @@ import { GHOST_FILTERS, useCollectionBinder } from "./useCollectionBinder.js"
    cartes manquantes en fantôme. La logique vit dans useCollectionBinder. */
 const props = defineProps({
   progress: { type: Object, default: null }, // { sets: [...], overall }
-  active: { type: Boolean, default: true }
+  active: { type: Boolean, default: true },
+  /* Incrémentée par la page quand les données ont changé : la double page est rechargée. */
+  version: { type: Number, default: 0 }
 })
 
 const {
@@ -30,6 +32,7 @@ const {
   setGhostFilter,
   turnPage,
   loadBinder,
+  invalidate,
   onKeydown
 } = useCollectionBinder({
   active: () => props.active,
@@ -68,6 +71,14 @@ watch(
     if (active && !spread.value) loadBinder()
   },
   { immediate: true }
+)
+
+watch(
+  () => props.version,
+  () => {
+    invalidate()
+    if (props.active) loadBinder()
+  }
 )
 
 /* Un onglet de set focalisé garde ses flèches natives. */

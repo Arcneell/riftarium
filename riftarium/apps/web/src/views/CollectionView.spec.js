@@ -186,6 +186,40 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("la page est un div (pas de section : main.css y poserait 88 px de marge)", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.element.tagName).toBe("DIV")
+    expect(wrapper.element.classList.contains("collection-page")).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("après un retrait en masse : statistiques rechargées, double page du classeur rechargée", async () => {
+    const { wrapper } = await mountView("/collection?vue=inventaire")
+    const calls = (prefix) => api.mock.calls.filter(([path]) => String(path).startsWith(prefix)).length
+    expect(calls("/api/collection/sets")).toBe(1)
+    const cardCalls = calls("/api/cards?")
+    const byText = (selector, text) => wrapper.findAll(selector).find((node) => node.text().includes(text))
+    await byText(".inventaire-toolbar button", "Sélectionner").trigger("click")
+    await wrapper.get("button.inventaire-pick").trigger("click")
+    await byText(".inventaire-bulk button", "Retirer").trigger("click")
+    const confirm = [...document.body.querySelectorAll(".rift-modal button")].find(
+      (button) => button.textContent.trim() === "Retirer"
+    )
+    confirm.click()
+    await flushPromises()
+    expect(calls("/api/collection/sets")).toBe(2)
+    /* Le classeur est caché : il ne recharge qu'à sa prochaine activation. */
+    expect(calls("/api/cards?")).toBe(cardCalls)
+    const group = wrapper.get('[role="group"][aria-label="Affichage de la collection"]')
+    await group
+      .findAll("button")
+      .find((button) => button.text() === "Classeur")
+      .trigger("click")
+    await flushPromises()
+    expect(calls("/api/cards?")).toBe(cardCalls + 1)
+    wrapper.unmount()
+  })
+
   it("entrée directe en inventaire : une seule requête, un vrai changement de taille recharge", async () => {
     const { wrapper } = await mountView("/collection?vue=inventaire")
     await new Promise((resolve) => setTimeout(resolve, 400))

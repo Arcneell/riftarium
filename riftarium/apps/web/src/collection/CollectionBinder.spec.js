@@ -145,6 +145,28 @@ describe("CollectionBinder", () => {
     wrapper.unmount()
   })
 
+  it("version : invalide la double page et la recharge quand le classeur est actif", async () => {
+    const wrapper = await mountBinder()
+    api.mockClear()
+    await wrapper.setProps({ version: 1 })
+    await flushPromises()
+    expect(api.mock.calls.filter(([path]) => String(path).startsWith("/api/cards?"))).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it("version : classeur inactif, le rechargement attend la prochaine activation", async () => {
+    const wrapper = await mountBinder()
+    await wrapper.setProps({ active: false })
+    api.mockClear()
+    await wrapper.setProps({ version: 1 })
+    await flushPromises()
+    expect(api).not.toHaveBeenCalled()
+    await wrapper.setProps({ active: true })
+    await flushPromises()
+    expect(api.mock.calls.filter(([path]) => String(path).startsWith("/api/cards?"))).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it("une seule page : pas de navigation", async () => {
     api.mockImplementation(() => Promise.resolve({ total: 5, page: 1, size: 18, items: [fakeCard(1, 1)] }))
     const wrapper = await mountBinder()

@@ -65,7 +65,14 @@ function onPageSize(next) {
   else scheduleLoad()
 }
 
+function onInventoryChanged() {
+  binderVersion.value++
+  loadProgress()
+}
+
 const sets = ref([])
+/* Incrémentée après une opération de masse : le classeur recharge sa double page. */
+const binderVersion = ref(0)
 const progress = ref(null) // { sets: [...], overall: {...} } — null tant que rien n'est chargé
 
 async function loadProgress() {
@@ -116,32 +123,36 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section>
-    <div class="wrap cards-wrap collection-page">
-      <h1 class="collection-page-title">Ma collection</h1>
+  <div class="wrap cards-wrap collection-page">
+    <h1 class="collection-page-title">Ma collection</h1>
 
-      <CollectionStats :items="stats" />
+    <CollectionStats :items="stats" />
 
-      <div class="collection-page-switch" role="group" aria-label="Affichage de la collection">
-        <RiftChip
-          v-for="view in VIEWS"
-          :key="view.value"
-          :label="view.label"
-          :selected="state.vue === view.value"
-          @toggle="state.vue = view.value"
-        />
-      </div>
-
-      <!-- Le classeur reste monté (v-show) pour garder son set et sa page entre les affichages. -->
-      <CollectionBinder v-show="state.vue === 'classeur'" :progress="progress" :active="state.vue === 'classeur'" />
-      <CollectionInventory
-        v-if="state.vue === 'inventaire'"
-        :filters="filters"
-        :sets="setOptions"
-        @page-size="onPageSize"
+    <div class="collection-page-switch" role="group" aria-label="Affichage de la collection">
+      <RiftChip
+        v-for="view in VIEWS"
+        :key="view.value"
+        :label="view.label"
+        :selected="state.vue === view.value"
+        @toggle="state.vue = view.value"
       />
     </div>
-  </section>
+
+    <!-- Le classeur reste monté (v-show) pour garder son set et sa page entre les affichages. -->
+    <CollectionBinder
+      v-show="state.vue === 'classeur'"
+      :progress="progress"
+      :active="state.vue === 'classeur'"
+      :version="binderVersion"
+    />
+    <CollectionInventory
+      v-if="state.vue === 'inventaire'"
+      :filters="filters"
+      :sets="setOptions"
+      @page-size="onPageSize"
+      @changed="onInventoryChanged"
+    />
+  </div>
 </template>
 
 <style scoped>
