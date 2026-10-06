@@ -62,6 +62,10 @@ watch(
   () => route.path,
   () => clearPageCrumb()
 )
+/* Feuille du compte réservée au téléphone : on la ferme en quittant ce palier. */
+watch(mobile, (value) => {
+  if (!value) accountOpen.value = false
+})
 
 function isEditable(element) {
   return Boolean(element && (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName)))
@@ -69,6 +73,9 @@ function isEditable(element) {
 
 /* Ctrl/⌘ K partout ; « / » seulement hors d'un champ (sinon on ne pourrait plus le taper). */
 function onKeydown(event) {
+  /* Une autre surcouche (zoom, modale, feuille) est active : seule la palette ouverte reste pilotable. */
+  const otherOverlay = document.body.classList.contains("nav-locked") && !searchOpen.value
+  if (otherOverlay) return
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
     event.preventDefault()
     searchOpen.value = !searchOpen.value

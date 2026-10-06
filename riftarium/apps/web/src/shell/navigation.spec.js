@@ -51,6 +51,13 @@ describe("breadcrumbOf", () => {
   it("ajoute le maillon fourni par la page", () => {
     expect(breadcrumbOf("/cartes/ogn-001", "Ahri")).toEqual([{ label: "Cartes", to: "/cartes" }, { label: "Ahri" }])
   })
+  it("deck ouvert : pas de maillon « Mes decks » (le deck peut être celui d'un autre)", () => {
+    expect(breadcrumbOf("/decks/42", "Mon deck")).toEqual([{ label: "Decks", to: "/decks" }, { label: "Mon deck" }])
+    expect(breadcrumbOf("/decks")).toEqual([
+      { label: "Decks", to: "/decks" },
+      { label: "Mes decks", to: "/decks" }
+    ])
+  })
   it("accueil et pages hors rubrique", () => {
     expect(breadcrumbOf("/")).toEqual([{ label: "Accueil", to: "/" }])
     expect(breadcrumbOf("/profil", "Mon profil")).toEqual([{ label: "Mon profil" }])

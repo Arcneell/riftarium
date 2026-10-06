@@ -90,12 +90,6 @@ defineProps({
       <path d="M2.6 12s3.4-6.2 9.4-6.2S21.4 12 21.4 12s-3.4 6.2-9.4 6.2S2.6 12 2.6 12Z" />
       <circle cx="12" cy="12" r="2.4" />
     </g>
-    <!-- menu burger -->
-    <g v-else-if="name === 'menu'">
-      <path d="M4.2 7h15.6" />
-      <path d="M4.2 12h15.6" />
-      <path d="M4.2 17h15.6" />
-    </g>
     <!-- croix (fermeture) -->
     <g v-else-if="name === 'x'">
       <path d="M6 6l12 12" />

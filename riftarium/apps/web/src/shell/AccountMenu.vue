@@ -27,7 +27,7 @@ function onPointerDown(event) {
   if (open.value && root.value && !root.value.contains(event.target)) open.value = false
 }
 function onKeydown(event) {
-  if (event.key === "Escape" && open.value) {
+  if (event.key === "Escape" && open.value && !document.body.classList.contains("nav-locked")) {
     open.value = false
     button.value?.focus()
   }

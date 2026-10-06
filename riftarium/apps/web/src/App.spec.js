@@ -115,6 +115,27 @@ describe("App (coquille)", () => {
     wrapper.unmount()
   })
 
+  it("une surcouche active (body.nav-locked) : Ctrl K et « / » n'ouvrent pas la palette", async () => {
+    const wrapper = await mountApp("/")
+    document.body.classList.add("nav-locked")
+    keydown({ key: "k", ctrlKey: true })
+    keydown({ key: "/" })
+    await nextTick()
+    expect(document.querySelector(".palette")).toBeNull()
+    wrapper.unmount()
+  })
+
+  it("Ctrl K ferme la palette ouverte même si le défilement est verrouillé", async () => {
+    const wrapper = await mountApp("/")
+    keydown({ key: "k", ctrlKey: true })
+    await nextTick()
+    document.body.classList.add("nav-locked")
+    keydown({ key: "k", ctrlKey: true })
+    await nextTick()
+    expect(document.querySelector(".palette")).toBeNull()
+    wrapper.unmount()
+  })
+
   it("« / » ouvre la palette, sauf pendant une saisie", async () => {
     const wrapper = await mountApp("/")
     const field = document.createElement("input")

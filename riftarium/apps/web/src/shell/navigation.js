@@ -82,7 +82,9 @@ export function breadcrumbOf(path, pageCrumb = null) {
   if (section) {
     crumbs.push({ label: section.label, to: section.to })
     const child = activeChild(section, path)
-    if (child && child.label !== section.label) crumbs.push({ label: child.label, to: child.to })
+    /* /decks/:id : le deck peut être celui d'un autre, pas de maillon « Mes decks ». */
+    const foreignDeck = child?.to === "/decks" && path !== "/decks"
+    if (child && !foreignDeck && child.label !== section.label) crumbs.push({ label: child.label, to: child.to })
   }
   if (pageCrumb) crumbs.push({ label: pageCrumb })
   return crumbs

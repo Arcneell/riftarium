@@ -63,7 +63,7 @@ function sectionCurrent(item) {
     <div class="rail-foot">
       <AccountMenu v-if="session.token" :compact="collapsed" />
       <RiftButton v-else-if="!collapsed" to="/connexion" size="sm" block>Connexion</RiftButton>
-      <RouterLink v-else to="/connexion" class="rail-item" title="Connexion"
+      <RouterLink v-else to="/connexion" class="rail-item" title="Connexion" aria-label="Connexion"
         ><Icon name="user" :size="18"
       /></RouterLink>
       <button
