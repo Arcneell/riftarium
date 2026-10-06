@@ -161,8 +161,7 @@ describe("CollectionInventory", () => {
     await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
     const pick = wrapper.get(".inventaire-cell button.inventaire-pick")
     expect(pick.attributes("aria-pressed")).toBe("false")
-    await flushPromises()
-    expect(pick.get("a.rift-tile").attributes("tabindex")).toBe("-1")
+    expect(pick.get("span[inert]").find("a.rift-tile").exists()).toBe(true)
     await pick.get("a.rift-tile").trigger("click")
     await flushPromises()
     expect(router.currentRoute.value.path).toBe("/collection")
@@ -185,6 +184,40 @@ describe("CollectionInventory", () => {
     expect(wrapper.get("button.inventaire-pick").attributes("aria-pressed")).toBe("true")
     await pick.trigger("keydown", { key: "Enter" })
     expect(wrapper.get("button.inventaire-pick").attributes("aria-pressed")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("Entrée maintenue (répétition) ne coche qu'une fois", async () => {
+    const { wrapper } = await mountInventory()
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    const pick = wrapper.get("button.inventaire-pick")
+    await pick.trigger("keydown", { key: "Enter" })
+    await pick.trigger("keydown", { key: "Enter", repeat: true })
+    await pick.trigger("keydown", { key: "Enter", repeat: true })
+    expect(wrapper.get("button.inventaire-pick").attributes("aria-pressed")).toBe("true")
+    wrapper.unmount()
+  })
+
+  it("Espace : l'activation native du bouton coche sans naviguer", async () => {
+    const { wrapper, router } = await mountInventory()
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    const pick = wrapper.get("button.inventaire-pick")
+    await pick.trigger("keydown", { key: " " })
+    await pick.trigger("keyup", { key: " " })
+    // les navigateurs traduisent Espace (keyup) en clic sur le bouton
+    await pick.trigger("click")
+    expect(router.currentRoute.value.path).toBe("/collection")
+    expect(wrapper.get("button.inventaire-pick").attributes("aria-pressed")).toBe("true")
+    wrapper.unmount()
+  })
+
+  it("inert sur la vignette en mode sélection seulement", async () => {
+    const { wrapper } = await mountInventory()
+    expect(wrapper.find("[inert]").exists()).toBe(false)
+    await byText(wrapper, ".inventaire-toolbar button", "Sélectionner").trigger("click")
+    expect(wrapper.find(".inventaire-pick [inert]").exists()).toBe(true)
+    await byText(wrapper, ".inventaire-toolbar button", "Terminer").trigger("click")
+    expect(wrapper.find("[inert]").exists()).toBe(false)
     wrapper.unmount()
   })
 

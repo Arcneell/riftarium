@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref, unref, watch } from "vue"
+import { computed, onMounted, reactive, ref, unref, watch } from "vue"
 import { api, session, CONDITIONS, LANGS } from "../api.js"
 import ActiveFilters from "../cards/ActiveFilters.vue"
 import CardFilters from "../cards/CardFilters.vue"
@@ -23,15 +23,14 @@ const props = defineProps({
 })
 const emit = defineEmits(["page-size"])
 
-const { state, setFilter, reset, load, scheduleLoad } = props.filters
+/* L'erreur de page est partagée avec la page (ref de useQuerySyncedFilters). */
+const { state, setFilter, reset, load, scheduleLoad, error: errorRef } = props.filters
 const result = computed(() => unref(props.filters.result))
 const loading = computed(() => unref(props.filters.loading))
 const error = computed(() => unref(errorRef))
 const activeCount = computed(() => unref(props.filters.activeCount))
 const pageCount = computed(() => unref(props.filters.pageCount))
 
-/* L'erreur de page est partagée avec la page (ref de useQuerySyncedFilters). */
-const { error: errorRef } = props.filters
 function setPageError(message) {
   errorRef.value = message
 }
@@ -108,18 +107,11 @@ function selectPage() {
   selected.value = next
 }
 
-/* Le lien de la vignette ne doit pas prendre le focus clavier : c'est le bouton qui le porte. */
-watch(
-  [selectMode, () => result.value.items],
-  async () => {
-    await nextTick()
-    for (const link of grid.value?.querySelectorAll("a.rift-tile") ?? []) {
-      if (selectMode.value) link.setAttribute("tabindex", "-1")
-      else link.removeAttribute("tabindex")
-    }
-  },
-  { flush: "post" }
-)
+/* Entrée : le clavier répété (touche maintenue) ne doit pas recocher en boucle. */
+function onPickEnter(event, item) {
+  if (event.repeat) return
+  toggleItem(item)
+}
 
 function askRemove() {
   if (!selected.value.size || bulk.busy) return
@@ -267,9 +259,10 @@ async function applyBulk(payload) {
           :class="{ selected: selected.has(item.card.id) }"
           :aria-pressed="selected.has(item.card.id)"
           @click.capture="onPickClick($event, item)"
-          @keydown.enter.prevent="toggleItem(item)"
+          @keydown.enter.prevent="onPickEnter($event, item)"
         >
-          <CardTile :card="{ ...item.card, owned_qty: item.total_qty }" :preview="false" />
+          <!-- inert : le lien de la vignette n'est ni cliquable ni exposé, le bouton porte tout. -->
+          <span inert><CardTile :card="{ ...item.card, owned_qty: item.total_qty }" :preview="false" /></span>
         </button>
         <CardTile v-else :card="{ ...item.card, owned_qty: item.total_qty }" :preview="false" />
         <div class="inventaire-meta">
@@ -369,6 +362,8 @@ async function applyBulk(payload) {
 }
 /* Neutralise l'habillage hérité des select (ombre de focus, fond, bordure). */
 .inventaire-bulk select {
+  width: auto;
+  min-width: 0;
   min-height: 32px;
   padding: 0 var(--space-2);
   border: 1px solid var(--line);
