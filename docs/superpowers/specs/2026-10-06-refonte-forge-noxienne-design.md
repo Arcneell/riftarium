@@ -211,7 +211,7 @@ Chaque PR :
 
 ### PR 1 : socle et coquille (`feat/refonte-socle`)
 
-- `src/styles/`, et les composants de `src/ui/` utilisés par la coquille (`RiftButton`, `RiftField`, `RiftTabs`, `RiftModal`, `RiftSheet`, `RiftText`, `RiftGlyph`) ; `RiftPanel`, `RiftChip`, `RiftEmpty` et `RiftSkeleton` arrivent en PR 2, `RiftStat` et `CardTile` en PR 3, avec leur premier usage, redirection des
+- `src/styles/`, et les composants de `src/ui/` utilisés par la coquille (`RiftButton`, `RiftField`, `RiftTabs`, `RiftModal`, `RiftSheet`, `RiftText`, `RiftGlyph`) ; `RiftPanel`, `RiftChip`, `RiftEmpty` et `RiftSkeleton` arrivent en PR 2, `RiftStat` et `CardTile` en PR 3, avec leur premier usage ; redirection des
   anciennes variables de `main.css`.
 - `App.vue` réécrit : rail, barre haute, onglets mobiles, `RiftSheet` du
   compte, recherche universelle, pied de page.

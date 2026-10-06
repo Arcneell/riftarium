@@ -9,7 +9,7 @@ dans son propre `README.md`.
 
 - **La PWA n'est plus la cible mobile.** Elle reste servie par le site tant que
   l'application n'est pas publiée (icône iOS capricieuse, premier chargement
-  lent à cause du moteur OCR tesseract.js de 15 Mo, retiré depuis, service worker complexe pour
+  lent à cause du moteur OCR tesseract.js de 15 Mo (retiré depuis), service worker complexe pour
   peu de gain).
 - **Cible mobile : une application native iOS + Android en Flutter**, dans
   `riftarium/apps/mobile`. Une seule base de code Dart, rendu natif, caméra et
