@@ -1,110 +1,72 @@
 <script setup>
-import { computed, reactive, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { api, session, CONDITIONS, LANGS } from "../api.js"
+import { useOwnedCopies } from "../collection/useOwnedCopies.js"
 import RiftButton from "../ui/RiftButton.vue"
+import RiftChip from "../ui/RiftChip.vue"
+import RiftChoice from "../ui/RiftChoice.vue"
+import RiftStepper from "../ui/RiftStepper.vue"
 
-/* Panneau « collection et wishlist » de la fiche carte : lots possédés, ajout,
-   bascule wishlist. Il ne modifie pas la carte : il émet `change({ id, ...patch })` avec
-   `owned_qty` / `wished_qty` et l'id de la carte concernée (le parent ignore un patch
+/* Panneau « collection et wishlist » de la fiche carte : compteur rapide, lots en puces,
+   ajout précis, bascule wishlist. Il ne modifie pas la carte : il émet `change({ id, ...patch })`
+   avec `owned_qty` / `wished_qty` et l'id de la carte concernée (le parent ignore un patch
    qui ne vise plus la carte affichée), c'est le parent qui tient la fiche. */
 const props = defineProps({
   card: { type: Object, required: true }
 })
 const emit = defineEmits(["change"])
 
-const entries = ref([]) // lots possédés : [{ id, qty, condition, lang }]
-const draft = reactive({ qty: 1, condition: "NM", lang: "EN" })
-const busy = ref(false)
+const owned = useOwnedCopies(() => props.card.id, { onChange: (patch) => emit("change", patch) })
+const { entries, total, busy, defaults, setDefaults } = owned
+
 const saved = ref("")
-const error = ref("")
-
-const totalOwned = computed(() => entries.value.reduce((total, entry) => total + entry.qty, 0))
-
-/* Jeton de séquence : un changement de carte rapproché lance deux chargements ;
-   seul le dernier a le droit d'écrire dans l'état. */
-let seq = 0
+const wishError = ref("")
+/* Les lots ne conditionnent pas la fiche : l'échec de leur chargement reste silencieux,
+   seules les erreurs de mutation (après une action de l'utilisateur) s'affichent. */
+const acted = ref(false)
+const error = computed(() => wishError.value || (acted.value ? owned.error.value : ""))
 
 watch(
   () => props.card.id,
-  async (id) => {
-    const mine = ++seq
-    entries.value = []
+  () => {
     saved.value = ""
-    error.value = ""
-    if (!session.token || !id) return
-    /* Les lots ne conditionnent pas la fiche : un échec laisse simplement la liste vide. */
-    try {
-      const owned = await api(`/api/collection/${id}`)
-      if (mine !== seq) return
-      entries.value = owned.entries
-    } catch {
-      /* collection indisponible : le panneau reste utilisable, sans ses lots */
-    }
-  },
-  { immediate: true }
+    wishError.value = ""
+    acted.value = false
+  }
 )
 
-/* Un lot se compte en entiers : `v-model.number` renvoie "" sur un champ vidé
-   (et un décimal si l'on tape « 1,5 »), ce qu'il ne faut pas envoyer à l'API. */
-function validQty(value, min = 0) {
-  return Number.isInteger(value) && value >= min && value <= 999
-}
+const toOptions = (labels) => Object.entries(labels).map(([value, title]) => ({ value, label: value, title }))
+const conditionOptions = toOptions(CONDITIONS)
+const langOptions = toOptions(LANGS)
+const preference = computed(() => `${defaults.condition} · ${LANGS[defaults.lang] ?? defaults.lang}`)
+const editingPref = ref(false)
 
-function applyState(cardId, state, message) {
-  entries.value = state.entries
-  emit("change", { id: cardId, owned_qty: state.total_qty })
-  saved.value = message
-}
+const lotLabel = (entry) => `${entry.qty}× ${entry.condition} · ${LANGS[entry.lang] ?? entry.lang}`
+const detailTitle = computed(() => {
+  const count = entries.value.length
+  return count ? `Détail des exemplaires (${count} ${count > 1 ? "lots" : "lot"})` : "Détail des exemplaires"
+})
 
-/* Retourne vrai si la mutation est passée : l'appelant ne réinitialise sa saisie
-   qu'à cette condition (une erreur laissait auparavant le formulaire vidé). */
-async function mutate(request, message) {
-  if (busy.value) return false
-  const cardId = props.card.id
-  busy.value = true
+/* Lance une action du composable ; le message n'est posé que si elle est passée. */
+async function run(action, message) {
+  acted.value = true
   saved.value = ""
-  error.value = ""
-  try {
-    const state = await request()
-    /* Réponse tardive : la fiche a changé de carte entre-temps, on l'oublie. */
-    if (props.card.id !== cardId) return false
-    applyState(cardId, state, message)
-    return true
-  } catch (e) {
-    error.value = e.message
-    return false
-  } finally {
-    busy.value = false
-  }
+  wishError.value = ""
+  const done = await action()
+  if (done) saved.value = message
+  return done
 }
 
-async function addEntry() {
-  if (!validQty(draft.qty, 1)) return
-  const done = await mutate(
-    () =>
-      api(`/api/collection/${props.card.id}/entries`, {
-        method: "POST",
-        body: { qty: draft.qty, condition: draft.condition, lang: draft.lang }
-      }),
-    "Lot ajouté."
-  )
-  if (done) draft.qty = 1
-}
+const increment = () => run(owned.increment, "Exemplaire ajouté.")
+const decrement = () => run(owned.decrement, "Exemplaire retiré.")
+const removeLot = (entry) => run(() => owned.removeLot(entry), "Lot retiré.")
 
-function saveEntry(entry) {
-  if (!validQty(entry.qty)) return
-  mutate(
-    () =>
-      api(`/api/collection/entries/${entry.id}`, {
-        method: "PATCH",
-        body: { qty: entry.qty, condition: entry.condition, lang: entry.lang }
-      }),
-    "Lot mis à jour."
-  )
-}
-
-function removeEntry(entry) {
-  mutate(() => api(`/api/collection/entries/${entry.id}`, { method: "PATCH", body: { qty: 0 } }), "Lot retiré.")
+/* Ajout précis : la quantité est locale (1 à 999) ; après un ajout réussi elle revient à 1,
+   les choix d'état et de langue restent. */
+const draft = ref({ qty: 1, condition: defaults.condition, lang: defaults.lang })
+async function addLot() {
+  const { qty, condition, lang } = draft.value
+  if (await run(() => owned.addLot({ qty, condition, lang }), "Lot ajouté.")) draft.value.qty = 1
 }
 
 /* Wishlist : un seul clic bascule « je la veux » (qty 1) / retrait complet.
@@ -116,7 +78,7 @@ async function toggleWish() {
   if (wishBusy.value) return
   const cardId = props.card.id
   wishBusy.value = true
-  error.value = ""
+  wishError.value = ""
   try {
     if (wished.value) {
       await api(`/api/wishlist/${cardId}`, { method: "DELETE" })
@@ -126,7 +88,7 @@ async function toggleWish() {
       emit("change", { id: cardId, wished_qty: 1 })
     }
   } catch (e) {
-    error.value = e.message
+    wishError.value = e.message
   } finally {
     wishBusy.value = false
   }
@@ -152,60 +114,75 @@ async function toggleWish() {
         {{ wished ? "Dans ma wishlist" : "Ajouter à la wishlist" }}
       </RiftButton>
 
-      <h2 class="panel-title">
-        Dans ma collection
-        <span v-if="totalOwned" class="panel-total">— {{ totalOwned }} exemplaire(s)</span>
-      </h2>
+      <div class="panel-count">
+        <h2 class="panel-title">Dans ma collection</h2>
+        <RiftStepper
+          :value="total"
+          :busy="busy"
+          :label="card.name ?? 'cette carte'"
+          @increment="increment"
+          @decrement="decrement"
+        />
+      </div>
 
-      <div v-for="entry in entries" :key="entry.id" class="panel-lot">
-        <div class="panel-fields">
-          <input
-            type="number"
-            inputmode="numeric"
-            min="0"
-            max="999"
-            v-model.number="entry.qty"
-            :aria-label="`Quantité du lot ${entry.condition} ${entry.lang}`"
+      <div class="panel-pref">
+        <p class="panel-pref-line">
+          Ajouté en {{ preference }} ·
+          <button
+            type="button"
+            class="panel-pref-change"
+            :aria-expanded="editingPref"
+            @click="editingPref = !editingPref"
+          >
+            changer
+          </button>
+        </p>
+        <div v-if="editingPref" class="panel-pref-edit">
+          <RiftChoice
+            label="État par défaut"
+            :model-value="defaults.condition"
+            :options="conditionOptions"
+            @update:model-value="setDefaults({ condition: $event })"
           />
-          <select v-model="entry.condition" aria-label="État du lot">
-            <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-          </select>
-          <select v-model="entry.lang" aria-label="Langue du lot">
-            <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-          </select>
-        </div>
-        <div class="panel-actions">
-          <RiftButton size="sm" :disabled="busy || !validQty(entry.qty)" @click="saveEntry(entry)">
-            Enregistrer
-          </RiftButton>
-          <RiftButton size="sm" variant="ghost" :disabled="busy" @click="removeEntry(entry)">Retirer</RiftButton>
+          <RiftChoice
+            label="Langue par défaut"
+            :model-value="defaults.lang"
+            :options="langOptions"
+            @update:model-value="setDefaults({ lang: $event })"
+          />
         </div>
       </div>
-      <p v-if="!entries.length" class="panel-empty">Aucun exemplaire pour l'instant.</p>
 
-      <div class="panel-lot panel-add">
-        <div class="panel-fields">
-          <input
-            type="number"
-            inputmode="numeric"
-            min="1"
-            max="999"
-            v-model.number="draft.qty"
-            aria-label="Quantité à ajouter"
+      <details class="panel-detail">
+        <summary class="panel-detail-title">{{ detailTitle }}</summary>
+        <div v-if="entries.length" class="panel-lots">
+          <RiftChip
+            v-for="entry in entries"
+            :key="entry.id"
+            class="panel-lot"
+            removable
+            :label="lotLabel(entry)"
+            :aria-label="`Retirer le lot ${lotLabel(entry)}`"
+            @remove="removeLot(entry)"
           />
-          <select v-model="draft.condition" aria-label="État du nouveau lot">
-            <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-          </select>
-          <select v-model="draft.lang" aria-label="Langue du nouveau lot">
-            <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-          </select>
         </div>
-        <div class="panel-actions">
-          <RiftButton size="sm" variant="secondary" :disabled="busy || !validQty(draft.qty, 1)" @click="addEntry">
-            + Ajouter un lot
+        <div class="panel-add">
+          <p class="panel-add-title">Ajouter un lot précis</p>
+          <RiftStepper
+            :value="draft.qty"
+            :min="1"
+            :max="999"
+            label="ce lot"
+            @increment="draft.qty += 1"
+            @decrement="draft.qty -= 1"
+          />
+          <RiftChoice v-model="draft.condition" label="État" :options="conditionOptions" />
+          <RiftChoice v-model="draft.lang" label="Langue" :options="langOptions" />
+          <RiftButton class="panel-add-submit" variant="secondary" :disabled="busy" @click="addLot">
+            Ajouter
           </RiftButton>
         </div>
-      </div>
+      </details>
 
       <p v-if="saved" class="panel-saved" role="status">{{ saved }}</p>
       <p v-if="error" class="panel-error" role="alert">{{ error }}</p>
@@ -219,16 +196,22 @@ async function toggleWish() {
   gap: var(--space-3);
   padding: 0;
 }
-.panel-login,
-.panel-empty {
+.panel-login {
   margin: 0;
   color: var(--ink-muted);
 }
 .panel-login a {
   color: var(--blood-text);
 }
+.panel-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
 .panel-title {
-  margin: var(--space-3) 0 0;
+  margin: 0;
   font-family: var(--font-label);
   font-size: 14px;
   font-weight: 400;
@@ -236,52 +219,74 @@ async function toggleWish() {
   text-transform: uppercase;
   color: var(--ink);
 }
-.panel-total {
-  color: var(--ink-muted);
-  text-transform: none;
-  letter-spacing: 0;
+.panel-pref {
+  display: grid;
 }
-/* Deux rangées : les champs d'abord, les actions dessous (la colonne de la fiche fait 400 px au plus). */
+.panel-detail {
+  display: block;
+}
 .panel-lot {
-  display: grid;
-  gap: var(--space-2);
+  min-height: 44px;
 }
-.panel-fields {
+.panel-add-submit {
+  min-width: 44px;
+}
+.panel-pref-line {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+.panel-pref-change {
+  display: inline;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  color: var(--bronze-light);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.panel-pref-change:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+.panel-pref-edit {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.panel-detail-title {
+  display: flex;
   align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
 }
-.panel-lot input,
-.panel-lot select {
-  min-height: 40px;
-  min-width: 0;
-  padding: 0 var(--space-2);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  border-radius: 0;
+.panel-lots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.panel-add {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+.panel-add-title {
+  margin: 0;
   color: var(--ink);
-  font-family: var(--font-body);
   font-size: 14px;
 }
 .panel-wish.on {
   border-color: var(--blood-text);
   color: var(--blood-text);
-}
-.panel-lot input:focus,
-.panel-lot select:focus,
-.panel-lot input:focus-visible,
-.panel-lot select:focus-visible {
-  box-shadow: none;
-  border-color: var(--bronze-light);
-  outline: 2px solid var(--bronze-light);
-  outline-offset: 1px;
-}
-.panel-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-2);
 }
 .panel-saved {
   margin: 0;
@@ -290,10 +295,5 @@ async function toggleWish() {
 .panel-error {
   margin: 0;
   color: var(--blood-text);
-}
-@media (max-width: 480px) {
-  .panel-fields {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
