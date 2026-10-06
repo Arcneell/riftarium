@@ -25,7 +25,7 @@ describe("HomeSplash", () => {
     await wrapper.setProps({ cardCount: 1024, setCount: 3 })
     const statsText = wrapper.get(".splash-stats").text()
     expect(statsText).toContain("cartes")
-    expect(statsText).toMatch(/1\s*024/)
+    expect(statsText).toMatch(/1\s024/)
   })
 
   it("précharge l'illustration le temps de sa présence", () => {

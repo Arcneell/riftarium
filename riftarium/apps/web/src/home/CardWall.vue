@@ -5,8 +5,10 @@ import RiftButton from "../ui/RiftButton.vue"
 import { latestSet, wallCards } from "./homeData.js"
 
 /* Mur de cartes : le dernier set en mosaïque inclinée qui défile lentement dans la
-   pénombre. Décoratif (aria-hidden) ; le titre et le bouton portent le sens. */
-const MIN_CARDS = 12
+   pénombre. Décoratif (aria-hidden) ; le titre et le bouton portent le sens.
+   Trimé à un multiple de 24 : la grille fixe (12, 8 ou 6 colonnes) doit remplir un nombre
+   entier de lignes pour que la boucle (duplication + translateY(-50%)) s'enroule sans couture. */
+const MIN_CARDS = 24
 
 const set = ref(null)
 const items = ref([])
@@ -20,10 +22,12 @@ onMounted(async () => {
     const latest = latestSet(await api("/api/sets"))
     if (!latest) return
     const page = await api(`/api/cards?set_id=${encodeURIComponent(latest.set_id)}&sort=random&size=48`)
-    const picked = wallCards(page.items)
-    if (picked.length < MIN_CARDS) return
+    const picked = wallCards(page.items, 48)
+    /* Trimé à un multiple de 24 pour que la boucle s'enroule sans couture. */
+    const trimmed = picked.slice(0, Math.floor(picked.length / 24) * 24)
+    if (trimmed.length < MIN_CARDS) return
     set.value = latest
-    items.value = picked
+    items.value = trimmed
   } catch {
     /* pas de mur plutôt qu'un trou : l'accueil reste lisible sans lui */
   }
@@ -50,6 +54,7 @@ onMounted(async () => {
       <h2 class="wall-title">Tout le <em>Rift</em><br />sur une table.</h2>
       <RiftButton :to="`/cartes?set=${set.set_id}`">Explorer {{ set.name }}</RiftButton>
     </div>
+    <span class="wall-credit">Visuels officiels Riftbound — © Riot Games</span>
   </section>
 </template>
 
@@ -69,7 +74,8 @@ onMounted(async () => {
 }
 .wall-track {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(var(--wall-cols), minmax(0, 1fr));
+  --wall-cols: 12;
   gap: var(--space-3);
   animation: wall-scroll 120s linear infinite;
 }
@@ -122,9 +128,26 @@ onMounted(async () => {
   font-style: normal;
   color: var(--blood-bright);
 }
+.wall-credit {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-2);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
 @keyframes wall-scroll {
   to {
     transform: translateY(-50%);
+  }
+}
+@media (max-width: 1023px) {
+  .wall-track {
+    --wall-cols: 8;
+  }
+}
+@media (max-width: 767px) {
+  .wall-track {
+    --wall-cols: 6;
   }
 }
 </style>
