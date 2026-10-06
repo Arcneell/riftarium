@@ -156,49 +156,53 @@ async function toggleWish() {
       </h3>
 
       <div v-for="entry in entries" :key="entry.id" class="panel-lot">
-        <input
-          type="number"
-          inputmode="numeric"
-          min="0"
-          max="999"
-          v-model.number="entry.qty"
-          :aria-label="`Quantité du lot ${entry.condition} ${entry.lang}`"
-        />
-        <select v-model="entry.condition" aria-label="État du lot">
-          <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-        </select>
-        <select v-model="entry.lang" aria-label="Langue du lot">
-          <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-        </select>
-        <span class="panel-actions">
+        <div class="panel-fields">
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            max="999"
+            v-model.number="entry.qty"
+            :aria-label="`Quantité du lot ${entry.condition} ${entry.lang}`"
+          />
+          <select v-model="entry.condition" aria-label="État du lot">
+            <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+          </select>
+          <select v-model="entry.lang" aria-label="Langue du lot">
+            <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+          </select>
+        </div>
+        <div class="panel-actions">
           <RiftButton size="sm" :disabled="busy || !validQty(entry.qty)" @click="saveEntry(entry)">
             Enregistrer
           </RiftButton>
           <RiftButton size="sm" variant="ghost" :disabled="busy" @click="removeEntry(entry)">Retirer</RiftButton>
-        </span>
+        </div>
       </div>
       <p v-if="!entries.length" class="panel-empty">Aucun exemplaire pour l'instant.</p>
 
       <div class="panel-lot panel-add">
-        <input
-          type="number"
-          inputmode="numeric"
-          min="1"
-          max="999"
-          v-model.number="draft.qty"
-          aria-label="Quantité à ajouter"
-        />
-        <select v-model="draft.condition" aria-label="État du nouveau lot">
-          <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-        </select>
-        <select v-model="draft.lang" aria-label="Langue du nouveau lot">
-          <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-        </select>
-        <span class="panel-actions">
+        <div class="panel-fields">
+          <input
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="999"
+            v-model.number="draft.qty"
+            aria-label="Quantité à ajouter"
+          />
+          <select v-model="draft.condition" aria-label="État du nouveau lot">
+            <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+          </select>
+          <select v-model="draft.lang" aria-label="Langue du nouveau lot">
+            <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
+          </select>
+        </div>
+        <div class="panel-actions">
           <RiftButton size="sm" variant="secondary" :disabled="busy || !validQty(draft.qty, 1)" @click="addEntry">
             + Ajouter un lot
           </RiftButton>
-        </span>
+        </div>
       </div>
 
       <p v-if="saved" class="panel-saved" role="status">{{ saved }}</p>
@@ -234,9 +238,14 @@ async function toggleWish() {
   text-transform: none;
   letter-spacing: 0;
 }
+/* Deux rangées : les champs d'abord, les actions dessous (la colonne de la fiche fait 400 px au plus). */
 .panel-lot {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+.panel-fields {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-2);
   align-items: center;
 }
@@ -266,7 +275,9 @@ async function toggleWish() {
   outline-offset: 1px;
 }
 .panel-actions {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 .panel-saved {
@@ -278,7 +289,7 @@ async function toggleWish() {
   color: var(--blood-text);
 }
 @media (max-width: 480px) {
-  .panel-lot {
+  .panel-fields {
     grid-template-columns: 1fr;
   }
 }

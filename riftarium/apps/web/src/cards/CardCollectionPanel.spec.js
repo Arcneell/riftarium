@@ -189,6 +189,27 @@ describe("CardCollectionPanel", () => {
     wrapper.unmount()
   })
 
+  it("chaque ligne de lot sépare les champs (quantité, état, langue) des actions", async () => {
+    login()
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/collection/ogn-037-298" && !options.method) {
+        return Promise.resolve({ entries: [{ id: 1, qty: 2, condition: "NM", lang: "EN" }], total_qty: 2 })
+      }
+      return Promise.resolve({})
+    })
+    const { wrapper } = await mountPanel()
+
+    const rows = wrapper.findAll(".panel-lot")
+    expect(rows).toHaveLength(2) // un lot + la ligne d'ajout
+    for (const row of rows) {
+      expect(row.get(".panel-fields").findAll("input,select")).toHaveLength(3)
+      const actions = row.get(".panel-actions")
+      expect(actions.findAll("button").length).toBeGreaterThan(0)
+      expect(actions.find("input,select").exists()).toBe(false)
+    }
+    wrapper.unmount()
+  })
+
   it("une réponse tardive d'une ancienne carte n'émet rien et n'écrase pas les lots", async () => {
     login()
     let resolvePost
