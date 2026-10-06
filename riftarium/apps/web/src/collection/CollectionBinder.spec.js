@@ -90,6 +90,7 @@ describe("CollectionBinder", () => {
     expect(wrapper.get(".rift-empty a").attributes("href")).toBe("/cartes")
     expect(wrapper.find(".classeur-pocket").exists()).toBe(false)
     expect(wrapper.find(".classeur-spread").exists()).toBe(false)
+    expect(api).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 
@@ -115,6 +116,39 @@ describe("CollectionBinder", () => {
     await next.trigger("click")
     await flushPromises()
     expect(wrapper.get('[aria-label="Double page précédente"]').attributes("disabled")).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("flèches bloquées quand une modale est ouverte (nav-locked)", async () => {
+    const wrapper = await mountBinder()
+    api.mockClear()
+    document.body.classList.add("nav-locked")
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }))
+    await flushPromises()
+    expect(api).not.toHaveBeenCalled()
+    expect(wrapper.get(".classeur-count").text()).toBe("1 / 17")
+    document.body.classList.remove("nav-locked")
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }))
+    await flushPromises()
+    expect(api).toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("flèches ignorées sur un onglet de set focalisé", async () => {
+    const wrapper = await mountBinder()
+    api.mockClear()
+    wrapper
+      .findAll("[role=tab]")[0]
+      .element.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }))
+    await flushPromises()
+    expect(api).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("une seule page : pas de navigation", async () => {
+    api.mockImplementation(() => Promise.resolve({ total: 5, page: 1, size: 18, items: [fakeCard(1, 1)] }))
+    const wrapper = await mountBinder()
+    expect(wrapper.find(".classeur-nav").exists()).toBe(false)
     wrapper.unmount()
   })
 })

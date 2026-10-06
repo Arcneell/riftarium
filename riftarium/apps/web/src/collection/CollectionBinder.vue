@@ -55,7 +55,7 @@ function missingText(row) {
 watch(
   () => props.progress,
   (progress) => {
-    if (!binderSet.value && progress?.sets?.length) {
+    if (!binderSet.value && progress?.sets?.length && progress.overall?.owned !== 0) {
       binderSet.value = (progress.sets.find((row) => row.missing) || progress.sets[0]).set_id
     }
   },
@@ -70,8 +70,14 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => window.addEventListener("keydown", onKeydown))
-onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
+/* Un onglet de set focalisé garde ses flèches natives. */
+function onWindowKeydown(event) {
+  if (event.target?.getAttribute?.("role") === "tab") return
+  onKeydown(event)
+}
+
+onMounted(() => window.addEventListener("keydown", onWindowKeydown))
+onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown))
 </script>
 
 <template>
@@ -194,7 +200,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         </Transition>
       </div>
 
-      <div v-if="spread" class="classeur-nav">
+      <div v-if="spread && spread.pages > 1" class="classeur-nav">
         <RiftButton
           variant="ghost"
           size="sm"
