@@ -74,6 +74,24 @@ describe("CardView", () => {
     wrapper.unmount()
   })
 
+  it("le premier titre du document est le h1 du nom de la carte (le panneau collection vient après)", async () => {
+    session.token = "jeton"
+    api.mockImplementation((path) => Promise.resolve(path.startsWith("/api/collection/") ? { entries: [] } : sample()))
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/cartes/:id", component: CardView }]
+    })
+    router.push("/cartes/ogn-037-298")
+    await router.isReady()
+    const wrapper = mount(CardView, { global: { plugins: [router], components: { Icon: true } } })
+    await flushPromises()
+    const headings = wrapper.findAll("h1, h2, h3").map((node) => node.element.tagName + ":" + node.text().slice(0, 12))
+    expect(headings[0]).toBe("H1:Immortal Pho")
+    expect(headings.some((label) => label.startsWith("H2:Dans ma coll"))).toBe(true)
+    expect(wrapper.find("h3").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("l'énergie est lisible par un lecteur d'écran : l'alt contient le nombre", async () => {
     const { wrapper } = await mountView("ogn-037-298", sample({ energy: 3 }))
     expect(wrapper.get(".rift-stat img.rb-glyph.energy").attributes("alt")).toBe("3 énergie")

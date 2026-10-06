@@ -100,47 +100,7 @@ function openVariant(id) {
       <p v-if="error" class="fiche-error" role="alert">{{ error }}</p>
 
       <article v-if="card" class="fiche" :class="{ landscape }">
-        <div class="fiche-visual">
-          <div class="fiche-art" :class="{ landscape }" tabindex="-1">
-            <img :src="cardThumb(card.image_url, landscape ? 1100 : 720)" :alt="`Carte Riftbound : ${card.name}`" />
-            <span v-if="foil" class="fiche-foil" aria-hidden="true"></span>
-          </div>
-
-          <div v-if="variants.length > 1" class="fiche-variants" role="group" aria-label="Variantes">
-            <RiftChip
-              v-for="item in variants"
-              :key="item.id"
-              :label="variantLabel(item)"
-              :selected="item.id === card.id"
-              @toggle="openVariant(item.id)"
-            />
-          </div>
-
-          <div v-if="priceMain" class="fiche-price">
-            <p class="fiche-price-title">Prix indicatif</p>
-            <p class="fiche-price-line">
-              <b class="fiche-price-amount">{{ priceMain }}</b>
-              <span v-if="priceFoil" class="fiche-price-foil">foil : {{ priceFoil }}</span>
-            </p>
-            <p class="fiche-price-note">
-              {{ pricesMeta.currency_note || PRICE_SOURCE_NOTE
-              }}<template v-if="pricesMeta.updated_day"> Mise à jour : {{ pricesMeta.updated_day }}.</template>
-              Ni cote officielle ni offre d'achat.
-            </p>
-            <a class="fiche-price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
-              Voir sur Cardmarket ↗
-            </a>
-          </div>
-
-          <CardCollectionPanel :card="card" @change="onCollectionChange" />
-
-          <p class="fiche-credit">
-            {{ (card.riftbound_id || "").toUpperCase() }}
-            <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
-            · © Riot Games
-          </p>
-        </div>
-
+        <!-- Le titre (h1) précède le panneau collection dans le DOM ; la grille remet l'illustration à gauche. -->
         <div class="fiche-copy">
           <p class="fiche-kicker">
             <img class="rb-glyph rune" :src="runeGlyph" alt="" width="20" height="20" />
@@ -196,6 +156,47 @@ function openVariant(id) {
             </div>
           </dl>
         </div>
+
+        <div class="fiche-visual">
+          <div class="fiche-art" :class="{ landscape }" tabindex="-1">
+            <img :src="cardThumb(card.image_url, landscape ? 1100 : 720)" :alt="`Carte Riftbound : ${card.name}`" />
+            <span v-if="foil" class="fiche-foil" aria-hidden="true"></span>
+          </div>
+
+          <div v-if="variants.length > 1" class="fiche-variants" role="group" aria-label="Variantes">
+            <RiftChip
+              v-for="item in variants"
+              :key="item.id"
+              :label="variantLabel(item)"
+              :selected="item.id === card.id"
+              @toggle="openVariant(item.id)"
+            />
+          </div>
+
+          <div v-if="priceMain" class="fiche-price">
+            <p class="fiche-price-title">Prix indicatif</p>
+            <p class="fiche-price-line">
+              <b class="fiche-price-amount">{{ priceMain }}</b>
+              <span v-if="priceFoil" class="fiche-price-foil">foil : {{ priceFoil }}</span>
+            </p>
+            <p class="fiche-price-note">
+              {{ pricesMeta.currency_note || PRICE_SOURCE_NOTE
+              }}<template v-if="pricesMeta.updated_day"> Mise à jour : {{ pricesMeta.updated_day }}.</template>
+              Ni cote officielle ni offre d'achat.
+            </p>
+            <a class="fiche-price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
+              Voir sur Cardmarket ↗
+            </a>
+          </div>
+
+          <CardCollectionPanel :card="card" @change="onCollectionChange" />
+
+          <p class="fiche-credit">
+            {{ (card.riftbound_id || "").toUpperCase() }}
+            <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
+            · © Riot Games
+          </p>
+        </div>
       </article>
     </div>
   </section>
@@ -234,11 +235,19 @@ function openVariant(id) {
 .fiche {
   display: grid;
   grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
+  grid-template-areas: "visual copy";
   gap: var(--space-6);
   align-items: start;
 }
 .fiche.landscape {
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "visual" "copy";
+}
+.fiche-visual {
+  grid-area: visual;
+}
+.fiche-copy {
+  grid-area: copy;
 }
 .fiche-visual,
 .fiche-copy {
@@ -384,8 +393,10 @@ function openVariant(id) {
   color: var(--ink);
 }
 @media (max-width: 900px) {
-  .fiche {
+  .fiche,
+  .fiche.landscape {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "copy" "visual";
   }
   .fiche-visual {
     max-width: 400px;

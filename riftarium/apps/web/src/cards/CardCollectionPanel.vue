@@ -150,10 +150,10 @@ async function toggleWish() {
         {{ wished ? "Dans ma wishlist" : "Ajouter à la wishlist" }}
       </RiftButton>
 
-      <h3 class="panel-title">
+      <h2 class="panel-title">
         Dans ma collection
         <span v-if="totalOwned" class="panel-total">— {{ totalOwned }} exemplaire(s)</span>
-      </h3>
+      </h2>
 
       <div v-for="entry in entries" :key="entry.id" class="panel-lot">
         <div class="panel-fields">
@@ -229,6 +229,7 @@ async function toggleWish() {
   margin: var(--space-3) 0 0;
   font-family: var(--font-label);
   font-size: 14px;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
