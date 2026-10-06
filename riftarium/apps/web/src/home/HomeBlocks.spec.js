@@ -7,12 +7,19 @@ const { loadMemberSummary } = await import("./homeData.js")
 const { session } = await import("../api.js")
 const { default: HomeBlocks } = await import("./HomeBlocks.vue")
 
-const mountBlocks = () => mount(HomeBlocks, { global: { stubs: { RouterLink: RouterLinkStub } } })
+/* Démontés après chaque test : un composant resté monté réagirait aux connexions des tests suivants. */
+const mounted = []
+const mountBlocks = () => {
+  const wrapper = mount(HomeBlocks, { global: { stubs: { RouterLink: RouterLinkStub } } })
+  mounted.push(wrapper)
+  return wrapper
+}
 const titles = (wrapper) => wrapper.findAll(".rift-panel-title").map((t) => t.text())
 const links = (wrapper) => wrapper.findAllComponents(RouterLinkStub).map((l) => l.props("to"))
 
 describe("HomeBlocks", () => {
   afterEach(() => {
+    mounted.splice(0).forEach((wrapper) => wrapper.unmount())
     vi.clearAllMocks()
     session.token = null
   })
@@ -67,5 +74,41 @@ describe("HomeBlocks", () => {
     session.token = null
     await nextTick()
     expect(titles(wrapper)).toEqual(["Decks", "Collection", "Règles"])
+  })
+
+  it.each([
+    [0, "Deck vide : ajoutez vos premières cartes"],
+    [undefined, "Deck vide : ajoutez vos premières cartes"],
+    [1, "1 carte"],
+    [38, "38 cartes"]
+  ])("dernier deck à %s carte(s) : %s", async (count, expected) => {
+    session.token = "1"
+    loadMemberSummary.mockResolvedValue({
+      collection: null,
+      deck: { id: 9, name: "Lee Sin Tempo", card_count: count },
+      match: null
+    })
+    const wrapper = mountBlocks()
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain(expected)
+    if (count === 1) expect(text).not.toContain("1 cartes")
+    expect(text).not.toMatch(/undefined|NaN/)
+  })
+
+  it("connexion après montage : charge et affiche le résumé", async () => {
+    loadMemberSummary.mockResolvedValue({
+      collection: { owned: 5, total: 10, percent: 50 },
+      deck: null,
+      match: null
+    })
+    const wrapper = mountBlocks()
+    await flushPromises()
+    expect(loadMemberSummary).not.toHaveBeenCalled()
+    session.token = "1"
+    await flushPromises()
+    expect(loadMemberSummary).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain("50 %")
+    expect(wrapper.text()).toContain("5 / 10")
   })
 })

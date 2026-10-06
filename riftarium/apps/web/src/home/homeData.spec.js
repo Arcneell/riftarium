@@ -70,6 +70,10 @@ describe("completion", () => {
     expect(completion({ owned: 0, total: 0 })).toBeNull()
     expect(completion(null)).toBeNull()
   })
+  it("renvoie null sans aucune carte possédée", () => {
+    expect(completion({ owned: 0, total: 300 })).toBeNull()
+    expect(completion({ total: 300 })).toBeNull()
+  })
 })
 
 describe("outcomeLabel", () => {

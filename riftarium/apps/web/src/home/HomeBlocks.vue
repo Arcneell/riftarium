@@ -37,6 +37,11 @@ onBeforeUnmount(() => {
 const member = computed(() => Boolean(session.token))
 const collection = computed(() => summary.value?.collection ?? null)
 const deck = computed(() => summary.value?.deck ?? null)
+const deckSize = computed(() => {
+  const count = deck.value?.card_count
+  if (!count) return "Deck vide : ajoutez vos premières cartes"
+  return count === 1 ? "1 carte" : `${count} cartes`
+})
 const match = computed(() => summary.value?.match ?? null)
 </script>
 
@@ -68,7 +73,7 @@ const match = computed(() => summary.value?.match ?? null)
       <RiftSkeleton v-if="loading" />
       <template v-else>
         <p class="block-name">{{ deck.name }}</p>
-        <p class="block-text">{{ deck.card_count }} cartes</p>
+        <p class="block-text">{{ deckSize }}</p>
         <RiftButton :to="`/decks/${deck.id}`" size="sm">Reprendre</RiftButton>
       </template>
     </RiftPanel>

@@ -33,7 +33,8 @@ export function wallCards(items, limit = 36) {
 }
 
 export function completion(overall) {
-  if (!overall?.total) return null
+  /* sans carte possédée, « 0 % » serait décourageant : le bloc retombe sur son invitation */
+  if (!overall?.total || !overall.owned) return null
   return { owned: overall.owned, total: overall.total, percent: Math.round((overall.owned / overall.total) * 100) }
 }
 
