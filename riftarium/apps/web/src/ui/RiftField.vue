@@ -24,7 +24,7 @@ defineExpose({ focus: () => input.value?.focus() })
 </script>
 
 <template>
-  <div class="rift-field" :class="{ 'rift-field--search': search, 'rift-field--invalid': error }">
+  <div class="rift-field" :class="{ 'rift-field--invalid': error }">
     <label :for="id" class="rift-field-label" :class="{ 'sr-only': hideLabel }">{{ label }}</label>
     <div class="rift-field-box">
       <Icon v-if="search" name="search" :size="16" class="rift-field-icon" />
@@ -84,9 +84,17 @@ defineExpose({ focus: () => input.value?.focus() })
   border: none;
   color: var(--ink);
   font: inherit;
+  padding: 0;
+  box-shadow: none;
+  appearance: none;
 }
 .rift-field-input:focus {
   outline: none;
+  box-shadow: none;
+}
+.rift-field-input::-webkit-search-cancel-button,
+.rift-field-input::-webkit-search-decoration {
+  appearance: none;
 }
 .rift-field-input::placeholder {
   color: var(--ink-muted);

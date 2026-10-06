@@ -83,6 +83,8 @@ useDialog(modal, () => emit("close"))
   border-bottom: 1px solid var(--line);
 }
 .rift-modal-head h3 {
+  margin: 0;
+  color: var(--ink);
   font-size: 18px;
   text-transform: uppercase;
   letter-spacing: 0.06em;

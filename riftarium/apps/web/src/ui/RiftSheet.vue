@@ -60,6 +60,7 @@ useDialog(sheet, () => emit("close"))
   border-bottom: 1px solid var(--line);
 }
 .rift-sheet-head h2 {
+  margin: 0;
   font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
