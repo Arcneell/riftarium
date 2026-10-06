@@ -309,7 +309,7 @@ describe("DeckEditView", () => {
 
     await wrapper.get(".missing-btn").trigger("click")
     await flushPromises()
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Phénix Immortel")
     expect(modal.querySelectorAll("tbody tr")).toHaveLength(1)
@@ -348,7 +348,7 @@ describe("DeckEditView", () => {
 
     await wrapper.get(".missing-btn").trigger("click")
     await flushPromises()
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal.textContent).toContain("Coût pour compléter :")
     expect(modal.textContent).toContain("4,50")
     wrapper.unmount()

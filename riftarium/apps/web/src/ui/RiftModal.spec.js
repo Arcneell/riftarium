@@ -1,18 +1,18 @@
 import { mount } from "@vue/test-utils"
 import { nextTick } from "vue"
 import { afterEach, describe, expect, it } from "vitest"
-import ModalDialog from "./ModalDialog.vue"
+import RiftModal from "./RiftModal.vue"
 
 const Host = {
-  components: { ModalDialog },
+  components: { RiftModal },
   data: () => ({ open: false }),
   template: `
     <div>
       <button id="opener" @click="open = true">Ouvrir</button>
-      <ModalDialog v-if="open" title="Test" @close="open = false">
+      <RiftModal v-if="open" title="Test" @close="open = false">
         <button id="a">A</button>
         <button id="b">B</button>
-      </ModalDialog>
+      </RiftModal>
     </div>`
 }
 
@@ -30,7 +30,7 @@ async function openModal() {
   return wrapper
 }
 
-describe("ModalDialog", () => {
+describe("RiftModal", () => {
   afterEach(() => {
     document.body.innerHTML = ""
     document.body.classList.remove("nav-locked")
@@ -38,7 +38,7 @@ describe("ModalDialog", () => {
 
   it("prend le focus à l'ouverture sur le premier élément focusable", async () => {
     const wrapper = await openModal()
-    expect(document.activeElement?.className).toBe("modal-close")
+    expect(document.activeElement?.className).toBe("rift-modal-close")
     wrapper.unmount()
   })
 
@@ -47,7 +47,7 @@ describe("ModalDialog", () => {
     const last = document.getElementById("b")
     last.focus()
     pressTab()
-    expect(document.activeElement?.className).toBe("modal-close")
+    expect(document.activeElement?.className).toBe("rift-modal-close")
 
     pressTab(true)
     expect(document.activeElement?.id).toBe("b")
@@ -95,7 +95,7 @@ describe("ModalDialog", () => {
 
   it("relie le dialogue à son titre plutôt qu'à un aria-label", async () => {
     const wrapper = await openModal()
-    const dialog = document.querySelector(".modal")
+    const dialog = document.querySelector(".rift-modal")
     const labelledBy = dialog.getAttribute("aria-labelledby")
     expect(dialog.getAttribute("aria-label")).toBeNull()
     expect(labelledBy).toBeTruthy()
@@ -105,7 +105,7 @@ describe("ModalDialog", () => {
 
   it("le fond ferme au clic complet, pas au premier contact du doigt", async () => {
     const wrapper = await openModal()
-    const overlay = document.querySelector(".modal-overlay")
+    const overlay = document.querySelector(".rift-modal-overlay")
 
     /* Un début de glissement sur le fond ne doit plus fermer la modale. */
     overlay.dispatchEvent(new Event("pointerdown", { bubbles: true }))

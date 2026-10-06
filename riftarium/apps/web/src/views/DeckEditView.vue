@@ -17,7 +17,7 @@ import DeckExportBar from "../components/DeckExportBar.vue"
 import DeckMissingModal from "../components/DeckMissingModal.vue"
 import DeckView from "../components/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import { useDeckAutosave } from "../composables/useDeckAutosave.js"
 import { useDeckRules } from "../composables/useDeckRules.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
@@ -851,9 +851,9 @@ onBeforeUnmount(() => {
       @hide-preview="hidePreview"
     />
 
-    <ModalDialog v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
+    <RiftModal v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
       <DeckExportBar :deck="deck" />
-    </ModalDialog>
+    </RiftModal>
   </section>
 
   <section v-else>

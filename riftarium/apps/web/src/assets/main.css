@@ -4891,62 +4891,6 @@ footer {
 }
 
 /* ---------- Modales ---------- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  /* Au-dessus du bandeau traceurs (80), du voile (85) et du tiroir (90), qui
-     flottaient par-dessus les modales. Sous les visionneuses plein écran (1000). */
-  z-index: 200;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(4, 9, 20, 0.65);
-  backdrop-filter: blur(6px);
-  animation: modal-fade 0.2s ease-out;
-}
-.modal {
-  width: min(520px, 100%);
-  max-height: min(84vh, 900px);
-  display: flex;
-  flex-direction: column;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg);
-  box-shadow: 0 34px 80px rgba(10, 20, 40, 0.4);
-  animation: modal-pop 0.28s cubic-bezier(0.22, 0.8, 0.32, 1);
-}
-.modal.wide {
-  width: min(720px, 100%);
-}
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 26px 14px;
-  border-bottom: 1px solid var(--line);
-}
-.modal-close {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.85rem;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-}
-.modal-close:hover {
-  color: var(--fury);
-  border-color: var(--fury);
-}
-.modal-body {
-  padding: 20px 26px 26px;
-  overflow-y: auto;
-  /* Fin de liste atteinte : le geste ne repart pas dans la page derrière. */
-  overscroll-behavior: contain;
-}
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -4972,12 +4916,6 @@ footer {
 @keyframes modal-fade {
   from {
     opacity: 0;
-  }
-}
-@keyframes modal-pop {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
   }
 }
 
@@ -6529,12 +6467,6 @@ button.deck-box-stat:hover,
   }
 
   /* Modales : boutons qui passent à la ligne, tableau qui défile, hauteur en dvh. */
-  .modal {
-    max-height: min(84dvh, 900px);
-  }
-  .modal-body {
-    overflow-x: auto;
-  }
   .modal-actions {
     flex-wrap: wrap;
   }
@@ -7940,14 +7872,6 @@ button.deck-box-stat:hover,
     white-space: normal;
   }
 
-  /* Modales : 26 px de marge latérale sur 312 px de large. */
-  .modal-head {
-    padding: 16px 16px 12px;
-  }
-  .modal-body {
-    padding: 16px 16px 20px;
-  }
-
   /* Cartes manquantes : six colonnes ne tiennent pas dans la modale, chaque
      ligne devient une fiche dont les cellules portent l'intitulé de colonne. */
   .missing-table,
@@ -8050,10 +7974,6 @@ button.deck-box-stat:hover,
   }
   .owned-seg button {
     min-height: 44px;
-  }
-  .modal-close {
-    width: 44px;
-    height: 44px;
   }
   .filter {
     display: inline-flex;

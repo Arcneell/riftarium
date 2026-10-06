@@ -16,7 +16,7 @@ import { useScrollMemory } from "../composables/useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import PageBanner from "../components/PageBanner.vue"
 
 const { restoreScroll } = useScrollMemory()
@@ -716,7 +716,7 @@ onMounted(async () => {
     </div>
   </section>
 
-  <ModalDialog v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
+  <RiftModal v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
     <p>{{ selected.size }} carte(s) seront retirées de votre inventaire, sans retour en arrière possible.</p>
     <p v-if="removeError" class="error">{{ removeError }}</p>
     <div class="modal-actions">
@@ -725,5 +725,5 @@ onMounted(async () => {
         {{ bulk.busy ? "Retrait…" : "Retirer" }}
       </button>
     </div>
-  </ModalDialog>
+  </RiftModal>
 </template>

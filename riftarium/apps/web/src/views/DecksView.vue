@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import { api } from "../api.js"
 import { BANNERS } from "../banners.js"
 import DeckBox from "../components/DeckBox.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import PageBanner from "../components/PageBanner.vue"
 import { usePlayStats } from "../composables/usePlayStats.js"
 
@@ -134,7 +134,7 @@ onMounted(load)
     </div>
   </section>
 
-  <ModalDialog v-if="showCreate" title="Nouveau deck" @close="closeCreate">
+  <RiftModal v-if="showCreate" title="Nouveau deck" @close="closeCreate">
     <form class="modal-form" @submit.prevent="createDeck">
       <label>
         Nom du deck
@@ -183,9 +183,9 @@ onMounted(load)
       </button>
     </div>
     <p v-if="generating" class="muted" style="margin-top: 10px">Génération du deck…</p>
-  </ModalDialog>
+  </RiftModal>
 
-  <ModalDialog v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
+  <RiftModal v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
     <p>
       Le deck <strong>{{ pendingDelete.name }}</strong> sera supprimé pour de bon — impossible de le récupérer ensuite.
     </p>
@@ -196,5 +196,5 @@ onMounted(load)
         {{ deleting ? "Suppression…" : "Supprimer" }}
       </button>
     </div>
-  </ModalDialog>
+  </RiftModal>
 </template>
