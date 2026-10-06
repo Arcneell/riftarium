@@ -52,11 +52,9 @@ const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id
 const panelOpen = ref(true)
 const sheetOpen = ref(false)
 
-/* La saisie de `q` passe aussi par setFilter : l’état change, le watcher de signature du composable
-   débounce le chargement et ramène à la page 1. */
-function update(key, value) {
-  setFilter(key, value)
-}
+watch(desktop, (isDesktop) => {
+  if (isDesktop) sheetOpen.value = false
+})
 
 watch(size, () => {
   if (state.page > pageCount.value) state.page = 1
@@ -89,24 +87,25 @@ onMounted(async () => {
     </header>
 
     <aside v-if="desktop && panelOpen" class="filters-panel" aria-label="Filtres">
-      <CardFilters :state="state" :sets="setOptions" @update="update" />
+      <CardFilters :state="state" :sets="setOptions" @update="setFilter" />
     </aside>
 
     <div class="cards-main">
-      <ActiveFilters :state="state" :sets="setOptions" @update="update" @reset="reset" />
+      <ActiveFilters :state="state" :sets="setOptions" @update="setFilter" @reset="reset" />
       <p v-if="error" class="cards-error" role="alert">{{ error }}</p>
 
-      <div v-if="loading && !result.items.length" class="cards-grid" :style="{ '--tile-min': `${tileMin}px` }">
-        <RiftSkeleton v-for="n in 12" :key="n" block />
-      </div>
       <div
-        v-show="result.items.length"
         ref="grid"
         class="cards-grid"
-        :class="{ reloading: loading }"
+        :class="{ reloading: loading && result.items.length }"
         :style="{ '--tile-min': `${tileMin}px` }"
       >
-        <CardTile v-for="card in result.items" :key="card.id" :card="card" />
+        <template v-if="loading && !result.items.length">
+          <RiftSkeleton v-for="n in 12" :key="n" block />
+        </template>
+        <template v-else>
+          <CardTile v-for="card in result.items" :key="card.id" :card="card" />
+        </template>
       </div>
 
       <RiftEmpty v-if="!loading && !error && !result.items.length" title="Aucune carte ne correspond aux filtres">
@@ -126,7 +125,7 @@ onMounted(async () => {
   </section>
 
   <RiftSheet v-if="sheetOpen && !desktop" title="Filtres" @close="sheetOpen = false">
-    <CardFilters :state="state" :sets="setOptions" @update="update" />
+    <CardFilters :state="state" :sets="setOptions" @update="setFilter" />
     <div class="sheet-foot">
       <RiftButton block @click="sheetOpen = false">Voir les {{ result.total }} cartes</RiftButton>
     </div>

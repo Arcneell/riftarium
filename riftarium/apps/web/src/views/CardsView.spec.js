@@ -180,6 +180,7 @@ describe("CardsView", () => {
     })
     const { wrapper } = await mountView()
     expect(wrapper.findAll(".rift-skeleton")).toHaveLength(12)
+    expect(wrapper.findAll(".cards-grid")).toHaveLength(1)
     release({ total: 2, page: 1, size: 30, items: [fakeCard(1), fakeCard(2)] })
     await flushPromises()
     expect(wrapper.findAll(".rift-skeleton")).toHaveLength(0)
