@@ -170,6 +170,75 @@ describe("CardsView", () => {
     wrapper.unmount()
   })
 
+  it("un seul appel à /api/cards au montage, même quand la grille se remesure à l'identique", async () => {
+    const cardCalls = () => api.mock.calls.filter(([path]) => path.startsWith("/api/cards")).length
+    const { wrapper } = await mountView()
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(cardCalls()).toBe(1)
+    window.dispatchEvent(new Event("resize"))
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(cardCalls()).toBe(1)
+    wrapper.unmount()
+  })
+
+  it("compteur : caché au premier chargement, annoncé poliment, au singulier ou au pluriel", async () => {
+    let release
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      return new Promise((resolve) => {
+        release = resolve
+      })
+    })
+    const { wrapper } = await mountView()
+    const count = () => wrapper.get(".cards-count")
+    expect(count().attributes("aria-live")).toBe("polite")
+    expect(count().text()).toBe("")
+    release({ total: 1, page: 1, size: 30, items: [fakeCard(1)] })
+    await flushPromises()
+    expect(count().text()).toBe("1 carte")
+    wrapper.unmount()
+  })
+
+  it("le bouton de la feuille s'accorde au nombre de résultats", async () => {
+    stubWidth(390)
+    viewport(390, 780)
+    const totals = { total: 0, page: 1, size: 30, items: [] }
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      return Promise.resolve({ ...totals, items: totals.total ? [fakeCard(1)] : [] })
+    })
+    const labelFor = async (total) => {
+      totals.total = total
+      const { wrapper } = await mountView("/cartes")
+      await wrapper
+        .findAll("button")
+        .find((b) => b.text().startsWith("Filtres"))
+        .trigger("click")
+      const done = document.body.querySelector(".sheet-foot button")
+      const text = done.textContent.trim()
+      wrapper.unmount()
+      document.body.innerHTML = ""
+      return text
+    }
+    expect(await labelFor(0)).toBe("Aucune carte")
+    expect(await labelFor(1)).toBe("Voir la carte")
+    expect(await labelFor(42)).toBe("Voir les 42 cartes")
+  })
+
+  it("le bouton du panneau de filtres annonce son état et son panneau", async () => {
+    viewport(1280, 800)
+    stubWidth(1280)
+    const { wrapper } = await mountView()
+    const toggle = wrapper.get(".cards-head button")
+    const panelId = wrapper.get(".filters-panel").attributes("id")
+    expect(panelId).toBeTruthy()
+    expect(toggle.attributes("aria-controls")).toBe(panelId)
+    expect(toggle.attributes("aria-expanded")).toBe("true")
+    await toggle.trigger("click")
+    expect(toggle.attributes("aria-expanded")).toBe("false")
+    wrapper.unmount()
+  })
+
   it("premier chargement : squelettes ; rechargement : grille atténuée, pas vidée", async () => {
     let release
     api.mockImplementation((path) => {

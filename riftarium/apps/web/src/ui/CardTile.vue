@@ -29,12 +29,7 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
       :style="style"
     >
       <span class="tile-art">
-        <img
-          :src="cardThumb(card.image_url, 320)"
-          :alt="`Carte Riftbound : ${card.name}`"
-          loading="lazy"
-          decoding="async"
-        />
+        <img :src="cardThumb(card.image_url, 320)" alt="" loading="lazy" decoding="async" />
         <span v-if="foil" class="tile-foil" aria-hidden="true"></span>
         <span v-if="badge" class="tile-badge">{{ badge }}</span>
         <span v-if="card.owned_qty" class="tile-owned">×{{ card.owned_qty }}</span>

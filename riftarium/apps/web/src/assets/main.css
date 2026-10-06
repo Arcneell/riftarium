@@ -5,15 +5,6 @@
    vers les tokens de src/styles/tokens.css, pour que les pages
    pas encore refaites prennent déjà la palette.
    ============================================================ */
-/* Bouton habillé en lien (retour d'historique de la fiche carte). */
-.card-back-link {
-  color: var(--gold-deep);
-  transition: color 0.2s;
-}
-.card-back-link:hover {
-  color: var(--hex);
-}
-
 :root {
   --paper: var(--bg);
   --paper-2: var(--bg-raised);
@@ -1373,12 +1364,6 @@ textarea {
 }
 
 /* ---------- Fiche carte ---------- */
-/* Pages sans bandeau : le contenu démarre haut lui aussi, plutôt que sur les
-   88 px de <section> par défaut. */
-.card-detail {
-  padding-top: 20px;
-  padding-bottom: 72px;
-}
 .card-art.landscape img.full {
   aspect-ratio: 1038 / 744;
 }
@@ -1851,9 +1836,6 @@ td.num {
   }
   .card-preview {
     display: none;
-  }
-  .card-detail {
-    padding-top: 14px;
   }
   .legal-layout {
     grid-template-columns: minmax(0, 1fr);

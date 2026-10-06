@@ -22,6 +22,10 @@ describe("CardTile", () => {
     expect(wrapper.get("img").attributes("loading")).toBe("lazy")
   })
 
+  it("l'image est décorative : le nom est déjà dans le lien", () => {
+    expect(mountTile(base).get("img").attributes("alt")).toBe("")
+  })
+
   it("foil, badge de variante, quantité et prix quand ils existent", () => {
     const wrapper = mountTile({ ...base, alternate_art: true, owned_qty: 2, price_eur: 12.4 })
     expect(wrapper.find(".tile-foil").exists()).toBe(true)

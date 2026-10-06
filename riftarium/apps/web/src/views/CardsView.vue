@@ -23,6 +23,9 @@ const desktop = computed(() => breakpoint.value === "desktop")
 const grid = ref(null)
 const { tileMin, size } = useGridMeasure(grid)
 let firstLoad = true
+/* Taille de page du dernier chargement lancé : la mesure initiale de la grille change `size`
+   avant le premier chargement, ce qui ne doit pas en déclencher un second. */
+let loadedSize = null
 
 const { state, result, loading, error, activeCount, pageCount, setFilter, reset, load, scheduleLoad } =
   useQuerySyncedFilters(
@@ -36,7 +39,10 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
       page: { kind: "page" }
     },
     {
-      fetcher: (filters) => api(`/api/cards?${cardsQuery(filters, size.value)}`),
+      fetcher: (filters) => {
+        loadedSize = size.value
+        return api(`/api/cards?${cardsQuery(filters, size.value)}`)
+      },
       pageSize: size,
       onLoaded: () => {
         if (firstLoad) {
@@ -49,6 +55,11 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
 
 const sets = ref([])
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
+/* Libellé du bouton de la feuille, accordé au nombre de résultats. */
+const sheetLabel = computed(() => {
+  if (!result.value.total) return "Aucune carte"
+  return result.value.total === 1 ? "Voir la carte" : `Voir les ${result.value.total} cartes`
+})
 const panelOpen = ref(true)
 const sheetOpen = ref(false)
 
@@ -56,7 +67,8 @@ watch(desktop, (isDesktop) => {
   if (isDesktop) sheetOpen.value = false
 })
 
-watch(size, () => {
+watch(size, (next) => {
+  if (next === loadedSize) return
   if (state.page > pageCount.value) state.page = 1
   else scheduleLoad()
 })
@@ -76,9 +88,20 @@ onMounted(async () => {
     <header class="cards-head">
       <div>
         <h1>Cartes</h1>
-        <p class="cards-count">{{ result.total }} carte{{ result.total > 1 ? "s" : "" }}</p>
+        <p class="cards-count" aria-live="polite">
+          <template v-if="!(loading && !result.items.length)">
+            {{ result.total }} carte{{ result.total > 1 ? "s" : "" }}
+          </template>
+        </p>
       </div>
-      <RiftButton v-if="desktop" variant="ghost" size="sm" @click="panelOpen = !panelOpen">
+      <RiftButton
+        v-if="desktop"
+        variant="ghost"
+        size="sm"
+        :aria-expanded="panelOpen"
+        aria-controls="filters-panel"
+        @click="panelOpen = !panelOpen"
+      >
         {{ panelOpen ? "Masquer les filtres" : "Filtres" }}
       </RiftButton>
       <RiftButton v-else variant="secondary" size="sm" @click="sheetOpen = true">
@@ -86,7 +109,7 @@ onMounted(async () => {
       </RiftButton>
     </header>
 
-    <aside v-if="desktop && panelOpen" class="filters-panel" aria-label="Filtres">
+    <aside v-if="desktop && panelOpen" id="filters-panel" class="filters-panel" aria-label="Filtres">
       <CardFilters :state="state" :sets="setOptions" @update="setFilter" />
     </aside>
 
@@ -127,7 +150,7 @@ onMounted(async () => {
   <RiftSheet v-if="sheetOpen && !desktop" title="Filtres" @close="sheetOpen = false">
     <CardFilters :state="state" :sets="setOptions" @update="setFilter" />
     <div class="sheet-foot">
-      <RiftButton block @click="sheetOpen = false">Voir les {{ result.total }} cartes</RiftButton>
+      <RiftButton block @click="sheetOpen = false">{{ sheetLabel }}</RiftButton>
     </div>
   </RiftSheet>
 </template>
@@ -154,6 +177,7 @@ onMounted(async () => {
 .cards-head h1 {
   margin: 0;
   font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
   text-transform: uppercase;
   background: none;
   color: var(--ink);
@@ -188,6 +212,15 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fill, minmax(var(--tile-min, 180px), 1fr));
   gap: var(--space-4);
   transition: opacity var(--t-base);
+}
+/* Les squelettes prennent le ratio d'une vignette plutôt que la hauteur par défaut du bloc. */
+.cards-grid :deep(.rift-skeleton-block) {
+  height: auto;
+  aspect-ratio: 0.716;
+}
+/* Un terrain (paysage) occupe deux colonnes de la grille. */
+.cards-grid :deep(.card-hover.landscape) {
+  grid-column: span 2;
 }
 .cards-grid.reloading {
   opacity: 0.55;

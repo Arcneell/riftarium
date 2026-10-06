@@ -4,8 +4,9 @@ import { api, session, CONDITIONS, LANGS } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
 
 /* Panneau « collection et wishlist » de la fiche carte : lots possédés, ajout,
-   bascule wishlist. Il ne modifie pas la carte : il émet `change(patch)` avec
-   `owned_qty` / `wished_qty`, c'est le parent qui tient la fiche. */
+   bascule wishlist. Il ne modifie pas la carte : il émet `change({ id, ...patch })` avec
+   `owned_qty` / `wished_qty` et l'id de la carte concernée (le parent ignore un patch
+   qui ne vise plus la carte affichée), c'est le parent qui tient la fiche. */
 const props = defineProps({
   card: { type: Object, required: true }
 })
@@ -49,9 +50,9 @@ function validQty(value, min = 0) {
   return Number.isInteger(value) && value >= min && value <= 999
 }
 
-function applyState(state, message) {
+function applyState(cardId, state, message) {
   entries.value = state.entries
-  emit("change", { owned_qty: state.total_qty })
+  emit("change", { id: cardId, owned_qty: state.total_qty })
   saved.value = message
 }
 
@@ -67,7 +68,7 @@ async function mutate(request, message) {
     const state = await request()
     /* Réponse tardive : la fiche a changé de carte entre-temps, on l'oublie. */
     if (props.card.id !== cardId) return false
-    applyState(state, message)
+    applyState(cardId, state, message)
     return true
   } catch (e) {
     error.value = e.message
@@ -113,15 +114,16 @@ const wishBusy = ref(false)
 
 async function toggleWish() {
   if (wishBusy.value) return
+  const cardId = props.card.id
   wishBusy.value = true
   error.value = ""
   try {
     if (wished.value) {
-      await api(`/api/wishlist/${props.card.id}`, { method: "DELETE" })
-      emit("change", { wished_qty: 0 })
+      await api(`/api/wishlist/${cardId}`, { method: "DELETE" })
+      emit("change", { id: cardId, wished_qty: 0 })
     } else {
-      await api(`/api/wishlist/${props.card.id}`, { method: "PUT", body: { qty: 1 } })
-      emit("change", { wished_qty: 1 })
+      await api(`/api/wishlist/${cardId}`, { method: "PUT", body: { qty: 1 } })
+      emit("change", { id: cardId, wished_qty: 1 })
     }
   } catch (e) {
     error.value = e.message

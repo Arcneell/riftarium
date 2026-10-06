@@ -78,7 +78,7 @@ describe("CardCollectionPanel", () => {
       ([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "PUT"
     )
     expect(put[1].body).toEqual({ qty: 1 })
-    expect(patches).toContainEqual({ wished_qty: 1 })
+    expect(patches).toContainEqual({ id: "ogn-037-298", wished_qty: 1 })
     expect(toggle.text()).toContain("Dans ma wishlist")
     expect(toggle.attributes("aria-pressed")).toBe("true")
 
@@ -87,7 +87,7 @@ describe("CardCollectionPanel", () => {
     expect(
       api.mock.calls.some(([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "DELETE")
     ).toBe(true)
-    expect(patches).toContainEqual({ wished_qty: 0 })
+    expect(patches).toContainEqual({ id: "ogn-037-298", wished_qty: 0 })
     expect(toggle.attributes("aria-pressed")).toBe("false")
     wrapper.unmount()
   })
@@ -115,7 +115,7 @@ describe("CardCollectionPanel", () => {
     expect(post[1].body).toEqual({ qty: 3, condition: "NM", lang: "EN" })
     expect(wrapper.get(".panel-add input[type=number]").element.value).toBe("1")
     expect(wrapper.get(".panel-saved").text()).toContain("Lot ajouté.")
-    expect(patches).toContainEqual({ owned_qty: 3 })
+    expect(patches).toContainEqual({ id: "ogn-037-298", owned_qty: 3 })
     wrapper.unmount()
   })
 

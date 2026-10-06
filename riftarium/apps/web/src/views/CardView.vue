@@ -29,7 +29,17 @@ const foil = computed(() => isFoil(card.value))
 const variants = computed(() => card.value?.variants || [])
 const landscape = computed(() => card.value?.orientation === "landscape")
 const domainLabel = computed(() => card.value?.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "")
-const runeGlyph = computed(() => glyphUrl(`rune_${DOMAIN_RUNE[card.value?.domains?.[0]] || "rainbow"}`))
+/* Une rune par domaine ; « Colorless » (arc-en-ciel) n'est pas un domaine à afficher. */
+const kickerRunes = computed(() =>
+  (card.value?.domains || [])
+    .filter((domain) => DOMAIN_RUNE[domain] && domain !== "Colorless")
+    .map((domain) => ({ domain, src: glyphUrl(`rune_${DOMAIN_RUNE[domain]}`) }))
+)
+const collectorNumber = computed(() => {
+  const number = card.value?.collector_number
+  if (number === null || number === undefined) return (card.value?.riftbound_id || "").toUpperCase()
+  return card.value?.card_count ? `${number} / ${card.value.card_count}` : String(number)
+})
 const kicker = computed(() =>
   [TYPES[card.value?.type] || card.value?.type, domainLabel.value].filter(Boolean).join(" · ")
 )
@@ -76,9 +86,10 @@ watch(
   { immediate: true }
 )
 
-/* Le panneau de collection ne modifie pas la carte : il émet le changement, appliqué ici. */
-function onCollectionChange(patch) {
-  if (card.value) Object.assign(card.value, patch)
+/* Le panneau de collection ne modifie pas la carte : il émet le changement, appliqué ici
+   seulement s'il vise encore la carte affichée (réponse tardive après un changement de variante). */
+function onCollectionChange({ id, ...patch }) {
+  if (card.value && id === card.value.id) Object.assign(card.value, patch)
 }
 
 /* replace : passer d'une variante à l'autre ne pollue pas l'historique, le retour ramène à la liste. */
@@ -103,7 +114,15 @@ function openVariant(id) {
         <!-- Le titre (h1) précède le panneau collection dans le DOM ; la grille remet l'illustration à gauche. -->
         <div class="fiche-copy">
           <p class="fiche-kicker">
-            <img class="rb-glyph rune" :src="runeGlyph" alt="" width="20" height="20" />
+            <img
+              v-for="rune in kickerRunes"
+              :key="rune.domain"
+              class="rb-glyph rune"
+              :src="rune.src"
+              alt=""
+              width="20"
+              height="20"
+            />
             <span>{{ kicker }}</span>
           </p>
           <h1 class="fiche-title">{{ card.name }}</h1>
@@ -144,7 +163,7 @@ function openVariant(id) {
             </div>
             <div>
               <dt>Numéro</dt>
-              <dd>{{ (card.riftbound_id || "").toUpperCase() }}</dd>
+              <dd>{{ collectorNumber }}</dd>
             </div>
             <div>
               <dt>Rareté</dt>
@@ -158,7 +177,7 @@ function openVariant(id) {
         </div>
 
         <div class="fiche-visual">
-          <div class="fiche-art" :class="{ landscape }" tabindex="-1">
+          <div class="fiche-art" :class="{ landscape }">
             <img :src="cardThumb(card.image_url, landscape ? 1100 : 720)" :alt="`Carte Riftbound : ${card.name}`" />
             <span v-if="foil" class="fiche-foil" aria-hidden="true"></span>
           </div>

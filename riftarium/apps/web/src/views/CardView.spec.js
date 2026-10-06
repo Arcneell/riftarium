@@ -92,6 +92,86 @@ describe("CardView", () => {
     wrapper.unmount()
   })
 
+  it("une réponse de wishlist tardive ne touche pas la variante affichée entre-temps", async () => {
+    session.token = "jeton"
+    const variants = [
+      { id: "ogn-037-298", name: "Immortal Phoenix", variant: "standard" },
+      { id: "ogn-037a-298", name: "Immortal Phoenix", variant: "alternate_art" }
+    ]
+    let releasePut
+    api.mockImplementation((path, options = {}) => {
+      if (path.startsWith("/api/collection/")) return Promise.resolve({ entries: [] })
+      if (path === "/api/wishlist/ogn-037-298" && options.method === "PUT") {
+        return new Promise((resolve) => {
+          releasePut = resolve
+        })
+      }
+      if (path === "/api/cards/ogn-037a-298") {
+        return Promise.resolve(sample({ id: "ogn-037a-298", variants, wished_qty: 0 }))
+      }
+      return Promise.resolve(sample({ variants, wished_qty: 0 }))
+    })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/cartes/:id", component: CardView }]
+    })
+    router.push("/cartes/ogn-037-298")
+    await router.isReady()
+    const wrapper = mount(CardView, { global: { plugins: [router], components: { Icon: true } } })
+    await flushPromises()
+
+    await wrapper.get(".panel-wish").trigger("click")
+    await wrapper.findAll(".fiche-visual .rift-chip")[1].trigger("click")
+    await flushPromises()
+    expect(wrapper.get(".panel-wish").attributes("aria-pressed")).toBe("false")
+
+    releasePut(null)
+    await flushPromises()
+    expect(wrapper.get(".panel-wish").attributes("aria-pressed")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("« Numéro » affiche le numéro de collection, avec la taille du set si elle est connue", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ collector_number: 37 }))
+    const dd = (w, label) =>
+      w
+        .findAll(".fiche-meta div")
+        .find((row) => row.get("dt").text() === label)
+        .get("dd")
+        .text()
+    expect(dd(wrapper, "Numéro")).toBe("37")
+    wrapper.unmount()
+
+    const { wrapper: sized } = await mountView("ogn-037-298", sample({ collector_number: 37, card_count: 298 }))
+    expect(dd(sized, "Numéro")).toBe("37 / 298")
+    sized.unmount()
+
+    const { wrapper: fallback } = await mountView("ogn-037-298", sample({ collector_number: null }))
+    expect(dd(fallback, "Numéro")).toBe("OGN-037-298")
+    fallback.unmount()
+  })
+
+  it("le surtitre affiche une rune par domaine, aucune pour Colorless ou sans domaine", async () => {
+    const runes = (w) => w.findAll(".fiche-kicker img.rb-glyph.rune").map((img) => img.attributes("src"))
+    const { wrapper: duo } = await mountView("ogn-037-298", sample({ domains: ["Fury", "Calm"] }))
+    expect(runes(duo)).toHaveLength(2)
+    expect(runes(duo)[0]).toContain("rune_fury.svg")
+    expect(runes(duo)[1]).toContain("rune_calm.svg")
+    duo.unmount()
+    const { wrapper: none } = await mountView("ogn-037-298", sample({ domains: ["Colorless"] }))
+    expect(runes(none)).toHaveLength(0)
+    none.unmount()
+    const { wrapper: empty } = await mountView("ogn-037-298", sample({ domains: [] }))
+    expect(runes(empty)).toHaveLength(0)
+    empty.unmount()
+  })
+
+  it("l'illustration n'est pas un arrêt de tabulation artificiel", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample())
+    expect(wrapper.get(".fiche-art").attributes("tabindex")).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it("l'énergie est lisible par un lecteur d'écran : l'alt contient le nombre", async () => {
     const { wrapper } = await mountView("ogn-037-298", sample({ energy: 3 }))
     expect(wrapper.get(".rift-stat img.rb-glyph.energy").attributes("alt")).toBe("3 énergie")
