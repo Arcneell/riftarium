@@ -149,7 +149,13 @@ function openVariant(id) {
           <h1 class="fiche-title">{{ card.name }}</h1>
 
           <div v-if="hasEnergy || hasMight || powerRunes.length" class="fiche-stats">
-            <RiftStat v-if="hasEnergy" label="Énergie" :glyph="glyphUrl(`energy_${card.energy}`)" glyph-kind="energy" />
+            <RiftStat
+              v-if="hasEnergy"
+              label="Énergie"
+              :glyph="glyphUrl(`energy_${card.energy}`)"
+              :glyph-alt="`${card.energy} énergie`"
+              glyph-kind="energy"
+            />
             <RiftStat v-if="hasMight" label="Puissance" :value="card.might" :glyph="mightSrc" ink />
             <RiftStat v-if="powerRunes.length" label="Pouvoir">
               <img

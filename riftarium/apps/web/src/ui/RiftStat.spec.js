@@ -17,8 +17,31 @@ describe("RiftStat", () => {
     })
     const glyph = wrapper.get("span.rb-glyph.ink")
     expect(glyph.attributes("style")).toContain("might.svg")
-    expect(glyph.attributes("aria-label")).toBe("Puissance")
     expect(wrapper.get(".rift-stat-value").text()).toBe("4")
+  })
+
+  it("glyphe teinté masqué aux lecteurs d'écran quand une valeur est affichée", () => {
+    const wrapper = mount(RiftStat, {
+      props: { label: "Puissance", glyph: "https://x/might.svg", ink: true, value: 4 }
+    })
+    const glyph = wrapper.get("span.rb-glyph.ink")
+    expect(glyph.attributes("aria-hidden")).toBe("true")
+    expect(glyph.attributes("role")).toBeUndefined()
+    expect(glyph.attributes("aria-label")).toBeUndefined()
+  })
+
+  it("glyphe teinté sans valeur : reste un role=img nommé", () => {
+    const wrapper = mount(RiftStat, { props: { label: "Puissance", glyph: "https://x/might.svg", ink: true } })
+    const glyph = wrapper.get("span.rb-glyph.ink")
+    expect(glyph.attributes("role")).toBe("img")
+    expect(glyph.attributes("aria-label")).toBe("Puissance")
+  })
+
+  it("glyphAlt personnalisé pour l'image, repli sur l'étiquette", () => {
+    const wrapper = mount(RiftStat, {
+      props: { label: "Énergie", glyph: "https://x/energy_5.svg", glyphAlt: "5 énergie" }
+    })
+    expect(wrapper.get("img.rb-glyph").attributes("alt")).toBe("5 énergie")
   })
 
   it("slot pour un contenu riche", () => {

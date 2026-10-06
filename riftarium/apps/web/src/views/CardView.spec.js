@@ -74,6 +74,12 @@ describe("CardView", () => {
     wrapper.unmount()
   })
 
+  it("l'énergie est lisible par un lecteur d'écran : l'alt contient le nombre", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ energy: 3 }))
+    expect(wrapper.get(".rift-stat img.rb-glyph.energy").attributes("alt")).toBe("3 énergie")
+    wrapper.unmount()
+  })
+
   it("passe en mise en page terrain pour une carte paysage", async () => {
     const { wrapper } = await mountView(
       "ogn-275-298",

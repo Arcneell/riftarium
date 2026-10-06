@@ -1,12 +1,16 @@
 <script setup>
+import { computed } from "vue"
+
 /* Statistique de jeu : glyphe officiel Riot, valeur en Cinzel, étiquette en capitales. */
-defineProps({
+const props = defineProps({
   label: { type: String, required: true },
   value: { type: [Number, String], default: null },
   glyph: { type: String, default: "" },
   glyphKind: { type: String, default: "" },
+  glyphAlt: { type: String, default: "" }, // texte alternatif de l'image (repli : l'étiquette)
   ink: { type: Boolean, default: false }
 })
+const hasValue = computed(() => props.value !== null && props.value !== "")
 </script>
 
 <template>
@@ -17,12 +21,21 @@ defineProps({
           v-if="glyph && ink"
           class="rb-glyph ink"
           :style="{ '--glyph': `url(${glyph})` }"
-          role="img"
-          :aria-label="label"
+          :role="hasValue ? undefined : 'img'"
+          :aria-label="hasValue ? undefined : label"
+          :aria-hidden="hasValue ? 'true' : undefined"
         ></span>
-        <img v-else-if="glyph" class="rb-glyph" :class="glyphKind" :src="glyph" :alt="label" width="26" height="26" />
+        <img
+          v-else-if="glyph"
+          class="rb-glyph"
+          :class="glyphKind"
+          :src="glyph"
+          :alt="glyphAlt || label"
+          width="26"
+          height="26"
+        />
       </slot>
-      <b v-if="value !== null && value !== ''" class="rift-stat-value">{{ value }}</b>
+      <b v-if="hasValue" class="rift-stat-value">{{ value }}</b>
     </span>
     <span class="rift-stat-label">{{ label }}</span>
   </div>
