@@ -24,6 +24,7 @@ function select(index) {
 }
 
 function onKey(event, index) {
+  if (event.altKey || event.ctrlKey || event.metaKey) return
   const moves = { ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1 }
   let next = moves[event.key]
   if (event.key === "Home") next = 0

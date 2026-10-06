@@ -14,7 +14,8 @@ export function useOwnedCopies(cardId, { onChange, autoload = true } = {}) {
   const defaults = reactive(readDefaults())
   const total = computed(() => entries.value.reduce((sum, entry) => sum + entry.qty, 0))
 
-  /* Jeton de séquence : seul le dernier chargement a le droit d'écrire dans l'état. */
+  /* Jeton de séquence unique pour chargements et mutations : seule la dernière opération
+     (ou la dernière carte) a le droit d'écrire dans l'état. */
   let seq = 0
 
   function setDefaults(patch) {
@@ -53,17 +54,19 @@ export function useOwnedCopies(cardId, { onChange, autoload = true } = {}) {
     if (busy.value) return false
     const id = toValue(cardId)
     if (!id) return false
+    const mine = ++seq
+    loading.value = false
     busy.value = true
     error.value = ""
     try {
       const state = await request(id)
-      /* Réponse tardive : la carte a changé entre-temps, on l'oublie. */
-      if (toValue(cardId) !== id) return false
+      /* Réponse tardive (carte changée, autre opération depuis) : on l'oublie. */
+      if (mine !== seq) return false
       entries.value = state.entries
       onChange?.({ id, owned_qty: state.total_qty })
       return true
     } catch (e) {
-      error.value = e.message
+      if (mine === seq) error.value = e.message
       return false
     } finally {
       busy.value = false

@@ -124,6 +124,51 @@ describe("useOwnedCopies", () => {
     expect(owned.busy.value).toBe(false)
   })
 
+  it("ignore la réponse d'un chargement lancé avant un changement de carte", async () => {
+    const first = deferred()
+    api.mockReturnValueOnce(first.promise)
+    const cardId = ref("c1")
+    const owned = useOwnedCopies(cardId)
+    api.mockResolvedValueOnce(state([lot(9, 4)], "c2"))
+    cardId.value = "c2"
+    await flushPromises()
+    first.resolve(state([lot(1, 1)]))
+    await flushPromises()
+    expect(owned.entries.value).toEqual([lot(9, 4)])
+    expect(owned.loading.value).toBe(false)
+  })
+
+  it("une mutation pendant un chargement l'emporte sur la réponse tardive du GET", async () => {
+    const get = deferred()
+    api.mockReturnValueOnce(get.promise)
+    const owned = useOwnedCopies(ref("c1"))
+    api.mockResolvedValueOnce(state([lot(2, 1)]))
+    await owned.increment()
+    get.resolve(state([]))
+    await flushPromises()
+    expect(owned.entries.value).toEqual([lot(2, 1)])
+    expect(owned.total.value).toBe(1)
+    expect(owned.loading.value).toBe(false)
+  })
+
+  it("c1 puis c2 puis c1 : la mutation lancée sur le premier c1 est ignorée", async () => {
+    const post = deferred()
+    const onChange = vi.fn()
+    const cardId = ref("c1")
+    const owned = useOwnedCopies(cardId, { onChange, autoload: false })
+    api.mockReturnValueOnce(post.promise)
+    const run = owned.increment()
+    cardId.value = "c2"
+    await nextTick()
+    cardId.value = "c1"
+    await nextTick()
+    post.resolve(state([lot(1, 1)]))
+    await run
+    expect(owned.entries.value).toEqual([])
+    expect(onChange).not.toHaveBeenCalled()
+    expect(owned.busy.value).toBe(false)
+  })
+
   it("addLot et removeLot passent par POST et PATCH", async () => {
     const owned = useOwnedCopies(ref("c1"), { autoload: false })
     api.mockResolvedValueOnce(state([lot(2, 3, "GD", "DE")]))

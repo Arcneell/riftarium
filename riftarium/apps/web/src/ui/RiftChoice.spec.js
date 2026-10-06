@@ -55,6 +55,18 @@ describe("RiftChoice", () => {
     wrapper.unmount()
   })
 
+  it("laisse passer les raccourcis avec Alt, Ctrl ou Meta", async () => {
+    const wrapper = mountChoice()
+    const radio = wrapper.findAll("[role=radio]")[1]
+    for (const mod of ["altKey", "ctrlKey", "metaKey"]) {
+      const event = new KeyboardEvent("keydown", { key: "ArrowRight", [mod]: true, bubbles: true, cancelable: true })
+      radio.element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+    }
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it("ignore les autres touches", async () => {
     const wrapper = mountChoice()
     await wrapper.findAll("[role=radio]")[1].trigger("keydown", { key: "a" })
