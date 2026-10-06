@@ -5236,6 +5236,118 @@ button.deck-box-stat:hover,
   font-variant-numeric: tabular-nums;
 }
 
+.price-amount {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+}
+/* Decks : « Valeur du deck » près des stats, même gabarit que l'énergie. */
+.price-deck {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.price-deck .price-amount {
+  font-size: 1.05rem;
+}
+
+/* Modale des cartes manquantes : colonne prix et coût pour compléter. */
+.missing-table .price-cell {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.price-missing {
+  margin-top: 12px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.price-missing .price-amount {
+  font-size: 1rem;
+}
+
+/* Galerie du deck builder : pastille € en pied de vignette, opposée à « possédée ». */
+.gcard-price {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  padding: 2px 7px;
+  border-radius: var(--r-full);
+  background: rgba(16, 29, 51, 0.92);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  pointer-events: none;
+}
+
+/* Tri en mode choix unique : le bouton FilterSelect affiche le libellé retenu. */
+.fsel-single {
+  font-size: 0.78rem;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .price-amount {
+    font-size: 1.2rem;
+  }
+  .price-missing {
+    text-align: left;
+  }
+}
+
+/* Lignes de progression : servent aux profils publics (sets d'un joueur). */
+.progress-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 210px) 1fr auto minmax(150px, auto);
+  gap: 8px 14px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  border-radius: var(--r);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+}
+.progress-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Barre en pur CSS : piste neutre, remplissage doré du thème. */
+.progress-bar {
+  height: 10px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  overflow: hidden;
+}
+.progress-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold-grad);
+  transition: width 0.5s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+.progress-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.progress-missing {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
 .progress-missing.done {
   color: var(--gold-deep);
 }
