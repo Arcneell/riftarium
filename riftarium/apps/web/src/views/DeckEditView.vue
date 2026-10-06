@@ -12,12 +12,12 @@ import {
   rarityFilterOptions,
   typeFilterOptions
 } from "../cardText.js"
-import CardText from "../components/CardText.vue"
+import RiftText from "../ui/RiftText.vue"
 import DeckExportBar from "../components/DeckExportBar.vue"
 import DeckMissingModal from "../components/DeckMissingModal.vue"
 import DeckView from "../components/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import { useDeckAutosave } from "../composables/useDeckAutosave.js"
 import { useDeckRules } from "../composables/useDeckRules.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
@@ -834,7 +834,7 @@ onBeforeUnmount(() => {
             <template v-if="session.token"> · possédée ×{{ preview.card.owned_qty ?? 0 }}</template>
             <template v-if="inDeckQty(preview.card)"> · dans le deck ×{{ inDeckQty(preview.card) }}</template>
           </p>
-          <CardText v-if="preview.card.text" :text="preview.card.text" />
+          <RiftText tag="p" class="card-text" v-if="preview.card.text" :text="preview.card.text" />
         </div>
       </div>
     </Teleport>
@@ -851,9 +851,9 @@ onBeforeUnmount(() => {
       @hide-preview="hidePreview"
     />
 
-    <ModalDialog v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
+    <RiftModal v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
       <DeckExportBar :deck="deck" />
-    </ModalDialog>
+    </RiftModal>
   </section>
 
   <section v-else>

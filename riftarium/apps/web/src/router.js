@@ -108,16 +108,6 @@ export const router = createRouter({
       }
     },
     {
-      /* Accessible sans compte : le scan identifie la carte, l'ajout à la collection demande la connexion. */
-      path: "/scan",
-      component: () => import("./views/ScanView.vue"),
-      meta: {
-        noindex: true,
-        title: "Scanner une carte",
-        description: "Identifier une carte Riftbound avec l'appareil photo et l'ajouter à sa collection."
-      }
-    },
-    {
       path: "/decks",
       component: () => import("./views/DecksView.vue"),
       meta: { auth: true, noindex: true, title: "Mes decks", description: "Vos decks Riftbound sur Riftarium." }
@@ -318,7 +308,6 @@ export function sectionOf(path) {
   if (path.startsWith("/decks")) return "decks"
   if (path.startsWith("/communaute")) return "communaute"
   if (path.startsWith("/collection")) return "collection"
-  if (path.startsWith("/scan")) return "scan"
   if (path.startsWith("/profil")) return "profil"
   if (path.startsWith("/u/")) return "profil-public"
   if (path.startsWith("/amis")) return "amis"

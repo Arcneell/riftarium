@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import { api, session, setSession } from "../api.js"
 import { BANNERS } from "../banners.js"
 import AchievementMedal from "../components/AchievementMedal.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
 import {
@@ -596,7 +596,7 @@ onMounted(() => {
     </div>
   </section>
 
-  <ModalDialog v-if="danger.open" title="Supprimer le compte" @close="danger.open = false">
+  <RiftModal v-if="danger.open" title="Supprimer le compte" @close="danger.open = false">
     <p>
       Cette action est irréversible. Saisissez votre mot de passe et votre pseudo
       <strong>{{ me?.handle }}</strong> pour confirmer.
@@ -628,5 +628,5 @@ onMounted(() => {
         </button>
       </div>
     </form>
-  </ModalDialog>
+  </RiftModal>
 </template>

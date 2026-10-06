@@ -203,6 +203,24 @@ describe("RulesView — sommaire repliable sur mobile", () => {
     wrapper.unmount()
   })
 
+  it("navigation sur la même page (résultat de recherche) : la section et la règle ciblées s'affichent", async () => {
+    stubMatchMedia(false)
+    const wrapper = await mountView()
+    expect(wrapper.get(".rules-main h2").text()).toBe("Généralités")
+
+    await wrapper.vm.$router.push({ path: "/", query: { doc: "core", section: "101", rule: "101-1" } })
+    await flushPromises()
+    expect(wrapper.get(".rules-main h2").text()).toBe("La partie")
+    expect(wrapper.find(".target").exists()).toBe(true)
+    expect(wrapper.vm.$route.query.section).toBe("101")
+
+    /* section inconnue : repli sur la première, sans boucle de navigation */
+    await wrapper.vm.$router.push({ path: "/", query: { doc: "core", section: "zzz" } })
+    await flushPromises()
+    expect(wrapper.get(".rules-main h2").text()).toBe("Généralités")
+    wrapper.unmount()
+  })
+
   it("le raccourci « Sommaire ↑ » n'apparaît qu'après un long défilement et redéplie le sommaire", async () => {
     /* Le sommaire replié est en haut de page : sans raccourci, changer de section
        après 3 000 px de lecture oblige à remonter au doigt. */

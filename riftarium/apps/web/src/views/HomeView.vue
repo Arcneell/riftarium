@@ -65,10 +65,9 @@ const HALLS = [
     flip: true,
     eyebrow: "La collection",
     title: "Ce que vous avez, ce qui vous manque",
-    text: "Notez vos exemplaires avec leur quantité, leur état et leur langue, suivez la complétion de chaque set, gardez le reste en wishlist. Pour trier un classeur, le scanner lit le code de la carte et l'ajoute pour vous.",
+    text: "Notez vos exemplaires avec leur quantité, leur état et leur langue, suivez la complétion de chaque set, gardez le reste en wishlist.",
     links: [
       { to: "/collection", label: "Suivre ma collection", gold: true },
-      { to: "/scan", label: "Scanner une carte" },
       { to: "/wishlist", label: "Ma wishlist" }
     ]
   },

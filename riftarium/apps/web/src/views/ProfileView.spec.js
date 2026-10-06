@@ -221,7 +221,7 @@ describe("ProfileView", () => {
   it("demande une confirmation avant de supprimer le compte", async () => {
     const { wrapper, router } = await mountView()
     await wrapper.get(".profile-danger .btn-danger").trigger("click")
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     modal.querySelector("input[type=password]").value = "motdepasse123"
     modal.querySelector("input[type=password]").dispatchEvent(new Event("input"))

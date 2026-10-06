@@ -16,7 +16,7 @@ import { useScrollMemory } from "../composables/useScrollMemory.js"
 import { BANNERS } from "../banners.js"
 import CardTile from "../components/CardTile.vue"
 import FilterSelect from "../components/FilterSelect.vue"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import PageBanner from "../components/PageBanner.vue"
 
 const { restoreScroll } = useScrollMemory()
@@ -497,7 +497,7 @@ onMounted(async () => {
                 <p v-else class="binder-empty-title">Classeur vide</p>
                 <p class="muted">
                   <template v-if="binderOwned === '0'">Ce set est complet — votre classeur est plein.</template>
-                  <template v-else>Ouvrez une fiche carte ou scannez vos cartes pour remplir les pochettes.</template>
+                  <template v-else>Ouvrez une fiche carte pour remplir les pochettes.</template>
                 </p>
               </div>
 
@@ -597,14 +597,6 @@ onMounted(async () => {
             <button class="btn btn-sm" :class="selectMode ? '' : 'btn-ghost'" @click="toggleSelectMode">
               {{ selectMode ? "Terminer la sélection" : "Sélectionner" }}
             </button>
-            <RouterLink
-              class="btn btn-ghost btn-sm scan-entry"
-              to="/scan"
-              title="Identifier une carte avec l'appareil photo"
-            >
-              <Icon name="camera" :size="16" />
-              Scanner
-            </RouterLink>
             <!-- Téléchargement direct : le navigateur gère le CSV, aucun fetch. -->
             <a v-if="session.token" class="btn btn-ghost btn-sm" href="/api/collection/export.csv" download>
               Exporter (CSV)
@@ -690,12 +682,9 @@ onMounted(async () => {
 
         <div v-if="!loading && !result.items.length && !result.unique_cards" class="col-empty">
           <p class="col-empty-title">Votre vitrine est encore vide</p>
-          <p class="muted">
-            Notez vos exemplaires depuis une fiche carte, ou scannez vos cartes pour les ajouter d'un geste.
-          </p>
+          <p class="muted">Notez vos exemplaires depuis une fiche carte.</p>
           <div class="col-empty-actions">
             <RouterLink class="btn" to="/cartes">Parcourir les cartes</RouterLink>
-            <RouterLink class="btn btn-ghost" to="/scan">Scanner une carte</RouterLink>
           </div>
         </div>
         <div v-else-if="!loading && !result.items.length" class="col-empty">
@@ -716,7 +705,7 @@ onMounted(async () => {
     </div>
   </section>
 
-  <ModalDialog v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
+  <RiftModal v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
     <p>{{ selected.size }} carte(s) seront retirées de votre inventaire, sans retour en arrière possible.</p>
     <p v-if="removeError" class="error">{{ removeError }}</p>
     <div class="modal-actions">
@@ -725,5 +714,5 @@ onMounted(async () => {
         {{ bulk.busy ? "Retrait…" : "Retirer" }}
       </button>
     </div>
-  </ModalDialog>
+  </RiftModal>
 </template>

@@ -126,7 +126,7 @@ async function openTab(wrapper, index) {
   await flushPromises()
 }
 
-const modalEl = () => document.body.querySelector(".modal")
+const modalEl = () => document.body.querySelector(".rift-modal")
 
 function setNativeValue(element, value, eventName) {
   element.value = value

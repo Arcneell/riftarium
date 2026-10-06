@@ -1,307 +1,10 @@
 /* ============================================================
-   Riftarium — thème « Vitrine hextech »
-   Nuit de Piltover : bleu abyssal en fond, laiton pour la
-   matière, sarcelle hextech pour l'interaction. Les cartes
-   sont la source de lumière, l'écrin reste sombre et discret.
-   Les noms de variables datent du thème parchemin : --paper
-   désigne toujours le fond de page, --ink le texte.
+   Ancienne feuille globale — en cours de démantèlement.
+   Chaque PR de la refonte « Forge noxienne » supprime la tranche
+   des pages qu'elle réécrit. Les anciennes variables pointent
+   vers les tokens de src/styles/tokens.css, pour que les pages
+   pas encore refaites prennent déjà la palette.
    ============================================================ */
-
-/* Polices auto-hébergées (latin + latin-ext) — pas de requête vers Google. */
-@font-face {
-  font-family: "Marcellus";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/marcellus-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Marcellus";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/marcellus-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-600.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-600.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-700.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Outfit";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("./fonts/outfit-latin-ext-700.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-ext-400.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-600.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./fonts/ibm-plex-mono-latin-ext-600.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Cinzel (police variable, graisses 400 à 900) : capitales épigraphiques pour
-   les titres — les bas-de-casse sortent en petites capitales, c'est voulu. */
-@font-face {
-  font-family: "Cinzel";
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url("./fonts/cinzel-latin-var.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
-    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Cinzel";
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url("./fonts/cinzel-latin-ext-var.woff2") format("woff2");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
-    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-
-:root {
-  /* Fonds : nuit de Piltover. --paper reste le fond de page, --paper-2 les
-     surfaces posées dessus, --surface les panneaux translucides (verre). */
-  --paper: #0a1428;
-  --paper-2: #13233f;
-  --surface: rgba(19, 33, 59, 0.72);
-  /* Surface opaque des champs de saisie et fonds pleins (ex-#fdfaf2). */
-  --surface-solid: #101d33;
-  /* Filets laiton. */
-  --line: rgba(201, 167, 92, 0.16);
-  --line-strong: rgba(201, 167, 92, 0.4);
-
-  /* Texte : bleu-clair lunaire, champagne pour les titres. */
-  --ink: #d7e0ec;
-  --ink-strong: #f2ead6;
-  /* Contraste ≥ 4.5:1 sur les deux fonds nuit. */
-  --muted: #94a3b9;
-
-  /* Laiton : --gold-deep sert aux liens et intertitres (clair sur nuit). */
-  --gold: #c9a75c;
-  --gold-deep: #dcc07e;
-  --gold-soft: #a98338;
-  --gold-grad: linear-gradient(135deg, #d9bd82 0%, #b08a3e 55%, #8a6a2f 100%);
-
-  /* Hex : l'énergie hextech, éclaircie pour la nuit. --hex-soft est le fond
-     des états « activé » (interrupteurs), sombre teinté sarcelle. */
-  --hex: #35e0d0;
-  --hex-soft: #143c3f;
-
-  --fury: #cf4437;
-  --calm: #178f7f;
-  --mind: #7355cf;
-  --body: #3f8f50;
-  --chaos: #c2439b;
-  --order: #ab7c1a;
-
-  /* Variantes « texte » des couleurs de domaine : éclaircies juste ce qu'il faut
-     pour un contraste ≥ 4.5:1 sur fond nuit. Réservées au texte — les pastilles
-     et chips graphiques gardent les teintes d'origine ci-dessus. */
-  --fury-text: #f0705f;
-  --calm-text: #3ecfbb;
-  --mind-text: #a68df5;
-  --body-text: #6cc47e;
-  --chaos-text: #e77ac4;
-  --order-text: #d9a94e;
-  --hex-text: #43d6c6;
-
-  --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
-
-  --r-sm: 12px;
-  --r: 18px;
-  --r-lg: 28px;
-  --r-full: 999px;
-
-  --shadow: 0 16px 40px rgba(2, 6, 16, 0.5);
-  --shadow-soft: 0 8px 22px rgba(2, 6, 16, 0.38);
-  --glow-hex: 0 0 0 3px rgba(53, 224, 208, 0.18);
-  --glow-gold: 0 10px 30px rgba(201, 167, 92, 0.24);
-
-  --font-display: "Cinzel", "Marcellus", serif;
-  --font-body: "Outfit", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-  /* Le défilement animé n'est pas une transition CSS : il faut le couper à part,
-     sinon chaque ancre des règles reste un long glissement. */
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-html {
-  scroll-behavior: smooth;
-  /* En-tête collant (~67 px) : sans cette réserve, une ancre (scrollIntoView du
-     lecteur de règles) amenait la cible juste sous la barre, donc invisible. */
-  scroll-padding-top: 84px;
-}
-
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 16.5px;
-  line-height: 1.7;
-  /* dvh : sur mobile, 100vh inclut la barre d'adresse rétractable et créait un
-     défilement d'une cinquantaine de pixels sur des pages pourtant courtes. */
-  min-height: 100dvh;
-  overflow-x: hidden;
-}
-
-/* Défilement de la page bloqué : posé par le tiroir de navigation ET par toute
-   modale (ModalDialog). Règle globale et non cantonnée au palier mobile — sur
-   desktop aussi, la page défilait derrière une modale ouverte. */
-body.nav-locked {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-/* Fond décoratif sur un calque fixe composité : zéro repaint au défilement. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(1200px 620px at 85% -8%, rgba(53, 224, 208, 0.07) 0%, transparent 60%),
-    radial-gradient(1000px 560px at -8% 30%, rgba(201, 167, 92, 0.07) 0%, transparent 55%),
-    radial-gradient(900px 500px at 60% 110%, rgba(115, 85, 207, 0.06) 0%, transparent 60%);
-}
-
-::selection {
-  background: rgba(176, 138, 62, 0.3);
-}
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--paper-2);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--gold-soft);
-  border: 3px solid var(--paper-2);
-  border-radius: var(--r-full);
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-a {
-  color: var(--gold-deep);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-a:hover {
-  color: var(--hex);
-}
 /* Bouton habillé en lien (retour d'historique de la fiche carte). */
 .card-back-link {
   color: var(--gold-deep);
@@ -310,21 +13,32 @@ a:hover {
 .card-back-link:hover {
   color: var(--hex);
 }
-button {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-:focus-visible {
-  outline: 2px solid var(--hex);
-  outline-offset: 3px;
-  border-radius: 4px;
+
+:root {
+  --paper: var(--bg);
+  --paper-2: var(--bg-raised);
+  --surface: rgba(23, 18, 15, 0.86);
+  --surface-solid: var(--bg-sunken);
+  --line-strong: rgba(138, 110, 75, 0.55);
+  --ink-strong: #f4ede2;
+  --muted: var(--ink-muted);
+  --gold: var(--bronze);
+  --gold-deep: var(--bronze-light);
+  --gold-soft: #6f5639;
+  --gold-grad: linear-gradient(135deg, #c9343a 0%, #b3262b 55%, #8f1c21 100%);
+  --hex: var(--blood-text);
+  --hex-soft: #3a1416;
+  --hex-text: var(--blood-text);
+  --prism: linear-gradient(90deg, var(--fury), var(--order), var(--body), var(--calm), var(--mind), var(--chaos));
+  --r-sm: 4px;
+  --r: 6px;
+  --r-lg: 8px;
+  --r-full: 999px;
+  --shadow: var(--shadow-deep);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.45);
+  --glow-hex: 0 0 0 3px rgba(210, 58, 51, 0.25);
+  --glow-gold: 0 10px 30px rgba(179, 38, 43, 0.25);
+  --font-mono: var(--font-label);
 }
 
 .wrap {
@@ -447,20 +161,6 @@ section {
 .page {
   min-height: 40vh;
 }
-.page-enter-active,
-.page-leave-active {
-  transition:
-    opacity 0.22s ease,
-    transform 0.22s ease;
-}
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(14px);
-}
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
 
 /* ---------- Tilt 3D (cartes) ---------- */
 .tilt {
@@ -489,246 +189,6 @@ section {
 
 /* Titre réservé aux lecteurs d'écran et au référencement : présent dans le DOM,
    absent de la mise en page (les pages de navigation répètent l'entrée de menu). */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ---------- Bandeau prisme ---------- */
-.prism {
-  height: 3px;
-  background: var(--prism);
-  opacity: 0.8;
-}
-
-/* ---------- En-tête ---------- */
-.top {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(10, 20, 40, 0.78);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--line);
-}
-/* viewport-fit=cover : en PWA installée, le contenu passe sous la barre d'état
-   et sous les encoches en paysage. Les insets valent 0 partout ailleurs, donc
-   le rendu desktop est inchangé. */
-.top-in {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(28px + env(safe-area-inset-right, 0px)) 12px
-    calc(28px + env(safe-area-inset-left, 0px));
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.brand .logo {
-  width: 42px;
-  height: 42px;
-  transition: transform 0.5s cubic-bezier(0.22, 0.8, 0.32, 1);
-}
-.brand:hover .logo {
-  transform: rotate(24deg);
-}
-.brand-name {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  letter-spacing: 0.1em;
-  color: var(--ink-strong);
-}
-
-.nav {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-  align-items: center;
-}
-.nav a {
-  color: var(--muted);
-  font-size: 0.93rem;
-  padding: 8px 16px;
-  border-radius: var(--r-full);
-  transition:
-    color 0.2s,
-    background 0.2s;
-}
-.nav a:hover {
-  color: var(--ink-strong);
-  background: rgba(176, 138, 62, 0.12);
-}
-.nav a.router-link-active:not(.brand):not(.btn) {
-  color: var(--ink-strong);
-  background: rgba(176, 138, 62, 0.18);
-}
-.nav a.btn-gold {
-  color: #fdf8ec;
-}
-.nav a.btn-gold:hover {
-  color: #fff;
-}
-.nav .chip {
-  border-radius: var(--r-full);
-}
-.nav-profile {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 14px 4px 4px;
-  font-weight: 600;
-}
-.nav-profile .avatar {
-  flex-shrink: 0;
-}
-
-/* Menu du compte (desktop) : bouton-pilule avatar + pseudo, panneau déroulant ancré à droite. */
-.account {
-  position: relative;
-  flex-shrink: 0;
-}
-.account-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 4px 10px 4px 4px;
-  border-radius: var(--r-full);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-strong);
-  font: inherit;
-  font-size: 0.93rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    border-color 0.2s;
-}
-.account-btn:hover,
-.account-btn.open {
-  background: rgba(176, 138, 62, 0.12);
-  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
-}
-.account-btn svg {
-  color: var(--muted);
-  transition: transform 0.2s;
-}
-.account-btn.open svg {
-  transform: rotate(180deg);
-}
-.account-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  min-width: 200px;
-  display: grid;
-  gap: 2px;
-  padding: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--line-strong);
-  background: var(--paper);
-  box-shadow: 0 14px 34px rgba(10, 20, 40, 0.18);
-  z-index: 60;
-}
-.account-menu a,
-.account-menu button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.93rem;
-  cursor: pointer;
-}
-.account-menu a:hover,
-.account-menu button:hover,
-.account-menu a:focus-visible,
-.account-menu button:focus-visible {
-  background: rgba(176, 138, 62, 0.14);
-  color: var(--ink-strong);
-}
-.account-menu button {
-  color: var(--fury-text);
-}
-.account-enter-active,
-.account-leave-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-}
-.account-enter-from,
-.account-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-/* Largeurs intermédiaires (981–1140 px) : six liens de section + compte tiennent à
-   condition de retirer le pseudo (l'avatar suffit, le pseudo est dans le menu et le titre)
-   et la mention « bêta », que le pied de page répète. */
-@media (max-width: 1140px) {
-  .account-name {
-    display: none;
-  }
-  .top .beta-mark {
-    display: none;
-  }
-}
-
-.beta-mark {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  /* Texte opaque (l'ancienne opacité 0.4 rendait la mention illisible), cadre laissé discret. */
-  color: var(--gold-deep);
-  pointer-events: none;
-  user-select: none;
-  padding: 3px 8px 2px;
-  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--paper) 35%, transparent);
-  white-space: nowrap;
-}
-
-.burger {
-  display: none;
-  margin-left: auto;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--line-strong);
-  color: var(--gold-deep);
-  font-size: 1.15rem;
-}
-
-/* Tiroir de navigation mobile : voile et bouton de fermeture n'existent
-   qu'en dessous de 980 px, où .nav bascule en panneau latéral. */
-.nav-close {
-  display: none;
-}
-.nav-scrim {
-  display: none;
-}
-
 /* ---------- Boutons ---------- */
 /* Tailles unifiées : .btn = 44px, .btn-sm / .fsel-btn / .owned-seg = 34px. */
 .btn {
@@ -1007,14 +467,6 @@ textarea {
   min-width: 200px;
   max-width: 420px;
   margin: 0;
-}
-/* Entrée du scanner depuis la cartothèque et la collection : icône + libellé court,
-   même hauteur que les filtres pour rester sur la rangée. */
-.scan-entry {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
 }
 .fsel {
   position: relative;
@@ -1366,7 +818,7 @@ textarea {
   flex: 1 1 150px;
 }
 
-/* Actions (sélection, scan, export) détachées des filtres de recherche. */
+/* Actions (sélection, export) détachées des filtres de recherche. */
 .board-actions {
   display: flex;
   align-items: center;
@@ -1874,56 +1326,6 @@ textarea {
 .card-text {
   line-height: 1.75;
 }
-.rb-glyph {
-  display: inline-block;
-  width: 1.12em;
-  height: 1.12em;
-  vertical-align: -0.2em;
-  margin: 0 0.1em;
-}
-/* Les glyphes officiels sont blancs : on les teinte à l'encre via un masque. */
-.rb-glyph.ink {
-  background-color: currentColor;
-  -webkit-mask: var(--glyph) center / contain no-repeat;
-  mask: var(--glyph) center / contain no-repeat;
-}
-/* Sur fond clair, Riot inverse la pastille d'énergie (disque sombre, chiffre clair). */
-.rb-glyph.energy {
-  filter: invert(1) saturate(0) brightness(1.12);
-}
-
-.rb-kw {
-  display: inline-block;
-  margin: 0 0.14em;
-  padding: 0.05em 0.5em;
-  border-radius: 3px;
-  background: var(--kw, #6c6d6c);
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 0.78em;
-  font-style: italic;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  vertical-align: 0.06em;
-  white-space: nowrap;
-}
-.rb-kw.timing {
-  --kw: #24705f;
-}
-.rb-kw.combat {
-  --kw: #cc356e;
-}
-.rb-kw.state {
-  --kw: #94b42a;
-}
-.rb-kw.utility {
-  --kw: #6c6d6c;
-}
-.rb-kw.arrow {
-  padding-right: 0.85em;
-  clip-path: polygon(0 0, calc(100% - 0.45em) 0, 100% 50%, calc(100% - 0.45em) 100%, 0 100%);
-}
 
 .variant-switch {
   display: flex;
@@ -1988,10 +1390,6 @@ textarea {
 .card-detail {
   padding-top: 20px;
   padding-bottom: 72px;
-}
-.scan {
-  padding-top: 24px;
-  padding-bottom: 64px;
 }
 .card-back {
   margin-bottom: 22px;
@@ -2714,114 +2112,12 @@ td.num {
   z-index: 1;
 }
 
-/* Le temps que le composant de route (chargé à la demande) arrive, <main> réserve
-   l'écran : le pied de page démarre sous la ligne de flottaison et ne saute plus (CLS). */
-main {
-  min-height: calc(100dvh - 70px);
-}
-
-/* ---------- Pied de page ---------- */
-footer {
-  margin-top: 64px;
-  border-top: 1px solid var(--line-strong);
-  background: var(--paper-2);
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.footer-in {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 28px 24px;
-}
-/* Colonnes en flex : la colonne « Mon compte » n'existe que connecté, la
-   rangée se répartit d'elle-même ; chaque catégorie tient en 5-6 liens. */
-.footer-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 32px 44px;
-  margin-bottom: 28px;
-}
-.footer-about {
-  flex: 2 1 250px;
-  max-width: 330px;
-}
-.footer-grid > div:not(.footer-about) {
-  flex: 1 1 150px;
-}
-/* Intertitres du pied de page : des <p> stylés (un <h4> après les <h2> de page casserait la hiérarchie). */
-.footer-grid .foot-head {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--gold-deep);
-  margin-bottom: 16px;
-}
-.footer-grid ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.footer-grid ul a {
-  white-space: nowrap;
-}
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.footer-brand .logo {
-  width: 34px;
-  height: 34px;
-}
-.footer-brand b {
-  font-family: var(--font-display);
-  color: var(--ink-strong);
-  font-size: 1.05rem;
-  letter-spacing: 0.08em;
-}
-.footer-contact {
-  margin-top: 14px;
-}
-/* Lien de soutien (Ko-fi) : discret mais repérable. */
-.footer-support {
-  color: var(--gold-deep);
-  font-weight: 600;
-}
-.footer-in > p {
-  margin-bottom: 8px;
-  max-width: 100ch;
-  font-size: 0.76rem;
-}
-/* Mentions Riot : disclaimers EN/FR côte à côte, tout le contenu conservé mais compact. */
-.footer-legal {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 24px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-  font-size: 0.62rem;
-  line-height: 1.4;
-  color: var(--muted);
-}
-.footer-legal .footer-legal-wide {
-  grid-column: 1 / -1;
-}
-@media (max-width: 760px) {
-  .footer-legal {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .traceurs-notice {
   position: fixed;
   z-index: 80;
   left: 16px;
   right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
   max-width: 640px;
   margin: 0 auto;
   display: flex;
@@ -2874,13 +2170,14 @@ footer {
 /* Bandeau discret : adresse e-mail du compte non vérifiée. */
 .verify-notice {
   display: flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
-  padding: 10px 18px;
-  background: rgba(171, 124, 26, 0.1);
-  border-bottom: 1px solid var(--line);
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-3) var(--space-5) 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--blood);
+  font-size: 14px;
 }
 .verify-notice p {
   margin: 0;
@@ -3067,132 +2364,6 @@ footer {
   }
 }
 
-/* Palier intermédiaire : la barre complète est resserrée avant de basculer en
-   menu déroulant, sinon elle déborde entre 980 et 1 140 px pour un visiteur
-   connecté (liens + profil + déconnexion + marque bêta). */
-@media (max-width: 1140px) {
-  .nav {
-    gap: 2px;
-  }
-  .nav a {
-    padding: 8px 10px;
-    font-size: 0.86rem;
-  }
-  .nav-profile {
-    padding: 4px 8px 4px 4px;
-  }
-  .brand-name {
-    font-size: 1.15rem;
-  }
-  .beta-mark {
-    letter-spacing: 0.12em;
-  }
-}
-
-/* Navigation en tiroir latéral dès que la barre complète ne tient plus : une fois
-   connecté, liens + profil + déconnexion + marque bêta approchent les 1 000 px.
-   Le panneau glisse depuis la droite (pouce à portée) plutôt que de tomber du haut. */
-@media (max-width: 980px) {
-  .burger {
-    display: grid;
-    place-items: center;
-  }
-  .nav-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    /* au-dessus du bandeau traceurs (80), qui sinon flottait sur le tiroir */
-    z-index: 85;
-    background: rgba(3, 7, 16, 0.6);
-    backdrop-filter: blur(2px);
-  }
-  .scrim-enter-active,
-  .scrim-leave-active {
-    transition: opacity 0.28s ease;
-  }
-  .scrim-enter-from,
-  .scrim-leave-to {
-    opacity: 0;
-  }
-  .nav {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: auto;
-    width: min(310px, 84vw);
-    margin-left: 0;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 4px;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
-      calc(24px + env(safe-area-inset-bottom, 0px)) 16px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    background: rgba(13, 24, 44, 0.98);
-    backdrop-filter: blur(18px);
-    border-left: 1px solid var(--line-strong);
-    box-shadow: -20px 0 56px rgba(0, 0, 0, 0.5);
-    transform: translateX(101%);
-    /* visibility retardée : le panneau reste focusable pendant la fermeture,
-       puis sort de l'ordre de tabulation une fois hors écran. */
-    transition:
-      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
-      visibility 0s linear 0.28s;
-    /* au-dessus de l'en-tête collant (50), du bandeau traceurs (80) et du voile (85) */
-    z-index: 90;
-    visibility: hidden;
-  }
-  .nav.open {
-    transform: none;
-    visibility: visible;
-    transition:
-      transform 0.28s cubic-bezier(0.22, 0.8, 0.32, 1),
-      visibility 0s;
-  }
-  /* flex-shrink: 0 — sur un écran court, les entrées se tassaient au lieu de
-     laisser le panneau défiler. */
-  .nav a {
-    flex: 0 0 auto;
-    padding: 13px 16px;
-    text-align: left;
-    font-size: 1rem;
-  }
-  .nav .btn {
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    padding-left: 16px;
-  }
-  .nav-profile {
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    padding: 10px 16px;
-    margin-top: 8px;
-    border-top: 1px solid var(--line);
-    border-radius: 0;
-  }
-  .nav-close {
-    display: grid;
-    place-items: center;
-    align-self: flex-end;
-    flex: 0 0 auto;
-    margin-bottom: 6px;
-    width: 42px;
-    height: 42px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--line-strong);
-    color: var(--gold-deep);
-    background: transparent;
-  }
-  .beta-mark {
-    position: absolute;
-    top: 50%;
-    right: 70px;
-    transform: translateY(-50%);
-  }
-}
-
 @media (max-width: 760px) {
   .filter-search {
     flex-basis: 100%;
@@ -3215,12 +2386,6 @@ footer {
   }
   .hero-fan {
     display: none;
-  }
-  .footer-grid {
-    gap: 24px 32px;
-  }
-  .footer-about {
-    max-width: none;
   }
   .traceurs-notice {
     flex-direction: column;
@@ -5227,62 +4392,6 @@ footer {
 }
 
 /* ---------- Modales ---------- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  /* Au-dessus du bandeau traceurs (80), du voile (85) et du tiroir (90), qui
-     flottaient par-dessus les modales. Sous les visionneuses plein écran (1000). */
-  z-index: 200;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(4, 9, 20, 0.65);
-  backdrop-filter: blur(6px);
-  animation: modal-fade 0.2s ease-out;
-}
-.modal {
-  width: min(520px, 100%);
-  max-height: min(84vh, 900px);
-  display: flex;
-  flex-direction: column;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg);
-  box-shadow: 0 34px 80px rgba(10, 20, 40, 0.4);
-  animation: modal-pop 0.28s cubic-bezier(0.22, 0.8, 0.32, 1);
-}
-.modal.wide {
-  width: min(720px, 100%);
-}
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 26px 14px;
-  border-bottom: 1px solid var(--line);
-}
-.modal-close {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.85rem;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-}
-.modal-close:hover {
-  color: var(--fury);
-  border-color: var(--fury);
-}
-.modal-body {
-  padding: 20px 26px 26px;
-  overflow-y: auto;
-  /* Fin de liste atteinte : le geste ne repart pas dans la page derrière. */
-  overscroll-behavior: contain;
-}
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -5308,12 +4417,6 @@ footer {
 @keyframes modal-fade {
   from {
     opacity: 0;
-  }
-}
-@keyframes modal-pop {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
   }
 }
 
@@ -6865,12 +5968,6 @@ button.deck-box-stat:hover,
   }
 
   /* Modales : boutons qui passent à la ligne, tableau qui défile, hauteur en dvh. */
-  .modal {
-    max-height: min(84dvh, 900px);
-  }
-  .modal-body {
-    overflow-x: auto;
-  }
   .modal-actions {
     flex-wrap: wrap;
   }
@@ -6909,7 +6006,7 @@ button.deck-box-stat:hover,
   .fsel-pop {
     position: fixed;
     top: auto;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     left: calc(16px + env(safe-area-inset-left, 0px));
     right: calc(16px + env(safe-area-inset-right, 0px));
     min-width: 0;
@@ -6934,402 +6031,6 @@ button.deck-box-stat:hover,
   }
   .guide-copy {
     min-height: 0;
-  }
-}
-
-/* ============================================================
-   Scan de cartes (/scan) — mobile-first
-   La caméra remplit la largeur du téléphone, silhouette de
-   carte (ratio 63:88) au centre. Plus de déclencheur : la
-   reconnaissance est automatique, le cadre passe au vert au
-   verrouillage et un panneau résultat s'ouvre sous la scène.
-   Ce panneau est d'abord une fiche de consultation — le prix y
-   est l'information la plus grosse après le nom — et l'ajout à
-   la collection n'en est qu'une action parmi d'autres.
-   Sur desktop, tout reste compact et centré : le fallback
-   « importer une photo » y est la voie normale. Aucune règle
-   ici ne touche l'existant (classes préfixées scan-).
-   ============================================================ */
-
-/* Erreur bloquante + son bouton de reprise : le bouton doit respirer sous le message. */
-.scan-recover {
-  margin: 12px 0;
-}
-.scan-recover .error {
-  margin-bottom: 10px;
-}
-.scan-wrap {
-  max-width: 720px;
-  padding-top: 0;
-  padding-bottom: 60px;
-}
-.scan-status {
-  margin: 12px 0;
-}
-.scan-note {
-  margin: 10px 0;
-  font-size: 0.82rem;
-}
-.scan-empty,
-.scan-nocam,
-.scan-nomatch {
-  padding: 16px 18px;
-  margin: 14px 0;
-}
-
-/* Scène caméra : le flux couvre (object-fit: cover), la silhouette flotte au centre. */
-.scan-stage {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--r);
-  border: 1px solid var(--line-strong);
-  background: #0a1428;
-  aspect-ratio: 3 / 4;
-  max-height: 70vh;
-}
-.scan-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Silhouette de carte, ratio officiel 63×88 mm ; l'ombre portée géante assombrit le reste du champ.
-   Le cadrage n'a plus besoin d'être exact (balayage multi-échelles côté JS) : le guide sert
-   à faire tenir la carte assez près et assez droite, pas à l'aligner au pixel. */
-.scan-frame {
-  position: absolute;
-  top: 44%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  height: min(62%, 70vh);
-  aspect-ratio: 63 / 88;
-  border: 2px solid var(--gold-soft);
-  border-radius: 12px;
-  box-shadow: 0 0 0 200vmax rgba(10, 20, 40, 0.45);
-  pointer-events: none;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-/* Fenêtre d'illustration (la seule zone hachée : x 6→94 %, y 6→54 %) : pointillé discret
-   pour inciter à bien cadrer — surtout le haut de la carte, où vit l'illustration. */
-.scan-frame::after {
-  content: "";
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  top: 6%;
-  bottom: 46%;
-  border: 1.5px dashed color-mix(in srgb, var(--gold-soft) 75%, transparent);
-  border-radius: 8px;
-}
-/* Bande du code collector (bas gauche) : c'est la zone que l'OCR lit, la montrer explique
-   pourquoi il faut que le bas de la carte soit net et éclairé. */
-.scan-frame::before {
-  content: "";
-  position: absolute;
-  left: 4%;
-  width: 44%;
-  top: 92.5%;
-  height: 7.3%;
-  border: 1.5px dashed color-mix(in srgb, var(--gold-soft) 55%, transparent);
-  border-radius: 4px;
-}
-/* Verrouillé : le vert est le seul signal visuel de réussite (avec la vibration). */
-.scan-stage.is-locked .scan-frame {
-  border-color: #4ea86a;
-  box-shadow:
-    0 0 0 200vmax rgba(10, 20, 40, 0.62),
-    0 0 18px rgba(78, 168, 106, 0.65);
-}
-
-/* HUD : état de la reconnaissance, lisible sur n'importe quelle image (fond translucide sombre). */
-.scan-hud {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  margin: 0;
-  padding: 9px 12px;
-  border-radius: var(--r);
-  background: rgba(10, 20, 40, 0.72);
-  color: #fdfaf2;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  text-align: center;
-  pointer-events: none;
-}
-/* Lampe torche : cible tactile de 44 px, en haut à droite pour ne pas gêner le HUD. */
-.scan-torch {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--gold-soft);
-  background: rgba(10, 20, 40, 0.72);
-  color: #fdfaf2;
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.scan-torch[aria-pressed="true"] {
-  background: var(--gold-grad);
-  color: var(--ink-strong);
-}
-
-.scan-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 14px 0;
-}
-/* Le vrai <input file> reste dans le DOM (déclenché par le label) mais invisible. */
-.scan-import {
-  position: relative;
-}
-.scan-import input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-/* Ajout automatique : interrupteur discret, mais avec une cible tactile de 44 px. */
-.scan-auto {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  font-size: 0.85rem;
-  color: var(--muted);
-  cursor: pointer;
-}
-.scan-auto input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--gold-deep);
-}
-
-/* Toast du mode automatique : confirmation qui n'interrompt pas le geste suivant. */
-.scan-toast {
-  margin: 12px 0;
-  padding: 12px 14px;
-  border-radius: var(--r);
-  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
-  background: color-mix(in srgb, var(--gold) 12%, var(--surface));
-  font-weight: 600;
-}
-
-/* ---------- Panneau résultat ---------- */
-
-.scan-result {
-  margin-top: 18px;
-}
-.scan-result-head {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-.scan-result-visual {
-  width: 148px;
-  flex: none;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  display: block;
-}
-.scan-result-info {
-  min-width: 0;
-  flex: 1;
-}
-.scan-result-info h2 {
-  font-size: 1.3rem;
-  margin: 0 0 4px;
-  line-height: 1.2;
-}
-.scan-result-info p {
-  margin: 0 0 4px;
-}
-.scan-result-code {
-  font-size: 0.82rem;
-  color: var(--gold-deep);
-}
-/* Prix : l'information que l'on vient chercher quand on scanne sans vouloir rien ajouter.
-   Même gabarit que le bloc de la fiche carte (.price-amount) pour ne pas réinventer. */
-.scan-price {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-}
-.scan-price .price-line {
-  margin: 0;
-}
-.scan-price .price-amount {
-  font-size: 1.6rem;
-}
-.scan-method {
-  margin-top: 10px;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.scan-ambiguous {
-  margin: 14px 0 0;
-  padding: 12px 14px;
-  border-radius: var(--r);
-  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
-  font-size: 0.86rem;
-}
-
-/* Langue/état/quantité appliqués aux ajouts — mémorisés entre les scans. */
-.scan-prefs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 16px 0 12px;
-}
-.scan-prefs label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.scan-prefs select {
-  min-height: 44px;
-}
-.scan-qty {
-  width: 72px;
-  min-height: 44px;
-  text-align: center;
-}
-.scan-login {
-  margin: 16px 0 12px;
-}
-
-.scan-result-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.scan-result-actions .btn {
-  min-height: 44px;
-}
-.scan-add {
-  flex: 1 1 auto;
-}
-.scan-added {
-  margin: 10px 0 0;
-  font-weight: 600;
-  color: var(--body-text);
-}
-
-/* Alternatives : repliées par défaut (le résultat est presque toujours le bon), dépliées
-   d'un lien discret. Les visuels ne sont chargés qu'à l'ouverture. */
-.scan-alt {
-  margin-top: 20px;
-}
-.scan-alt-toggle {
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--gold-deep);
-  font: inherit;
-  font-size: 0.85rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-.scan-alt-list {
-  list-style: none;
-  padding: 0;
-  margin: 6px 0 0;
-  display: grid;
-  gap: 10px;
-}
-.scan-alt-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  min-height: 44px;
-  text-align: left;
-  padding: 10px 14px;
-  border-radius: var(--r);
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.scan-alt-item:hover,
-.scan-alt-item:focus-visible {
-  border-color: var(--gold);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 25%, transparent);
-}
-.scan-alt-item img {
-  width: 52px;
-  border-radius: 6px;
-  flex: none;
-  display: block;
-}
-.scan-alt-info {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.scan-alt-info b {
-  font-family: "Marcellus", serif;
-  font-size: 0.98rem;
-}
-.scan-alt-info .mono {
-  font-size: 0.75rem;
-}
-
-/* Téléphones étroits (360–430 px) : visuel au-dessus des infos, boutons pleine largeur
-   empilés — un bouton de 44 px à côté d'un autre ne tient pas sous 560 px. */
-@media (max-width: 560px) {
-  .scan-result-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .scan-result-visual {
-    width: 100%;
-    max-width: 260px;
-    margin: 0 auto;
-  }
-  .scan-result-info h2 {
-    font-size: 1.2rem;
-  }
-  .scan-price .price-amount {
-    font-size: 1.45rem;
-  }
-  .scan-result-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .scan-prefs label {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
-  .scan-prefs select {
-    flex: 1 1 auto;
-  }
-}
-
-/* Desktop : scène moins haute (la caméra y est rare, le fallback fichier prime). */
-@media (min-width: 761px) {
-  .scan-stage {
-    aspect-ratio: 4 / 3;
-    max-height: 480px;
   }
 }
 
@@ -8118,11 +6819,11 @@ button.deck-box-stat:hover,
     text-align: center;
   }
   .deck-limit:not(.soft) {
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(14px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
   }
   /* Empilé au-dessus : une même action déclenche souvent les deux messages. */
   .dbuilder-save:not(.idle) {
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(72px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     min-width: 0;
   }
   /* Entre deux sauvegardes la mention est vide : pas de pastille qui flotte. */
@@ -8175,38 +6876,6 @@ button.deck-box-stat:hover,
     animation: none;
   }
 
-  /* Pied de page : 19 liens de 16 px de haut, collés les uns aux autres. */
-  .footer-grid ul {
-    gap: 2px;
-  }
-  .footer-grid ul a {
-    display: block;
-    padding: 12px 0;
-  }
-  .footer-in {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
-     bouton qu'au-delà de 600 px défilés). */
-  .rules-back-top {
-    display: grid;
-    place-items: center;
-    position: fixed;
-    z-index: 70;
-    right: calc(14px + env(safe-area-inset-right, 0px));
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    min-width: 44px;
-    height: 44px;
-    padding: 0 12px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--line-strong);
-    background: var(--paper);
-    color: var(--ink-strong);
-    font-size: 0.74rem;
-    box-shadow: 0 8px 20px rgba(10, 20, 40, 0.22);
-  }
-
   /* Tableau de bord : « Voir les données » faisait 11 px de haut. */
   .chart-toggle {
     display: inline-flex;
@@ -8217,6 +6886,29 @@ button.deck-box-stat:hover,
   }
 }
 
+/* ---------- Téléphone, palier de la coquille (≤767) : au-dessus des onglets du bas ---------- */
+@media (max-width: 767px) {
+  /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
+     bouton qu'au-delà de 600 px défilés). */
+  .rules-back-top {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    z-index: 70;
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(14px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--ink-strong);
+    font-size: 0.74rem;
+    box-shadow: 0 8px 20px rgba(10, 20, 40, 0.22);
+  }
+}
+
 /* ---------- Téléphone (≤560) ---------- */
 @media (max-width: 560px) {
   /* Bandeau traceurs : une phrase et deux boutons sur une rangée (~90 px de
@@ -8224,7 +6916,7 @@ button.deck-box-stat:hover,
   .traceurs-notice {
     left: 8px;
     right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     gap: 8px;
     padding: 10px 12px;
     border-radius: var(--r-sm);
@@ -8274,14 +6966,6 @@ button.deck-box-stat:hover,
   }
   .card-tile .t-meta span {
     white-space: normal;
-  }
-
-  /* Modales : 26 px de marge latérale sur 312 px de large. */
-  .modal-head {
-    padding: 16px 16px 12px;
-  }
-  .modal-body {
-    padding: 16px 16px 20px;
   }
 
   /* Cartes manquantes : six colonnes ne tiennent pas dans la modale, chaque
@@ -8358,7 +7042,6 @@ button.deck-box-stat:hover,
   .guide-term,
   .topic-example span,
   .card-credit,
-  .footer-legal,
   .chart-table th,
   .curve-legend,
   .row-lack {
@@ -8386,10 +7069,6 @@ button.deck-box-stat:hover,
   }
   .owned-seg button {
     min-height: 44px;
-  }
-  .modal-close {
-    width: 44px;
-    height: 44px;
   }
   .filter {
     display: inline-flex;

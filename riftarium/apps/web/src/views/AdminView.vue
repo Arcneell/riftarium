@@ -6,7 +6,7 @@ import ColumnChart from "../components/charts/ColumnChart.vue"
 import HBarChart from "../components/charts/HBarChart.vue"
 import StackedBar from "../components/charts/StackedBar.vue"
 import { lastDays, zeroFillDays } from "../components/charts/chartUtils.js"
-import ModalDialog from "../components/ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 import PageBanner from "../components/PageBanner.vue"
 
 const TABS = { stats: "Statistiques", users: "Utilisateurs", decks: "Decks" }
@@ -717,7 +717,7 @@ onBeforeUnmount(() => {
     </div>
   </section>
 
-  <ModalDialog v-if="suspend.user" title="Suspendre le compte" @close="suspend.user = null">
+  <RiftModal v-if="suspend.user" title="Suspendre le compte" @close="suspend.user = null">
     <p>
       Le compte <strong>{{ suspend.user.handle }}</strong> ne pourra plus se connecter pendant la durée choisie. Le
       motif lui sera affiché.
@@ -745,9 +745,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </form>
-  </ModalDialog>
+  </RiftModal>
 
-  <ModalDialog v-if="removal.user" title="Supprimer le compte" @close="removal.user = null">
+  <RiftModal v-if="removal.user" title="Supprimer le compte" @close="removal.user = null">
     <p>
       Cette action est irréversible : le compte, sa collection et ses decks seront effacés. Saisissez le pseudo
       <strong>{{ removal.user.handle }}</strong> pour confirmer.
@@ -775,9 +775,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </form>
-  </ModalDialog>
+  </RiftModal>
 
-  <ModalDialog v-if="deckRemoval.deck" title="Supprimer le deck" @close="deckRemoval.deck = null">
+  <RiftModal v-if="deckRemoval.deck" title="Supprimer le deck" @close="deckRemoval.deck = null">
     <p>
       Le deck <strong>{{ deckRemoval.deck.name }}</strong> de {{ deckRemoval.deck.owner }} sera supprimé définitivement.
     </p>
@@ -790,5 +790,5 @@ onBeforeUnmount(() => {
         {{ deckRemoval.busy ? "Suppression…" : "Supprimer" }}
       </button>
     </div>
-  </ModalDialog>
+  </RiftModal>
 </template>

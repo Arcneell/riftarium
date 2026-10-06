@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { BANNERS } from "../banners.js"
 import { useOnline } from "../composables/useOnline.js"
@@ -212,6 +212,37 @@ function toggleChapter(chapterId) {
   else openChapters.value.add(chapterId)
 }
 
+/* Applique doc / section / rule de l'URL à l'état de la page (montage, ou navigation sur la
+   même page : un résultat de recherche globale ne remonte pas le composant). Ne navigue jamais
+   (pas de router.replace) : go() s'en charge, et le watch ci-dessous ne doit pas boucler. */
+function applyQuery(smooth) {
+  const q = route.query
+  const docKey = documents.value[q.doc] ? q.doc : "core"
+  const chapters = documents.value[docKey].chapters
+  const wanted = chapters.flatMap((c) => c.sections).find((s) => s.id === q.section)
+  const nextSection = wanted?.id ?? chapters[0].sections[0].id
+  const nextRule = q.rule ?? null
+  if (docKey === doc.value && nextSection === sectionId.value && nextRule === ruleId.value) return
+  doc.value = docKey
+  sectionId.value = nextSection
+  ruleId.value = nextRule
+  const chapter = chapters.find((c) => c.sections.some((s) => s.id === nextSection))
+  if (chapter) openChapters.value.add(chapter.id)
+  if (nextRule) {
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`r-${nextRule}`)
+        ?.scrollIntoView({ block: "center", ...(smooth ? { behavior: "smooth" } : {}) })
+    })
+  }
+}
+watch(
+  () => [route.query.doc, route.query.section, route.query.rule],
+  () => {
+    if (documents.value) applyQuery(true)
+  }
+)
+
 onBeforeUnmount(() => {
   clearTimeout(searchTimer)
   cancelAnimationFrame(scrollFrame)
@@ -225,19 +256,7 @@ onMounted(async () => {
   try {
     documents.value = await loadRulesDocuments()
     buildIndex()
-    const q = route.query
-    const docKey = documents.value[q.doc] ? q.doc : "core"
-    const wanted = documents.value[docKey].chapters.flatMap((c) => c.sections).find((s) => s.id === q.section)
-    doc.value = docKey
-    sectionId.value = wanted?.id ?? documents.value[docKey].chapters[0].sections[0].id
-    ruleId.value = q.rule ?? null
-    const chapter = documents.value[docKey].chapters.find((c) => c.sections.some((s) => s.id === sectionId.value))
-    if (chapter) openChapters.value.add(chapter.id)
-    if (ruleId.value) {
-      requestAnimationFrame(() => {
-        document.getElementById(`r-${ruleId.value}`)?.scrollIntoView({ block: "center" })
-      })
-    }
+    applyQuery(false)
   } catch {
     error.value = "Impossible de charger les règles. Réessayez dans un instant."
   }

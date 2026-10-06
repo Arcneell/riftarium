@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import { cardThumb } from "../api.js"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
-import RuleText from "../components/RuleText.vue"
+import RiftText from "../ui/RiftText.vue"
 import LearnRuneDemo from "../components/LearnRuneDemo.vue"
 import { applySeo } from "../seo.js"
 import {
@@ -144,22 +144,22 @@ onBeforeUnmount(() => {
           <template v-for="(block, i) in chapter.blocks" :key="i">
             <h3 v-if="block.type === 'h'" class="learn-h">{{ block.text }}</h3>
 
-            <p v-else-if="block.type === 'p'" class="learn-p"><RuleText :text="block.text" /></p>
+            <p v-else-if="block.type === 'p'" class="learn-p"><RiftText rules :text="block.text" /></p>
 
             <div v-else-if="block.type === 'stat'" class="learn-stat">
               <b>{{ block.value }}</b>
               <div>
                 <p class="learn-stat-label">{{ block.label }}</p>
-                <p class="learn-p"><RuleText :text="block.text" /></p>
+                <p class="learn-p"><RiftText rules :text="block.text" /></p>
               </div>
             </div>
 
             <ul v-else-if="block.type === 'ul'" class="learn-list">
-              <li v-for="(item, j) in block.items" :key="j"><RuleText :text="item" /></li>
+              <li v-for="(item, j) in block.items" :key="j"><RiftText rules :text="item" /></li>
             </ul>
 
             <ol v-else-if="block.type === 'ol'" class="learn-list numbered">
-              <li v-for="(item, j) in block.items" :key="j"><RuleText :text="item" /></li>
+              <li v-for="(item, j) in block.items" :key="j"><RiftText rules :text="item" /></li>
             </ol>
 
             <div v-else-if="block.type === 'table'" class="learn-table-wrap">
@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
                 </thead>
                 <tbody>
                   <tr v-for="(row, r) in block.rows" :key="r">
-                    <td v-for="(cell, c) in row" :key="c"><RuleText :text="cell" /></td>
+                    <td v-for="(cell, c) in row" :key="c"><RiftText rules :text="cell" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -179,13 +179,13 @@ onBeforeUnmount(() => {
 
             <aside v-else-if="block.type === 'note'" class="learn-note" :class="block.kind">
               <p class="learn-note-title">{{ block.title }}</p>
-              <p><RuleText :text="block.text" /></p>
+              <p><RiftText rules :text="block.text" /></p>
             </aside>
 
             <ol v-else-if="block.type === 'steps'" class="learn-steps">
               <li v-for="(step, s) in block.items" :key="s">
                 <strong>{{ step.title }}</strong>
-                <p><RuleText :text="step.text" /></p>
+                <p><RiftText rules :text="step.text" /></p>
               </li>
             </ol>
 
@@ -193,13 +193,13 @@ onBeforeUnmount(() => {
               <div class="learn-compare-col">
                 <p class="eyebrow">{{ block.left.kicker }}</p>
                 <h4>{{ block.left.title }}</h4>
-                <p><RuleText :text="block.left.text" /></p>
+                <p><RiftText rules :text="block.left.text" /></p>
                 <p class="mono learn-recover">{{ block.left.recover }}</p>
               </div>
               <div class="learn-compare-col">
                 <p class="eyebrow">{{ block.right.kicker }}</p>
                 <h4>{{ block.right.title }}</h4>
-                <p><RuleText :text="block.right.text" /></p>
+                <p><RiftText rules :text="block.right.text" /></p>
                 <p class="mono learn-recover">{{ block.right.recover }}</p>
               </div>
             </div>
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
                 v-show="selectedType === item.key"
               >
                 <p class="eyebrow">{{ item.title }}</p>
-                <p><RuleText :text="item.text" /></p>
+                <p><RiftText rules :text="item.text" /></p>
                 <p class="muted learn-type-hint">Double-cliquez la carte pour l'agrandir.</p>
               </div>
             </div>

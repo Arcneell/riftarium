@@ -8,8 +8,9 @@ Rappels courts :
 - Trois applications dans `riftarium/apps/` : `api` (FastAPI), `web` (Vue 3),
   `mobile` (Flutter). Ne jamais modifier `web` ou `api` pour un besoin mobile
   sans que ce soit un changement de contrat d'API décrit dans WORKFLOW.md.
-- Le scanner web, le service worker et le manifest PWA restent en place tant
-  que l'application mobile n'est pas publiée. Ne pas les retirer.
+- Le service worker et le manifest PWA restent en place tant que l'application
+  mobile n'est pas publiée. Ne pas les retirer. Le scanner web a été retiré (le scan
+  est réservé au mobile).
 - Langue du projet : français (commentaires, interface, commits, documentation).
 - Avant de pousser : lancer les vérifications de chaque application touchée
   (section « Vérifier avant de pousser » de WORKFLOW.md).

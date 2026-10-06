@@ -4,7 +4,7 @@ import { useRoute } from "vue-router"
 import { BANNERS } from "../banners.js"
 import PageBanner from "../components/PageBanner.vue"
 import { CATEGORIES, TOPICS, topicBySlug } from "../rules/topics.js"
-import RuleText from "../components/RuleText.vue"
+import RiftText from "../ui/RiftText.vue"
 import TopicDemo from "../components/TopicDemo.vue"
 import { keywordFamily } from "../cardText.js"
 import { cardThumb } from "../api.js"
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
         <div class="topic-main">
           <h3 class="topic-part">L'essentiel</h3>
           <ul class="guide-text">
-            <li v-for="(line, i) in topic.details" :key="i"><RuleText :text="line" /></li>
+            <li v-for="(line, i) in topic.details" :key="i"><RiftText rules :text="line" /></li>
           </ul>
 
           <template v-if="topic.demo">
@@ -132,8 +132,8 @@ onBeforeUnmount(() => {
           <template v-if="topic.cases?.length">
             <h3 class="topic-part">Cas concrets</h3>
             <div class="topic-case panel" v-for="(item, i) in topic.cases" :key="i" v-reveal="i % 3">
-              <p class="topic-q"><RuleText :text="item.q" /></p>
-              <p class="topic-a"><RuleText :text="item.a" /></p>
+              <p class="topic-q"><RiftText rules :text="item.q" /></p>
+              <p class="topic-a"><RiftText rules :text="item.a" /></p>
             </div>
           </template>
 
@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
                 class="topic-rule"
                 :style="{ '--indent': Math.min(entry.depth, 4) }"
               >
-                <span class="mono topic-rule-num">{{ entry.number }}</span> <RuleText :text="entry.text" />
+                <span class="mono topic-rule-num">{{ entry.number }}</span> <RiftText rules :text="entry.text" />
               </p>
             </article>
           </template>

@@ -334,7 +334,7 @@ describe("CollectionView", () => {
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(api.mock.calls.some(([path]) => path === "/api/collection/bulk")).toBe(false)
 
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("1 carte(s)")
     const confirmButton = [...modal.querySelectorAll("button")].find(
@@ -345,7 +345,7 @@ describe("CollectionView", () => {
 
     const call = api.mock.calls.find(([path]) => path === "/api/collection/bulk")
     expect(call[1].body).toEqual({ card_ids: ["card-1"], remove: true })
-    expect(document.body.querySelector(".modal")).toBeNull()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
     confirmSpy.mockRestore()
     wrapper.unmount()
   })

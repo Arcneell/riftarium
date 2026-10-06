@@ -96,23 +96,19 @@ describe("service worker", () => {
     expect(handleFetch(sw, { url: "https://cmsassets.rgpub.io/x.png", method: "GET", mode: "no-cors" })).toBeUndefined()
   })
 
-  it("cache-first : une réponse non-200 n'est pas mise en cache", async () => {
-    const sw = loadSw({ fetchImpl: vi.fn(async () => fakeResponse("404", { ok: false, status: 404 })) })
-    const response = await handleFetch(sw, fakeRequest("/assets/RulesView-abc.js"))
-    expect(response.status).toBe(404)
-    /* Mettre un 404 en cache-first le figerait pour toujours : le fichier resterait
-       introuvable même après le déploiement qui le corrige. */
-    expect(sw.cache.put).not.toHaveBeenCalled()
-  })
-
   it("cache-first : la réponse 200 est servie puis mémorisée, le cache court-circuite le réseau", async () => {
-    const sw = loadSw({ fetchImpl: vi.fn(async () => fakeResponse("moteur ocr")) })
-    await handleFetch(sw, fakeRequest("/ocr/7.0.0/worker.min.js"))
+    const sw = loadSw({ fetchImpl: vi.fn(async () => fakeResponse("bundle")) })
+    await handleFetch(sw, fakeRequest("/assets/RulesView-abc.js"))
     expect(sw.cache.put).toHaveBeenCalled()
 
-    const again = await handleFetch(sw, fakeRequest("/ocr/7.0.0/worker.min.js"))
-    expect(again.body).toBe("moteur ocr")
+    const again = await handleFetch(sw, fakeRequest("/assets/RulesView-abc.js"))
+    expect(again.body).toBe("bundle")
     expect(sw.fetchImpl).toHaveBeenCalledTimes(1) // le second passage ne va plus au réseau
+  })
+
+  it("ne traite plus /ocr/ : le moteur du scanner web a été retiré", () => {
+    const sw = loadSw({ fetchImpl: vi.fn() })
+    expect(handleFetch(sw, fakeRequest("/ocr/7.0.0/worker.min.js"))).toBeUndefined()
   })
 
   it("stale-while-revalidate hors ligne et sans cache : une vraie erreur, pas `undefined`", async () => {

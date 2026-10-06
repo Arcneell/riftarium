@@ -39,7 +39,7 @@ async function mountModal(props) {
   return wrapper
 }
 
-const modal = () => document.body.querySelector(".modal")
+const modal = () => document.body.querySelector(".rift-modal")
 
 describe("DeckMissingModal", () => {
   beforeEach(() => {

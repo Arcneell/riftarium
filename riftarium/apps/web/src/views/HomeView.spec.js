@@ -46,7 +46,6 @@ function mountHome() {
       { path: "/decks", component: { template: "<div />" } },
       { path: "/collection", component: { template: "<div />" } },
       { path: "/communaute", component: { template: "<div />" } },
-      { path: "/scan", component: { template: "<div />" } },
       { path: "/wishlist", component: { template: "<div />" } }
     ]
   })
@@ -118,7 +117,7 @@ describe("HomeView", () => {
     await flushPromises()
 
     expect(wrapper.findAll(".hall-art")).toHaveLength(3)
-    for (const to of ["/cartes", "/decks", "/communaute", "/collection", "/scan", "/wishlist", "/regles"]) {
+    for (const to of ["/cartes", "/decks", "/communaute", "/collection", "/wishlist", "/regles"]) {
       expect(wrapper.find(`a[href="${to}"]`).exists()).toBe(true)
     }
     expect(wrapper.text()).toContain("Règle d'or")

@@ -89,10 +89,6 @@ onMounted(async () => {
             aria-label="Rechercher une carte"
           />
         </label>
-        <RouterLink class="btn btn-ghost scan-entry" to="/scan" title="Identifier une carte avec l'appareil photo">
-          <Icon name="camera" :size="18" />
-          Scanner
-        </RouterLink>
         <FilterSelect
           label="Domaines"
           :options="domainOptions"

@@ -3,7 +3,7 @@ import { computed, onUnmounted, ref } from "vue"
 import { api, cardThumb, session } from "../api.js"
 import { copyText } from "../deckExport.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
-import ModalDialog from "./ModalDialog.vue"
+import RiftModal from "../ui/RiftModal.vue"
 
 /* Modale « cartes manquantes » : la comparaison deck/collection calculée par l'API.
    L'aperçu au survol reste géré par l'éditeur (événements preview / hide-preview). */
@@ -78,7 +78,7 @@ async function copyMissing() {
 </script>
 
 <template>
-  <ModalDialog title="Cartes manquantes" wide @close="$emit('close')">
+  <RiftModal title="Cartes manquantes" wide @close="$emit('close')">
     <p v-if="error" class="error">{{ error }}</p>
     <p v-else-if="!missing" class="muted">Analyse de votre collection…</p>
     <template v-else-if="missing.items.length">
@@ -155,5 +155,5 @@ async function copyMissing() {
       </div>
     </template>
     <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck.</p>
-  </ModalDialog>
+  </RiftModal>
 </template>

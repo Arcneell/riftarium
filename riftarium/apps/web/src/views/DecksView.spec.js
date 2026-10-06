@@ -44,10 +44,10 @@ describe("DecksView", () => {
 
   it("ouvre la modale de création puis navigue vers l'éditeur", async () => {
     const { wrapper, router } = await mountView()
-    expect(document.body.querySelector(".modal")).toBeNull()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
 
     await wrapper.get(".toolbar .btn-gold").trigger("click")
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Nouveau deck")
 
@@ -67,7 +67,7 @@ describe("DecksView", () => {
   it("génère un deck d'exemple depuis la modale", async () => {
     const { wrapper, router } = await mountView()
     await wrapper.get(".toolbar .btn-gold").trigger("click")
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     const ownedButton = [...modal.querySelectorAll(".example-actions button")].find((b) =>
       b.textContent.includes("Avec ma collection")
     )
@@ -88,7 +88,7 @@ describe("DecksView", () => {
     })
     const { wrapper, router } = await mountView()
     await wrapper.get(".toolbar .btn-gold").trigger("click")
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
 
     const nameInput = modal.querySelector("input[type=text]")
     nameInput.value = "Fureur de Noxus"
@@ -96,8 +96,8 @@ describe("DecksView", () => {
     modal.querySelector("form").dispatchEvent(new Event("submit"))
     await flushPromises()
 
-    expect(document.body.querySelector(".modal")).not.toBeNull()
-    expect(document.body.querySelector(".modal .error").textContent).toContain("Nom déjà pris")
+    expect(document.body.querySelector(".rift-modal")).not.toBeNull()
+    expect(document.body.querySelector(".rift-modal .error").textContent).toContain("Nom déjà pris")
     expect(router.currentRoute.value.path).toBe("/decks")
     wrapper.unmount()
   })
@@ -105,11 +105,11 @@ describe("DecksView", () => {
   it("la modale se ferme avec Échap sans créer de deck", async () => {
     const { wrapper } = await mountView()
     await wrapper.get(".toolbar .btn-gold").trigger("click")
-    expect(document.body.querySelector(".modal")).not.toBeNull()
+    expect(document.body.querySelector(".rift-modal")).not.toBeNull()
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
     await flushPromises()
-    expect(document.body.querySelector(".modal")).toBeNull()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
     expect(api.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false)
     wrapper.unmount()
   })
@@ -179,7 +179,7 @@ describe("DecksView", () => {
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(api.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
 
-    const modal = document.body.querySelector(".modal")
+    const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Jinx — prêt à jouer")
     expect(modal.textContent).toContain("impossible de le récupérer")
@@ -191,7 +191,7 @@ describe("DecksView", () => {
     await flushPromises()
 
     expect(api.mock.calls.some(([path, options]) => path === "/api/decks/4" && options?.method === "DELETE")).toBe(true)
-    expect(document.body.querySelector(".modal")).toBeNull()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
     confirmSpy.mockRestore()
     wrapper.unmount()
   })
