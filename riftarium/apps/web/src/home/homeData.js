@@ -12,10 +12,16 @@ export function pickSplash(random = Math.random) {
   return BANNERS[SPLASH_KEYS[index]]
 }
 
+/* Taille minimale d'un set pour porter le mur : un petit set promo ne le remplirait pas. */
+export const WALL_MIN_CARDS = 48
+
 /* Set le plus récent par date de publication ; sans aucune date, le dernier de la liste
-   (l'API les renvoie déjà dans l'ordre de publication). */
-export function latestSet(sets) {
-  if (!sets?.length) return null
+   (l'API les renvoie déjà dans l'ordre de publication). Les sets dont la taille est connue
+   et inférieure à WALL_MIN_CARDS sont écartés tant qu'un autre set en a assez. */
+export function latestSet(allSets) {
+  if (!allSets?.length) return null
+  const big = allSets.filter((set) => !(set.card_count < WALL_MIN_CARDS))
+  const sets = big.length ? big : allSets
   const dated = sets.filter((set) => set.published_on)
   if (!dated.length) return sets[sets.length - 1]
   return dated.reduce((best, set) => (set.published_on >= best.published_on ? set : best))

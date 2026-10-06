@@ -25,6 +25,20 @@ describe("latestSet", () => {
     ]
     expect(latestSet(sets).set_id).toBe("sfd")
   })
+  it("un petit set promo plus récent ne masque pas le dernier vrai set", () => {
+    const sets = [
+      { set_id: "sfd", card_count: 250, published_on: "2026-02-13" },
+      { set_id: "promo", card_count: 12, published_on: "2026-06-01" }
+    ]
+    expect(latestSet(sets).set_id).toBe("sfd")
+  })
+  it("sans set assez grand, garde le comportement actuel", () => {
+    const sets = [
+      { set_id: "a", card_count: 10, published_on: "2026-01-01" },
+      { set_id: "b", card_count: 12, published_on: "2026-06-01" }
+    ]
+    expect(latestSet(sets).set_id).toBe("b")
+  })
   it("renvoie null pour une liste vide ou absente", () => {
     expect(latestSet([])).toBeNull()
     expect(latestSet(undefined)).toBeNull()

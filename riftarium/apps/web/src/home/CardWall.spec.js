@@ -13,7 +13,6 @@ const SETS = [
 
 function mockApi(items) {
   api.mockImplementation(async (path) => {
-    if (path === "/api/sets") return SETS
     if (path.startsWith("/api/cards")) return { items }
     throw new Error(path)
   })
@@ -28,8 +27,8 @@ function reducedMotion(on) {
   })
 }
 
-async function mountWall() {
-  const wrapper = mount(CardWall, { global: { stubs: { RouterLink: RouterLinkStub } } })
+async function mountWall(sets = SETS) {
+  const wrapper = mount(CardWall, { props: { sets }, global: { stubs: { RouterLink: RouterLinkStub } } })
   await flushPromises()
   return wrapper
 }
@@ -44,10 +43,10 @@ describe("CardWall", () => {
     reducedMotion(false)
     mockApi(cards(30))
     const wrapper = await mountWall()
-    expect(api).toHaveBeenCalledWith("/api/cards?set_id=sfd&sort=random&size=48")
+    expect(api).toHaveBeenCalledWith("/api/cards?set_id=sfd&sort=random&size=100")
     expect(wrapper.text()).toContain("Spiritforged")
     expect(wrapper.getComponent(RouterLinkStub).props("to")).toBe("/cartes?set=sfd")
-    expect(wrapper.findAll(".wall-track img")).toHaveLength(48)
+    expect(wrapper.findAll(".wall-track img")).toHaveLength(72)
     expect(wrapper.get(".wall-mosaic").attributes("aria-hidden")).toBe("true")
     expect(wrapper.get(".wall").classes()).not.toContain("static")
     expect(wrapper.text()).toContain("© Riot Games")
@@ -67,8 +66,21 @@ describe("CardWall", () => {
     mockApi(cards(20))
     expect((await mountWall()).find(".wall").exists()).toBe(false)
     mockApi(cards(50))
-    expect((await mountWall()).findAll(".wall-track img")).toHaveLength(96)
+    expect((await mountWall()).findAll(".wall-track img")).toHaveLength(144)
     api.mockRejectedValue(new Error("hors ligne"))
     expect((await mountWall()).find(".wall").exists()).toBe(false)
+  })
+
+  it("n'appelle que les cartes, après l'arrivée des sets", async () => {
+    reducedMotion(false)
+    mockApi(cards(30))
+    const wrapper = await mountWall(null)
+    expect(api).not.toHaveBeenCalled()
+    expect(wrapper.find(".wall").exists()).toBe(false)
+    await wrapper.setProps({ sets: SETS })
+    await flushPromises()
+    expect(api).toHaveBeenCalledTimes(1)
+    expect(api).toHaveBeenCalledWith("/api/cards?set_id=sfd&sort=random&size=100")
+    expect(wrapper.find(".wall").exists()).toBe(true)
   })
 })

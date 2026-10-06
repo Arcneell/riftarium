@@ -1,13 +1,16 @@
 <script setup>
-import { onMounted, ref } from "vue"
+import { ref, watch } from "vue"
 import { api, cardThumb } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
 import { latestSet, wallCards } from "./homeData.js"
 
+/* `sets` : liste des sets chargée par l'accueil, null tant qu'elle n'est pas arrivée. */
+const props = defineProps({ sets: { type: Array, default: null } })
+
 /* Mur de cartes : le dernier set en mosaïque inclinée qui défile lentement dans la
    pénombre. Décoratif (aria-hidden) ; le titre et le bouton portent le sens.
    Trimé à un multiple de 24 : la grille fixe (12, 8 ou 6 colonnes) doit remplir un nombre
-   entier de lignes pour que la boucle (duplication + translateY(-50%)) s'enroule sans couture. */
+   entier de lignes pour que la boucle (trois copies + translateY(-33,3 %)) s'enroule sans couture. */
 const MIN_CARDS = 24
 
 const set = ref(null)
@@ -17,11 +20,13 @@ const reduced =
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false
 
-onMounted(async () => {
+async function load(sets) {
+  if (!sets) return
   try {
-    const latest = latestSet(await api("/api/sets"))
+    const latest = latestSet(sets)
     if (!latest) return
-    const page = await api(`/api/cards?set_id=${encodeURIComponent(latest.set_id)}&sort=random&size=48`)
+    /* size=100 : maximum de l'API, pour que le découpage garde 48 cartes même si quelques-unes sont écartées. */
+    const page = await api(`/api/cards?set_id=${encodeURIComponent(latest.set_id)}&sort=random&size=100`)
     const picked = wallCards(page.items, 48)
     /* Trimé à un multiple de 24 pour que la boucle s'enroule sans couture. */
     const trimmed = picked.slice(0, Math.floor(picked.length / 24) * 24)
@@ -31,7 +36,9 @@ onMounted(async () => {
   } catch {
     /* pas de mur plutôt qu'un trou : l'accueil reste lisible sans lui */
   }
-})
+}
+
+watch(() => props.sets, load, { immediate: true })
 </script>
 
 <template>
@@ -39,7 +46,7 @@ onMounted(async () => {
     <div class="wall-mosaic" aria-hidden="true">
       <div class="wall-track">
         <img
-          v-for="(card, i) in [...items, ...items]"
+          v-for="(card, i) in [...items, ...items, ...items]"
           :key="`${card.id}-${i}`"
           :src="cardThumb(card.image_url, 200)"
           alt=""
@@ -137,7 +144,7 @@ onMounted(async () => {
 }
 @keyframes wall-scroll {
   to {
-    transform: translateY(-50%);
+    transform: translateY(-33.3333%);
   }
 }
 @media (max-width: 1023px) {

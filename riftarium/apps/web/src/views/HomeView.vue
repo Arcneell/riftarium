@@ -11,20 +11,22 @@ import HomeSplash from "../home/HomeSplash.vue"
 const art = pickSplash()
 const cardCount = ref(null)
 const setCount = ref(null)
+const sets = ref(null)
 
 onMounted(async () => {
-  try {
-    const [sets, cards] = await Promise.all([api("/api/sets"), api("/api/cards?size=1")])
-    setCount.value = sets.length
-    cardCount.value = cards.total
-  } catch {
-    /* les chiffres restent masqués : le splash se suffit à lui-même */
+  /* Deux appels indépendants : les cartes en panne ne privent pas le mur de ses sets. */
+  const [setsResult, cardsResult] = await Promise.allSettled([api("/api/sets"), api("/api/cards?size=1")])
+  if (setsResult.status === "fulfilled") {
+    sets.value = setsResult.value
+    setCount.value = setsResult.value.length
   }
+  if (cardsResult.status === "fulfilled") cardCount.value = cardsResult.value.total
+  /* en cas d'échec, les chiffres restent masqués : le splash se suffit à lui-même */
 })
 </script>
 
 <template>
   <HomeSplash :art="art" :card-count="cardCount" :set-count="setCount" />
-  <CardWall />
+  <CardWall :sets="sets" />
   <HomeBlocks />
 </template>
