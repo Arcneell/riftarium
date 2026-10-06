@@ -98,5 +98,6 @@ useDialog(modal, () => emit("close"))
 .rift-modal-body {
   padding: var(--space-5);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 </style>
