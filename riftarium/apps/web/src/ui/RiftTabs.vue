@@ -1,9 +1,9 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 
 /* Onglets de sous-rubriques. Sur téléphone ils défilent horizontalement ;
-   l'onglet actif est ramené dans le champ au montage. */
+   l'onglet actif est ramené dans le champ au montage et à chaque changement. */
 const props = defineProps({
   items: { type: Array, required: true },
   label: { type: String, required: true }
@@ -19,10 +19,12 @@ const activeTo = computed(() => {
   return matches.sort((a, b) => b.to.length - a.to.length)[0]?.to ?? null
 })
 
-onMounted(async () => {
+async function centerActive() {
   await nextTick()
   list.value?.querySelector(".active")?.scrollIntoView?.({ block: "nearest", inline: "center" })
-})
+}
+onMounted(centerActive)
+watch(activeTo, centerActive)
 </script>
 
 <template>

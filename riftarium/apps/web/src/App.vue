@@ -123,7 +123,11 @@ onBeforeUnmount(() => {
     <AppRail v-if="!mobile" :collapsed="railCollapsed" @toggle="toggleRail" />
     <div class="shell-main">
       <AppTopbar :mobile="mobile" @search="searchOpen = true" @account="accountOpen = true" />
-      <RiftTabs v-if="mobile && section?.children" :items="section.children" :label="section.label" />
+      <RiftTabs
+        v-if="(mobile || railCollapsed) && section?.children"
+        :items="section.children"
+        :label="section.label"
+      />
       <EmailVerifyNotice />
       <div v-if="offlinePage" class="verify-notice" role="status">
         <p>Hors ligne : cette page n'est pas disponible sans connexion. Les règles restent consultables.</p>

@@ -51,6 +51,16 @@ describe("App (coquille)", () => {
     wrapper.unmount()
   })
 
+  it("rail replié (tablette) : les sous-pages restent accessibles par les onglets ; absentes rail déplié", async () => {
+    const collapsed = await mountApp("/communaute", 900)
+    expect(collapsed.find(".rift-tabs").exists()).toBe(true)
+    expect(collapsed.get(".rift-tabs").text()).toContain("Communauté")
+    collapsed.unmount()
+    const expanded = await mountApp("/communaute", 1440)
+    expect(expanded.find(".rift-tabs").exists()).toBe(false)
+    expanded.unmount()
+  })
+
   it("tablette : rail replié par défaut ; le choix est mémorisé", async () => {
     const wrapper = await mountApp("/", 900)
     expect(wrapper.get(".rail").classes()).toContain("collapsed")
