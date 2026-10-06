@@ -24,7 +24,11 @@ describe("AccountMenu", () => {
   it("déroule Profil, Amis et Déconnexion ; Administration seulement pour un admin", async () => {
     const { wrapper } = await mountMenu()
     await wrapper.get(".account-btn").trigger("click")
-    expect(wrapper.findAll("[role=menuitem]").map((item) => item.text())).toEqual(["Profil", "Amis", "Déconnexion"])
+    expect(wrapper.findAll(".account-menu a, .account-menu button").map((item) => item.text())).toEqual([
+      "Profil",
+      "Amis",
+      "Déconnexion"
+    ])
     session.isAdmin = true
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain("Administration")
@@ -36,22 +40,34 @@ describe("AccountMenu", () => {
     await wrapper.get(".account-btn").trigger("click")
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
     await wrapper.vm.$nextTick()
-    expect(wrapper.find("[role=menu]").exists()).toBe(false)
+    expect(wrapper.find(".account-menu").exists()).toBe(false)
     await wrapper.get(".account-btn").trigger("click")
     document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))
     await wrapper.vm.$nextTick()
-    expect(wrapper.find("[role=menu]").exists()).toBe(false)
+    expect(wrapper.find(".account-menu").exists()).toBe(false)
     wrapper.unmount()
   })
 
   it("la déconnexion ferme la session et revient à l'accueil", async () => {
     const { wrapper, router } = await mountMenu()
     await wrapper.get(".account-btn").trigger("click")
-    await wrapper.findAll("[role=menuitem]").at(-1).trigger("click")
+    await wrapper.findAll(".account-menu a, .account-menu button").at(-1).trigger("click")
     await flushPromises()
     expect(globalThis.fetch).toHaveBeenCalledWith("/api/auth/logout", expect.objectContaining({ method: "POST" }))
     expect(session.token).toBeNull()
     expect(router.currentRoute.value.path).toBe("/")
+    wrapper.unmount()
+  })
+
+  it("Échap ferme le menu et revient le focus au bouton", async () => {
+    const { wrapper } = await mountMenu()
+    const btn = wrapper.get(".account-btn")
+    await btn.trigger("click")
+    expect(wrapper.find(".account-menu").exists()).toBe(true)
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find(".account-menu").exists()).toBe(false)
+    expect(document.activeElement).toBe(btn.element)
     wrapper.unmount()
   })
 })

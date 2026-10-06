@@ -12,6 +12,7 @@ defineProps({ compact: { type: Boolean, default: false } })
 const route = useRoute()
 const open = ref(false)
 const root = ref(null)
+const button = ref(null)
 const { loggingOut, logout } = useLogout()
 
 watch(
@@ -26,7 +27,10 @@ function onPointerDown(event) {
   if (open.value && root.value && !root.value.contains(event.target)) open.value = false
 }
 function onKeydown(event) {
-  if (event.key === "Escape") open.value = false
+  if (event.key === "Escape" && open.value) {
+    open.value = false
+    button.value?.focus()
+  }
 }
 
 onMounted(() => {
@@ -42,11 +46,11 @@ onBeforeUnmount(() => {
 <template>
   <div ref="root" class="account">
     <button
+      ref="button"
       type="button"
       class="account-btn"
       :aria-expanded="open"
-      aria-haspopup="menu"
-      aria-controls="menu-compte"
+      :aria-controls="open ? 'menu-compte' : undefined"
       :title="`Compte de ${session.handle}`"
       @click="open = !open"
     >
@@ -54,13 +58,11 @@ onBeforeUnmount(() => {
       <span v-if="!compact" class="account-name">{{ session.handle }}</span>
       <Icon v-if="!compact" name="chevron" :size="14" class="account-chevron" />
     </button>
-    <div v-if="open" id="menu-compte" class="account-menu" role="menu" aria-label="Mon compte">
-      <RouterLink v-for="link in ACCOUNT_LINKS" :key="link.to" role="menuitem" :to="link.to">{{
-        link.label
-      }}</RouterLink>
-      <RouterLink v-if="session.isAdmin" role="menuitem" to="/admin">Administration</RouterLink>
-      <button role="menuitem" type="button" :disabled="loggingOut" @click="logout">Déconnexion</button>
-    </div>
+    <nav v-if="open" id="menu-compte" class="account-menu" aria-label="Mon compte">
+      <RouterLink v-for="link in ACCOUNT_LINKS" :key="link.to" :to="link.to">{{ link.label }}</RouterLink>
+      <RouterLink v-if="session.isAdmin" to="/admin">Administration</RouterLink>
+      <button type="button" :disabled="loggingOut" @click="logout">Déconnexion</button>
+    </nav>
   </div>
 </template>
 
