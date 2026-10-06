@@ -22,7 +22,12 @@ defineProps({
 }
 .rift-skeleton-line,
 .rift-skeleton-block {
-  background: linear-gradient(90deg, var(--bg-sunken) 0%, #221a16 50%, var(--bg-sunken) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-sunken) 0%,
+    color-mix(in srgb, var(--bg-raised), var(--bronze) 12%) 50%,
+    var(--bg-sunken) 100%
+  );
   background-size: 200% 100%;
   animation: rift-shimmer 1.4s linear infinite;
 }

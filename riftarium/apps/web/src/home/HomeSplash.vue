@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from "vue"
+import { computed } from "vue"
 import RiftButton from "../ui/RiftButton.vue"
 
 /* Ouverture du site : une illustration officielle plein cadre, fondue dans le noir de
@@ -10,29 +10,14 @@ const props = defineProps({
   setCount: { type: Number, default: null }
 })
 
-const style = computed(() => ({ "--splash": `url("${props.art}")` }))
 const showStats = computed(() => props.cardCount !== null && props.setCount !== null)
 const format = (n) => n.toLocaleString("fr-FR")
-
-/* Un fond CSS n'est découvert qu'au premier rendu, trop tard pour le LCP : préchargement
-   explicite, retiré au démontage pour ne pas laisser de balise orpheline. */
-let preload = null
-onMounted(() => {
-  preload = document.createElement("link")
-  preload.setAttribute("rel", "preload")
-  preload.setAttribute("as", "image")
-  preload.setAttribute("href", props.art)
-  preload.setAttribute("fetchpriority", "high")
-  document.head.appendChild(preload)
-})
-onBeforeUnmount(() => {
-  preload?.remove()
-  preload = null
-})
 </script>
 
 <template>
-  <section class="splash" :style="style">
+  <section class="splash">
+    <!-- vraie image (pas un fond CSS) : le navigateur la découvre dès le HTML, bon pour le LCP -->
+    <img class="splash-art" :src="art" alt="" fetchpriority="high" decoding="async" />
     <div class="splash-copy">
       <p class="splash-kicker">Le compagnon Riftbound</p>
       <h1 class="splash-title">Forge ton <em>deck.</em><br />Domine le Rift.</h1>
@@ -56,11 +41,27 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   min-height: min(78dvh, 720px);
   padding: var(--space-7) var(--space-6);
+  overflow: hidden;
+  isolation: isolate;
+}
+.splash-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+/* dégradés par-dessus l'image, sous le texte */
+.splash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background:
     linear-gradient(90deg, var(--bg) 12%, rgba(13, 13, 15, 0.72) 48%, rgba(13, 13, 15, 0.1) 100%),
-    linear-gradient(0deg, var(--bg) 0%, transparent 45%),
-    var(--splash) center 30% / cover no-repeat;
-  overflow: hidden;
+    linear-gradient(0deg, var(--bg) 0%, transparent 45%);
 }
 .splash-copy {
   max-width: 560px;
@@ -96,7 +97,8 @@ onBeforeUnmount(() => {
   max-width: 440px;
   margin-bottom: var(--space-5);
   font-size: 17px;
-  color: #cfc6b8;
+  color: var(--ink);
+  opacity: 0.85;
 }
 .splash-actions {
   display: flex;
@@ -136,9 +138,12 @@ onBeforeUnmount(() => {
   .splash {
     min-height: 70dvh;
     padding: var(--space-6) var(--space-4) var(--space-7);
-    background:
-      linear-gradient(0deg, var(--bg) 18%, rgba(13, 13, 15, 0.55) 70%, rgba(13, 13, 15, 0.3) 100%),
-      var(--splash) center / cover no-repeat;
+  }
+  .splash::before {
+    background: linear-gradient(0deg, var(--bg) 18%, rgba(13, 13, 15, 0.55) 70%, rgba(13, 13, 15, 0.3) 100%);
+  }
+  .splash-art {
+    object-position: center;
   }
 }
 </style>
