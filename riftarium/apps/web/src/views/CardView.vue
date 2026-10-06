@@ -5,7 +5,7 @@ import { api, cardThumb, session, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } 
 import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
 import { PRICE_SOURCE_NOTE, cardmarketUrl, formatEur, usePricesMeta } from "../prices.js"
 import { applySeo } from "../seo.js"
-import CardText from "../components/CardText.vue"
+import RiftText from "../ui/RiftText.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -287,7 +287,7 @@ function openVariant(id) {
           </div>
 
           <div class="rules-text" v-if="card.text">
-            <CardText :text="card.text" />
+            <RiftText tag="p" class="card-text" :text="card.text" />
           </div>
           <p class="flavour" v-if="card.flavour">« {{ card.flavour }} »</p>
 

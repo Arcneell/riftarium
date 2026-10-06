@@ -11,7 +11,7 @@ const FINE_POINTER = hasMatchMedia && window.matchMedia("(hover: hover) and (poi
 import { computed, onUnmounted, ref } from "vue"
 import { cardThumb } from "../api.js"
 import { isFoil, variantLabel } from "../cardText.js"
-import CardText from "./CardText.vue"
+import RiftText from "../ui/RiftText.vue"
 
 const props = defineProps({
   card: { type: Object, required: true },
@@ -71,7 +71,7 @@ const foil = computed(() => isFoil(props.card))
         <div class="preview-copy">
           <p class="eyebrow">{{ variantLabel(card) }}</p>
           <h3>{{ card.name }}</h3>
-          <CardText v-if="card.text" :text="card.text" />
+          <RiftText tag="p" class="card-text" v-if="card.text" :text="card.text" />
         </div>
       </div>
     </Teleport>

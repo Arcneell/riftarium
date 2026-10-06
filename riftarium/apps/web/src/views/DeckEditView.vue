@@ -12,7 +12,7 @@ import {
   rarityFilterOptions,
   typeFilterOptions
 } from "../cardText.js"
-import CardText from "../components/CardText.vue"
+import RiftText from "../ui/RiftText.vue"
 import DeckExportBar from "../components/DeckExportBar.vue"
 import DeckMissingModal from "../components/DeckMissingModal.vue"
 import DeckView from "../components/DeckView.vue"
@@ -834,7 +834,7 @@ onBeforeUnmount(() => {
             <template v-if="session.token"> · possédée ×{{ preview.card.owned_qty ?? 0 }}</template>
             <template v-if="inDeckQty(preview.card)"> · dans le deck ×{{ inDeckQty(preview.card) }}</template>
           </p>
-          <CardText v-if="preview.card.text" :text="preview.card.text" />
+          <RiftText tag="p" class="card-text" v-if="preview.card.text" :text="preview.card.text" />
         </div>
       </div>
     </Teleport>
