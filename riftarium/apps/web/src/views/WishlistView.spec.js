@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import WishlistView from "./WishlistView.vue"
+import Icon from "../components/Icon.vue"
 import { api } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -40,7 +41,7 @@ async function mountView() {
   router.push("/wishlist")
   await router.isReady()
   const wrapper = mount(WishlistView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], components: { Icon } },
     attachTo: document.body
   })
   await flushPromises()
@@ -60,21 +61,21 @@ describe("WishlistView", () => {
 
   it("affiche le total, la valeur estimée et la grille des cartes souhaitées", async () => {
     const { wrapper } = await mountView()
-    const stats = wrapper.get(".stat-row")
+    const stats = wrapper.get(".collection-stats-row")
     expect(stats.text()).toContain("Cartes souhaitées")
     expect(stats.text()).toContain("2")
     expect(stats.text()).toContain("12,25")
-    expect(stats.findAll(".stat")[1].attributes("title")).toContain("marché US")
-    expect(wrapper.findAll(".wish-cell")).toHaveLength(2)
-    expect(wrapper.get(".card-tile").attributes("href")).toBe("/cartes/card-1")
-    expect(wrapper.get(".wish-stepper input").element.value).toBe("2")
+    expect(stats.findAll(".rift-stat")[1].attributes("title")).toContain("marché US")
+    expect(wrapper.findAll(".souhait-cell")).toHaveLength(2)
+    expect(wrapper.get(".rift-tile").attributes("href")).toBe("/cartes/card-1")
+    expect(wrapper.get(".souhait-stepper input").element.value).toBe("2")
     wrapper.unmount()
   })
 
   it("le stepper envoie un PUT avec la nouvelle quantité, bornée de 1 à 99", async () => {
     const { wrapper } = await mountView()
     api.mockClear()
-    const plus = wrapper.get('.wish-cell .wish-stepper button[aria-label="Un exemplaire de plus"]')
+    const plus = wrapper.get('.souhait-cell .souhait-stepper button[aria-label="Un exemplaire de plus"]')
     await plus.trigger("click")
     await flushPromises()
     let call = api.mock.calls.find(([path, options]) => path === "/api/wishlist/card-1" && options?.method === "PUT")
@@ -90,8 +91,8 @@ describe("WishlistView", () => {
       }
       return Promise.resolve(null)
     })
-    await wrapper.get(".wish-cell .wish-stepper input").setValue("120")
-    await wrapper.get(".wish-cell .wish-stepper input").trigger("change")
+    await wrapper.get(".souhait-cell .souhait-stepper input").setValue("120")
+    await wrapper.get(".souhait-cell .souhait-stepper input").trigger("change")
     await flushPromises()
     call = api.mock.calls.find(([path, options]) => path === "/api/wishlist/card-1" && options?.method === "PUT")
     expect(call[1].body).toEqual({ qty: 99 })
@@ -114,27 +115,29 @@ describe("WishlistView", () => {
       return Promise.resolve(null)
     })
 
-    await wrapper.get('.wish-cell .wish-stepper button[aria-label="Un exemplaire de plus"]').trigger("click")
+    await wrapper.get('.souhait-cell .souhait-stepper button[aria-label="Un exemplaire de plus"]').trigger("click")
     await flushPromises()
 
     /* Une seule requête modifie la liste entière : aucune action ne doit rester
        cliquable sur les autres cartes non plus. */
-    for (const button of wrapper.findAll(".wish-cell button")) {
+    for (const button of wrapper.findAll(".souhait-cell button")) {
       expect(button.attributes("disabled")).toBeDefined()
     }
-    for (const input of wrapper.findAll(".wish-cell .wish-stepper input")) {
+    for (const input of wrapper.findAll(".souhait-cell .souhait-stepper input")) {
       expect(input.attributes("disabled")).toBeDefined()
     }
 
     release()
     await flushPromises()
-    expect(wrapper.get('.wish-cell button[aria-label="Un exemplaire de plus"]').attributes("disabled")).toBeUndefined()
+    expect(
+      wrapper.get('.souhait-cell button[aria-label="Un exemplaire de plus"]').attributes("disabled")
+    ).toBeUndefined()
     wrapper.unmount()
   })
 
   it("le bouton − est désactivé à 1 exemplaire", async () => {
     const { wrapper } = await mountView()
-    const cells = wrapper.findAll(".wish-cell")
+    const cells = wrapper.findAll(".souhait-cell")
     const minusAtOne = cells[1].get('button[aria-label="Un exemplaire de moins"]')
     expect(minusAtOne.attributes("disabled")).toBeDefined()
     const minusAtTwo = cells[0].get('button[aria-label="Un exemplaire de moins"]')
@@ -157,13 +160,13 @@ describe("WishlistView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    await wrapper.get(".wish-cell .wish-remove").trigger("click")
+    await wrapper.get(".souhait-cell .souhait-remove").trigger("click")
     await flushPromises()
     expect(
       api.mock.calls.some(([path, options]) => path === "/api/wishlist/card-1" && options?.method === "DELETE")
     ).toBe(true)
-    expect(wrapper.findAll(".wish-cell")).toHaveLength(1)
-    expect(wrapper.get(".stat-row").text()).toContain("3,50")
+    expect(wrapper.findAll(".souhait-cell")).toHaveLength(1)
+    expect(wrapper.get(".collection-stats-row").text()).toContain("3,50")
     wrapper.unmount()
   })
 
@@ -175,8 +178,8 @@ describe("WishlistView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    expect(wrapper.findAll(".wish-cell")).toHaveLength(0)
-    const empty = wrapper.get(".wish-empty")
+    expect(wrapper.findAll(".souhait-cell")).toHaveLength(0)
+    const empty = wrapper.get(".rift-empty")
     expect(empty.text()).toContain("wishlist est vide")
     expect(empty.find("a").attributes("href")).toBe("/cartes")
     wrapper.unmount()
