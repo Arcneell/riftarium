@@ -1,22 +1,21 @@
 <script setup>
-import { computed, reactive, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, cardThumb, session, CONDITIONS, DOMAINS, LANGS, TYPES, RARITIES } from "../api.js"
-import { glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
+import { api, cardThumb, DOMAINS, TYPES, RARITIES } from "../api.js"
+import CardCollectionPanel from "../cards/CardCollectionPanel.vue"
+import { DOMAIN_RUNE, glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
 import { PRICE_SOURCE_NOTE, cardmarketUrl, formatEur, usePricesMeta } from "../prices.js"
 import { applySeo } from "../seo.js"
+import { setPageCrumb } from "../shell/pageCrumb.js"
+import RiftChip from "../ui/RiftChip.vue"
+import RiftPanel from "../ui/RiftPanel.vue"
+import RiftStat from "../ui/RiftStat.vue"
 import RiftText from "../ui/RiftText.vue"
 
 const route = useRoute()
 const router = useRouter()
 const card = ref(null)
 const error = ref("")
-const entries = ref([]) // lots possédés : [{ id, qty, condition, lang }]
-const draft = reactive({ qty: 1, condition: "NM", lang: "EN" })
-const busy = ref(false)
-const saved = ref("")
-
-const totalOwned = computed(() => entries.value.reduce((total, entry) => total + entry.qty, 0))
 
 /* Retour contextuel : revient à la collection (ou à la liste filtrée) telle qu'on l'a quittée. */
 const backLink = computed(() => {
@@ -29,11 +28,13 @@ const backLink = computed(() => {
 const foil = computed(() => isFoil(card.value))
 const variants = computed(() => card.value?.variants || [])
 const landscape = computed(() => card.value?.orientation === "landscape")
-const domainLabel = computed(() => card.value?.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "—")
-const domainColor = computed(() => DOMAINS[card.value?.domains?.[0]]?.text)
-const energySrc = computed(() =>
-  card.value?.energy === null || card.value?.energy === undefined ? "" : glyphUrl(`energy_${card.value.energy}`)
+const domainLabel = computed(() => card.value?.domains?.map((d) => DOMAINS[d]?.label || d).join(" / ") || "")
+const runeGlyph = computed(() => glyphUrl(`rune_${DOMAIN_RUNE[card.value?.domains?.[0]] || "rainbow"}`))
+const kicker = computed(() =>
+  [TYPES[card.value?.type] || card.value?.type, domainLabel.value].filter(Boolean).join(" · ")
 )
+const hasEnergy = computed(() => card.value?.energy !== null && card.value?.energy !== undefined)
+const hasMight = computed(() => card.value?.might !== null && card.value?.might !== undefined)
 const powerRunes = computed(() => powerRuneGlyphs(card.value))
 const mightSrc = glyphUrl("might")
 
@@ -57,13 +58,11 @@ watch(
     const mine = ++seq
     card.value = null
     error.value = ""
-    saved.value = ""
-    entries.value = []
-    let loaded
     try {
-      loaded = await api(`/api/cards/${id}`)
+      const loaded = await api(`/api/cards/${id}`)
       if (mine !== seq) return
       card.value = loaded
+      setPageCrumb(loaded.name)
       applySeo({
         title: `${loaded.name} — Carte Riftbound`,
         description: `${loaded.name} (${loaded.set_id}) : ${TYPES[loaded.type] || loaded.type} Riftbound. Fiche, visuel officiel et variantes sur Riftarium.`,
@@ -72,104 +71,14 @@ watch(
       })
     } catch (e) {
       if (mine === seq) error.value = e.message
-      return
-    }
-    /* Les lots possédés ne conditionnent pas la fiche : un échec ici ne doit ni
-       masquer la carte ni priver la page de son référencement. */
-    if (!session.token) return
-    try {
-      const owned = await api(`/api/collection/${loaded.id}`)
-      if (mine !== seq) return
-      entries.value = owned.entries
-    } catch {
-      /* collection indisponible : la fiche reste lisible, sans ses lots */
     }
   },
   { immediate: true }
 )
 
-/* Un lot se compte en entiers : `v-model.number` renvoie "" sur un champ vidé
-   (et un décimal si l'on tape « 1,5 »), ce qu'il ne faut pas envoyer à l'API. */
-function validQty(value, min = 0) {
-  return Number.isInteger(value) && value >= min && value <= 999
-}
-
-function applyState(state, message) {
-  if (!card.value) return
-  entries.value = state.entries
-  card.value.owned_qty = state.total_qty
-  saved.value = message
-}
-
-/* Retourne vrai si la mutation est passée : l'appelant ne réinitialise sa saisie
-   qu'à cette condition (une erreur laissait auparavant le formulaire vidé). */
-async function mutate(request, message) {
-  if (busy.value) return false
-  busy.value = true
-  saved.value = ""
-  error.value = ""
-  try {
-    applyState(await request(), message)
-    return true
-  } catch (e) {
-    error.value = e.message
-    return false
-  } finally {
-    busy.value = false
-  }
-}
-
-async function addEntry() {
-  if (!validQty(draft.qty, 1)) return
-  const done = await mutate(
-    () =>
-      api(`/api/collection/${card.value.id}/entries`, {
-        method: "POST",
-        body: { qty: draft.qty, condition: draft.condition, lang: draft.lang }
-      }),
-    "Lot ajouté."
-  )
-  if (done) draft.qty = 1
-}
-
-function saveEntry(entry) {
-  if (!validQty(entry.qty)) return
-  mutate(
-    () =>
-      api(`/api/collection/entries/${entry.id}`, {
-        method: "PATCH",
-        body: { qty: entry.qty, condition: entry.condition, lang: entry.lang }
-      }),
-    "Lot mis à jour."
-  )
-}
-
-function removeEntry(entry) {
-  mutate(() => api(`/api/collection/entries/${entry.id}`, { method: "PATCH", body: { qty: 0 } }), "Lot retiré.")
-}
-
-/* Wishlist : un seul clic bascule « je la veux » (qty 1) / retrait complet.
-   La quantité fine se règle ensuite sur la page Ma wishlist. */
-const wished = computed(() => (card.value?.wished_qty ?? 0) > 0)
-const wishBusy = ref(false)
-
-async function toggleWish() {
-  if (wishBusy.value || !card.value) return
-  wishBusy.value = true
-  error.value = ""
-  try {
-    if (wished.value) {
-      await api(`/api/wishlist/${card.value.id}`, { method: "DELETE" })
-      card.value.wished_qty = 0
-    } else {
-      await api(`/api/wishlist/${card.value.id}`, { method: "PUT", body: { qty: 1 } })
-      card.value.wished_qty = 1
-    }
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    wishBusy.value = false
-  }
+/* Le panneau de collection ne modifie pas la carte : il émet le changement, appliqué ici. */
+function onCollectionChange(patch) {
+  if (card.value) Object.assign(card.value, patch)
 }
 
 /* replace : passer d'une variante à l'autre ne pollue pas l'historique, le retour ramène à la liste. */
@@ -179,189 +88,306 @@ function openVariant(id) {
 </script>
 
 <template>
-  <section class="card-detail">
-    <div class="wrap cards-wrap">
-      <p class="card-back">
-        <!-- Un retour d'historique est une action, pas une adresse : un bouton, pas
-             un `href="#"`. La remise à zéro globale de `button` lui laisse déjà
-             l'allure d'un lien, `.card-back-link` (main.css) en rend la couleur. -->
-        <button v-if="backLink.useBack" type="button" class="card-back-link" @click="router.back()">
+  <section class="fiche-page">
+    <div class="fiche-wrap">
+      <p class="fiche-back">
+        <!-- Un retour d'historique est une action, pas une adresse : un bouton, pas un `href="#"`. -->
+        <button v-if="backLink.useBack" type="button" class="fiche-back-link" @click="router.back()">
           ← {{ backLink.label }}
         </button>
-        <RouterLink v-else to="/cartes">← Cartothèque</RouterLink>
+        <RouterLink v-else class="fiche-back-link" to="/cartes">← Cartothèque</RouterLink>
       </p>
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="fiche-error" role="alert">{{ error }}</p>
 
-      <article v-if="card" class="card-sheet" :class="{ landscape }">
-        <aside class="sheet-visual">
-          <div v-tilt class="card-art sheet-art" :class="{ foil, landscape }">
-            <img
-              class="full"
-              :src="cardThumb(card.image_url, landscape ? 1100 : 720)"
-              :alt="`Carte Riftbound : ${card.name}`"
-            />
-            <span v-if="foil" class="card-foil"></span>
+      <article v-if="card" class="fiche" :class="{ landscape }">
+        <div class="fiche-visual">
+          <div class="fiche-art" :class="{ landscape }" tabindex="-1">
+            <img :src="cardThumb(card.image_url, landscape ? 1100 : 720)" :alt="`Carte Riftbound : ${card.name}`" />
+            <span v-if="foil" class="fiche-foil" aria-hidden="true"></span>
           </div>
-          <div class="variant-switch" v-if="variants.length > 1">
-            <button
+
+          <div v-if="variants.length > 1" class="fiche-variants" role="group" aria-label="Variantes">
+            <RiftChip
               v-for="item in variants"
               :key="item.id"
-              class="filter"
-              :aria-pressed="item.id === card.id"
-              @click="openVariant(item.id)"
-            >
-              {{ variantLabel(item) }}
-            </button>
-          </div>
-          <p class="card-credit">
-            {{ (card.riftbound_id || "").toUpperCase() }}
-            <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
-            · © Riot Games
-          </p>
-        </aside>
-
-        <div class="sheet-copy">
-          <p class="eyebrow">
-            {{ card.set_id }} · {{ RARITIES[card.rarity] || card.rarity }}
-            <span v-if="landscape"> · Terrain</span>
-          </p>
-          <h1>{{ card.name }}</h1>
-
-          <div class="sheet-tags">
-            <span class="sheet-tag">{{ TYPES[card.type] || card.type }}</span>
-            <span v-if="card.supertype" class="sheet-tag muted">{{ card.supertype }}</span>
-            <span class="sheet-tag" :style="{ color: domainColor }">{{ domainLabel }}</span>
+              :label="variantLabel(item)"
+              :selected="item.id === card.id"
+              @toggle="openVariant(item.id)"
+            />
           </div>
 
-          <button
-            v-if="session.token"
-            type="button"
-            class="wish-toggle"
-            :class="{ on: wished }"
-            :aria-pressed="wished"
-            :disabled="wishBusy"
-            @click="toggleWish"
-          >
-            <Icon :name="wished ? 'heart' : 'heart-line'" :size="15" />
-            {{ wished ? "Dans ma wishlist" : "Ajouter à la wishlist" }}
-          </button>
-
-          <div class="stat-row">
-            <div class="stat" v-if="card.energy !== null && card.energy !== undefined">
-              Énergie
-              <b class="stat-glyphs">
-                <img
-                  class="rb-glyph energy"
-                  :src="energySrc"
-                  :alt="`Énergie ${card.energy}`"
-                  :title="`Énergie ${card.energy}`"
-                />
-              </b>
-            </div>
-            <div class="stat" v-if="card.might !== null && card.might !== undefined">
-              Puissance
-              <b class="stat-glyphs">
-                <span
-                  class="rb-glyph ink"
-                  :style="{ '--glyph': `url(${mightSrc})` }"
-                  role="img"
-                  aria-label="Puissance"
-                  title="Puissance"
-                ></span>
-                {{ card.might }}
-              </b>
-            </div>
-            <div class="stat" v-if="powerRunes.length">
-              Pouvoir
-              <b class="stat-glyphs">
-                <img
-                  v-for="(rune, i) in powerRunes"
-                  :key="i"
-                  class="rb-glyph rune"
-                  :src="rune.src"
-                  :alt="rune.label"
-                  :title="rune.label"
-                />
-              </b>
-            </div>
-          </div>
-
-          <div class="rules-text" v-if="card.text">
-            <RiftText tag="p" class="card-text" :text="card.text" />
-          </div>
-          <p class="flavour" v-if="card.flavour">« {{ card.flavour }} »</p>
-
-          <div class="price-block" v-if="priceMain">
-            <p class="eyebrow">Prix indicatif</p>
-            <p class="price-line">
-              <b class="price-amount">{{ priceMain }}</b>
-              <span v-if="priceFoil" class="price-foil">foil : {{ priceFoil }}</span>
+          <div v-if="priceMain" class="fiche-price">
+            <p class="fiche-price-title">Prix indicatif</p>
+            <p class="fiche-price-line">
+              <b class="fiche-price-amount">{{ priceMain }}</b>
+              <span v-if="priceFoil" class="fiche-price-foil">foil : {{ priceFoil }}</span>
             </p>
-            <p class="price-note">
+            <p class="fiche-price-note">
               {{ pricesMeta.currency_note || PRICE_SOURCE_NOTE
               }}<template v-if="pricesMeta.updated_day"> Mise à jour : {{ pricesMeta.updated_day }}.</template>
               Ni cote officielle ni offre d'achat.
             </p>
-            <a class="price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
+            <a class="fiche-price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
               Voir sur Cardmarket ↗
             </a>
           </div>
 
-          <div class="panel sheet-collection" v-if="session.token">
-            <h3>
-              Dans ma collection
-              <span v-if="totalOwned" class="muted">— {{ totalOwned }} exemplaire(s)</span>
-            </h3>
+          <CardCollectionPanel :card="card" @change="onCollectionChange" />
 
-            <div v-for="entry in entries" :key="entry.id" class="sheet-qty sheet-entry">
-              <input
-                type="number"
-                inputmode="numeric"
-                min="0"
-                max="999"
-                v-model.number="entry.qty"
-                :aria-label="`Quantité du lot ${entry.condition} ${entry.lang}`"
-              />
-              <select v-model="entry.condition" aria-label="État du lot">
-                <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-              </select>
-              <select v-model="entry.lang" aria-label="Langue du lot">
-                <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-              </select>
-              <button class="btn btn-gold btn-sm" :disabled="busy || !validQty(entry.qty)" @click="saveEntry(entry)">
-                Enregistrer
-              </button>
-              <button class="btn btn-ghost btn-sm" :disabled="busy" @click="removeEntry(entry)">Retirer</button>
-            </div>
-            <p v-if="!entries.length" class="muted">Aucun exemplaire pour l'instant.</p>
-
-            <div class="sheet-qty sheet-entry sheet-add">
-              <input
-                type="number"
-                inputmode="numeric"
-                min="1"
-                max="999"
-                v-model.number="draft.qty"
-                aria-label="Quantité à ajouter"
-              />
-              <select v-model="draft.condition" aria-label="État du nouveau lot">
-                <option v-for="(label, code) in CONDITIONS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-              </select>
-              <select v-model="draft.lang" aria-label="Langue du nouveau lot">
-                <option v-for="(label, code) in LANGS" :key="code" :value="code">{{ code }} · {{ label }}</option>
-              </select>
-              <button class="btn btn-ghost btn-sm" :disabled="busy || !validQty(draft.qty, 1)" @click="addEntry">
-                + Ajouter un lot
-              </button>
-            </div>
-
-            <p v-if="saved" class="success">{{ saved }}</p>
-          </div>
-          <p v-else class="muted sheet-login">
-            <RouterLink to="/connexion">Connectez-vous</RouterLink> pour suivre vos exemplaires.
+          <p class="fiche-credit">
+            {{ (card.riftbound_id || "").toUpperCase() }}
+            <span v-if="card.artist"> · Illustration : {{ card.artist }}</span>
+            · © Riot Games
           </p>
+        </div>
+
+        <div class="fiche-copy">
+          <p class="fiche-kicker">
+            <img class="rb-glyph rune" :src="runeGlyph" alt="" width="20" height="20" />
+            <span>{{ kicker }}</span>
+          </p>
+          <h1 class="fiche-title">{{ card.name }}</h1>
+
+          <div v-if="hasEnergy || hasMight || powerRunes.length" class="fiche-stats">
+            <RiftStat v-if="hasEnergy" label="Énergie" :glyph="glyphUrl(`energy_${card.energy}`)" glyph-kind="energy" />
+            <RiftStat v-if="hasMight" label="Puissance" :value="card.might" :glyph="mightSrc" ink />
+            <RiftStat v-if="powerRunes.length" label="Pouvoir">
+              <img
+                v-for="(rune, i) in powerRunes"
+                :key="i"
+                class="rb-glyph rune"
+                :src="rune.src"
+                :alt="rune.label"
+                :title="rune.label"
+                width="26"
+                height="26"
+              />
+            </RiftStat>
+          </div>
+
+          <RiftPanel v-if="card.text" title="Capacité">
+            <RiftText tag="p" class="card-text" :text="card.text" />
+          </RiftPanel>
+
+          <p v-if="card.flavour" class="fiche-flavour">« {{ card.flavour }} »</p>
+
+          <dl class="fiche-meta">
+            <div>
+              <dt>Set</dt>
+              <dd>{{ card.set_id }}</dd>
+            </div>
+            <div>
+              <dt>Numéro</dt>
+              <dd>{{ (card.riftbound_id || "").toUpperCase() }}</dd>
+            </div>
+            <div>
+              <dt>Rareté</dt>
+              <dd>{{ RARITIES[card.rarity] || card.rarity }}</dd>
+            </div>
+            <div v-if="card.artist">
+              <dt>Illustration</dt>
+              <dd>{{ card.artist }}</dd>
+            </div>
+          </dl>
         </div>
       </article>
     </div>
   </section>
 </template>
+
+<style scoped>
+/* La règle globale `section { padding: 88px 0 }` de l'ancien style ne doit pas s'appliquer ici. */
+.fiche-page {
+  padding: var(--space-5) 0 var(--space-7);
+}
+.fiche-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+.fiche-back {
+  margin: 0 0 var(--space-4);
+}
+.fiche-back-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bronze-light);
+  cursor: pointer;
+}
+.fiche-back-link:hover {
+  color: var(--ink);
+}
+.fiche-error {
+  color: var(--blood-text);
+}
+.fiche {
+  display: grid;
+  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.fiche.landscape {
+  grid-template-columns: minmax(0, 1fr);
+}
+.fiche-visual,
+.fiche-copy {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.fiche.landscape .fiche-visual {
+  max-width: 720px;
+}
+.fiche-art {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+.fiche-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.fiche-foil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 236, 200, 0.35) 48%, transparent 66%);
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--t-base),
+    background-position 900ms ease;
+}
+.fiche-art:hover .fiche-foil,
+.fiche-art:focus-within .fiche-foil {
+  opacity: 1;
+  background-position: -60% 0;
+}
+.fiche-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.fiche-price {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.fiche-price p {
+  margin: 0;
+}
+.fiche-price-title {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.fiche-price-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.fiche-price-amount {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--bronze-light);
+}
+.fiche-price-foil {
+  font-family: var(--font-label);
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.fiche-price-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.fiche-price-link {
+  justify-self: start;
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bronze-light);
+}
+.fiche-credit {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.fiche-kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+/* Neutralise le h1 doré animé hérité de l'ancien style global. */
+.fiche-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  background: none;
+  color: var(--ink);
+  animation: none;
+}
+.fiche-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.fiche-flavour {
+  margin: 0;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+.fiche-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.fiche-meta dt {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.fiche-meta dd {
+  margin: 0;
+  color: var(--ink);
+}
+@media (max-width: 900px) {
+  .fiche {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fiche-visual {
+    max-width: 400px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fiche-foil {
+    display: none;
+  }
+}
+</style>
