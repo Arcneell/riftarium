@@ -17,6 +17,8 @@ const { restoreScroll } = useScrollMemory()
 
 const pageSize = ref(30)
 let firstLoad = true
+/* Taille de page de la dernière requête : évite un rechargement identique à l'entrée. */
+let loadedSize = 0
 
 const filters = useQuerySyncedFilters(
   {
@@ -33,7 +35,10 @@ const filters = useQuerySyncedFilters(
     vue: { kind: "enum", values: ["classeur", "inventaire"], default: "classeur", reset: false }
   },
   {
-    fetcher: (query) => api(`/api/collection?${cardsQuery(query, pageSize.value)}`),
+    fetcher: (query) => {
+      loadedSize = pageSize.value
+      return api(`/api/collection?${cardsQuery(query, pageSize.value)}`)
+    },
     initialResult: { total: 0, total_cards: 0, unique_cards: 0, value_eur: null, items: [] },
     pageSize,
     /* La grille filtrée n'existe qu'en mode inventaire : en classeur, un rechargement
@@ -48,7 +53,17 @@ const filters = useQuerySyncedFilters(
     }
   }
 )
-const { state, result, load } = filters
+const { state, result, load, scheduleLoad, pageCount } = filters
+
+/* La taille de page suit la grille : on recharge seulement si elle diffère de celle
+   de la dernière requête, ou on revient à la page 1 si la page courante n'existe plus. */
+function onPageSize(next) {
+  pageSize.value = next
+  /* loadedSize = 0 : le premier chargement de la page n'a pas encore eu lieu, il lira cette taille. */
+  if (state.vue !== "inventaire" || !loadedSize || next === loadedSize) return
+  if (state.page > pageCount.value) state.page = 1
+  else scheduleLoad()
+}
 
 const sets = ref([])
 const progress = ref(null) // { sets: [...], overall: {...} } — null tant que rien n'est chargé
@@ -117,8 +132,14 @@ onMounted(async () => {
         />
       </div>
 
-      <CollectionBinder v-if="state.vue === 'classeur'" :progress="progress" :active="true" />
-      <CollectionInventory v-else :filters="filters" :sets="setOptions" @page-size="pageSize = $event" />
+      <!-- Le classeur reste monté (v-show) pour garder son set et sa page entre les affichages. -->
+      <CollectionBinder v-show="state.vue === 'classeur'" :progress="progress" :active="state.vue === 'classeur'" />
+      <CollectionInventory
+        v-if="state.vue === 'inventaire'"
+        :filters="filters"
+        :sets="setOptions"
+        @page-size="onPageSize"
+      />
     </div>
   </section>
 </template>

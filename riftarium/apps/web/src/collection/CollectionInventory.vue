@@ -24,7 +24,7 @@ const props = defineProps({
 const emit = defineEmits(["page-size"])
 
 /* L'erreur de page est partagée avec la page (ref de useQuerySyncedFilters). */
-const { state, setFilter, reset, load, scheduleLoad, error: errorRef } = props.filters
+const { state, setFilter, reset, load, error: errorRef } = props.filters
 const result = computed(() => unref(props.filters.result))
 const loading = computed(() => unref(props.filters.loading))
 const error = computed(() => unref(errorRef))
@@ -41,12 +41,8 @@ const { tileMin, size } = useGridMeasure(grid)
 /* La page lit ce nombre dans son fetcher : on le lui donne dès la première mesure,
    puis à chaque changement. */
 onMounted(() => emit("page-size", size.value))
-watch(size, (next) => {
-  emit("page-size", next)
-  /* La taille de page suit la grille : on recharge, sauf si la page courante n'existe plus. */
-  if (state.page > pageCount.value) state.page = 1
-  else scheduleLoad()
-})
+/* La page décide s'il faut recharger (taille différente de la dernière requête). */
+watch(size, (next) => emit("page-size", next))
 
 /* ---------- Tri et filtres ---------- */
 
