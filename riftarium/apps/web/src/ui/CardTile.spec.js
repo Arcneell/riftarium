@@ -18,7 +18,7 @@ describe("CardTile", () => {
     expect(wrapper.getComponent(RouterLinkStub).props("to")).toBe("/cartes/ogn-001")
     expect(wrapper.get(".tile-name").text()).toBe("Ahri")
     expect(wrapper.get(".tile-meta").text()).toContain("OGN-001-298")
-    expect(wrapper.get(".card-tile").attributes("style")).toContain("--tile-accent: var(--mind)")
+    expect(wrapper.get(".rift-tile").attributes("style")).toContain("--tile-accent: var(--mind)")
     expect(wrapper.get("img").attributes("loading")).toBe("lazy")
   })
 
@@ -41,7 +41,7 @@ describe("CardTile", () => {
   it("une carte paysage garde ses proportions", () => {
     expect(
       mountTile({ ...base, orientation: "landscape" })
-        .get(".card-tile")
+        .get(".rift-tile")
         .classes()
     ).toContain("landscape")
   })

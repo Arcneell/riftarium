@@ -24,7 +24,7 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
   <CardHoverPreview :card="card" :disabled="!preview">
     <RouterLink
       :to="`/cartes/${card.id}`"
-      class="card-tile"
+      class="rift-tile"
       :class="{ landscape: card.orientation === 'landscape' }"
       :style="style"
     >
@@ -49,7 +49,7 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
 </template>
 
 <style scoped>
-.card-tile {
+.rift-tile {
   display: grid;
   gap: var(--space-1);
   padding: var(--space-2);
@@ -59,8 +59,8 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
   color: var(--ink);
   transition: box-shadow var(--t-fast);
 }
-.card-tile:hover,
-.card-tile:focus-visible {
+.rift-tile:hover,
+.rift-tile:focus-visible {
   color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--bronze);
 }
@@ -75,7 +75,7 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
   aspect-ratio: 0.716;
   object-fit: cover;
 }
-.card-tile.landscape .tile-art img {
+.rift-tile.landscape .tile-art img {
   aspect-ratio: 1.396;
 }
 .tile-foil {
@@ -90,7 +90,8 @@ const style = computed(() => ({ "--tile-accent": DOMAINS[props.card.domains?.[0]
     opacity var(--t-base),
     background-position 900ms ease;
 }
-.card-tile:hover .tile-foil {
+.rift-tile:hover .tile-foil,
+.rift-tile:focus-visible .tile-foil {
   opacity: 1;
   background-position: -60% 0;
 }

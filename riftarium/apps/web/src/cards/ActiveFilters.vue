@@ -43,7 +43,7 @@ function remove(chip) {
 </script>
 
 <template>
-  <div v-if="chips.length" class="active-filters" aria-label="Filtres actifs">
+  <div v-if="chips.length" class="active-filters" role="group" aria-label="Filtres actifs">
     <RiftChip
       v-for="chip in chips"
       :key="`${chip.key}:${chip.value}`"
