@@ -314,6 +314,13 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
 - Pousser la branche ; le mainteneur merge et déploie (généralement le soir).
   Conditions : CI verte (`mobile-check` pour le mobile ; `api-test`, `web-check`,
   `compose-security` pour le reste) et vérifications locales de §5 passées.
+- **Exception : refonte « Forge noxienne » du site (octobre 2026).** Pour ne rien
+  mettre en production avant la fin, ses PR (`feat/refonte-<bloc>`) partent de la
+  branche d'intégration `refonte/forge` et y sont mergées, jamais dans `main`.
+  `refonte/forge` reçoit `main` régulièrement (Dependabot, correctifs) ; un seul
+  merge `refonte/forge` → `main` met la refonte en production, après validation
+  complète. La CI tourne sur ces PR (`ci.yml` sur `pull_request`, sans filtre de
+  branche) ; `deploy.yml` ne réagit qu'aux push sur `main`.
 - Les bumps Dependabot `pub` ne sont pas auto-mergés : valider avec un build sur appareil.
 
 ## 10. Quelle tâche, quelles étapes (pour les agents)

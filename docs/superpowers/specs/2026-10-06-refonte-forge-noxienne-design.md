@@ -35,7 +35,7 @@ plaisant et intuitif, bâti sur un design system unique.
 | Scanner web | Retiré (avance la phase 9 de WORKFLOW.md pour le seul scanner) |
 | PWA | Service worker et manifest conservés, rhabillés ; retrait à la publication de l'app |
 | Mobile Flutter | Inchangé ; s'alignera plus tard sur cette charte, chantier séparé |
-| Méthode | Refonte progressive sur `main`, une PR par bloc de pages |
+| Méthode | Refonte progressive, une PR par bloc de pages, mergée dans la branche d'intégration `refonte/forge` ; un seul merge vers `main` (donc en production) quand tout est validé |
 
 Directions écartées (pour mémoire) : Parchemin d'Ionia (clair, éditorial),
 Faille arcanique (indigo / cyan), Givre du Freljord (clair, outil) ; accueils
@@ -325,7 +325,7 @@ inchangés.
 
 ### Boucle de chaque PR
 
-1. Une branche `feat/refonte-<bloc>` depuis `origin/main`, sans empilement.
+1. Une branche `feat/refonte-<bloc>` depuis `origin/refonte/forge` ; la PR vise `refonte/forge`, jamais `main`.
 2. Le développement sur la stack dev Docker (HMR sur `http://localhost:8888`).
 3. `npm run check` vert (lint, format, vitest, build). Pour une PR qui touche
    l'API : ruff et pytest dans le venv.
