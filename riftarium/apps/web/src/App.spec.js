@@ -33,7 +33,7 @@ describe("App (coquille)", () => {
     window.matchMedia = original
     localStorage.clear()
     document.body.innerHTML = ""
-    document.body.classList.remove("nav-locked")
+    document.body.classList.remove("nav-locked", "has-tabbar")
   })
 
   it("bureau : rail, pas d'onglets du bas", async () => {
@@ -59,6 +59,16 @@ describe("App (coquille)", () => {
     const expanded = await mountApp("/communaute", 1440)
     expect(expanded.find(".rift-tabs").exists()).toBe(false)
     expanded.unmount()
+  })
+
+  it("téléphone : body.has-tabbar décale les éléments flottants, retiré hors du palier mobile et au démontage", async () => {
+    const wrapper = await mountApp("/", 390)
+    expect(document.body.classList.contains("has-tabbar")).toBe(true)
+    wrapper.unmount()
+    expect(document.body.classList.contains("has-tabbar")).toBe(false)
+    const desktop = await mountApp("/", 1440)
+    expect(document.body.classList.contains("has-tabbar")).toBe(false)
+    desktop.unmount()
   })
 
   it("tablette : rail replié par défaut ; le choix est mémorisé", async () => {

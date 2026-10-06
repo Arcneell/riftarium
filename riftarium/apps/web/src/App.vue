@@ -44,6 +44,10 @@ function toggleRail() {
   }
 }
 
+/* La barre d'onglets du bas est fixe : les éléments flottants ancrés en bas (certains sont
+   téléportés hors de .shell) lisent --shell-bottom, posé sur le body par cette classe. */
+watch(mobile, (value) => document.body.classList.toggle("has-tabbar", value), { immediate: true })
+
 const searchOpen = ref(false)
 const accountOpen = ref(false)
 
@@ -111,6 +115,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  document.body.classList.remove("has-tabbar")
   window.removeEventListener("riftarium:session-expired", onSessionExpired)
   window.removeEventListener("riftarium:offline-page", onOfflinePage)
   window.removeEventListener("keydown", onKeydown)

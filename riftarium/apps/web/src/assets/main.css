@@ -2130,7 +2130,7 @@ td.num {
   z-index: 80;
   left: 16px;
   right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
   max-width: 640px;
   margin: 0 auto;
   display: flex;
@@ -6019,7 +6019,7 @@ button.deck-box-stat:hover,
   .fsel-pop {
     position: fixed;
     top: auto;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     left: calc(16px + env(safe-area-inset-left, 0px));
     right: calc(16px + env(safe-area-inset-right, 0px));
     min-width: 0;
@@ -6832,11 +6832,11 @@ button.deck-box-stat:hover,
     text-align: center;
   }
   .deck-limit:not(.soft) {
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(14px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
   }
   /* Empilé au-dessus : une même action déclenche souvent les deux messages. */
   .dbuilder-save:not(.idle) {
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(72px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     min-width: 0;
   }
   /* Entre deux sauvegardes la mention est vide : pas de pastille qui flotte. */
@@ -6889,26 +6889,6 @@ button.deck-box-stat:hover,
     animation: none;
   }
 
-  /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
-     bouton qu'au-delà de 600 px défilés). */
-  .rules-back-top {
-    display: grid;
-    place-items: center;
-    position: fixed;
-    z-index: 70;
-    right: calc(14px + env(safe-area-inset-right, 0px));
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    min-width: 44px;
-    height: 44px;
-    padding: 0 12px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--line-strong);
-    background: var(--paper);
-    color: var(--ink-strong);
-    font-size: 0.74rem;
-    box-shadow: 0 8px 20px rgba(10, 20, 40, 0.22);
-  }
-
   /* Tableau de bord : « Voir les données » faisait 11 px de haut. */
   .chart-toggle {
     display: inline-flex;
@@ -6919,6 +6899,29 @@ button.deck-box-stat:hover,
   }
 }
 
+/* ---------- Téléphone, palier de la coquille (≤767) : au-dessus des onglets du bas ---------- */
+@media (max-width: 767px) {
+  /* Règles : retour au sommaire après une longue lecture (la vue ne rend le
+     bouton qu'au-delà de 600 px défilés). */
+  .rules-back-top {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    z-index: 70;
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(14px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--ink-strong);
+    font-size: 0.74rem;
+    box-shadow: 0 8px 20px rgba(10, 20, 40, 0.22);
+  }
+}
+
 /* ---------- Téléphone (≤560) ---------- */
 @media (max-width: 560px) {
   /* Bandeau traceurs : une phrase et deux boutons sur une rangée (~90 px de
@@ -6926,7 +6929,7 @@ button.deck-box-stat:hover,
   .traceurs-notice {
     left: 8px;
     right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
     gap: 8px;
     padding: 10px 12px;
     border-radius: var(--r-sm);

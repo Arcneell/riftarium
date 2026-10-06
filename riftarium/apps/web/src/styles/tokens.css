@@ -76,8 +76,14 @@
   --rail-w-collapsed: 64px;
   --topbar-h: 52px;
   --tabbar-h: 60px;
+  /* Décalage des éléments flottants ancrés en bas : posé par body.has-tabbar (App.vue) quand la barre d'onglets est là. */
+  --shell-bottom: 0px;
   --z-topbar: 30;
   --z-rail: 40;
   --z-tabbar: 50;
   --z-overlay: 100;
+}
+
+body.has-tabbar {
+  --shell-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
 }
