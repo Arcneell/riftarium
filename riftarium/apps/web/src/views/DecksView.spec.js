@@ -194,6 +194,13 @@ describe("DecksView", () => {
     form.dispatchEvent(new Event("submit"))
     form.dispatchEvent(new Event("submit"))
     await flushPromises()
+
+    /* Création en cours : Échap ne ferme pas la modale, le submit est désactivé. */
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).not.toBeNull()
+    expect(modal.querySelector("button[type=submit]").disabled).toBe(true)
+    expect(api.mock.calls.filter(([, o]) => o?.method === "POST")).toHaveLength(1)
     release()
     await flushPromises()
 
@@ -246,6 +253,76 @@ describe("DecksView", () => {
     const call = api.mock.calls.find(([path, options]) => path === "/api/decks" && options?.method === "POST")
     expect(call[1].body.format).toBe("free")
     wrapper.unmount()
+  })
+
+  it("exemple depuis l'état vide en échec : message visible, boutons réactivés", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks/example" && options.method === "POST")
+        return Promise.reject(new Error("Génération impossible"))
+      return Promise.resolve(null)
+    })
+    const { wrapper, router } = await mountView()
+    const buttons = wrapper.get(".rift-empty").findAll("button")
+    await buttons[1].trigger("click")
+    await flushPromises()
+
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+    const alert = wrapper.get(".mesdecks-error")
+    expect(alert.attributes("role")).toBe("alert")
+    expect(alert.text()).toContain("Génération impossible")
+    expect(
+      wrapper
+        .get(".rift-empty")
+        .findAll("button")
+        .every((b) => !b.element.disabled)
+    ).toBe(true)
+    expect(router.currentRoute.value.path).toBe("/decks")
+    wrapper.unmount()
+  })
+
+  it("une seule requête à la fois : les exemples sont désactivés pendant la création, et Créer pendant la génération", async () => {
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") {
+        return new Promise((resolve) => {
+          release = () => resolve({ id: 7 })
+        })
+      }
+      if (path === "/api/decks/example") return new Promise(() => {})
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    await flushPromises()
+
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    const examples = [...modal.querySelectorAll(".mesdecks-examples button")]
+    expect(examples.every((b) => b.disabled)).toBe(true)
+    examples[0].click()
+    await flushPromises()
+    expect(api.mock.calls.some(([path]) => path === "/api/decks/example")).toBe(false)
+    release()
+    await flushPromises()
+    wrapper.unmount()
+
+    const second = await mountView()
+    await second.wrapper.get(".mesdecks-new").trigger("click")
+    const modal2 = document.body.querySelector(".rift-modal")
+    const input2 = modal2.querySelector("input[type=text]")
+    input2.value = "Autre"
+    input2.dispatchEvent(new Event("input"))
+    await flushPromises()
+    modal2.querySelector(".mesdecks-examples button").click()
+    await flushPromises()
+    expect(modal2.querySelector("button[type=submit]").disabled).toBe(true)
+    second.wrapper.unmount()
   })
 
   it("supprime un deck après confirmation dans la modale du site", async () => {

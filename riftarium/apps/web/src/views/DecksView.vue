@@ -61,7 +61,7 @@ async function openCreate() {
 }
 
 async function createDeck() {
-  if (!draft.value.name.trim() || creating.value) return
+  if (!draft.value.name.trim() || creating.value || generating.value) return
   creating.value = true
   createError.value = ""
   try {
@@ -78,7 +78,7 @@ async function createDeck() {
 }
 
 async function createExample(mode) {
-  if (generating.value) return
+  if (generating.value || creating.value) return
   generating.value = true
   createError.value = ""
   try {
@@ -163,13 +163,15 @@ onMounted(load)
         text="Partez de zéro ou d'un deck d'exemple, construit avec votre collection ou à compléter."
       >
         <RiftButton variant="primary" @click="openCreate">Nouveau deck</RiftButton>
-        <RiftButton variant="secondary" :disabled="generating" @click="createExample('owned')">
+        <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('owned')">
           Exemple avec ma collection
         </RiftButton>
-        <RiftButton variant="secondary" :disabled="generating" @click="createExample('discover')">
+        <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('discover')">
           Exemple à compléter
         </RiftButton>
       </RiftEmpty>
+      <!-- La modale est fermée dans l'état vide : l'échec d'un exemple se lit ici. -->
+      <p v-if="createError && !showCreate" class="mesdecks-error" role="alert">{{ createError }}</p>
     </template>
   </div>
 
@@ -206,17 +208,17 @@ onMounted(load)
       <p v-if="createError" class="mesdecks-error" role="alert">{{ createError }}</p>
       <div class="mesdecks-actions">
         <RiftButton variant="ghost" :disabled="creating || generating" @click="closeCreate">Annuler</RiftButton>
-        <RiftButton type="submit" variant="primary" :disabled="!draft.name.trim() || creating">
+        <RiftButton type="submit" variant="primary" :disabled="!draft.name.trim() || creating || generating">
           {{ creating ? "Création…" : "Créer et ouvrir l'éditeur" }}
         </RiftButton>
       </div>
     </form>
     <div class="mesdecks-sep">ou partez d'un deck d'exemple</div>
     <div class="mesdecks-examples">
-      <RiftButton variant="secondary" :disabled="generating" @click="createExample('owned')">
+      <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('owned')">
         Avec ma collection
       </RiftButton>
-      <RiftButton variant="secondary" :disabled="generating" @click="createExample('discover')">
+      <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('discover')">
         À compléter (liste d'achats)
       </RiftButton>
     </div>
