@@ -1,6 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import CommunityView from "./CommunityView.vue"
 import { api, session } from "../api.js"
 
@@ -27,6 +27,16 @@ const deck = {
   }
 }
 
+const originalMatchMedia = window.matchMedia
+/* Simule la largeur d'écran : useBreakpoint lit les requêtes max-width. */
+function stubWidth(px) {
+  window.matchMedia = (query) => ({
+    matches: px <= Number(query.match(/max-width:\s*(\d+)px/)?.[1] ?? 0),
+    addEventListener() {},
+    removeEventListener() {}
+  })
+}
+
 async function mountView(path = "/communaute") {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -40,12 +50,16 @@ async function mountView(path = "/communaute") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(CommunityView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()
   return { wrapper, router }
 }
+
+const facet = (wrapper, legend) => wrapper.findAll("fieldset").find((node) => node.get("legend").text() === legend)
+const buildableChip = (wrapper) =>
+  wrapper.findAll("button.rift-chip").find((b) => b.text() === "Constructibles avec ma collection")
 
 describe("CommunityView", () => {
   beforeEach(() => {
@@ -63,13 +77,19 @@ describe("CommunityView", () => {
     })
   })
 
-  it("affiche les decks en boîtes comme la page Mes decks", async () => {
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia
+    document.body.innerHTML = ""
+  })
+
+  it("affiche les decks en fiches comme la page Mes decks", async () => {
     const { wrapper } = await mountView()
-    expect(wrapper.findAll(".deck-box")).toHaveLength(1)
-    expect(wrapper.get(".deck-box-title").text()).toContain("Fureur d'Ahri")
-    expect(wrapper.get(".deck-box-cover").attributes("href")).toBe("/decks/3")
-    expect(wrapper.get(".deck-box-meta").text()).toContain("testeur")
-    expect(wrapper.get(".deck-box-foot").text()).toContain("12") // compteur de vues
+    expect(wrapper.findAll(".deck-card")).toHaveLength(1)
+    expect(wrapper.get(".deck-card-title").text()).toContain("Fureur d'Ahri")
+    expect(wrapper.get("a.deck-card-link").attributes("href")).toBe("/decks/3")
+    expect(wrapper.get(".deck-card-meta").text()).toContain("testeur")
+    expect(wrapper.get(".deck-card-foot").text()).toContain("12") // compteur de vues
+    expect(wrapper.get(".communaute-count").text()).toBe("1 deck(s)")
     wrapper.unmount()
   })
 
@@ -96,21 +116,46 @@ describe("CommunityView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    await wrapper.get("button.deck-box-stat").trigger("click")
+    await wrapper.get("button.deck-card-like").trigger("click")
     await flushPromises()
-    expect(wrapper.get("button.deck-box-stat.liked").text()).toContain("5")
+    expect(wrapper.get("button.deck-card-like.deck-card-like--on").text()).toContain("5")
+    wrapper.unmount()
+  })
+
+  it("double clic sur j'aime : un seul POST", async () => {
+    session.token = "jeton"
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path.startsWith("/api/community/decks")) {
+        return Promise.resolve({ total: 1, page: 1, size: 20, items: [{ ...deck }] })
+      }
+      if (path === "/api/community/legends") return Promise.resolve([])
+      if (path === "/api/decks/3/like" && options.method === "POST") {
+        return new Promise((resolve) => {
+          release = () => resolve({ likes: 5, liked_by_me: true })
+        })
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    const like = wrapper.get("button.deck-card-like")
+    await like.trigger("click")
+    await like.trigger("click")
+    release()
+    await flushPromises()
+    expect(api.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
     wrapper.unmount()
   })
 
   it("le filtre « constructibles » n'apparaît qu'aux connectés et pilote le paramètre buildable", async () => {
     let { wrapper } = await mountView()
-    expect(wrapper.find(".buildable-filter").exists()).toBe(false)
+    expect(buildableChip(wrapper)).toBeUndefined()
     wrapper.unmount()
 
     session.token = "jeton"
     session.handle = "visiteur"
     ;({ wrapper } = await mountView())
-    const toggle = wrapper.get(".buildable-filter")
+    const toggle = buildableChip(wrapper)
     expect(toggle.text()).toContain("Constructibles avec ma collection")
     expect(toggle.attributes("aria-pressed")).toBe("false")
 
@@ -119,20 +164,20 @@ describe("CommunityView", () => {
     await vi.waitFor(() => {
       expect(api.mock.calls.some(([path]) => String(path).includes("buildable=1"))).toBe(true)
     })
-    expect(toggle.attributes("aria-pressed")).toBe("true")
+    expect(buildableChip(wrapper).attributes("aria-pressed")).toBe("true")
     wrapper.unmount()
   })
 
   it("le filtre buildable est repris depuis l'URL", async () => {
     session.token = "jeton"
     const { wrapper, router } = await mountView("/communaute?buildable=1")
-    expect(wrapper.get(".buildable-filter").attributes("aria-pressed")).toBe("true")
+    expect(buildableChip(wrapper).attributes("aria-pressed")).toBe("true")
     expect(api.mock.calls.some(([path]) => String(path).includes("buildable=1"))).toBe(true)
     expect(router.currentRoute.value.query.buildable).toBe("1")
     wrapper.unmount()
   })
 
-  it("connecté : chaque boîte indique Complet ou le nombre de manquantes et leur coût", async () => {
+  it("connecté : chaque fiche indique Complet ou le nombre de manquantes et leur coût", async () => {
     session.token = "jeton"
     api.mockImplementation((path) => {
       if (path.startsWith("/api/community/decks")) {
@@ -150,27 +195,52 @@ describe("CommunityView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    const boxes = wrapper.findAll(".deck-box")
-    expect(boxes[0].get(".deck-buildable").text()).toContain("Complet")
-    expect(boxes[0].find(".deck-missing").exists()).toBe(false)
-    expect(boxes[1].get(".deck-missing").text()).toContain("3 manquante(s) (~4,50")
+    const cards = wrapper.findAll(".deck-card")
+    expect(cards[0].get(".deck-card-complete").text()).toContain("Complet")
+    expect(cards[0].find(".deck-card-missing").exists()).toBe(false)
+    expect(cards[1].get(".deck-card-missing").text()).toContain("3 manquante(s) (~4,50")
     wrapper.unmount()
   })
 
-  it("visiteur non connecté : aucune mention de manquantes sur les boîtes", async () => {
+  it("visiteur non connecté : aucune mention de manquantes sur les fiches", async () => {
     const { wrapper } = await mountView()
-    expect(wrapper.find(".deck-buildable").exists()).toBe(false)
-    expect(wrapper.find(".deck-missing").exists()).toBe(false)
+    expect(wrapper.find(".deck-card-complete").exists()).toBe(false)
+    expect(wrapper.find(".deck-card-missing").exists()).toBe(false)
     wrapper.unmount()
   })
 
   it("synchronise le tri dans l'URL", async () => {
     const { wrapper, router } = await mountView()
-    const views = wrapper.findAll(".owned-seg button")[1]
+    const views = wrapper.findAll('[role="radiogroup"] [role="radio"]')[1]
     await views.trigger("click")
     await flushPromises()
     expect(router.currentRoute.value.query.sort).toBe("views")
     await vi.waitFor(() => expect(api.mock.calls.some(([path]) => path.includes("sort=views"))).toBe(true))
+    wrapper.unmount()
+  })
+
+  it("visiteur : la puce Aimés mène à la connexion", async () => {
+    const { wrapper, router } = await mountView()
+    await facet(wrapper, "Mes decks aimés").get("button.rift-chip").trigger("click")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/connexion")
+    wrapper.unmount()
+  })
+
+  it("sur téléphone, les filtres s'ouvrent dans une feuille", async () => {
+    stubWidth(390)
+    const { wrapper } = await mountView("/communaute?format=free")
+    expect(wrapper.find(".communaute-filters").exists()).toBe(false)
+    const open = wrapper.findAll("button").find((button) => button.text().startsWith("Filtres"))
+    expect(open.text().replace(/\s+/g, " ")).toBe("Filtres (1)")
+    await open.trigger("click")
+    const sheet = document.body.querySelector(".rift-sheet")
+    expect(sheet).not.toBeNull()
+    expect(sheet.textContent).toContain("Légendes")
+    const done = [...sheet.querySelectorAll("button")].find((b) => b.textContent.trim() === "Voir le deck")
+    done.click()
+    await flushPromises()
+    expect(document.body.querySelector(".rift-sheet")).toBeNull()
     wrapper.unmount()
   })
 })
