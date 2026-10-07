@@ -1,30 +1,29 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { cardThumb } from "../api.js"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
-import RiftText from "../ui/RiftText.vue"
-import LearnRuneDemo from "../components/LearnRuneDemo.vue"
+import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { applySeo } from "../seo.js"
-import {
-  ABCD_PHASES,
-  CHAPTERS,
-  chapterBySlug,
-  chapterIndex,
-  chapterPath,
-  DEFAULT_CHAPTER,
-  LEARN_INTRO
-} from "../rules/learn.js"
+import CardZoom from "../rules/CardZoom.vue"
+import LessonBlock from "../rules/LessonBlock.vue"
+import RulesHeader from "../rules/RulesHeader.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import { CHAPTERS, chapterBySlug, chapterIndex, chapterPath, DEFAULT_CHAPTER } from "../rules/learn.js"
 
 const route = useRoute()
 const router = useRouter()
+const breakpoint = useBreakpoint()
 
 const slug = computed(() => route.params.slug || DEFAULT_CHAPTER)
 const chapter = computed(() => chapterBySlug(slug.value))
 const index = computed(() => chapterIndex(slug.value))
 const previous = computed(() => CHAPTERS[index.value - 1] ?? null)
 const next = computed(() => CHAPTERS[index.value + 1] ?? null)
+const crumbs = computed(() => [
+  { label: "Règles", to: "/regles" },
+  { label: "Apprendre à jouer", to: "/regles/debutant" },
+  { label: `Chapitre ${index.value + 1} / ${CHAPTERS.length}` }
+])
 
 function syncSeo() {
   if (!chapter.value) {
@@ -43,12 +42,6 @@ function syncSeo() {
   })
 }
 
-function firstTypeKey(doc) {
-  return doc?.blocks.find((block) => block.type === "types")?.items[0]?.key ?? null
-}
-
-const selectedType = ref(firstTypeKey(chapter.value))
-
 onMounted(() => {
   /* Ancien guide animé : ?etape= reste la mémoire des 17 scènes. */
   if (route.query.etape) {
@@ -65,229 +58,222 @@ onMounted(() => {
 watch(
   () => route.params.slug,
   () => {
-    selectedType.value = firstTypeKey(chapter.value)
+    zoomCard.value = null
     syncSeo()
   }
 )
 
 const zoomCard = ref(null)
-const zoomEl = ref(null)
-const zoomUrl = (card) => cardThumb(card.img, 1024)
-
-function onZoomKey(event) {
-  if (event.key === "Escape") zoomCard.value = null
-}
-
-function openZoom(card) {
-  zoomCard.value = card
-}
-
-watch(zoomCard, async (card) => {
-  if (typeof document === "undefined") return
-  if (card) {
-    document.body.classList.add("nav-locked")
-    document.addEventListener("keydown", onZoomKey)
-    await nextTick()
-    zoomEl.value?.focus()
-  } else {
-    document.body.classList.remove("nav-locked")
-    document.removeEventListener("keydown", onZoomKey)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (typeof document === "undefined") return
-  document.removeEventListener("keydown", onZoomKey)
-  document.body.classList.remove("nav-locked")
-})
 </script>
 
 <template>
-  <template v-if="chapter">
-    <PageBanner :art="BANNERS.rules" :title="chapter.title" show-title>
-      <template #eyebrow>
-        <RouterLink to="/regles">Règles</RouterLink> ›
-        <RouterLink to="/regles/debutant">Apprendre à jouer</RouterLink> › Chapitre {{ index + 1 }} /
-        {{ CHAPTERS.length }}
-      </template>
-      <template #meta>
-        <p class="learn-kicker">{{ chapter.kicker }}</p>
-      </template>
-    </PageBanner>
+  <div class="wrap cards-wrap regles-guide">
+    <template v-if="chapter">
+      <RulesHeader :title="chapter.title" :kicker="chapter.kicker" :crumbs="crumbs" />
 
-    <section>
-      <div class="wrap learn-layout">
-        <aside class="learn-toc">
-          <p class="eyebrow">Apprendre à jouer</p>
-          <p class="learn-toc-count mono">{{ CHAPTERS.length }} chapitres</p>
+      <div class="chapitre-layout">
+        <component :is="breakpoint === 'desktop' ? 'aside' : 'details'" class="chapitre-toc">
+          <summary v-if="breakpoint !== 'desktop'" class="chapitre-toc-summary">
+            Chapitres ({{ CHAPTERS.length }})
+          </summary>
+          <p v-else class="chapitre-toc-count">{{ CHAPTERS.length }} chapitres</p>
           <nav aria-label="Chapitres du guide">
             <RouterLink
               v-for="(item, i) in CHAPTERS"
               :key="item.slug"
-              class="learn-toc-link"
-              :class="{ current: item.slug === chapter.slug }"
+              class="chapitre-toc-link"
               :to="chapterPath(item.slug)"
+              :aria-current="item.slug === chapter.slug ? 'page' : undefined"
             >
-              <span class="mono">{{ i + 1 }}</span>
-              <span>
+              <span class="chapitre-toc-num">{{ i + 1 }}</span>
+              <span class="chapitre-toc-text">
                 {{ item.title }}
                 <small>{{ item.kicker }}</small>
               </span>
             </RouterLink>
           </nav>
-          <RouterLink class="learn-toc-board" to="/regles/debutant/plateau">Voir sur le plateau →</RouterLink>
-        </aside>
+          <RouterLink class="chapitre-toc-board" to="/regles/debutant/plateau">Voir sur le plateau →</RouterLink>
+        </component>
 
-        <article class="learn-main">
-          <p class="learn-lead">{{ chapter.lead }}</p>
+        <article class="chapitre-main">
+          <p class="chapitre-lead">{{ chapter.lead }}</p>
 
-          <template v-for="(block, i) in chapter.blocks" :key="i">
-            <h3 v-if="block.type === 'h'" class="learn-h">{{ block.text }}</h3>
+          <LessonBlock
+            v-for="(block, i) in chapter.blocks"
+            :key="`${chapter.slug}-${i}`"
+            :block="block"
+            @zoom="zoomCard = $event"
+          />
 
-            <p v-else-if="block.type === 'p'" class="learn-p"><RiftText rules :text="block.text" /></p>
-
-            <div v-else-if="block.type === 'stat'" class="learn-stat">
-              <b>{{ block.value }}</b>
-              <div>
-                <p class="learn-stat-label">{{ block.label }}</p>
-                <p class="learn-p"><RiftText rules :text="block.text" /></p>
-              </div>
-            </div>
-
-            <ul v-else-if="block.type === 'ul'" class="learn-list">
-              <li v-for="(item, j) in block.items" :key="j"><RiftText rules :text="item" /></li>
-            </ul>
-
-            <ol v-else-if="block.type === 'ol'" class="learn-list numbered">
-              <li v-for="(item, j) in block.items" :key="j"><RiftText rules :text="item" /></li>
-            </ol>
-
-            <div v-else-if="block.type === 'table'" class="learn-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th v-for="header in block.headers" :key="header">{{ header }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(row, r) in block.rows" :key="r">
-                    <td v-for="(cell, c) in row" :key="c"><RiftText rules :text="cell" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <aside v-else-if="block.type === 'note'" class="learn-note" :class="block.kind">
-              <p class="learn-note-title">{{ block.title }}</p>
-              <p><RiftText rules :text="block.text" /></p>
-            </aside>
-
-            <ol v-else-if="block.type === 'steps'" class="learn-steps">
-              <li v-for="(step, s) in block.items" :key="s">
-                <strong>{{ step.title }}</strong>
-                <p><RiftText rules :text="step.text" /></p>
-              </li>
-            </ol>
-
-            <div v-else-if="block.type === 'compare'" class="learn-compare">
-              <div class="learn-compare-col">
-                <p class="eyebrow">{{ block.left.kicker }}</p>
-                <h4>{{ block.left.title }}</h4>
-                <p><RiftText rules :text="block.left.text" /></p>
-                <p class="mono learn-recover">{{ block.left.recover }}</p>
-              </div>
-              <div class="learn-compare-col">
-                <p class="eyebrow">{{ block.right.kicker }}</p>
-                <h4>{{ block.right.title }}</h4>
-                <p><RiftText rules :text="block.right.text" /></p>
-                <p class="mono learn-recover">{{ block.right.recover }}</p>
-              </div>
-            </div>
-
-            <div v-else-if="block.type === 'abcd'" class="learn-abcd">
-              <div v-for="phase in ABCD_PHASES" :key="phase.name" class="learn-abcd-step">
-                <b class="mono">{{ phase.letter }}</b>
-                <div>
-                  <strong>{{ phase.name }}</strong>
-                  <p>{{ phase.text }}</p>
-                </div>
-              </div>
-            </div>
-
-            <div v-else-if="block.type === 'types'" class="learn-types">
-              <div class="learn-types-grid">
-                <button
-                  v-for="item in block.items"
-                  :key="item.key"
-                  type="button"
-                  class="learn-type"
-                  :class="{ current: selectedType === item.key, wide: item.wide }"
-                  :aria-label="`${item.title}. Double-cliquer pour agrandir.`"
-                  @click="selectedType = item.key"
-                  @dblclick="openZoom(item.card)"
-                >
-                  <img :src="item.card.img" :alt="item.title" loading="lazy" decoding="async" />
-                  <span>{{ item.title }}</span>
-                </button>
-              </div>
-              <div
-                v-for="item in block.items"
-                :key="item.key + '-copy'"
-                class="learn-type-copy"
-                v-show="selectedType === item.key"
-              >
-                <p class="eyebrow">{{ item.title }}</p>
-                <p><RiftText rules :text="item.text" /></p>
-                <p class="muted learn-type-hint">Double-cliquez la carte pour l'agrandir.</p>
-              </div>
-            </div>
-
-            <div v-else-if="block.type === 'loop'" class="learn-loop">
-              <p class="eyebrow">Si vous ne retenez qu'une chose</p>
-              <p>{{ LEARN_INTRO }}</p>
-            </div>
-
-            <LearnRuneDemo v-else-if="block.type === 'runes'" />
-          </template>
-
-          <p class="muted" style="font-size: 0.76rem; margin-top: 28px">
+          <p class="chapitre-ref">
             <RouterLink :to="`/regles/officielles?doc=core&section=${chapter.ref}`"
               >Règle {{ chapter.ref }} ↗</RouterLink
             >
           </p>
 
-          <div class="learn-pager">
-            <RouterLink v-if="previous" class="btn btn-ghost" :to="chapterPath(previous.slug)">
+          <div class="chapitre-pager">
+            <RiftButton v-if="previous" variant="ghost" :to="chapterPath(previous.slug)">
               ← {{ previous.title }}
-            </RouterLink>
+            </RiftButton>
             <span v-else></span>
-            <RouterLink v-if="next" class="btn btn-gold" :to="chapterPath(next.slug)">{{ next.title }} →</RouterLink>
-            <RouterLink v-else class="btn btn-gold" to="/regles/debutant/plateau">Voir sur le plateau →</RouterLink>
+            <RiftButton v-if="next" variant="primary" :to="chapterPath(next.slug)">{{ next.title }} →</RiftButton>
+            <RiftButton v-else variant="primary" to="/regles/debutant/plateau">Voir sur le plateau →</RiftButton>
           </div>
         </article>
       </div>
-    </section>
-  </template>
 
-  <section v-else>
-    <div class="wrap">
-      <p class="muted">Chapitre introuvable. <RouterLink to="/regles/debutant">Retour au guide</RouterLink></p>
-    </div>
-  </section>
+      <CardZoom v-if="zoomCard" :card="zoomCard" @close="zoomCard = null" />
+    </template>
 
-  <Teleport to="body">
-    <div
-      v-if="zoomCard"
-      ref="zoomEl"
-      class="tb-zoom topic-zoom"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Carte en grand"
-      tabindex="-1"
-      @click="zoomCard = null"
-    >
-      <img :src="zoomUrl(zoomCard)" :alt="zoomCard.name" />
-      <p class="mono">{{ zoomCard.name }} — clic ou Échap pour fermer</p>
-    </div>
-  </Teleport>
+    <RiftEmpty v-else title="Chapitre introuvable" text="Ce chapitre du guide n'existe pas.">
+      <RiftButton variant="secondary" to="/regles/debutant">Retour au guide</RiftButton>
+    </RiftEmpty>
+  </div>
 </template>
+
+<style scoped>
+.regles-guide {
+  padding-bottom: var(--space-7);
+}
+.chapitre-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.chapitre-toc {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  max-height: calc(100dvh - var(--topbar-h) - 32px);
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.chapitre-toc-count {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.chapitre-toc nav {
+  display: flex;
+  flex-direction: column;
+}
+.chapitre-toc-link {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-2);
+  border-left: 2px solid transparent;
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast);
+}
+.chapitre-toc-link:hover {
+  background: var(--bg-sunken);
+}
+.chapitre-toc-link[aria-current="page"] {
+  background: var(--bg-sunken);
+  border-left-color: var(--blood);
+}
+.chapitre-toc-link:focus-visible,
+.chapitre-toc-board:focus-visible,
+.chapitre-toc-summary:focus-visible,
+.chapitre-ref a:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -3px;
+}
+.chapitre-toc-num {
+  flex: none;
+  width: 24px;
+  color: var(--bronze);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.chapitre-toc-link[aria-current="page"] .chapitre-toc-num {
+  color: var(--bronze-light);
+}
+.chapitre-toc-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.chapitre-toc-text small {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.chapitre-toc-board {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--space-3);
+  color: var(--bronze-light);
+  font-family: var(--font-label);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.chapitre-toc-summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bronze-light);
+  font-family: var(--font-label);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.chapitre-main {
+  min-width: 0;
+  max-width: 760px;
+}
+.chapitre-lead {
+  margin: 0 0 var(--space-5);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 19px;
+  line-height: 1.55;
+}
+.chapitre-ref {
+  margin: var(--space-6) 0 0;
+  font-size: 14px;
+}
+.chapitre-ref a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-muted);
+}
+.chapitre-pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+@media (max-width: 1023px) {
+  .chapitre-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .chapitre-toc {
+    position: static;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapitre-toc-link {
+    transition: none;
+  }
+}
+</style>

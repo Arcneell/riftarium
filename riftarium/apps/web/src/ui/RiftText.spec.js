@@ -28,6 +28,15 @@ describe("RiftText", () => {
     wrapper.unmount()
   })
 
+  it("refs : button.rift-ref avec data-ref", () => {
+    const wrapper = mount(RiftText, { props: { text: "Voir règle 123.4 et section 103.", refs: true } })
+    const buttons = wrapper.findAll("button.rift-ref")
+    expect(buttons.map((b) => b.attributes("data-ref"))).toEqual(["123.4", "103"])
+    expect(buttons[0].attributes("type")).toBe("button")
+    expect(buttons[0].text()).toBe("règle 123.4")
+    wrapper.unmount()
+  })
+
   it("rend la balise demandée avec la classe rift-text", () => {
     const wrapper = mount(RiftText, { props: { text: "Bonjour", tag: "p" } })
     expect(wrapper.element.tagName).toBe("P")

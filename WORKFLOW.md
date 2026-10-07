@@ -230,7 +230,7 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
 - **Guides de règles** : `assets/rules/guides-fr.json` est exporté depuis
   `apps/web/src/rules/{topics,guide}.js` (depuis `apps/web`) :
   `node --input-type=module -e "import {TOPICS,CATEGORIES} from './src/rules/topics.js'; import {STEPS,CARDS,SPOTS} from './src/rules/guide.js'; import {writeFileSync} from 'node:fs'; writeFileSync('../mobile/assets/rules/guides-fr.json', JSON.stringify({categories:CATEGORIES,topics:TOPICS,guide:{steps:STEPS,cards:CARDS,spots:SPOTS}}))"`.
-  À relancer quand les guides du site changent.
+  À relancer quand les guides du site changent. L'export de `guides-fr.json` est à relancer en même temps que le réalignement de `lib/app/design/glyphs.dart` (A → `rune_rainbow`, C → pastille), sinon `[A]` s'afficherait en brut dans l'app.
 - **Suivi des matchs** (`/api/play`, salons, matchs confirmés, historique,
   statistiques) : contrat dans `riftarium/docs/suivi-des-matchs.md`, source de
   vérité pour l'API, le mobile et le site. Toute évolution passe d'abord par ce

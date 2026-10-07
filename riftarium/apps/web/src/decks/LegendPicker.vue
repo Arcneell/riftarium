@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue"
 import { cardThumb } from "../api.js"
 import { toggleValue } from "../cardText.js"
+import { fold } from "../search/search.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftField from "../ui/RiftField.vue"
 
@@ -13,11 +14,6 @@ const props = defineProps({
   modelValue: { type: Array, default: () => [] }
 })
 const emit = defineEmits(["update:modelValue"])
-
-/* Filtre sans casse ni accents. */
-function fold(text) {
-  return String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-}
 
 const uid = useId()
 const listId = `${uid}-list`

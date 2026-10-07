@@ -25,17 +25,13 @@ const UNSTYLED_ALLOWLIST = new Set([
   "rail-label",
   "topbar-account",
   "rift-text",
-  "guide-fullscreen",
   "friends-panel",
   "profile-privacy",
-  "rules-main",
   "souhait-remove",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",
   "footer-contact",
   "admin-wrap",
-  "topic-main",
-  "learn-main",
   "profile-page",
   "play-room",
   // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
