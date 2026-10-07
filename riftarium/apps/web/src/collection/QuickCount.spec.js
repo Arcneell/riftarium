@@ -46,6 +46,37 @@ describe("QuickCount", () => {
     expect(wrapper.emitted("change")[0][0]).toEqual({ id: "c1", owned_qty: 1 })
   })
 
+  it("− : si le total réel diffère de l'affichage, on s'aligne, on émet change et on ne retire rien", async () => {
+    api.mockResolvedValue(state([{ id: 7, qty: 5, condition: "NM", lang: "FR" }]))
+    const wrapper = mount(QuickCount, { props: { card } })
+    await wrapper.get(".rift-stepper-minus").trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledTimes(1)
+    expect(wrapper.get(".rift-stepper-value").text()).toBe("5")
+    expect(wrapper.emitted("change")[0][0]).toEqual({ id: "c1", owned_qty: 5 })
+  })
+
+  it("− : un PATCH en 404 puis un nouveau « − » relit les lots avant de réduire", async () => {
+    let reads = 0
+    api.mockImplementation((path, opts) => {
+      if (!opts) {
+        reads++
+        return Promise.resolve(state([{ id: reads === 1 ? 7 : 9, qty: 2, condition: "NM", lang: "FR" }]))
+      }
+      if (path.endsWith("/7")) return Promise.reject(new Error("Lot introuvable"))
+      return Promise.resolve(state([{ id: 9, qty: 1, condition: "NM", lang: "FR" }]))
+    })
+    const wrapper = mount(QuickCount, { props: { card } })
+    await wrapper.get(".rift-stepper-minus").trigger("click")
+    await flushPromises()
+    expect(wrapper.get("[role=alert]").text()).toContain("Lot introuvable")
+    await wrapper.get(".rift-stepper-minus").trigger("click")
+    await flushPromises()
+    expect(reads).toBe(2)
+    expect(api).toHaveBeenLastCalledWith("/api/collection/entries/9", { method: "PATCH", body: { qty: 1 } })
+    expect(wrapper.emitted("change").at(-1)[0]).toEqual({ id: "c1", owned_qty: 1 })
+  })
+
   it("les clics n'atteignent jamais le lien parent", async () => {
     api.mockResolvedValue(state([{ id: 1, qty: 3, condition: "NM", lang: "FR" }]))
     const onClick = vi.fn()

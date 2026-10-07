@@ -428,6 +428,18 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   background: var(--bg);
   border-radius: var(--radius-s);
 }
+/* Une pochette est étroite (≈ 96 px à 375 px, ≈ 100 px à 721 px, deux pages côte à côte) : le
+   compteur rapide perd son retrait et se resserre (82 px au lieu de ~114). */
+.classeur-pocket .quick-count {
+  padding-inline: 0;
+}
+.classeur-pocket .quick-count :deep(.rift-stepper--sm) {
+  --stepper-size: 28px;
+  gap: var(--space-1);
+}
+.classeur-pocket .quick-count :deep(.rift-stepper--sm .rift-stepper-plus) {
+  width: var(--stepper-size);
+}
 .classeur-pocket img {
   display: block;
   width: 100%;

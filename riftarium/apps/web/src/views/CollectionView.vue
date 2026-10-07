@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import { api } from "../api.js"
 import { cardsQuery } from "../cardText.js"
 import CollectionBinder from "../collection/CollectionBinder.vue"
@@ -72,6 +72,21 @@ function onInventoryChanged() {
   binderVersion.value++
   loadProgress()
 }
+
+/* Saisie rapide dans le classeur : la progression ET les statistiques (cartes, uniques, valeur)
+   sont relues. `load` du composable ne regarde pas `enabled` (seul le chargement débouncé le fait),
+   il fonctionne donc en mode classeur. Débouncé : une rafale de « + » ne lance qu'une relecture,
+   et les jetons de séquence de chaque lecture écartent les réponses tardives. */
+const BINDER_REFRESH_DELAY = 300
+let refreshTimer = null
+function onBinderChanged() {
+  clearTimeout(refreshTimer)
+  refreshTimer = setTimeout(() => {
+    loadProgress()
+    load()
+  }, BINDER_REFRESH_DELAY)
+}
+onBeforeUnmount(() => clearTimeout(refreshTimer))
 
 const sets = ref([])
 /* Incrémentée après une opération de masse : le classeur recharge sa double page. */
@@ -162,7 +177,7 @@ onMounted(async () => {
       :active="state.vue === 'classeur'"
       :version="binderVersion"
       :progress-error="progressError"
-      @changed="loadProgress"
+      @changed="onBinderChanged"
     />
     <CollectionInventory
       v-if="state.vue === 'inventaire'"
