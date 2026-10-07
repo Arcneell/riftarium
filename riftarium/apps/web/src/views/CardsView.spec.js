@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import CardsView from "./CardsView.vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
 import { makeRouter } from "../test/makeRouter.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -263,6 +263,110 @@ describe("CardsView", () => {
     release({ total: 1, page: 1, size: 30, items: [fakeCard(1)] })
     await flushPromises()
     expect(wrapper.find(".cards-grid.reloading").exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe("CardsView : saisie rapide", () => {
+  const post = (path, opts) => opts?.method === "POST"
+  beforeEach(() => {
+    api.mockReset()
+    sessionStorage.clear()
+    localStorage.clear()
+    session.token = "1"
+    api.mockImplementation((path, opts) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      if (post(path, opts))
+        return Promise.resolve({
+          card_id: "card-1",
+          total_qty: 1,
+          entries: [{ id: 5, qty: 1, condition: opts.body.condition, lang: opts.body.lang }]
+        })
+      if (path === "/api/collection/card-2")
+        return Promise.resolve({
+          card_id: "card-2",
+          total_qty: 2,
+          entries: [{ id: 9, qty: 2, condition: "NM", lang: "FR" }]
+        })
+      if (path.startsWith("/api/collection/entries/"))
+        return Promise.resolve({
+          card_id: "card-2",
+          total_qty: 1,
+          entries: [{ id: 9, qty: 1, condition: "NM", lang: "FR" }]
+        })
+      return Promise.resolve({
+        total: 2,
+        page: 1,
+        size: 30,
+        items: [fakeCard(1), { ...fakeCard(2), owned_qty: 2 }]
+      })
+    })
+  })
+  afterEach(() => {
+    session.token = null
+    document.body.innerHTML = ""
+  })
+  const toggle = (wrapper) => wrapper.findAll("button.rift-chip").find((b) => b.text().includes("Saisie rapide"))
+
+  it("pas d'interrupteur pour un visiteur", async () => {
+    session.token = null
+    const { wrapper } = await mountView()
+    expect(toggle(wrapper)).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("l'activation fait apparaître les compteurs, mémorisés pour la session", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.findAll(".quick-count")).toHaveLength(0)
+    await toggle(wrapper).trigger("click")
+    expect(wrapper.findAll(".quick-count")).toHaveLength(2)
+    wrapper.unmount()
+    const { wrapper: again } = await mountView()
+    expect(again.findAll(".quick-count")).toHaveLength(2)
+    again.unmount()
+  })
+
+  it("+ envoie le POST avec les préférences et met la vignette à jour sans naviguer", async () => {
+    const { wrapper, router } = await mountView()
+    await toggle(wrapper).trigger("click")
+    await wrapper.findAll(".rift-stepper-plus")[0].trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/collection/card-1/entries", {
+      method: "POST",
+      body: { qty: 1, condition: "NM", lang: "FR" }
+    })
+    expect(wrapper.findAll(".rift-tile")[0].get(".rift-stepper-value").text()).toBe("1")
+    expect(router.currentRoute.value.path).toBe("/cartes")
+    wrapper.unmount()
+  })
+
+  it("− enchaîne GET puis PATCH", async () => {
+    const { wrapper } = await mountView()
+    await toggle(wrapper).trigger("click")
+    await wrapper.findAll(".rift-stepper-minus")[1].trigger("click")
+    await flushPromises()
+    const calls = api.mock.calls.map(([path, opts]) => `${opts?.method ?? "GET"} ${path}`)
+    expect(calls.slice(-2)).toEqual(["GET /api/collection/card-2", "PATCH /api/collection/entries/9"])
+    expect(wrapper.findAll(".rift-tile")[1].get(".rift-stepper-value").text()).toBe("1")
+    wrapper.unmount()
+  })
+
+  it("la préférence se change depuis la feuille et sert au + suivant", async () => {
+    const { wrapper } = await mountView()
+    await toggle(wrapper).trigger("click")
+    const pref = wrapper.get(".quick-pref")
+    expect(pref.text()).toContain("NM")
+    await pref.trigger("click")
+    const radios = [...document.body.querySelectorAll("[role=radio]")]
+    radios.find((r) => r.textContent.trim() === "EX").click()
+    radios.find((r) => r.textContent.trim() === "EN").click()
+    await flushPromises()
+    await wrapper.findAll(".rift-stepper-plus")[0].trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/collection/card-1/entries", {
+      method: "POST",
+      body: { qty: 1, condition: "EX", lang: "EN" }
+    })
     wrapper.unmount()
   })
 })

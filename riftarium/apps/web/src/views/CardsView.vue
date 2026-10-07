@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
 import ActiveFilters from "../cards/ActiveFilters.vue"
 import CardFilters from "../cards/CardFilters.vue"
 import { cardsQuery } from "../cardText.js"
@@ -8,8 +8,12 @@ import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { useScrollMemory } from "../composables/useScrollMemory.js"
+import QuickAddPref from "../collection/QuickAddPref.vue"
+import QuickCount from "../collection/QuickCount.vue"
+import { useQuickAdd } from "../collection/useQuickAdd.js"
 import CardTile from "../ui/CardTile.vue"
 import RiftButton from "../ui/RiftButton.vue"
+import RiftChip from "../ui/RiftChip.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
@@ -53,6 +57,13 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
     }
   )
 
+/* Saisie rapide (membres) : compteur sur chaque vignette, préférences partagées. */
+const { quickOn, toggleQuick, defaults: quickDefaults, setDefaults: setQuickDefaults } = useQuickAdd()
+function onQuickChange({ id, owned_qty }) {
+  const item = result.value.items.find((card) => card.id === id)
+  if (item) item.owned_qty = owned_qty
+}
+
 const sets = ref([])
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
 /* Libellé du bouton de la feuille, accordé au nombre de résultats. */
@@ -94,19 +105,22 @@ onMounted(async () => {
           </template>
         </p>
       </div>
-      <RiftButton
-        v-if="desktop"
-        variant="ghost"
-        size="sm"
-        :aria-expanded="panelOpen"
-        aria-controls="filters-panel"
-        @click="panelOpen = !panelOpen"
-      >
-        {{ panelOpen ? "Masquer les filtres" : "Filtres" }}
-      </RiftButton>
-      <RiftButton v-else variant="secondary" size="sm" @click="sheetOpen = true">
-        Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
-      </RiftButton>
+      <div class="cards-head-actions">
+        <RiftChip v-if="session.token" label="Saisie rapide" :selected="quickOn" @toggle="toggleQuick" />
+        <RiftButton
+          v-if="desktop"
+          variant="ghost"
+          size="sm"
+          :aria-expanded="panelOpen"
+          aria-controls="filters-panel"
+          @click="panelOpen = !panelOpen"
+        >
+          {{ panelOpen ? "Masquer les filtres" : "Filtres" }}
+        </RiftButton>
+        <RiftButton v-else variant="secondary" size="sm" @click="sheetOpen = true">
+          Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
+        </RiftButton>
+      </div>
     </header>
 
     <aside v-if="desktop && panelOpen" id="filters-panel" class="filters-panel" aria-label="Filtres">
@@ -114,6 +128,7 @@ onMounted(async () => {
     </aside>
 
     <div class="cards-main">
+      <QuickAddPref v-if="quickOn" :defaults="quickDefaults" @update="setQuickDefaults" />
       <ActiveFilters :state="state" :sets="setOptions" @update="setFilter" @reset="reset" />
       <p v-if="error" class="cards-error" role="alert">{{ error }}</p>
 
@@ -127,7 +142,11 @@ onMounted(async () => {
           <RiftSkeleton v-for="n in 12" :key="n" block />
         </template>
         <template v-else>
-          <CardTile v-for="card in result.items" :key="card.id" :card="card" />
+          <CardTile v-for="card in result.items" :key="card.id" :card="card">
+            <template v-if="quickOn" #overlay>
+              <QuickCount :card="card" :defaults="quickDefaults" @change="onQuickChange" />
+            </template>
+          </CardTile>
         </template>
       </div>
 
@@ -182,6 +201,13 @@ onMounted(async () => {
   background: none;
   color: var(--ink);
   animation: none;
+}
+.cards-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 .cards-count {
   font-family: var(--font-label);

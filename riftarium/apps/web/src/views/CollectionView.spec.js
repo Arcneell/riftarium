@@ -220,6 +220,73 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("saisie rapide dans le classeur : progression et statistiques relues (débouncées), double page intacte", async () => {
+    session.token = "1"
+    sessionStorage.setItem("riftarium_quick_add", "1")
+    const base = api.getMockImplementation()
+    let posted = false
+    api.mockImplementation((path, opts) => {
+      if (String(path).startsWith("/api/collection?") && posted) {
+        return Promise.resolve({
+          total: 2,
+          total_cards: 7,
+          unique_cards: 3,
+          value_eur: 17.5,
+          page: 1,
+          size: 30,
+          items: []
+        })
+      }
+      if (opts?.method === "POST") {
+        posted = true
+        return Promise.resolve({
+          card_id: "card-9",
+          total_qty: 1,
+          entries: [{ id: 5, qty: 1, condition: "NM", lang: "FR" }]
+        })
+      }
+      return base(path, opts)
+    })
+    const { wrapper } = await mountView()
+    const calls = (prefix) => api.mock.calls.filter(([path]) => String(path).startsWith(prefix)).length
+    const sets = calls("/api/collection/sets")
+    const cards = calls("/api/cards?")
+    const totals = calls("/api/collection?")
+    const stats = () => wrapper.findAll(".rift-stat")
+    expect(stats()[0].text()).toContain("6")
+    expect(stats()[1].text()).toContain("2")
+    const plus = wrapper.findAll(".classeur-pocket")[1].get(".rift-stepper-plus")
+    await plus.trigger("click")
+    await flushPromises()
+    /* Débounce : rien n'est relu tout de suite. */
+    expect(calls("/api/collection/sets")).toBe(sets)
+    await vi.waitFor(() => expect(calls("/api/collection/sets")).toBe(sets + 1))
+    await flushPromises()
+    expect(calls("/api/collection?")).toBe(totals + 1)
+    expect(stats()[0].text()).toContain("7")
+    expect(stats()[1].text()).toContain("3")
+    expect(stats()[2].text()).toContain("17,50")
+    expect(calls("/api/cards?")).toBe(cards)
+    expect(wrapper.findAll(".classeur-pocket")[1].classes()).not.toContain("ghost")
+    sessionStorage.clear()
+    session.token = null
+    wrapper.unmount()
+  })
+
+  it("saisie rapide : une rafale de modifications ne lance qu'une relecture", async () => {
+    const { wrapper } = await mountView()
+    const calls = (prefix) => api.mock.calls.filter(([path]) => String(path).startsWith(prefix)).length
+    const sets = calls("/api/collection/sets")
+    const binder = wrapper.findComponent(CollectionBinder)
+    binder.vm.$emit("changed")
+    binder.vm.$emit("changed")
+    binder.vm.$emit("changed")
+    await vi.waitFor(() => expect(calls("/api/collection/sets")).toBe(sets + 1))
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(calls("/api/collection/sets")).toBe(sets + 1)
+    wrapper.unmount()
+  })
+
   it("statistiques : « — » tant que rien n'est chargé, au lieu de zéros", async () => {
     api.mockImplementation(() => new Promise(() => {}))
     const { wrapper } = await mountView()
@@ -237,6 +304,33 @@ describe("CollectionView", () => {
     const { wrapper } = await mountView()
     expect(wrapper.findComponent(CollectionBinder).get("[role=alert]").text()).toContain("Serveur indisponible")
     expect(wrapper.find(".shimmer").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("progression : une réponse tardive d'une lecture ancienne n'écrase pas la plus récente", async () => {
+    const original = api.getMockImplementation()
+    const { wrapper } = await mountView()
+    const resolvers = []
+    api.mockImplementation((path) =>
+      path === "/api/collection/sets" ? new Promise((resolve) => resolvers.push(resolve)) : original(path)
+    )
+    const binder = wrapper.findComponent(CollectionBinder)
+    /* Deux relectures espacées (au-delà du débounce) : la plus récente doit gagner. */
+    binder.vm.$emit("changed")
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    binder.vm.$emit("changed")
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    await flushPromises()
+    expect(resolvers).toHaveLength(2)
+    const withOwned = (owned) => ({
+      sets: [{ set_id: "OGN", name: "Origins", total: 298, owned, missing: 298 - owned, missing_cost_eur: 1 }],
+      overall: { total: 298, owned, missing: 298 - owned, missing_cost_eur: 1 }
+    })
+    resolvers[1](withOwned(7))
+    await flushPromises()
+    resolvers[0](withOwned(3))
+    await flushPromises()
+    expect(binder.props("progress").overall.owned).toBe(7)
     wrapper.unmount()
   })
 

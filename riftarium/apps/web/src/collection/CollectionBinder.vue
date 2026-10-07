@@ -1,12 +1,15 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, watch } from "vue"
 import { RouterLink } from "vue-router"
-import { cardThumb } from "../api.js"
+import { cardThumb, session } from "../api.js"
 import { isFoil } from "../cardText.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
+import QuickAddPref from "./QuickAddPref.vue"
+import QuickCount from "./QuickCount.vue"
+import { useQuickAdd } from "./useQuickAdd.js"
 import { GHOST_FILTERS, useCollectionBinder } from "./useCollectionBinder.js"
 
 /* Classeur de la collection : onglets de sets, double page de 3×3 pochettes,
@@ -19,6 +22,8 @@ const props = defineProps({
   /* Message d'échec du chargement de la progression : remplace le squelette sans fin. */
   progressError: { type: String, default: "" }
 })
+
+const emit = defineEmits(["changed"])
 
 const {
   binderSet,
@@ -41,9 +46,26 @@ const {
   isBlocked: () => document.body.classList.contains("nav-locked")
 })
 
+/* Saisie rapide (membres) : un compteur sur chaque pochette, pleine ou fantôme. */
+const { quickOn, toggleQuick, defaults: quickDefaults, setDefaults: setQuickDefaults } = useQuickAdd()
+
+/* La pochette suit le compteur sans recharger la double page : un fantôme devient plein
+   à 1 exemplaire, une pochette pleine redevient fantôme à 0. La page recharge la progression. */
+function onQuickChange({ id, owned_qty }) {
+  const item = spread.value?.items.find((card) => card.id === id)
+  if (item) item.owned_qty = owned_qty
+  /* La page a tourné pendant l'écriture : la double page affichée vient d'une lecture
+     peut-être antérieure à la mutation. On la recharge sans voile pour ne laisser aucune
+     pochette périmée. */
+  else loadBinder({ silent: true })
+  emit("changed")
+}
+
 const sets = computed(() => props.progress?.sets || [])
 const currentSet = computed(() => sets.value.find((row) => row.set_id === binderSet.value) || null)
-const isEmptyCollection = computed(() => !!props.progress && props.progress.overall?.owned === 0)
+/* Classeur vide : l'état vide remplace tout, sauf en saisie rapide (sinon retirer la dernière
+   carte ferait disparaître les compteurs, et un membre ne pourrait pas commencer ici). */
+const isEmptyCollection = computed(() => !!props.progress && props.progress.overall?.owned === 0 && !quickOn.value)
 
 function percentOf(row) {
   if (!row.total) return 0
@@ -56,16 +78,15 @@ function missingText(row) {
   return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
 }
 
-/* Set ouvert par défaut : le premier incomplet, celui qu'on a envie de finir. */
-watch(
-  () => props.progress,
-  (progress) => {
-    if (!binderSet.value && progress?.sets?.length && progress.overall?.owned !== 0) {
-      binderSet.value = (progress.sets.find((row) => row.missing) || progress.sets[0]).set_id
-    }
-  },
-  { immediate: true }
-)
+/* Set ouvert par défaut : le premier incomplet, celui qu'on a envie de finir. Rien à ouvrir
+   tant que l'état vide est affiché (collection à 0, hors saisie rapide). */
+function openDefaultSet() {
+  const progress = props.progress
+  if (!binderSet.value && progress?.sets?.length && !isEmptyCollection.value) {
+    binderSet.value = (progress.sets.find((row) => row.missing) || progress.sets[0]).set_id
+  }
+}
+watch(() => [props.progress, quickOn.value], openDefaultSet, { immediate: true })
 
 watch(
   () => props.active,
@@ -93,6 +114,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   <div class="classeur">
     <RiftEmpty v-if="isEmptyCollection" title="Votre classeur attend ses premières cartes">
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
+      <RiftChip v-if="session.token" label="Saisie rapide" :selected="quickOn" @toggle="toggleQuick" />
     </RiftEmpty>
 
     <p v-else-if="!progress && progressError" class="classeur-error" role="alert">
@@ -132,16 +154,21 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             {{ missingText(currentSet) }}
           </p>
         </div>
-        <div class="classeur-chips" role="group" aria-label="Filtrer les pochettes">
-          <RiftChip
-            v-for="chip in GHOST_FILTERS"
-            :key="chip.value"
-            :label="chip.label"
-            :selected="binderOwned === chip.value"
-            @toggle="setGhostFilter(chip.value)"
-          />
+        <div class="classeur-head-actions">
+          <RiftChip v-if="session.token" label="Saisie rapide" :selected="quickOn" @toggle="toggleQuick" />
+          <div class="classeur-chips" role="group" aria-label="Filtrer les pochettes">
+            <RiftChip
+              v-for="chip in GHOST_FILTERS"
+              :key="chip.value"
+              :label="chip.label"
+              :selected="binderOwned === chip.value"
+              @toggle="setGhostFilter(chip.value)"
+            />
+          </div>
         </div>
       </header>
+
+      <QuickAddPref v-if="quickOn" :defaults="quickDefaults" @update="setQuickDefaults" />
 
       <div class="classeur-stage" :class="{ loading: binderLoading }">
         <Transition
@@ -159,6 +186,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                     :class="{
                       ghost: !card.owned_qty,
                       foil: isFoil(card),
+                      quick: quickOn,
                       landscape: card.orientation === 'landscape'
                     }"
                     :to="`/cartes/${card.id}`"
@@ -170,7 +198,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                       loading="lazy"
                       decoding="async"
                     />
-                    <span v-if="card.owned_qty" class="classeur-qty">×{{ card.owned_qty }}</span>
+                    <span v-if="card.owned_qty && !quickOn" class="classeur-qty">×{{ card.owned_qty }}</span>
                     <template v-else>
                       <span class="classeur-num">{{ (card.riftbound_id || "").toUpperCase() }}</span>
                       <span v-if="formatEur(card.price_eur)" class="classeur-price" :title="PRICE_NOTE">
@@ -178,6 +206,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                       </span>
                     </template>
                     <span class="classeur-sheen" aria-hidden="true"></span>
+                    <QuickCount v-if="quickOn" :card="card" :defaults="quickDefaults" @change="onQuickChange" />
                   </RouterLink>
                   <span v-else class="classeur-pocket blank" aria-hidden="true"></span>
                 </template>
@@ -327,6 +356,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
+.classeur-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
 .classeur-chips {
   display: flex;
   flex-wrap: wrap;
@@ -393,6 +428,18 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   background: var(--bg);
   border-radius: var(--radius-s);
 }
+/* Une pochette est étroite (≈ 96 px à 375 px, ≈ 92 px à 721 px, deux pages côte à côte) : le
+   compteur rapide perd son retrait et se resserre (≈ 77 px au lieu de ~114). */
+.classeur-pocket .quick-count {
+  padding-inline: 0;
+}
+.classeur-pocket .quick-count :deep(.rift-stepper--sm) {
+  --stepper-size: 28px;
+  gap: var(--space-1);
+}
+.classeur-pocket .quick-count :deep(.rift-stepper--sm .rift-stepper-plus) {
+  width: var(--stepper-size);
+}
 .classeur-pocket img {
   display: block;
   width: 100%;
@@ -454,6 +501,16 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   right: 4px;
   bottom: 4px;
   color: var(--bronze-light);
+}
+/* Saisie rapide : le compteur occupe le bas de la pochette, le code et le prix passent en haut. */
+.classeur-pocket.quick .classeur-num {
+  top: 4px;
+  bottom: auto;
+}
+.classeur-pocket.quick .classeur-price {
+  top: 4px;
+  right: 4px;
+  bottom: auto;
 }
 .classeur-sheen {
   position: absolute;
