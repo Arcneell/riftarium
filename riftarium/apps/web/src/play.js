@@ -97,14 +97,6 @@ export function outcomeLabel(outcome) {
   return OUTCOMES[outcome] || "Terminé"
 }
 
-/* Couleur de la pastille d'issue : le calme pour une victoire, la fureur pour une
-   défaite, rien du tout pour un match contesté (il ne compte pas dans les stats). */
-export function outcomeTone(outcome) {
-  if (outcome === "win") return "calm"
-  if (outcome === "loss") return "fury"
-  return "neutral"
-}
-
 const ROOM_STATUS = {
   open: "En attente d'un adversaire",
   playing: "Partie en cours",

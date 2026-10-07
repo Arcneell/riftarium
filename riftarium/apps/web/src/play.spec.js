@@ -18,7 +18,6 @@ import {
   matchStatusLabel,
   modeLabel,
   outcomeLabel,
-  outcomeTone,
   roomStatusLabel,
   startRoom,
   updateMe,
@@ -131,13 +130,10 @@ describe("play — mise en forme", () => {
     expect(modeLabel("libre")).toBe("—")
   })
 
-  it("nomme les issues et leur donne un ton", () => {
+  it("nomme les issues", () => {
     expect(outcomeLabel("win")).toBe("Victoire")
     expect(outcomeLabel("loss")).toBe("Défaite")
     expect(outcomeLabel("disputed")).toBe("Contesté")
-    expect(outcomeTone("win")).toBe("calm")
-    expect(outcomeTone("loss")).toBe("fury")
-    expect(outcomeTone("disputed")).toBe("neutral")
   })
 
   it("nomme les statuts de salon et de match", () => {
