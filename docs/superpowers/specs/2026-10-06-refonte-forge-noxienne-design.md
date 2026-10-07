@@ -105,6 +105,8 @@ Les noms sont neufs et décrivent leur rôle.
 | `RiftSheet` | feuille du bas sur téléphone (filtres, menu du compte) |
 | `RiftSkeleton` | squelettes de chargement |
 | `RiftEmpty` | état vide (titre, phrase, action) |
+| `RiftStepper` | compteur − valeur + (cibles de 44 px, 32 px sur les vignettes), valeur en `aria-live="polite"` ; livré en PR 4b |
+| `RiftChoice` | choix unique en puces (`role="radiogroup"`), à la place d’un menu déroulant ; livré en PR 4b |
 | `RiftStat` | glyphe officiel + valeur Cinzel + étiquette |
 | `CardTile` | vignette de carte : illustration, nom, prix, quantité possédée, reflet foil si rare / showcase |
 | `RiftGlyph`, `RiftText` | rendu du texte de jeu à partir de `cardText.js` (glyphes Riot, pastilles de mots-clés, `**gras**`) ; seul rendu de texte de jeu du site, remplace `CardText` et `RuleText`. Une prop `rules` active la conversion des symboles abrégés des règles officielles (`[R]`, `[E]`, `[M]`…, table actuelle de `RuleText.vue`) |
@@ -289,6 +291,32 @@ Chaque PR :
   reste sur la fiche carte, l'inventaire ne propose que l'état et la langue en
   masse. Après une opération de masse, les statistiques sont rechargées et le
   classeur recharge sa double page.
+
+### PR 4b : ajout à la collection (`feat/refonte-ajout-collection`)
+
+Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B + C**.
+
+- **A, compteur rapide** sur la fiche carte : un − / + (`RiftStepper`) ajoute ou retire un
+  exemplaire dans l’état et la langue habituels.
+- **B, lots en puces** : les exemplaires se lisent « 2× NM · Français » et se retirent d’un
+  clic (`RiftChip` supprimable). L’ajout précis se fait par puces d’état et de langue
+  (`RiftChoice`).
+- **C, saisie rapide** : un interrupteur « Saisie rapide » (membres seulement) sur la
+  cartothèque et dans le classeur pose un − / + sur chaque vignette ou pochette, fantômes
+  compris, pour saisir un booster ou un classeur à la chaîne. L’interrupteur est mémorisé
+  pour la session (`sessionStorage`).
+- **Aucun menu déroulant ni champ numérique** dans la saisie des exemplaires.
+- **Préférence mémorisée** : état et langue d’ajout, par défaut « NM · Français », dans
+  `localStorage` (clé `riftarium_collection_defaults`), toujours sous `try/catch`. Un rappel
+  « Ajouts en NM · Français · changer » ouvre une feuille pour la modifier.
+- **API inchangée** : `POST /api/collection/{id}/entries` additionne un lot identique,
+  `PATCH /api/collection/entries/{id}` (qty 0 supprime), `GET /api/collection/{id}`.
+- **Livré** : logique dans `src/collection/` (`useOwnedCopies`, `useQuickAdd`,
+  `collectionDefaults`, `QuickCount`, `QuickAddPref`) ; un seul jeton de séquence couvre
+  chargements et mutations d’une carte. Classeur : une pochette suit son compteur sans
+  recharger la double page (rechargement discret si la page a tourné pendant l’écriture),
+  la progression est relue avec un jeton de séquence, et en saisie rapide le classeur reste
+  affiché même à 0 carte possédée (puce « Saisie rapide » dans l’état vide).
 
 ### PR 5 : decks et communauté
 
