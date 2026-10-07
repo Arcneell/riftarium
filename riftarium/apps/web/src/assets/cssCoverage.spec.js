@@ -21,13 +21,11 @@ const UNSTYLED_ALLOWLIST = new Set([
   "chart-band",
   "chart-bar",
   "chart-segment",
-  "wish-from-deck", // à garder : DeckMissingModal, voir WORKFLOW.md / contraintes de la refonte
   "traceurs-ack",
   "rail-label",
   "topbar-account",
   "rift-text",
   "guide-fullscreen",
-  "dbuilder-gallery",
   "friends-panel",
   "profile-privacy",
   "rules-main",

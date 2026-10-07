@@ -3,7 +3,9 @@ import { computed, onUnmounted, ref } from "vue"
 import { api, cardThumb, session } from "../api.js"
 import { copyText } from "../deckExport.js"
 import { PRICE_NOTE, formatEur } from "../prices.js"
+import RiftButton from "../ui/RiftButton.vue"
 import RiftModal from "../ui/RiftModal.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 
 /* Modale « cartes manquantes » : la comparaison deck/collection calculée par l'API.
    L'aperçu au survol reste géré par l'éditeur (événements preview / hide-preview). */
@@ -79,81 +81,173 @@ async function copyMissing() {
 
 <template>
   <RiftModal title="Cartes manquantes" wide @close="$emit('close')">
-    <p v-if="error" class="error">{{ error }}</p>
-    <p v-else-if="!missing" class="muted">Analyse de votre collection…</p>
+    <p v-if="error" class="atelier-missing-error" role="alert">{{ error }}</p>
+    <template v-else-if="!missing">
+      <p class="sr-only" role="status">Analyse de votre collection…</p>
+      <RiftSkeleton :lines="4" />
+    </template>
     <template v-else-if="missing.items.length">
-      <p class="muted" style="margin-bottom: 14px">
+      <p class="atelier-missing-intro">
         Il vous manque <b>{{ missing.missing_total }}</b> carte(s) sur les {{ missing.deck_total }} du deck. Les
         variantes (art alternatif, signature) comptent comme la carte de base.
       </p>
-      <table class="missing-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Carte</th>
-            <th>Requis</th>
-            <th>Possédé</th>
-            <th>À trouver</th>
-            <th>Prix</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- focusin/focusout : sans eux, l'aperçu de la carte n'existait qu'au survol
-               souris, inaccessible au clavier (le nom de la carte est un lien). -->
-          <tr
-            v-for="item in missing.items"
-            :key="item.card.id"
-            @focusin="$emit('preview', item.card, $event, 400)"
-            @focusout="$emit('hide-preview')"
-          >
-            <!-- data-label : sous 560 px le tableau devient une pile de cartes
-                 (CSS), les intitulés de colonnes sont repris cellule par cellule. -->
-            <td class="missing-thumb">
-              <img
-                class="row-thumb missing-zoom"
-                :src="cardThumb(item.card.image_url, 84)"
-                :alt="item.card.name"
-                loading="lazy"
-                @mouseenter="$emit('preview', item.card, $event, 400)"
-                @mouseleave="$emit('hide-preview')"
-              />
-            </td>
-            <td
-              class="missing-zoom"
-              @mouseenter="$emit('preview', item.card, $event, 400)"
-              @mouseleave="$emit('hide-preview')"
-            >
-              <RouterLink :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
-              <span class="muted mono" style="font-size: 0.68rem; display: block">{{
-                (item.card.riftbound_id || "").toUpperCase()
-              }}</span>
-            </td>
-            <td class="num" data-label="Requis">{{ item.needed }}</td>
-            <td class="num" data-label="Possédé">{{ item.owned }}</td>
-            <td class="num" data-label="À trouver">
-              <b>{{ item.missing }}</b>
-            </td>
-            <td class="num price-cell" data-label="Prix" :title="PRICE_NOTE">
-              {{ formatEur(item.card.price_eur) || "—" }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="missingCost" class="price-missing" :title="PRICE_NOTE">
-        Coût pour compléter : <b class="price-amount">{{ missingCost }}</b>
-      </p>
-      <div class="modal-actions">
-        <button
-          v-if="deckId && session.token"
-          class="btn btn-gold wish-from-deck"
-          :disabled="wishBusy"
-          @click="addMissingToWishlist"
+      <ul class="atelier-missing-list">
+        <!-- focusin/focusout : sans eux, l'aperçu de la carte n'existait qu'au survol
+             souris, inaccessible au clavier (le nom de la carte est un lien). -->
+        <li
+          v-for="item in missing.items"
+          :key="item.card.id"
+          class="atelier-missing-item"
+          @focusin="$emit('preview', item.card, $event, 400)"
+          @focusout="$emit('hide-preview')"
         >
+          <img
+            class="atelier-missing-thumb"
+            :src="cardThumb(item.card.image_url, 84)"
+            :alt="item.card.name"
+            loading="lazy"
+            @mouseenter="$emit('preview', item.card, $event, 400)"
+            @mouseleave="$emit('hide-preview')"
+          />
+          <div
+            class="atelier-missing-copy"
+            @mouseenter="$emit('preview', item.card, $event, 400)"
+            @mouseleave="$emit('hide-preview')"
+          >
+            <RouterLink class="atelier-missing-name" :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
+            <span class="atelier-missing-id">{{ (item.card.riftbound_id || "").toUpperCase() }}</span>
+          </div>
+          <span class="atelier-missing-qty">×{{ item.missing }} manquante(s)</span>
+          <span class="atelier-missing-price" :title="PRICE_NOTE">{{ formatEur(item.card.price_eur) || "—" }}</span>
+        </li>
+      </ul>
+      <p v-if="missingCost" class="atelier-missing-cost" :title="PRICE_NOTE">
+        Coût pour compléter : <b>{{ missingCost }}</b>
+      </p>
+      <div class="atelier-missing-actions" aria-live="polite">
+        <RiftButton variant="secondary" @click="copyMissing">{{ copyLabel }}</RiftButton>
+        <RiftButton v-if="deckId && session.token" :disabled="wishBusy" @click="addMissingToWishlist">
           {{ wishLabel }}
-        </button>
-        <button class="btn btn-ghost" @click="copyMissing">{{ copyLabel }}</button>
+        </RiftButton>
       </div>
     </template>
-    <p v-else class="success">Vous possédez déjà toutes les cartes de ce deck.</p>
+    <p v-else class="atelier-missing-done">Vous possédez déjà toutes les cartes de ce deck.</p>
   </RiftModal>
 </template>
+
+<style scoped>
+.atelier-missing-error {
+  margin: 0;
+  color: var(--blood-text);
+}
+.atelier-missing-intro {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+.atelier-missing-intro b {
+  color: var(--ink);
+}
+.atelier-missing-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.atelier-missing-item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.atelier-missing-thumb {
+  display: block;
+  width: 38px;
+  aspect-ratio: 744 / 1039;
+  object-fit: cover;
+  border-radius: 3px;
+  cursor: zoom-in;
+}
+.atelier-missing-copy {
+  min-width: 0;
+  cursor: zoom-in;
+}
+.atelier-missing-name {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  text-decoration: none;
+}
+.atelier-missing-name:hover {
+  color: var(--bronze-light);
+}
+.atelier-missing-name:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+.atelier-missing-id {
+  display: block;
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+.atelier-missing-qty {
+  white-space: nowrap;
+  font-family: var(--font-label);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blood-text);
+}
+.atelier-missing-price {
+  min-width: 64px;
+  white-space: nowrap;
+  text-align: right;
+  font-family: var(--font-label);
+  font-size: 14px;
+  color: var(--bronze-light);
+}
+.atelier-missing-cost {
+  margin: var(--space-4) 0 0;
+  font-family: var(--font-label);
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+.atelier-missing-cost b {
+  color: var(--bronze-light);
+}
+.atelier-missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.atelier-missing-done {
+  margin: 0;
+  color: var(--ink);
+}
+/* Téléphone : la quantité et le prix passent sous le nom. */
+@media (max-width: 559px) {
+  .atelier-missing-item {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+  .atelier-missing-thumb {
+    grid-row: span 2;
+  }
+  .atelier-missing-qty {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .atelier-missing-price {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+</style>

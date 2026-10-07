@@ -2,13 +2,13 @@ import { nextTick, reactive } from "vue"
 
 /* Glisser-déposer façon table de jeu, à la souris seulement : une carte de la galerie
    se dépose sur le panneau du deck pour l'ajouter, une ligne du deck qu'on lâche hors
-   du panneau est retirée. Logique pure, sans rendu : le fantôme (.drag-ghost) et la
+   du panneau est retirée. Logique pure, sans rendu : le fantôme (.atelier-ghost) et la
    consigne « Déposez ici » sont dessinés par la page et par DeckList à partir de `drag`.
 
    - enabled      : getter, faux en lecture seule
    - finePointer  : le glisser n'existe qu'avec un pointeur précis
    - reducedMotion: coupe le vol du fantôme vers sa ligne
-   - panel        : ref de la racine de DeckList (zone de dépôt)
+   - panel        : ref (ou computed) de la racine de DeckList, relue à chaque mouvement
    - onDropAdd(card) -> boolean : ajoute la carte, renvoie vrai si elle l'a été
    - onDropRemove(cardId)       : retire un exemplaire
    - onStart()                  : le glisser démarre (masquer l'aperçu) */
@@ -73,7 +73,7 @@ export function useDeckDrag({ enabled, finePointer, reducedMotion, panel, onDrop
   async function flyGhostToRow(card) {
     if (reducedMotion) return
     await nextTick()
-    const ghost = document.querySelector(".drag-ghost")
+    const ghost = document.querySelector(".atelier-ghost")
     const row = panel.value?.querySelector(`[data-row="${CSS.escape(card.id)}"]`)
     if (!ghost || !row) return
     const target = row.getBoundingClientRect()
