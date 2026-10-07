@@ -350,9 +350,12 @@ const zoomCard = ref(null)
   cursor: zoom-in;
 }
 .sujet-example img {
+  display: block;
   width: 100%;
-  /* Réserve la hauteur avant chargement (cartes 744×1039). */
-  aspect-ratio: 744 / 1039;
+  /* Les attributs width/height (744×1039) réservent la place avant chargement ;
+     height: auto garde les proportions réelles de l'image (sinon l'attribut
+     height="1039" fixe la hauteur et étire la carte, paysage compris). */
+  height: auto;
   border-radius: var(--radius-card);
   transition: transform var(--t-base);
 }
