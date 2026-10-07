@@ -31,6 +31,27 @@ describe("RiftSegments", () => {
     wrapper.unmount()
   })
 
+  it("badgeLabel : le badge visuel est masqué aux lecteurs d'écran et remplacé par son libellé", () => {
+    const wrapper = mount(RiftSegments, {
+      props: {
+        modelValue: "cartes",
+        items: [
+          { value: "cartes", label: "Cartes" },
+          { value: "analyse", label: "Analyse", badge: "✕", badgeLabel: "règle non respectée" },
+          { value: "deck", label: "Deck", badge: 3 }
+        ],
+        label: "Atelier",
+        idBase: "atelier"
+      }
+    })
+    const [, analyse, deck] = wrapper.findAll("[role=tab]")
+    expect(analyse.get(".rift-segments-badge").attributes("aria-hidden")).toBe("true")
+    expect(analyse.get(".sr-only").text()).toBe("règle non respectée")
+    expect(deck.get(".rift-segments-badge").attributes("aria-hidden")).toBeUndefined()
+    expect(deck.find(".sr-only").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it("clic : émet update:modelValue", async () => {
     const wrapper = mountSegments()
     await wrapper.findAll("[role=tab]")[2].trigger("click")

@@ -6,7 +6,7 @@ import { computed, ref } from "vue"
    `id="${idBase}-panel-${value}"`, `role="tabpanel"` et `aria-labelledby`. */
 const props = defineProps({
   modelValue: { type: String, default: "" },
-  items: { type: Array, required: true }, // [{ value, label, badge? }]
+  items: { type: Array, required: true }, // [{ value, label, badge?, badgeLabel? }]
   label: { type: String, required: true },
   idBase: { type: String, required: true }
 })
@@ -53,7 +53,11 @@ function onKey(event, index) {
       @keydown="onKey($event, index)"
     >
       {{ item.label }}
-      <span v-if="hasBadge(item)" class="rift-segments-badge">{{ item.badge }}</span>
+      <template v-if="hasBadge(item)">
+        <span class="rift-segments-badge" :aria-hidden="item.badgeLabel ? 'true' : undefined">{{ item.badge }}</span>
+        <!-- Badge symbolique (« ✕ ») : le texte lu est celui de badgeLabel. -->
+        <span v-if="item.badgeLabel" class="sr-only">{{ item.badgeLabel }}</span>
+      </template>
     </button>
   </div>
 </template>

@@ -85,13 +85,20 @@ function setFormat(value) {
 const breakpoint = useBreakpoint()
 const isMobile = computed(() => breakpoint.value === "mobile")
 const tab = ref("cards") // cards | deck | stats
+/* Hors onglet Deck sur téléphone, le plafond s'affiche en toast : la région live reste montée. */
+const toastText = computed(() => (isMobile.value && tab.value !== "deck" ? limitMessage.value : ""))
 
 const totalCards = computed(() => (deck.value?.cards || []).reduce((total, entry) => total + entry.qty, 0))
 const failingRule = computed(() => (deck.value?.checks || []).some((item) => !item.ok))
 const tabs = computed(() => [
   { value: "cards", label: "Cartes" },
   { value: "deck", label: "Deck", badge: totalCards.value },
-  { value: "stats", label: "Analyse", badge: failingRule.value ? "✕" : null }
+  {
+    value: "stats",
+    label: "Analyse",
+    badge: failingRule.value ? "✕" : null,
+    badgeLabel: "règle non respectée"
+  }
 ])
 
 /* Sur téléphone seulement, chaque zone devient un panneau d'onglet (toujours monté). */
@@ -203,6 +210,8 @@ const {
 )
 
 const sets = ref([])
+/* CardFilters attend des options { value, label } : on adapte la réponse de /api/sets. */
+const setOptions = computed(() => sets.value.map((s) => ({ value: s.set_id, label: s.name })))
 
 /* La taille de page suit la grille : on recharge, sauf si la page courante
    n'existe plus après un agrandissement. */
@@ -436,7 +445,7 @@ onBeforeUnmount(() => {
           :loading="loading"
           :active-count="activeCount"
           :page-count="pageCount"
-          :sets="sets"
+          :sets="setOptions"
           :in-deck-qty="inDeckQty"
           :off-domain="offDomain"
           :tournament="deck.format === 'tournament'"
@@ -495,7 +504,13 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Téléphone : la liste (et son message) est dans un autre onglet, le plafond s'affiche en toast. -->
-    <p v-if="isMobile && tab !== 'deck' && limitMessage" class="atelier-toast" role="status">{{ limitMessage }}</p>
+    <p
+      class="atelier-toast"
+      :class="{ 'atelier-toast--empty': !toastText, 'atelier-toast--raised': saveState }"
+      role="status"
+    >
+      {{ toastText }}
+    </p>
 
     <!-- Fantôme de glisser -->
     <Teleport to="body">
@@ -570,7 +585,14 @@ onBeforeUnmount(() => {
 .atelier-page {
   display: grid;
   gap: var(--space-4);
-  padding-block: var(--space-5) var(--space-7);
+  max-width: min(1680px, 100%);
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+@media (max-width: 767px) {
+  .atelier-page {
+    padding-inline: var(--space-4);
+  }
 }
 /* Les onglets restent visibles sous la barre du haut, elle aussi collante. */
 .atelier-page > .rift-segments {
@@ -698,6 +720,23 @@ onBeforeUnmount(() => {
   font-size: 14px;
   text-align: center;
   color: var(--blood-text);
+}
+/* Vide : la région live reste montée (annonce fiable) mais disparaît à l'écran. */
+.atelier-toast--empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  box-shadow: none;
+  white-space: nowrap;
+}
+/* Mention d'enregistrement visible au même endroit : le toast de plafond monte d'un cran. */
+.atelier-toast--raised {
+  bottom: calc(var(--shell-bottom, env(safe-area-inset-bottom, 0px)) + var(--space-3) + 64px);
 }
 
 /* Fantôme suivi du curseur pendant le glisser (téléporté dans le body). */

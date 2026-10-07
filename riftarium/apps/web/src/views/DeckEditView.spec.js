@@ -557,7 +557,15 @@ describe("DeckEditView", () => {
     stubMedia({ width: 375 })
     const { wrapper } = await mountView()
     const tablist = wrapper.get('[role="tablist"]')
-    expect(tablist.findAll('[role="tab"]').map((t) => t.text())).toEqual(["Cartes", "Deck 0", "Analyse ✕"])
+    expect(tablist.findAll('[role="tab"]').map((t) => t.text())).toEqual([
+      "Cartes",
+      "Deck 0",
+      "Analyse ✕règle non respectée"
+    ])
+    // le badge « ✕ » est muet pour les lecteurs d'écran, son libellé est lu à la place
+    const tabStats = tabButton(wrapper, "stats")
+    expect(tabStats.get(".rift-segments-badge").attributes("aria-hidden")).toBe("true")
+    expect(tabStats.get(".sr-only").text()).toBe("règle non respectée")
 
     for (const name of ["cards", "deck", "stats"]) {
       const panel = pane(wrapper, name)
@@ -588,16 +596,35 @@ describe("DeckEditView", () => {
   it("téléphone : le message de plafond reste visible hors de l'onglet Deck", async () => {
     stubMedia({ width: 375 })
     const { wrapper } = await mountView()
-    expect(wrapper.find(".atelier-toast").exists()).toBe(false)
-    await tile(wrapper, "Phénix").trigger("click")
+    // la région live est montée en permanence, vide tant qu'il n'y a rien à annoncer
     const toast = wrapper.get(".atelier-toast")
     expect(toast.attributes("role")).toBe("status")
+    expect(toast.text()).toBe("")
+    expect(toast.classes()).toContain("atelier-toast--empty")
+    await tile(wrapper, "Phénix").trigger("click")
+    expect(wrapper.get(".atelier-toast").element).toBe(toast.element)
     expect(toast.text()).toContain("Choisissez d'abord votre légende")
+    expect(toast.classes()).not.toContain("atelier-toast--empty")
 
     // sur l'onglet Deck, la liste porte déjà le message : pas de toast en double
     await tabButton(wrapper, "deck").trigger("click")
-    expect(wrapper.find(".atelier-toast").exists()).toBe(false)
+    expect(wrapper.get(".atelier-toast").text()).toBe("")
     expect(wrapper.get(".decklist-message").text()).toContain("Choisissez d'abord votre légende")
+    wrapper.unmount()
+  })
+
+  it("la facette Sets de la galerie filtre par identifiant de set", async () => {
+    const { wrapper } = await mountView()
+    const filtersButton = wrapper.findAll("button").find((b) => b.text().startsWith("Filtres"))
+    await filtersButton.trigger("click")
+    const chip = wrapper.findAll("button.rift-chip").find((b) => b.text() === "Origins")
+    expect(chip).toBeTruthy()
+    api.mockClear()
+    await chip.trigger("click")
+    await vi.waitFor(() => {
+      const urls = api.mock.calls.map(([path]) => String(path)).filter((path) => path.startsWith("/api/cards"))
+      expect(urls.some((path) => new URLSearchParams(path.split("?")[1]).get("set_id") === "OGN")).toBe(true)
+    })
     wrapper.unmount()
   })
 

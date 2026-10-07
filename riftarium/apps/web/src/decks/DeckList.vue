@@ -1,12 +1,12 @@
 <script setup>
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { cardThumb } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
 
 /* Liste du deck de l'éditeur : vitrine de la légende, compteurs par zone et lignes
    compactes. Sa racine sert de zone de dépôt au glisser-déposer (useDeckDrag). Composant
    de présentation : les règles (plafonds, légende) restent dans useDeckRules. */
-defineProps({
+const props = defineProps({
   deck: { type: Object, required: true },
   canEdit: { type: Boolean, default: false },
   zones: { type: Array, required: true },
@@ -25,6 +25,12 @@ defineProps({
 const emit = defineEmits(["set-qty", "remove-one", "show-legends", "row-pointerdown", "preview", "hide-preview"])
 
 const panel = ref(null)
+/* Plafond en priorité, sinon le rappel des cartes manquantes ; vide sans message. */
+const messageText = computed(
+  () =>
+    props.limitMessage ||
+    (props.missingInDeck ? `${props.missingInDeck} carte(s) du deck manquent à votre collection.` : "")
+)
 defineExpose({ panel })
 
 const isLacking = (entry, signedIn) => signedIn && (entry.card.owned_qty ?? 0) < entry.qty
@@ -103,9 +109,13 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
       </div>
     </div>
 
-    <p v-if="limitMessage" class="decklist-message" role="status">{{ limitMessage }}</p>
-    <p v-else-if="missingInDeck" class="decklist-message decklist-message--soft" role="status">
-      {{ missingInDeck }} carte(s) du deck manquent à votre collection.
+    <!-- Région live toujours montée : seul le texte change (annonce fiable). -->
+    <p
+      class="decklist-message"
+      :class="{ 'decklist-message--soft': !limitMessage, 'decklist-message--empty': !messageText }"
+      role="status"
+    >
+      {{ messageText }}
     </p>
 
     <div class="decklist-scroll">
@@ -359,6 +369,19 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
 }
 .decklist-message--soft {
   color: var(--ink-muted);
+}
+/* Vide : masquée à l'écran, mais toujours dans l'arbre d'accessibilité. */
+.decklist-message--empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  box-shadow: none;
+  white-space: nowrap;
 }
 
 /* Zones et lignes */
