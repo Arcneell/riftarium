@@ -322,6 +322,12 @@ onBeforeUnmount(() => clearInterval(timer))
 .scene-dot:hover::before {
   border-color: var(--bronze-light);
 }
+/* Écran tactile : la zone cliquable fait 44 x 44 px, le losange visuel reste petit. */
+@media (hover: none) {
+  .scene-dot {
+    width: 44px;
+  }
+}
 .scene-play:focus-visible,
 .scene-dot:focus-visible {
   outline: 2px solid var(--bronze-light);

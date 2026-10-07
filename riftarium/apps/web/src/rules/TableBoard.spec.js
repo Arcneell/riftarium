@@ -30,6 +30,13 @@ describe("TableBoard", () => {
     expect(bf[0].attributes("style")).toContain(`left: ${SPOTS.bfFoe.x}%`)
   })
 
+  it("les zones nommées par aria-label portent role=group", () => {
+    const wrapper = mountBoard(baseScene({ foeHand: 4, chips: { energy: 2 } }))
+    for (const label of ["Main adverse", "Vos points", "Points adverses", "Réserve runique"]) {
+      expect(wrapper.get(`[aria-label="${label}"]`).attributes("role")).toBe("group")
+    }
+  })
+
   it("champ contesté : classe", () => {
     const wrapper = mountBoard(baseScene({ contested: ["bfFoe"], control: { bfYou: "you" } }))
     const [foe, you] = wrapper.findAll(".plateau-bf")

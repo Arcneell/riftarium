@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useBreakpoint } from "../composables/useBreakpoint.js"
+import { fold } from "../search/search.js"
 import { loadRulesDocuments } from "./rulesStore.js"
 
 /* Logique du lecteur du texte officiel (`/regles/officielles`) : chargement,
@@ -13,11 +14,7 @@ import { loadRulesDocuments } from "./rulesStore.js"
    La longueur est conservée tant que la source est en NFC sans signe combinant
    (c'est le cas de rules-fr.json) : snippet() s'appuie dessus pour retrouver, dans
    le texte d'origine, une position trouvée dans le texte replié. */
-export const normalize = (value) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
+export const normalize = fold
 export const bare = (number) => number.replace(/\.$/, "")
 
 const MAX_HITS = 40

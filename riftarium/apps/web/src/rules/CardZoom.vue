@@ -20,8 +20,8 @@ const emit = defineEmits(["close"])
 .carte-zoom-img {
   display: block;
   max-width: 100%;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
   margin: 0 auto;
   object-fit: contain;
   cursor: zoom-out;

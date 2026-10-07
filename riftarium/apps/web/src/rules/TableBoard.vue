@@ -75,12 +75,12 @@ function zoom(placed) {
         </div>
 
         <!-- Main adverse : dos de cartes en haut -->
-        <div v-if="scene.foeHand" class="plateau-foehand" aria-label="Main adverse">
+        <div v-if="scene.foeHand" class="plateau-foehand" role="group" aria-label="Main adverse">
           <span v-for="i in scene.foeHand" :key="i" class="plateau-back plateau-back--small"></span>
         </div>
 
         <!-- Score : pistes verticales de 8 gemmes -->
-        <div class="plateau-score plateau-score--you" aria-label="Vos points">
+        <div class="plateau-score plateau-score--you" role="group" aria-label="Vos points">
           <i>Vous</i>
           <span
             v-for="i in 8"
@@ -92,7 +92,7 @@ function zoom(placed) {
             }"
           ></span>
         </div>
-        <div class="plateau-score plateau-score--foe" aria-label="Points adverses">
+        <div class="plateau-score plateau-score--foe" role="group" aria-label="Points adverses">
           <i>Adversaire</i>
           <span
             v-for="i in 8"
@@ -179,7 +179,7 @@ function zoom(placed) {
       </button>
 
       <!-- Réserve runique : énergie en glyphe Riot, essence sans domaine connu (✦) -->
-      <div v-if="scene.chips" class="plateau-pool" aria-label="Réserve runique">
+      <div v-if="scene.chips" class="plateau-pool" role="group" aria-label="Réserve runique">
         <span v-for="i in scene.chips.energy" :key="'e' + i" class="plateau-chip plateau-chip--energy">
           <img class="rb-glyph energy" :src="energyGlyph" alt="1 énergie" width="16" height="16" />
         </span>

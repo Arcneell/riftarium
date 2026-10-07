@@ -89,6 +89,16 @@ describe("LearnGuideView", () => {
     wrapper.unmount()
   })
 
+  it("démo de runes : un simple clic sur la carte ouvre le zoom", async () => {
+    const { wrapper } = await mountGuide("/regles/debutant/runes")
+    const zoom = wrapper.get(".lecon-runes-zoom")
+    expect(zoom.attributes("aria-label")).toMatch(/^Agrandir /)
+    await zoom.trigger("click")
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"] img.carte-zoom-img')).toBeTruthy()
+    wrapper.unmount()
+  })
+
   it("sommaire : aria-current sur le chapitre courant", async () => {
     const { wrapper } = await mountGuide(`/regles/debutant/${CHAPTERS[2].slug}`)
     const nav = wrapper.get('nav[aria-label="Chapitres du guide"]')

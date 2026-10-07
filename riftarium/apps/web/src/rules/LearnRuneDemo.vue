@@ -52,8 +52,8 @@ const label = (state) => ({ ready: "Préparée", exhausted: "Épuisée", recycle
         <button
           type="button"
           class="lecon-runes-zoom"
-          :aria-label="`${item.card.name}. Double-cliquer pour agrandir.`"
-          @dblclick="zoomCard = item.card"
+          :aria-label="`Agrandir ${item.card.name}`"
+          @click="zoomCard = item.card"
         >
           <img :src="item.img" :alt="item.card.name" loading="lazy" decoding="async" />
         </button>

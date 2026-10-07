@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from "vue"
+import { fold } from "../search/search.js"
 import RulesHeader from "../rules/RulesHeader.vue"
 import { CATEGORIES, TOPICS } from "../rules/topics.js"
 import RiftButton from "../ui/RiftButton.vue"
@@ -12,11 +13,7 @@ const crumbs = [{ label: "Règles", to: "/regles" }, { label: "Aide avancée" }]
 
 /* Plage des diacritiques combinants, écrite en points de code : les caractères
    littéraux étaient invisibles dans l'éditeur et impossibles à relire. */
-const normalize = (value) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
+const normalize = fold
 
 /* Texte cherchable de chaque sujet, calculé une fois au chargement du module :
    le recomposer à chaque frappe refaisait un `normalize` sur tout le catalogue.

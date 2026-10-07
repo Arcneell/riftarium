@@ -9,12 +9,17 @@ import { NAV } from "../shell/navigation.js"
 export const MIN_QUERY = 2
 export const GROUP_LIMIT = 5
 
-export function normalize(text) {
+/* Repli des accents et de la casse (NFD, diacritiques U+0300 à U+036F retirés, minuscules).
+   Référence unique : les autres modules l'importent au lieu d'en recopier une version. */
+export function fold(text) {
   return String(text ?? "")
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .trim()
+}
+
+export function normalize(text) {
+  return fold(text).trim()
 }
 
 const wordsOf = (query) => normalize(query).split(/\s+/).filter(Boolean)

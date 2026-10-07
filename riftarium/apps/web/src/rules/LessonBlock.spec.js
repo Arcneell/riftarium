@@ -53,6 +53,7 @@ describe("LessonBlock", () => {
     expect(copies[1].isVisible()).toBe(true)
     await copies[1].get(".lecon-enlarge").trigger("click")
     expect(wrapper.emitted("zoom")[0]).toEqual([card])
+    expect(wrapper.findAll(".lecon-type")[1].attributes("aria-label")).not.toContain("Double-cliquer")
     await wrapper.findAll(".lecon-type")[1].trigger("dblclick")
     expect(wrapper.emitted("zoom")).toHaveLength(2)
   })

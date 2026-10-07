@@ -144,6 +144,8 @@ const zoomCard = ref(null)
 .chapitre-toc {
   position: sticky;
   top: calc(var(--topbar-h) + var(--space-4));
+  max-height: calc(100dvh - var(--topbar-h) - 32px);
+  overflow-y: auto;
   padding: var(--space-4);
   background: var(--bg-raised);
   box-shadow: inset 0 0 0 1px var(--line);

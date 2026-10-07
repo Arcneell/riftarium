@@ -1,6 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import BeginnerGuideView from "./BeginnerGuideView.vue"
 import Icon from "../components/Icon.vue"
 import { STEPS } from "../rules/guide.js"
@@ -103,6 +103,31 @@ describe("BeginnerGuideView", () => {
     wrapper.unmount()
   })
 
+  it("le plein écran cible document.documentElement et se quitte au démontage", async () => {
+    const requestFullscreen = vi.fn(() => Promise.resolve())
+    const exitFullscreen = vi.fn(() => Promise.resolve())
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement")
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      value: requestFullscreen,
+      configurable: true
+    })
+    document.exitFullscreen = exitFullscreen
+    const { wrapper } = await mountGuide()
+    await wrapper.find(".plateau-fullscreen").trigger("click")
+    expect(requestFullscreen).toHaveBeenCalledTimes(1)
+    expect(requestFullscreen.mock.contexts[0]).toBe(document.documentElement)
+
+    /* Démontage avec un élément en plein écran : on le quitte. */
+    Object.defineProperty(document, "fullscreenElement", { value: document.documentElement, configurable: true })
+    wrapper.unmount()
+    expect(exitFullscreen).toHaveBeenCalledTimes(1)
+
+    delete document.fullscreenElement
+    if (original) Object.defineProperty(Document.prototype, "fullscreenElement", original)
+    delete document.exitFullscreen
+    delete document.documentElement.requestFullscreen
+  })
+
   it("suit le retour arrière du navigateur sur ?etape=", async () => {
     const { wrapper, router } = await mountGuide()
     const dots = wrapper.findAll(".plateau-dot")
@@ -123,12 +148,12 @@ describe("BeginnerGuideView", () => {
 
   it("les pastilles d'étape ne se déclarent pas onglets", async () => {
     const { wrapper } = await mountGuide()
-    expect(wrapper.find(".plateau-dots").attributes("role")).toBeUndefined()
     const dots = wrapper.findAll(".plateau-dot")
     expect(dots[0].attributes("role")).toBeUndefined()
     expect(dots[0].attributes("aria-current")).toBe("true")
     expect(dots[1].attributes("aria-current")).toBeUndefined()
     expect(dots[0].attributes("aria-label")).toBe(STEPS[0].title)
+    expect(wrapper.find(".plateau-dots").attributes("role")).toBe("group")
     wrapper.unmount()
   })
 

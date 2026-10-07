@@ -763,17 +763,10 @@ td.num {
 /* La section qui remonte sur la bannière fournit déjà l'espace du haut.
    position/z-index : la bannière est positionnée, elle passerait sinon
    par-dessus le contenu qui la chevauche. */
-.page-banner + section,
-.page-banner + .offline-note + section {
+.page-banner + section {
   position: relative;
   z-index: 1;
   padding-top: 0;
-}
-/* Le bandeau hors ligne garde son propre rembourrage, il lui faut juste passer
-   au-dessus de l'illustration qu'il chevauche. */
-.page-banner + .offline-note {
-  position: relative;
-  z-index: 1;
 }
 
 .traceurs-notice {
@@ -855,17 +848,6 @@ td.num {
 .verify-notice .btn {
   flex-shrink: 0;
 }
-/* Bandeau discret des pages de règles quand le réseau est coupé (PWA). */
-.offline-note {
-  text-align: center;
-  padding: 8px 18px;
-  font-size: 0.82rem;
-  font-family: var(--font-mono);
-  color: var(--ink);
-  background: rgba(171, 124, 26, 0.1);
-  border-bottom: 1px solid var(--line);
-}
-
 /* Rappel de vérification dans la section Email du profil. */
 .verify-line {
   display: flex;
@@ -1035,11 +1017,6 @@ td.num {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
-}
-@keyframes modal-fade {
-  from {
-    opacity: 0;
-  }
 }
 
 /* Pendant un glisser-déposer du deck : curseur de saisie partout. */

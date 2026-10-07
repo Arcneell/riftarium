@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 
         <!-- Ni tablist ni tab : aucun panneau d'onglets n'est associé, et le motif
              ARIA imposerait alors une navigation aux flèches qui n'existe pas ici. -->
-        <div class="plateau-dots" aria-label="Étapes du guide">
+        <div class="plateau-dots" role="group" aria-label="Étapes du guide">
           <button
             v-for="(s, i) in STEPS"
             :key="s.key"

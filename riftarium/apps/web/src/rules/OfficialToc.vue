@@ -1,5 +1,6 @@
 <script setup>
 import { nextTick, onMounted, ref, watch } from "vue"
+import { bare } from "./useRulesReader.js"
 
 /* Table des matières du texte officiel : chapitres repliables et sections.
    Partagée entre la colonne collante (bureau) et la feuille « Sommaire » (< 1 024 px). */
@@ -11,7 +12,6 @@ const props = defineProps({
 const emit = defineEmits(["pick", "toggle"])
 
 const root = ref(null)
-const bare = (number) => number.replace(/\.$/, "")
 
 /* Premier ancêtre à défilement vertical (colonne collante ou feuille). */
 function scrollParent(element) {

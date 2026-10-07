@@ -89,7 +89,7 @@ const selectedType = ref(props.block.type === "types" ? (props.block.items[0]?.k
         class="lecon-type"
         :class="{ 'lecon-type--current': selectedType === item.key, 'lecon-type--wide': item.wide }"
         :aria-pressed="selectedType === item.key"
-        :aria-label="`${item.title}. Double-cliquer pour agrandir.`"
+        :aria-label="item.title"
         @click="selectedType = item.key"
         @dblclick="emit('zoom', item.card)"
       >
