@@ -25,7 +25,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "rail-label",
   "topbar-account",
   "rift-text",
-  "guide-fullscreen",
   "friends-panel",
   "profile-privacy",
   "rules-main",
