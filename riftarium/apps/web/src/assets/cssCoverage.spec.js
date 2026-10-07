@@ -17,10 +17,6 @@ const MAIN_CSS = process.env.CSS_COVERAGE_MAIN_CSS || path.join(SRC, "assets", "
 const UNSTYLED_ALLOWLIST = new Set([
   // Crochets de test : sélecteurs utilisés par les specs, sans style propre.
   "shell",
-  "chart-col",
-  "chart-band",
-  "chart-bar",
-  "chart-segment",
   "traceurs-ack",
   "rail-label",
   "topbar-account",

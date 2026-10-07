@@ -166,3 +166,23 @@ export function formatPlayedAt(iso) {
   const date = new Date(iso)
   return Number.isNaN(date.getTime()) ? "" : DATE_FORMAT.format(date)
 }
+
+const RELATIVE_FORMAT = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" })
+const RELATIVE_UNITS = [
+  ["day", 86_400_000],
+  ["hour", 3_600_000],
+  ["minute", 60_000]
+]
+
+/** « il y a 3 h », « hier »… jusqu'à 30 jours, puis la date complète. `now` sert aux tests. */
+export function formatRelativePlayedAt(iso, now = Date.now()) {
+  if (!iso) return ""
+  const time = new Date(iso).getTime()
+  if (Number.isNaN(time)) return ""
+  const diff = time - now
+  if (diff > 0 || -diff >= 30 * 86_400_000) return formatPlayedAt(iso)
+  for (const [unit, ms] of RELATIVE_UNITS) {
+    if (-diff >= ms) return RELATIVE_FORMAT.format(Math.round(diff / ms), unit)
+  }
+  return "à l'instant"
+}

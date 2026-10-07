@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import { BANNERS } from "../banners.js"
-import MatchRow from "../components/MatchRow.vue"
+import MatchRow from "../play/MatchRow.vue"
 import PageBanner from "../components/PageBanner.vue"
 import { getHistory } from "../play.js"
 

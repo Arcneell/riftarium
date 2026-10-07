@@ -141,7 +141,7 @@ describe("PublicProfileView", () => {
     expect(wrapper.text()).toContain("Taux de victoire")
     expect(wrapper.get(".play-legend-name").text()).toBe("Jinx")
     expect(called("/api/users/nova/history")).toBe(true)
-    const row = wrapper.get(".profile-history .play-row")
+    const row = wrapper.get(".profile-history .partie-row")
     expect(row.text()).toContain("nova")
     expect(row.text()).toContain("kai")
     expect(row.text()).not.toContain("Moi")

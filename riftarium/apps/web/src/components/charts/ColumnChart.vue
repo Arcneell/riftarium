@@ -13,10 +13,10 @@ const props = defineProps({
   days: { type: Array, required: true }, // jours ISO "YYYY-MM-DD"
   values: { type: Array, required: true }, // colonnes
   valueLabel: { type: String, required: true },
-  color: { type: String, default: "var(--chart-gold)" },
+  color: { type: String, default: "var(--bronze)" },
   lineValues: { type: Array, default: null }, // ligne superposée (même unité)
   lineLabel: { type: String, default: "" },
-  lineColor: { type: String, default: "var(--chart-teal)" }
+  lineColor: { type: String, default: "var(--blood)" }
 })
 
 const HEIGHT = 200
@@ -29,7 +29,9 @@ const showTable = ref(false)
 const hovered = ref(-1)
 
 const hasLine = computed(() => Array.isArray(props.lineValues) && props.lineValues.length > 0)
-const scale = computed(() => niceScale(Math.max(0, ...props.values, ...(hasLine.value ? props.lineValues : []))))
+const scale = computed(() =>
+  niceScale(Math.max(0, ...props.values.map(num), ...(hasLine.value ? props.lineValues.map(num) : [])))
+)
 
 const plotWidth = computed(() => Math.max(240, width.value))
 const x0 = PAD.left
@@ -40,23 +42,25 @@ const y1 = HEIGHT - PAD.bottom
 const slot = computed(() => (x1.value - x0) / Math.max(1, props.days.length))
 const barWidth = computed(() => Math.max(2, Math.min(24, slot.value - 2)))
 const round = (n) => Math.round(n * 100) / 100
+/* Valeur absente ou non numérique (charge utile partielle) : 0, jamais NaN dans le SVG. */
+const num = (value) => (Number.isFinite(value) ? value : 0)
 const xCenter = (i) => round(x0 + slot.value * (i + 0.5))
-const yFor = (value) => round(y1 - (value / scale.value.top) * (y1 - y0))
+const yFor = (value) => round(y1 - (num(value) / scale.value.top) * (y1 - y0))
 
-/* Colonne : sommet arrondi 4px, base carrée posée sur la ligne de base. */
+/* Colonne : sommet aux angles coupés de 2px, base carrée posée sur la ligne de base. */
 function columnPath(index) {
-  const value = props.values[index]
-  if (!value || value <= 0) return ""
+  const value = num(props.values[index])
+  if (value <= 0) return ""
   const w = barWidth.value
   const x = round(xCenter(index) - w / 2)
   const top = yFor(value)
-  const r = Math.min(4, w / 2, y1 - top)
+  const r = Math.min(2, w / 2, y1 - top)
   return [
     `M${x},${y1}`,
     `L${x},${round(top + r)}`,
-    `Q${x},${top} ${round(x + r)},${top}`,
+    `L${round(x + r)},${top}`,
     `L${round(x + w - r)},${top}`,
-    `Q${round(x + w)},${top} ${round(x + w)},${round(top + r)}`,
+    `L${round(x + w)},${round(top + r)}`,
     `L${round(x + w)},${y1}`,
     "Z"
   ].join(" ")
@@ -76,13 +80,13 @@ const columns = computed(() =>
 )
 
 const linePoints = computed(() =>
-  hasLine.value ? props.days.map((_, i) => `${xCenter(i)},${yFor(props.lineValues[i] || 0)}`).join(" ") : ""
+  hasLine.value ? props.days.map((_, i) => `${xCenter(i)},${yFor(props.lineValues[i])}`).join(" ") : ""
 )
 
 /* Étiquette directe parcimonieuse : seulement le maximum de la série principale. */
 const maxIndex = computed(() => {
-  const max = Math.max(...props.values)
-  return max > 0 ? props.values.indexOf(max) : -1
+  const max = Math.max(0, ...props.values.map(num))
+  return max > 0 ? props.values.findIndex((value) => num(value) === max) : -1
 })
 const maxLabelAnchor = computed(() => {
   if (maxIndex.value < 0) return "middle"
@@ -122,12 +126,12 @@ const tooltipRows = computed(() => {
 </script>
 
 <template>
-  <figure ref="host" class="chart-figure">
-    <figcaption class="chart-head">
+  <figure ref="host" class="graphe-figure">
+    <figcaption class="graphe-head">
       <h3>{{ title }}</h3>
       <button
         type="button"
-        class="chart-toggle"
+        class="graphe-toggle"
         :aria-expanded="showTable"
         :aria-controls="tableId"
         @click="showTable = !showTable"
@@ -136,7 +140,7 @@ const tooltipRows = computed(() => {
       </button>
     </figcaption>
 
-    <div v-if="!showTable" class="chart-plot" @mouseleave="hovered = -1">
+    <div v-if="!showTable" class="graphe-plot" @mouseleave="hovered = -1">
       <svg
         :viewBox="`0 0 ${plotWidth} ${HEIGHT}`"
         :height="HEIGHT"
@@ -145,13 +149,12 @@ const tooltipRows = computed(() => {
       >
         <!-- Grille horizontale hairline + ticks Y arrondis -->
         <g v-for="tick in scale.ticks" :key="tick">
-          <line class="chart-grid" :x1="x0" :x2="x1" :y1="yFor(tick)" :y2="yFor(tick)" />
-          <text class="chart-axis-text" :x="x0 - 8" :y="yFor(tick) + 3.5" text-anchor="end">{{ tick }}</text>
+          <line class="graphe-grid" :x1="x0" :x2="x1" :y1="yFor(tick)" :y2="yFor(tick)" />
+          <text class="graphe-axis-text" :x="x0 - 8" :y="yFor(tick) + 3.5" text-anchor="end">{{ tick }}</text>
         </g>
 
-        <!-- Colonnes. `chart-col` et `chart-band` n'ont aucune règle CSS : ces deux
-             classes servent de point d'accroche aux tests du composant. -->
-        <path v-for="column in columns" :key="column.day" class="chart-col" :d="column.d" :fill="color" />
+        <!-- Colonnes et bandes de survol (aussi points d'accroche des tests). -->
+        <path v-for="column in columns" :key="column.day" class="graphe-col" :d="column.d" :fill="color" />
 
         <!-- Ligne superposée (même axe) -->
         <polyline
@@ -166,9 +169,9 @@ const tooltipRows = computed(() => {
         <!-- Point de survol de la ligne : ≥ 8px, anneau 2px couleur de surface -->
         <circle
           v-if="hasLine && hovered >= 0"
-          class="chart-line-dot"
+          class="graphe-line-dot"
           :cx="xCenter(hovered)"
-          :cy="yFor(lineValues[hovered] || 0)"
+          :cy="yFor(lineValues[hovered])"
           r="4.5"
           :fill="lineColor"
         />
@@ -176,7 +179,7 @@ const tooltipRows = computed(() => {
         <!-- Étiquette directe du maximum de la série principale -->
         <text
           v-if="maxIndex >= 0 && hovered !== maxIndex"
-          class="chart-value-text"
+          class="graphe-value-text"
           :x="xCenter(maxIndex)"
           :y="yFor(values[maxIndex]) - 7"
           :text-anchor="maxLabelAnchor"
@@ -188,7 +191,7 @@ const tooltipRows = computed(() => {
         <text
           v-for="i in labeledIndexes"
           :key="`x-${columns[i].day}`"
-          class="chart-axis-text"
+          class="graphe-axis-text"
           :x="columns[i].x"
           :y="HEIGHT - 7"
           :text-anchor="columns[i].anchor"
@@ -200,7 +203,7 @@ const tooltipRows = computed(() => {
         <rect
           v-for="(day, i) in days"
           :key="`band-${day}`"
-          class="chart-band"
+          class="graphe-band"
           :x="x0 + slot * i"
           :y="0"
           :width="slot"
@@ -213,20 +216,20 @@ const tooltipRows = computed(() => {
       <!-- Infobulle de survol : aria-hidden, pas role="status". Elle change à chaque
            mouvement de souris et n'a pas d'équivalent clavier : annoncée, elle noyait
            le lecteur d'écran, qui dispose du tableau « Voir les données ». -->
-      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" aria-hidden="true">
-        <span class="chart-tooltip-date">{{ formatDayLong(days[hovered]) }}</span>
-        <span v-for="row in tooltipRows" :key="row.label" class="chart-tooltip-row">
-          <i class="chart-dot" :style="{ background: row.color }"></i>{{ row.label }} <b>{{ row.value }}</b>
+      <div v-if="hovered >= 0" class="graphe-tooltip" :style="tooltipStyle" aria-hidden="true">
+        <span class="graphe-tooltip-date">{{ formatDayLong(days[hovered]) }}</span>
+        <span v-for="row in tooltipRows" :key="row.label" class="graphe-tooltip-row">
+          <i class="graphe-dot" :style="{ background: row.color }"></i>{{ row.label }} <b>{{ row.value }}</b>
         </span>
       </div>
     </div>
 
-    <div v-if="hasLine && !showTable" class="chart-legend">
-      <span class="chart-key"><i :style="{ background: color }"></i>{{ valueLabel }}</span>
-      <span class="chart-key"><i :style="{ background: lineColor }"></i>{{ lineLabel }}</span>
+    <div v-if="hasLine && !showTable" class="graphe-legend">
+      <span class="graphe-key"><i :style="{ background: color }"></i>{{ valueLabel }}</span>
+      <span class="graphe-key"><i :style="{ background: lineColor }"></i>{{ lineLabel }}</span>
     </div>
 
-    <div v-if="showTable" :id="tableId" class="chart-table">
+    <div v-if="showTable" :id="tableId" class="graphe-table">
       <table>
         <thead>
           <tr>
@@ -246,3 +249,191 @@ const tooltipRows = computed(() => {
     </div>
   </figure>
 </template>
+
+<style scoped>
+/* Graphique rhabillé « Forge noxienne » : tout vient des tokens. Les classes
+   graphe-* évitent les règles héritées de main.css (chart-*, table, th, h3). */
+.graphe-figure {
+  margin: 0;
+}
+.graphe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.graphe-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.graphe-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.graphe-toggle:hover {
+  color: var(--ink);
+}
+.graphe-toggle:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+.graphe-plot {
+  position: relative;
+  margin-top: var(--space-3);
+}
+.graphe-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.graphe-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  shape-rendering: crispedges;
+}
+.graphe-line-dot {
+  stroke: var(--bg-raised);
+  stroke-width: 2;
+}
+/* Textes : toujours l'encre du site, jamais la couleur de série. */
+.graphe-axis-text {
+  fill: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+.graphe-value-text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 700;
+}
+.graphe-row-label {
+  fill: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.graphe-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: var(--space-3);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.graphe-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.graphe-key i,
+.graphe-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  clip-path: polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px);
+}
+.graphe-key b {
+  font-weight: 700;
+  color: var(--ink);
+}
+.graphe-tooltip {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  box-shadow: var(--shadow-deep);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.graphe-tooltip-date {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.graphe-tooltip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.graphe-tooltip-row b {
+  font-weight: 700;
+  color: var(--ink);
+}
+.graphe-tooltip-row .graphe-dot {
+  display: inline-block;
+  margin-right: 3px;
+}
+.graphe-table {
+  margin-top: var(--space-3);
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+.graphe-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.graphe-table th,
+.graphe-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.graphe-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-raised);
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+}
+.graphe-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.graphe-col,
+\n.graphe-band {
+  transition: opacity var(--t-fast);
+}
+.graphe-band {
+  cursor: crosshair;
+}
+</style>
