@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import HistoryView from "./HistoryView.vue"
+import Icon from "../components/Icon.vue"
 import { api } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -39,7 +40,7 @@ async function mountView() {
   router.push("/historique")
   await router.isReady()
   const wrapper = mount(HistoryView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], components: { Icon } },
     attachTo: document.body
   })
   await flushPromises()
@@ -102,30 +103,38 @@ describe("HistoryView", () => {
 
   it("invite à lancer une partie suivie quand l'historique est vide", async () => {
     const { wrapper } = await mountView()
-    const empty = wrapper.get(".play-empty")
+    const empty = wrapper.get(".histo-empty")
     expect(empty.text()).toContain("Partie suivie")
     expect(empty.text()).toContain("application mobile")
-    expect(empty.get("a.btn-gold").attributes("href")).toBe("/salon")
+    expect(empty.get("a").attributes("href")).toBe("/salon")
     expect(wrapper.find(".partie-row").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("affiche des squelettes au premier chargement", async () => {
+    api.mockReturnValue(new Promise(() => {}))
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".rift-skeleton").exists()).toBe(true)
+    expect(wrapper.find(".histo-empty").exists()).toBe(false)
     wrapper.unmount()
   })
 
   it("affiche l'erreur de l'API sans état vide trompeur", async () => {
     api.mockRejectedValue(new Error("Le serveur a rencontré une erreur"))
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toBe("Le serveur a rencontré une erreur")
-    expect(wrapper.find(".play-empty").exists()).toBe(false)
+    expect(wrapper.get("[role=alert]").text()).toBe("Le serveur a rencontré une erreur")
+    expect(wrapper.find(".histo-empty").exists()).toBe(false)
     wrapper.unmount()
   })
 
   it("pagine : la page suivante redemande l'historique", async () => {
     api.mockResolvedValue({ items: [item], total: 25 })
     const { wrapper } = await mountView()
-    const next = wrapper.findAll(".pager button").at(1)
+    const next = wrapper.findAll(".histo-pager button").at(1)
     await next.trigger("click")
     await flushPromises()
     expect(api).toHaveBeenLastCalledWith("/api/play/history?page=2&size=20")
-    expect(wrapper.get(".pager span").text()).toContain("page 2 / 2")
+    expect(wrapper.get(".histo-page").text()).toContain("page 2 / 2")
     wrapper.unmount()
   })
 })
