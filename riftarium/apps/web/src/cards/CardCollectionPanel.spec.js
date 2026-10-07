@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -268,6 +270,20 @@ describe("CardCollectionPanel", () => {
     expect(patches).toContainEqual({ id: "ogn-037-298", owned_qty: 0 })
     expect(wrapper.find(".panel-lot").exists()).toBe(false)
     expect(wrapper.get("summary").text()).toBe("Détail des exemplaires")
+    wrapper.unmount()
+  })
+
+  it("le détail des exemplaires porte un chevron décoratif qui pivote selon [open]", async () => {
+    login()
+    api.mockResolvedValue({ entries: [], total_qty: 0 })
+    const { wrapper } = await mountPanel()
+    const chevron = wrapper.get("summary.panel-detail-title .panel-detail-chevron")
+    expect(chevron.attributes("aria-hidden")).toBe("true")
+    /* jsdom n'applique pas le CSS scopé : on vérifie la règle dans la source du composant. */
+    const source = readFileSync(resolve("src/cards/CardCollectionPanel.vue"), "utf8")
+    expect(source).toMatch(
+      /\.panel-detail\[open\] > \.panel-detail-title \.panel-detail-chevron\s*\{\s*transform: rotate\(45deg\)/
+    )
     wrapper.unmount()
   })
 

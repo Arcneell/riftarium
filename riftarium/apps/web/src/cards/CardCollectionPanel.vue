@@ -154,7 +154,9 @@ async function toggleWish() {
       </div>
 
       <details class="panel-detail">
-        <summary class="panel-detail-title">{{ detailTitle }}</summary>
+        <summary class="panel-detail-title">
+          <span class="panel-detail-chevron" aria-hidden="true"></span>{{ detailTitle }}
+        </summary>
         <div v-if="entries.length" class="panel-lots">
           <RiftChip
             v-for="entry in entries"
@@ -260,6 +262,8 @@ async function toggleWish() {
 .panel-detail-title {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
+  list-style: none;
   min-height: 44px;
   cursor: pointer;
   font-family: var(--font-label);
@@ -267,6 +271,26 @@ async function toggleWish() {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-muted);
+}
+.panel-detail-title::-webkit-details-marker {
+  display: none;
+}
+.panel-detail-chevron {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.panel-detail[open] > .panel-detail-title .panel-detail-chevron {
+  transform: rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-detail-chevron {
+    transition: none;
+  }
 }
 .panel-lots {
   display: flex;
