@@ -50,23 +50,23 @@ function mountVisual() {
 describe("DeckVisual", () => {
   it("affiche les zones, les noms et le champion", () => {
     const wrapper = mountVisual()
-    expect(wrapper.find(".dvis-identity").exists()).toBe(true)
+    expect(wrapper.find(".lecture-zone-identity").exists()).toBe(true)
     expect(wrapper.text()).toContain("Légende")
     expect(wrapper.text()).toContain("Deck principal")
     expect(wrapper.text()).toContain("Daughter of the Void")
     expect(wrapper.text()).toContain("Charm")
-    expect(wrapper.findAll(".dvis-card")).toHaveLength(3)
-    expect(wrapper.get(".dvis-cell.champion").text()).toContain("Ahri, Inquisitive")
-    expect(wrapper.findAll(".dvis-qty").some((node) => node.text() === "×3")).toBe(true)
+    expect(wrapper.findAll(".lecture-card")).toHaveLength(3)
+    expect(wrapper.get(".lecture-card-cell--champion").text()).toContain("Ahri, Inquisitive")
+    expect(wrapper.findAll(".lecture-card-qty").some((node) => node.text() === "×3")).toBe(true)
   })
 
   it("chaque vignette est un lien vers la fiche de la carte", () => {
     /* L'aperçu au survol n'existe pas au doigt : sans lien, impossible de lire la carte. */
     const wrapper = mountVisual()
-    const links = wrapper.findAll(".dvis-link")
+    const links = wrapper.findAll(".lecture-card-link")
     expect(links).toHaveLength(3)
     expect(links.map((link) => link.attributes("href"))).toEqual(["/cartes/l1", "/cartes/u1", "/cartes/s1"])
     expect(links[1].attributes("aria-label")).toBe("Voir la carte Ahri, Inquisitive")
-    expect(links[0].find(".dvis-card").exists()).toBe(true)
+    expect(links[0].find(".lecture-card").exists()).toBe(true)
   })
 })

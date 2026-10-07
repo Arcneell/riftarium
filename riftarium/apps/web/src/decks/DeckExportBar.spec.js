@@ -18,7 +18,7 @@ describe("DeckExportBar", () => {
 
   it("copie une liste Rift Atlas", async () => {
     const wrapper = mount(DeckExportBar, { props: { deck } })
-    await wrapper.get(".btn-gold").trigger("click")
+    await wrapper.get(".rift-btn--primary").trigger("click")
     await flushPromises()
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("~~Legend~~"))
     expect(wrapper.text()).toContain("Copié")

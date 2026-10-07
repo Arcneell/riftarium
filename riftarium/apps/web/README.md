@@ -41,7 +41,8 @@ Cette charte est aussi la référence du futur réalignement de l'app Flutter.
 | --- | --- |
 | `RiftButton` | `variant` primary / secondary / ghost, `size` sm / md, `to` ou `href` |
 | `RiftField` | champ avec label (masquable), `search`, `error` ; attributs transmis à l'`<input>` |
-| `RiftTabs` | onglets de sous-rubriques (`items: [{ label, to }]`) |
+| `RiftTabs` | onglets de sous-rubriques liés aux routes (`items: [{ label, to }]`) |
+| `RiftSegments` | onglets dans une page (`tablist`, `items: [{ value, label, badge? }]`, `v-model`, `label`, `id-base`) ; les panneaux restent à la page |
 | `RiftModal` | modale accessible (`title`, `wide`, `@close`) |
 | `RiftSheet` | feuille du bas sur téléphone (`title`, `@close`) |
 | `RiftText` / `RiftGlyph` | texte de jeu enrichi |
@@ -54,3 +55,11 @@ mobiles (`AppTabbar`), sous-onglets, fil d'Ariane (`AppTopbar`) et groupe « Pag
 de la recherche (`SearchPalette`, logique dans `src/search/search.js`). Une page peut
 fournir le dernier maillon du fil d'Ariane avec `setPageCrumb(nom)`
 (`src/shell/pageCrumb.js`).
+
+### Decks `src/decks/`
+
+Pièces des pages `DecksView`, `CommunityView` et `DeckEditView` : fiches (`DeckCard`),
+filtres de la communauté, galerie, liste du deck et glisser-déposer (`useDeckDrag`),
+barre d'édition, analyse, export, cartes manquantes, lecture (`DeckView`, `DeckVisual`).
+Chaque pièce a son préfixe de classes (`deck-card-`, `atelier-`, `galerie-`,
+`decklist-`, `analyse-`, `lecture-`, `communaute-`, `mesdecks-`, `legalite-`).

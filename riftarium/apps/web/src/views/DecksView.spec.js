@@ -21,7 +21,7 @@ async function mountView() {
   router.push("/decks")
   await router.isReady()
   const wrapper = mount(DecksView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()
@@ -46,7 +46,7 @@ describe("DecksView", () => {
     const { wrapper, router } = await mountView()
     expect(document.body.querySelector(".rift-modal")).toBeNull()
 
-    await wrapper.get(".toolbar .btn-gold").trigger("click")
+    await wrapper.get(".mesdecks-new").trigger("click")
     const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Nouveau deck")
@@ -66,9 +66,9 @@ describe("DecksView", () => {
 
   it("génère un deck d'exemple depuis la modale", async () => {
     const { wrapper, router } = await mountView()
-    await wrapper.get(".toolbar .btn-gold").trigger("click")
+    await wrapper.get(".mesdecks-new").trigger("click")
     const modal = document.body.querySelector(".rift-modal")
-    const ownedButton = [...modal.querySelectorAll(".example-actions button")].find((b) =>
+    const ownedButton = [...modal.querySelectorAll(".mesdecks-examples button")].find((b) =>
       b.textContent.includes("Avec ma collection")
     )
     ownedButton.click()
@@ -87,7 +87,7 @@ describe("DecksView", () => {
       return Promise.resolve(null)
     })
     const { wrapper, router } = await mountView()
-    await wrapper.get(".toolbar .btn-gold").trigger("click")
+    await wrapper.get(".mesdecks-new").trigger("click")
     const modal = document.body.querySelector(".rift-modal")
 
     const nameInput = modal.querySelector("input[type=text]")
@@ -97,14 +97,38 @@ describe("DecksView", () => {
     await flushPromises()
 
     expect(document.body.querySelector(".rift-modal")).not.toBeNull()
-    expect(document.body.querySelector(".rift-modal .error").textContent).toContain("Nom déjà pris")
+    expect(document.body.querySelector(".rift-modal .mesdecks-error").textContent).toContain("Nom déjà pris")
     expect(router.currentRoute.value.path).toBe("/decks")
+    wrapper.unmount()
+  })
+
+  it("création en échec puis Annuler : l'alerte périmée disparaît de la page", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") return Promise.reject(new Error("Nom déjà pris"))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    expect(document.body.querySelector(".mesdecks-error")).not.toBeNull()
+
+    const cancel = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Annuler")
+    cancel.click()
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+    expect(document.body.querySelector(".mesdecks-error")).toBeNull()
     wrapper.unmount()
   })
 
   it("la modale se ferme avec Échap sans créer de deck", async () => {
     const { wrapper } = await mountView()
-    await wrapper.get(".toolbar .btn-gold").trigger("click")
+    await wrapper.get(".mesdecks-new").trigger("click")
     expect(document.body.querySelector(".rift-modal")).not.toBeNull()
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
@@ -135,7 +159,7 @@ describe("DecksView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    const badge = wrapper.get(".deck-record")
+    const badge = wrapper.get(".deck-card-record")
     expect(badge.text()).toBe("3 V · 1 D")
     expect(badge.attributes("title")).toContain("3 victoire(s), 1 défaite(s)")
     wrapper.unmount()
@@ -152,8 +176,177 @@ describe("DecksView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    expect(wrapper.find(".deck-record").exists()).toBe(false)
+    expect(wrapper.find(".deck-card-record").exists()).toBe(false)
     wrapper.unmount()
+  })
+
+  it("aucun deck : RiftEmpty avec Nouveau deck et les deux exemples", async () => {
+    const { wrapper, router } = await mountView()
+    const empty = wrapper.get(".rift-empty")
+    expect(empty.text()).toContain("Forgez votre premier deck")
+    const labels = empty.findAll("button").map((b) => b.text())
+    expect(labels).toEqual(["Nouveau deck", "Exemple avec ma collection", "Exemple à compléter"])
+
+    await empty.findAll("button")[2].trigger("click")
+    await flushPromises()
+    const call = api.mock.calls.find(([path]) => path === "/api/decks/example")
+    expect(call[1].body).toEqual({ mode: "discover" })
+    expect(router.currentRoute.value.path).toBe("/decks/9")
+    wrapper.unmount()
+  })
+
+  it("double clic sur Créer : un seul POST", async () => {
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") {
+        return new Promise((resolve) => {
+          release = () => resolve({ id: 7 })
+        })
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    await flushPromises()
+
+    const form = modal.querySelector("form")
+    form.dispatchEvent(new Event("submit"))
+    form.dispatchEvent(new Event("submit"))
+    await flushPromises()
+
+    /* Création en cours : Échap ne ferme pas la modale, le submit est désactivé. */
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).not.toBeNull()
+    expect(modal.querySelector("button[type=submit]").disabled).toBe(true)
+    expect(api.mock.calls.filter(([, o]) => o?.method === "POST")).toHaveLength(1)
+    release()
+    await flushPromises()
+
+    const posts = api.mock.calls.filter(([path, options]) => path === "/api/decks" && options?.method === "POST")
+    expect(posts).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it("échec de chargement : message et Réessayer relance le GET", async () => {
+    let attempts = 0
+    api.mockImplementation((path) => {
+      if (path === "/api/decks/mine") {
+        attempts += 1
+        return attempts === 1 ? Promise.reject(new Error("Serveur indisponible")) : Promise.resolve([])
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    const alert = wrapper.get(".mesdecks-error")
+    expect(alert.attributes("role")).toBe("alert")
+    expect(alert.text()).toContain("Serveur indisponible")
+    expect(wrapper.find(".rift-empty").exists()).toBe(false)
+
+    const retry = wrapper.findAll("button").find((b) => b.text() === "Réessayer")
+    await retry.trigger("click")
+    await flushPromises()
+    expect(attempts).toBe(2)
+    expect(wrapper.find(".mesdecks-error").exists()).toBe(false)
+    expect(wrapper.find(".rift-empty").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("le format se choisit au clavier dans le radiogroup", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const radios = [...modal.querySelectorAll("[role=radiogroup] [role=radio]")]
+    expect(radios[0].getAttribute("aria-checked")).toBe("true")
+
+    radios[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }))
+    await flushPromises()
+    expect(radios[1].getAttribute("aria-checked")).toBe("true")
+    expect(modal.textContent).toContain("Format libre, non officiel")
+
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Libre"
+    nameInput.dispatchEvent(new Event("input"))
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    const call = api.mock.calls.find(([path, options]) => path === "/api/decks" && options?.method === "POST")
+    expect(call[1].body.format).toBe("free")
+    wrapper.unmount()
+  })
+
+  it("exemple depuis l'état vide en échec : message visible, boutons réactivés", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks/example" && options.method === "POST")
+        return Promise.reject(new Error("Génération impossible"))
+      return Promise.resolve(null)
+    })
+    const { wrapper, router } = await mountView()
+    const buttons = wrapper.get(".rift-empty").findAll("button")
+    await buttons[1].trigger("click")
+    await flushPromises()
+
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+    const alert = wrapper.get(".mesdecks-error")
+    expect(alert.attributes("role")).toBe("alert")
+    expect(alert.text()).toContain("Génération impossible")
+    expect(
+      wrapper
+        .get(".rift-empty")
+        .findAll("button")
+        .every((b) => !b.element.disabled)
+    ).toBe(true)
+    expect(router.currentRoute.value.path).toBe("/decks")
+    wrapper.unmount()
+  })
+
+  it("une seule requête à la fois : les exemples sont désactivés pendant la création, et Créer pendant la génération", async () => {
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") {
+        return new Promise((resolve) => {
+          release = () => resolve({ id: 7 })
+        })
+      }
+      if (path === "/api/decks/example") return new Promise(() => {})
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    await flushPromises()
+
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    const examples = [...modal.querySelectorAll(".mesdecks-examples button")]
+    expect(examples.every((b) => b.disabled)).toBe(true)
+    examples[0].click()
+    await flushPromises()
+    expect(api.mock.calls.some(([path]) => path === "/api/decks/example")).toBe(false)
+    release()
+    await flushPromises()
+    wrapper.unmount()
+
+    const second = await mountView()
+    await second.wrapper.get(".mesdecks-new").trigger("click")
+    const modal2 = document.body.querySelector(".rift-modal")
+    const input2 = modal2.querySelector("input[type=text]")
+    input2.value = "Autre"
+    input2.dispatchEvent(new Event("input"))
+    await flushPromises()
+    modal2.querySelector(".mesdecks-examples button").click()
+    await flushPromises()
+    expect(modal2.querySelector("button[type=submit]").disabled).toBe(true)
+    second.wrapper.unmount()
   })
 
   it("supprime un deck après confirmation dans la modale du site", async () => {
@@ -175,7 +368,7 @@ describe("DecksView", () => {
     const { wrapper } = await mountView()
     const confirmSpy = vi.spyOn(window, "confirm")
 
-    await wrapper.find(".deck-box-buttons button").trigger("click")
+    await wrapper.find(".deck-card-remove").trigger("click")
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(api.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
 

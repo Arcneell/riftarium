@@ -15,7 +15,9 @@ import RiftField from "../ui/RiftField.vue"
    fieldset, options en puces à bascule. L'état vit dans useQuerySyncedFilters (URL). */
 const props = defineProps({
   state: { type: Object, required: true },
-  sets: { type: Array, default: () => [] }
+  sets: { type: Array, default: () => [] },
+  /* Quand la page a déjà sa propre barre de recherche (galerie de l'éditeur de deck). */
+  hideSearch: { type: Boolean, default: false }
 })
 const emit = defineEmits(["update"])
 
@@ -35,6 +37,7 @@ function toggle(key, value) {
 <template>
   <div class="card-filters">
     <RiftField
+      v-if="!hideSearch"
       search
       hide-label
       label="Rechercher une carte"

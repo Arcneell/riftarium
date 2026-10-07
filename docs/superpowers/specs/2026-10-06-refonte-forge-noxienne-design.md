@@ -98,9 +98,10 @@ Les noms sont neufs et décrivent leur rôle.
 | --- | --- |
 | `RiftButton` | variantes `primary` (rouge biseauté), `secondary` (filet bronze), `ghost` ; tailles `sm` / `md` ; rendu `<button>` ou `RouterLink` |
 | `RiftPanel` | bloc à angles coupés, filet bronze, intertitre Cinzel suivi d'un filet dégradé (slot `title`) |
-| `RiftChip` | puce de domaine, de rareté ou de filtre (supprimable) |
+| `RiftChip` | puce de domaine, de rareté ou de filtre (supprimable) ; la prop `static` en fait un simple affichage (`<span>` sans bascule ni tabulation), utilisée pour les domaines affichés dans l'analyse d'un deck ; livré en PR 5 |
 | `RiftField` | champ texte, champ de recherche, sélecteur ; label et erreur intégrés |
-| `RiftTabs` | onglets (sous-pages, segments) ; défilants sur téléphone |
+| `RiftTabs` | onglets de sous-pages liés aux routes (rubriques) ; défilants sur téléphone. Réservé aux sous-pages : pas pour des onglets dans une page |
+| `RiftSegments` | onglets dans une page, `role="tablist"` (flèches, Début, Fin), panneaux posés par la page (`id="${idBase}-panel-${value}"`, `role="tabpanel"`) ; livré en PR 5 |
 | `RiftModal` | modale accessible (focus piégé, Échap, défilement bloqué) ; remplace `ModalDialog` |
 | `RiftSheet` | feuille du bas sur téléphone (filtres, menu du compte) |
 | `RiftSkeleton` | squelettes de chargement |
@@ -339,11 +340,35 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
 
 - **Mes decks** : fiches de deck sur l'illustration de la légende.
 - **Éditeur** : trois zones (recherche de cartes, liste par zone, stats et
-  règles en direct), qui passent en `RiftTabs` sur téléphone. La logique
+  règles en direct), qui passent en `RiftSegments` sur téléphone. La logique
   existante est conservée (`useDeckRules`, `useDeckStats`, `useDeckAutosave`,
   `deckExport`).
 - **Communauté** : filtres par légende et par domaine, pagination.
 - **Détail d'un deck** : `DeckView` et `DeckVisual` rhabillés.
+- **Livré** :
+  - dossier `src/decks/` : `DeckCard`, `DeckLegalBadge`, `CommunityFilters`,
+    `DeckGallery`, `DeckList`, `DeckEditorBar`, `DeckStatsPanel`,
+    `DeckExportBar`, `DeckMissingModal`, `DeckView`, `DeckVisual` et
+    `useDeckDrag` (glisser-déposer) ; les pages `DecksView`, `CommunityView` et
+    `DeckEditView` les assemblent. Aucun changement d'API ;
+  - préfixes de classes propres à chaque pièce (`deck-card-`, `legalite-`,
+    `analyse-`, `mesdecks-`, `communaute-`, `lecture-`, `atelier-`, `galerie-`,
+    `decklist-`, `rift-segments`), absents de `main.css` ;
+  - éditeur : trois colonnes (galerie, liste par zone, analyse) à partir de
+    1 280 px, deux colonnes en dessous, puis sur téléphone (< 768 px) trois onglets
+    `RiftSegments` « Cartes », « Deck » et « Analyse » (pastille de nombre de
+    cartes, « ✕ » si une règle échoue) ;
+  - éclat rouge de 600 ms sur la ligne d'une carte ajoutée (`decklist-flash`),
+    coupé sous `prefers-reduced-motion` ; `v-reveal` et `v-tilt` n'y servent plus ;
+  - `DeckBox` et `FilterSelect` supprimés avec leurs specs et leurs styles hérités
+    de `main.css` (builder v2, fiches, lecture, prix des decks, `fsel*`,
+    `owned-seg`, `filter-board`) ; seule `body.drag-active`, posée par
+    `useDeckDrag`, est conservée ;
+  - `CardFilters` (`src/cards/`) sert la galerie de l'éditeur avec sa prop `hide-search`,
+    qui masque sa recherche parce que la galerie porte déjà son propre champ ;
+    les filtres de la communauté (`CommunityFilters`, puces `RiftChip`) et ceux de
+    la galerie s'ouvrent dans un `RiftSheet` sous 1 024 px (téléphone et tablette) ;
+  - `.price-tag` reste dans `main.css` : `CardTile` l'utilise encore.
 
 ### PR 6 : règles
 

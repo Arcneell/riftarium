@@ -1,30 +1,27 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { api, cardThumb, DOMAINS, TYPES, RARITIES, session } from "../api.js"
-import {
-  DOMAIN_RUNE,
-  RUNE_LABELS,
-  cardsQuery,
-  domainFilterOptions,
-  energyFilterOptions,
-  glyphUrl,
-  rarityFilterOptions,
-  typeFilterOptions
-} from "../cardText.js"
-import RiftText from "../ui/RiftText.vue"
-import DeckExportBar from "../components/DeckExportBar.vue"
-import DeckMissingModal from "../components/DeckMissingModal.vue"
-import DeckView from "../components/DeckView.vue"
-import FilterSelect from "../components/FilterSelect.vue"
+import { api, cardThumb, TYPES, RARITIES, session } from "../api.js"
+import { cardsQuery } from "../cardText.js"
+import RiftButton from "../ui/RiftButton.vue"
 import RiftModal from "../ui/RiftModal.vue"
+import RiftSegments from "../ui/RiftSegments.vue"
+import RiftText from "../ui/RiftText.vue"
+import DeckEditorBar from "../decks/DeckEditorBar.vue"
+import DeckExportBar from "../decks/DeckExportBar.vue"
+import DeckGallery from "../decks/DeckGallery.vue"
+import DeckList from "../decks/DeckList.vue"
+import DeckMissingModal from "../decks/DeckMissingModal.vue"
+import DeckStatsPanel from "../decks/DeckStatsPanel.vue"
+import DeckView from "../decks/DeckView.vue"
+import { useDeckDrag } from "../decks/useDeckDrag.js"
+import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { useDeckAutosave } from "../composables/useDeckAutosave.js"
 import { useDeckRules } from "../composables/useDeckRules.js"
-import { useDeckStats } from "../composables/useDeckStats.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
-import { FORMAT_OPTIONS, formatLabel } from "../deckDisplay.js"
-import { PRICE_NOTE, formatEur } from "../prices.js"
+import { formatLabel } from "../deckDisplay.js"
+import { formatEur } from "../prices.js"
 import { applySeo, pageUrl } from "../seo.js"
 
 const route = useRoute()
@@ -65,22 +62,51 @@ async function persistDeck() {
   deck.value.updated_at = fresh.updated_at
 }
 
+/* Monté en premier : son save de secours part avant les autres démontages. */
 const { saveState, sessionExpired, save, markSaved } = useDeckAutosave(deck, persistDeck, {
   snapshot,
   canEdit: () => canEdit.value,
   error
 })
 
-/* Le sélecteur de format partage le composant des filtres (mode choix unique) :
-   re-cliquer sur l'option active la désélectionne, on garde alors le format courant. */
-function setFormat(values) {
-  deck.value.format = values[0] || deck.value.format
-}
-
 /* Session expirée pendant l'édition : on garde le brouillon affiché et modifiable localement. */
 const canEdit = computed(() =>
   Boolean(deck.value && (sessionExpired.value || (session.handle && session.handle === deck.value.owner)))
 )
+
+/* La barre d'édition ne touche pas au deck : la page applique ce qu'elle émet.
+   Un deck a toujours un format : une valeur vide garde le format courant. */
+function setFormat(value) {
+  deck.value.format = value || deck.value.format
+}
+
+/* ---------- Mise en page : trois zones, onglets sur téléphone ---------- */
+
+const breakpoint = useBreakpoint()
+const isMobile = computed(() => breakpoint.value === "mobile")
+const tab = ref("cards") // cards | deck | stats
+/* Hors onglet Deck sur téléphone, le plafond s'affiche en toast : la région live reste montée. */
+const toastText = computed(() => (isMobile.value && tab.value !== "deck" ? limitMessage.value : ""))
+
+const totalCards = computed(() => (deck.value?.cards || []).reduce((total, entry) => total + entry.qty, 0))
+const failingRule = computed(() => (deck.value?.checks || []).some((item) => !item.ok))
+const tabs = computed(() => [
+  { value: "cards", label: "Cartes" },
+  { value: "deck", label: "Deck", badge: totalCards.value },
+  {
+    value: "stats",
+    label: "Analyse",
+    badge: failingRule.value ? "✕" : null,
+    badgeLabel: "règle non respectée"
+  }
+])
+
+/* Sur téléphone seulement, chaque zone devient un panneau d'onglet (toujours monté). */
+function paneAttrs(name) {
+  if (!isMobile.value) return {}
+  return { role: "tabpanel", id: `atelier-panel-${name}`, "aria-labelledby": `atelier-tab-${name}` }
+}
+const paneShown = (name) => !isMobile.value || tab.value === name
 
 /* ---------- Retour visuel des mutations ---------- */
 
@@ -128,29 +154,28 @@ const {
   onAdded: (card) => pulse(flashes, card.id)
 })
 
-const { curve, curveLabel, energyTotal, domainSpread } = useDeckStats(() => deck.value?.cards || [])
-
 const missingInDeck = computed(() =>
   (deck.value?.cards || []).reduce((total, entry) => total + Math.max(0, entry.qty - (entry.card.owned_qty ?? 0)), 0)
 )
 
-/* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
-const deckValue = computed(() => formatEur(deck.value?.prices?.total_eur))
-
 /* ---------- Galerie filtrable ---------- */
 
-const grid = ref(null)
-const { tileMin, size, measure, observe } = useGridMeasure(grid, {
-  tileMin: 150,
-  size: 24,
-  maxSize: 60,
-  tileFloor: 112,
-  debounce: 160,
-  gap: () => 14,
-  minCol: () => 132,
-  rows: (height) => (height >= 1000 ? 5 : 4),
-  fallbackWidth: () => 720
-})
+/* DeckGallery expose sa grille : la mesure suit le nœud courant. */
+const galleryRef = ref(null)
+const { tileMin, size, measure, observe } = useGridMeasure(
+  computed(() => galleryRef.value?.grid),
+  {
+    tileMin: 150,
+    size: 24,
+    maxSize: 60,
+    tileFloor: 112,
+    debounce: 160,
+    gap: () => 14,
+    minCol: () => 132,
+    rows: (height) => (height >= 1000 ? 5 : 4),
+    fallbackWidth: () => 720
+  }
+)
 
 const {
   state: gallery,
@@ -185,11 +210,8 @@ const {
 )
 
 const sets = ref([])
-const domainOptions = computed(() => domainFilterOptions())
-const typeOptions = computed(() => typeFilterOptions())
-const rarityOptions = computed(() => rarityFilterOptions())
-const energyOptions = computed(() => energyFilterOptions())
-const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
+/* CardFilters attend des options { value, label } : on adapte la réponse de /api/sets. */
+const setOptions = computed(() => sets.value.map((s) => ({ value: s.set_id, label: s.name })))
 
 /* La taille de page suit la grille : on recharge, sauf si la page courante
    n'existe plus après un agrandissement. */
@@ -206,7 +228,11 @@ watch(legendEntry, (next, previous) => {
   }
 })
 
-const isOwned = (card) => !session.token || (card.owned_qty ?? 0) > 0
+/* « Voir les légendes » : sur téléphone, la galerie est dans un autre onglet. */
+function showLegends() {
+  setFilter("type", ["Legend"])
+  if (isMobile.value) tab.value = "cards"
+}
 
 /* ---------- Aperçu lisible au survol ---------- */
 
@@ -225,13 +251,36 @@ function hidePreview() {
   preview.value = null
 }
 
-/* ---------- Drag & drop façon table de jeu ---------- */
+/* ---------- Glisser-déposer façon table de jeu ---------- */
 
-const drag = reactive({ active: false, card: null, from: "", x: 0, y: 0, overDeck: false })
-const deckPanel = ref(null)
-let dragStart = null
-let dragMoved = false
-let suppressClick = false
+/* DeckList expose la racine de la liste : relue à chaque mouvement par useDeckDrag. */
+const deckListRef = ref(null)
+const {
+  drag,
+  onTilePointerDown,
+  suppressClick,
+  dispose: disposeDrag
+} = useDeckDrag({
+  enabled: () => canEdit.value,
+  finePointer,
+  reducedMotion,
+  panel: computed(() => deckListRef.value?.panel),
+  onDropAdd: (card) => addCard(card),
+  onDropRemove: (cardId) => removeOne(cardId),
+  onStart: hidePreview
+})
+
+const ghostHint = computed(() => {
+  if (drag.from === "deck") return drag.overDeck ? "" : "Relâchez pour retirer"
+  return drag.overDeck ? "Ajouter au deck" : ""
+})
+
+function onTileClick(card) {
+  if (suppressClick()) return
+  addCard(card)
+}
+
+/* ---------- Like ---------- */
 
 const likeBusy = ref(false)
 
@@ -251,80 +300,6 @@ async function toggleLike() {
   } finally {
     likeBusy.value = false
   }
-}
-
-function onTilePointerDown(card, from, event) {
-  if (!canEdit.value || !finePointer || event.pointerType === "touch" || event.button !== 0) return
-  if (event.target.closest(".row-actions")) return
-  dragStart = { card, from, x: event.clientX, y: event.clientY }
-  dragMoved = false
-  window.addEventListener("pointermove", onDragMove)
-  window.addEventListener("pointerup", onDragEnd, { once: true })
-}
-
-function onDragMove(event) {
-  if (!dragStart) return
-  if (!drag.active) {
-    if (Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) < 8) return
-    drag.active = true
-    drag.card = dragStart.card
-    drag.from = dragStart.from
-    hidePreview()
-    document.body.classList.add("drag-active")
-  }
-  dragMoved = true
-  drag.x = event.clientX
-  drag.y = event.clientY
-  const rect = deckPanel.value?.getBoundingClientRect()
-  drag.overDeck = Boolean(
-    rect &&
-    event.clientX >= rect.left &&
-    event.clientX <= rect.right &&
-    event.clientY >= rect.top &&
-    event.clientY <= rect.bottom
-  )
-}
-
-async function onDragEnd() {
-  window.removeEventListener("pointermove", onDragMove)
-  const wasActive = drag.active
-  const { card, from, overDeck } = { card: drag.card, from: drag.from, overDeck: drag.overDeck }
-  dragStart = null
-  document.body.classList.remove("drag-active")
-  if (!wasActive) return
-  suppressClick = dragMoved
-  setTimeout(() => (suppressClick = false), 0)
-  if (from === "gallery" && overDeck) {
-    if (addCard(card)) await flyGhostToRow(card)
-  } else if (from === "deck" && !overDeck) {
-    removeOne(card.id)
-  }
-  drag.active = false
-  drag.card = null
-  drag.overDeck = false
-}
-
-/* Le fantôme glisse jusqu'à sa ligne dans le deck (animation FLIP légère). */
-async function flyGhostToRow(card) {
-  if (reducedMotion) return
-  await nextTick()
-  const ghost = document.querySelector(".drag-ghost")
-  const row = deckPanel.value?.querySelector(`[data-row="${CSS.escape(card.id)}"]`)
-  if (!ghost || !row) return
-  const target = row.getBoundingClientRect()
-  const animation = ghost.animate(
-    [
-      { transform: `translate(${drag.x - 55}px, ${drag.y - 78}px) rotate(4deg)`, opacity: 1 },
-      { transform: `translate(${target.left + 20}px, ${target.top - 10}px) rotate(0deg) scale(0.32)`, opacity: 0.2 }
-    ],
-    { duration: 260, easing: "cubic-bezier(0.22, 0.8, 0.32, 1)" }
-  )
-  await animation.finished.catch(() => {})
-}
-
-function onTileClick(card) {
-  if (suppressClick) return
-  addCard(card)
 }
 
 /* ---------- Cartes manquantes ---------- */
@@ -365,7 +340,10 @@ async function load() {
     deck.value = loaded
     sessionExpired.value = false
     markSaved()
-    if (canEdit.value && !deck.value.cards.some((entry) => entry.card.type === "Legend")) gallery.type = ["Legend"]
+    const hasLegend = deck.value.cards.some((entry) => entry.card.type === "Legend")
+    /* Sur téléphone : on ouvre sur le deck s'il a sa légende, sinon sur les cartes pour la choisir. */
+    tab.value = hasLegend ? "deck" : "cards"
+    if (canEdit.value && !hasLegend) gallery.type = ["Legend"]
     if (!canEdit.value && deck.value.is_public && deck.value.moderation_status === "published") {
       try {
         const seen = await api(`/api/decks/${deck.value.id}/view`, { method: "POST" })
@@ -425,391 +403,129 @@ onBeforeUnmount(() => {
   for (const timer of pulseTimers) clearTimeout(timer)
   pulseTimers.clear()
   window.removeEventListener("scroll", hidePreview)
-  window.removeEventListener("pointermove", onDragMove)
-  /* `{ once: true }` ne retire l'écouteur qu'après un relâchement : un démontage
-     en cours de glissement le laissait accroché à window. */
-  window.removeEventListener("pointerup", onDragEnd)
+  /* Démontage en plein glisser : écouteurs de window et classe du body retirés. */
+  disposeDrag()
 })
 </script>
 
 <template>
   <!-- Deck absent : l'erreur est portée par la branche v-else en bas de ce fichier. -->
-  <DeckView v-if="deck && !canEdit" :deck="deck" @like="toggleLike" />
-  <section class="dbuilder-page" v-else-if="deck">
-    <div class="dbuilder-bar">
-      <RouterLink :to="canEdit ? '/decks' : '/communaute'" class="dbuilder-back">
-        {{ canEdit ? "← Mes decks" : "← Communauté" }}
-      </RouterLink>
-      <input
-        v-if="canEdit"
-        type="text"
-        v-model="deck.name"
-        class="dbuilder-name"
-        maxlength="80"
-        aria-label="Nom du deck"
-      />
-      <h2 v-else class="dbuilder-name">{{ deck.name }}</h2>
-      <FilterSelect
-        v-if="canEdit"
-        label="Format"
-        single
-        required
-        :options="FORMAT_OPTIONS"
-        :model-value="[deck.format]"
-        @update:model-value="setFormat"
-      />
-      <span v-else class="muted mono"> {{ formatLabel(deck.format) }} · par {{ deck.owner }} </span>
-      <label v-if="canEdit" class="switch"> <input type="checkbox" v-model="deck.is_public" /><i></i> Public </label>
-      <div class="deck-box-stats">
-        <button
-          v-if="deck.is_public && deck.moderation_status === 'published'"
-          type="button"
-          class="deck-box-stat"
-          :class="{ liked: deck.liked_by_me }"
-          :aria-pressed="deck.liked_by_me"
-          :aria-label="deck.liked_by_me ? 'Ne plus aimer' : 'Aimer ce deck'"
-          :disabled="likeBusy"
-          @click="toggleLike"
-        >
-          <Icon name="heart" :size="16" />
-          {{ deck.likes }}
-        </button>
-        <span class="deck-box-stat" :title="`${deck.views ?? 0} vue(s)`">
-          <Icon name="eye" :size="16" />
-          {{ deck.views ?? 0 }}
-        </span>
-      </div>
-      <button type="button" class="btn btn-ghost btn-sm" @click="showExport = true">Exporter</button>
-      <!-- `idle` : sous 1100 px le CSS transforme cette mention en toast fixe,
-           qui ne doit pas flotter à vide entre deux sauvegardes. -->
-      <span v-if="canEdit" class="dbuilder-save" :class="[saveState, { idle: !saveState }]">
-        <template v-if="saveState === 'saving'">Enregistrement…</template>
-        <template v-else-if="saveState === 'saved'">Enregistré</template>
-        <template v-else-if="saveState === 'error'">Erreur de sauvegarde</template>
-      </span>
-      <span v-if="error" class="error">{{ error }}</span>
-    </div>
-    <p v-if="deck.moderation_status === 'pending'" class="error dbuilder-moderation">
+  <DeckView v-if="deck && !canEdit" :deck="deck" :like-busy="likeBusy" @like="toggleLike" />
+  <div v-else-if="deck" class="atelier-page">
+    <h1 class="sr-only">Édition du deck {{ deck.name }}</h1>
+    <DeckEditorBar
+      :deck="deck"
+      :can-edit="canEdit"
+      :save-state="saveState"
+      :error="error"
+      :like-busy="likeBusy"
+      @like="toggleLike"
+      @export="showExport = true"
+      @update:name="deck.name = $event"
+      @update:format="setFormat"
+      @update:public="deck.is_public = $event"
+    />
+    <p v-if="deck.moderation_status === 'pending'" class="atelier-moderation" role="status">
       En attente de modération : ce deck n'est pas visible publiquement.
     </p>
 
-    <div class="dbuilder" :class="{ readonly: !canEdit }">
-      <!-- Galerie : toutes les cartes du jeu, façon collection de jeu de cartes -->
-      <div v-if="canEdit" class="dbuilder-gallery">
-        <div class="filter-board">
-          <label class="search filter-search">
-            <Icon name="search" :size="18" />
-            <input
-              type="search"
-              inputmode="search"
-              enterkeyhint="search"
-              autocapitalize="off"
-              autocorrect="off"
-              spellcheck="false"
-              v-model="gallery.q"
-              placeholder="Jinx, ogn-202, reaction…"
-              aria-label="Rechercher une carte"
-            />
-          </label>
-          <FilterSelect
-            label="Domaines"
-            :options="domainOptions"
-            :model-value="gallery.domain"
-            @update:model-value="setFilter('domain', $event)"
-          />
-          <FilterSelect
-            label="Types"
-            :options="typeOptions"
-            :model-value="gallery.type"
-            @update:model-value="setFilter('type', $event)"
-          />
-          <FilterSelect
-            label="Raretés"
-            :options="rarityOptions"
-            :model-value="gallery.rarity"
-            @update:model-value="setFilter('rarity', $event)"
-          />
-          <FilterSelect
-            label="Coût"
-            :options="energyOptions"
-            :model-value="gallery.energy"
-            @update:model-value="setFilter('energy', $event)"
-          />
-          <FilterSelect
-            label="Sets"
-            :options="setOptions"
-            :model-value="gallery.set_id"
-            @update:model-value="setFilter('set_id', $event)"
-          />
-          <div class="owned-seg" role="group" aria-label="Filtrer par possession" v-if="session.token">
-            <button type="button" :class="{ on: gallery.owned === '' }" @click="setFilter('owned', '')">Toutes</button>
-            <button type="button" :class="{ on: gallery.owned === '1' }" @click="setFilter('owned', '1')">
-              Possédées
-            </button>
-            <button type="button" :class="{ on: gallery.owned === '0' }" @click="setFilter('owned', '0')">
-              Manquantes
-            </button>
-          </div>
-          <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="resetFilters">
-            Réinitialiser ({{ activeCount }})
-          </button>
-        </div>
+    <RiftSegments v-if="isMobile" v-model="tab" :items="tabs" label="Zones de l'éditeur" id-base="atelier" />
 
-        <p class="muted mono dbuilder-count">{{ result.total }} carte(s) <span v-if="loading">— chargement…</span></p>
-
-        <div ref="grid" class="dbuilder-grid" :style="{ '--tile-min': `${tileMin}px` }">
-          <div v-for="card in result.items" :key="card.id" class="gcard-slot">
-            <button
-              type="button"
-              class="gcard"
-              :class="{
-                unowned: !isOwned(card),
-                indeck: inDeckQty(card) > 0,
-                offdomain: deck.format === 'tournament' && offDomain(card),
-                landscape: card.orientation === 'landscape',
-                shake: shakes.has(card.id)
-              }"
-              :aria-label="`Ajouter ${card.name} au deck`"
-              @click="onTileClick(card)"
-              @pointerdown="onTilePointerDown(card, 'gallery', $event)"
-              @mouseenter="showPreview(card, $event)"
-              @mouseleave="hidePreview"
-              @focusin="showPreview(card, $event)"
-              @focusout="hidePreview"
-            >
-              <img :src="cardThumb(card.image_url, 320)" :alt="''" loading="lazy" decoding="async" draggable="false" />
-              <!-- Rien pour les cartes manquantes : la vignette grisée (.unowned) suffit. -->
-              <span v-if="session.token && card.owned_qty > 0" class="gcard-owned">×{{ card.owned_qty }}</span>
-              <span v-if="inDeckQty(card)" class="gcard-indeck">{{ inDeckQty(card) }}</span>
-              <span v-if="formatEur(card.price_eur)" class="gcard-price">{{ formatEur(card.price_eur) }}</span>
-              <span class="gcard-add" aria-hidden="true">+</span>
-            </button>
-            <!-- Visible uniquement au tactile (CSS hover:none) : ouvre la fiche sans
-                 ajouter la carte. Sorti du bouton : un lien dans un bouton est du HTML
-                 invalide, et le <span role="link"> n'était pas atteignable au clavier. -->
-            <RouterLink
-              class="gcard-info"
-              :to="`/cartes/${card.id}`"
-              :aria-label="`Voir la fiche de ${card.name}`"
-              @pointerdown.stop
-              >ℹ</RouterLink
-            >
-          </div>
-        </div>
-        <p v-if="!loading && !result.items.length" class="muted" style="margin-top: 14px">
-          Aucune carte ne correspond aux filtres.
-        </p>
-
-        <div class="pager" v-if="pageCount > 1">
-          <button class="btn btn-ghost btn-sm" :disabled="gallery.page <= 1" @click="gallery.page--">
-            ← Précédent
-          </button>
-          <span>page {{ gallery.page }} / {{ pageCount }}</span>
-          <button class="btn btn-ghost btn-sm" :disabled="gallery.page >= pageCount" @click="gallery.page++">
-            Suivant →
-          </button>
-        </div>
-      </div>
-
-      <!-- Le deck : liste compacte façon Hearthstone, zone de dépôt -->
-      <aside
-        ref="deckPanel"
-        class="dbuilder-deck"
-        :class="{ 'drop-hot': drag.active && drag.from === 'gallery' && drag.overDeck }"
+    <div class="atelier">
+      <div
+        v-show="paneShown('cards')"
+        class="atelier-pane atelier-pane--cards"
+        v-bind="paneAttrs('cards')"
+        :style="{ '--tile-min': `${tileMin}px` }"
       >
-        <div
-          v-if="drag.active && drag.from === 'gallery'"
-          class="drop-hint"
-          :class="{ hot: drag.overDeck }"
-          aria-hidden="true"
-        >
-          <span>Déposez ici</span>
-        </div>
+        <DeckGallery
+          ref="galleryRef"
+          :gallery="gallery"
+          :result="result"
+          :loading="loading"
+          :active-count="activeCount"
+          :page-count="pageCount"
+          :sets="setOptions"
+          :in-deck-qty="inDeckQty"
+          :off-domain="offDomain"
+          :tournament="deck.format === 'tournament'"
+          :shakes="shakes"
+          @update="setFilter"
+          @reset="resetFilters"
+          @add="onTileClick"
+          @tile-pointerdown="(card, event) => onTilePointerDown(card, 'gallery', event)"
+          @preview="showPreview"
+          @hide-preview="hidePreview"
+          @page="gallery.page = $event"
+        />
+      </div>
 
-        <!-- Boîte de deck : la légende en vitrine avec ses deux runes -->
-        <div
-          v-if="legendEntry"
-          class="deck-hero"
-          :style="{ '--hero-art': `url(${cardThumb(legendEntry.card.image_url, 480)})` }"
-          @mouseenter="showPreview(legendEntry.card, $event)"
-          @mouseleave="hidePreview"
-        >
-          <div class="deck-hero-copy">
-            <p class="eyebrow">Légende</p>
-            <h3>{{ legendEntry.card.name }}</h3>
-            <div class="deck-hero-runes">
-              <img
-                v-for="rune in legendRunes"
-                :key="rune.domain"
-                :src="rune.src"
-                :alt="rune.label"
-                :title="rune.label"
-                width="26"
-                height="26"
-              />
+      <div v-show="paneShown('deck')" class="atelier-pane atelier-pane--deck" v-bind="paneAttrs('deck')">
+        <DeckList
+          ref="deckListRef"
+          :deck="deck"
+          :can-edit="canEdit"
+          :zones="ZONES"
+          :list-zones="LIST_ZONES"
+          :grouped="grouped"
+          :zone-counts="zoneCounts"
+          :legend-entry="legendEntry"
+          :legend-runes="legendRunes"
+          :flashes="flashes"
+          :limit-message="limitMessage"
+          :missing-in-deck="missingInDeck"
+          :drag="drag"
+          :fine-pointer="finePointer"
+          :signed-in="Boolean(session.token)"
+          @set-qty="setQty"
+          @remove-one="removeOne"
+          @show-legends="showLegends"
+          @row-pointerdown="(card, event) => onTilePointerDown(card, 'deck', event)"
+          @preview="showPreview"
+          @hide-preview="hidePreview"
+        />
+      </div>
+
+      <div v-show="paneShown('stats')" class="atelier-pane atelier-pane--stats" v-bind="paneAttrs('stats')">
+        <DeckStatsPanel :cards="deck.cards" :checks="deck.checks" :prices="deck.prices">
+          <template #actions>
+            <div class="atelier-actions">
+              <RiftButton size="sm" @click="openMissing">Trouver les cartes manquantes</RiftButton>
+              <textarea
+                v-model="deck.description"
+                class="atelier-desc"
+                placeholder="Plan de jeu, forces, faiblesses…"
+                aria-label="Description du deck"
+              ></textarea>
             </div>
-          </div>
-          <button
-            v-if="canEdit"
-            type="button"
-            class="deck-hero-remove"
-            aria-label="Retirer la légende du deck"
-            @click="removeOne(legendEntry.card.id)"
-          >
-            ✕
-          </button>
-        </div>
-        <div v-else class="deck-hero empty">
-          <p v-if="canEdit"><b>1.</b> Choisissez votre légende : elle fixe les deux domaines du deck.</p>
-          <p v-else>Ce deck n'a pas encore de légende.</p>
-          <button v-if="canEdit" type="button" class="btn btn-ghost btn-sm" @click="setFilter('type', ['Legend'])">
-            Voir les légendes
-          </button>
-        </div>
-
-        <div class="deck-meters">
-          <div
-            class="meter"
-            v-for="zone in ZONES"
-            :key="zone.key"
-            :class="{ full: zoneCounts[zone.key] >= zone.target }"
-          >
-            <b
-              >{{ zoneCounts[zone.key] }}<small>/{{ zone.target }}{{ zone.key === "main" ? "+" : "" }}</small></b
-            >
-            <span>{{ zone.label }}</span>
-          </div>
-        </div>
-        <p v-if="limitMessage" class="deck-limit" role="status">{{ limitMessage }}</p>
-        <p v-else-if="missingInDeck" class="deck-limit soft" role="status">
-          {{ missingInDeck }} carte(s) du deck manquent à votre collection.
-        </p>
-
-        <div class="deck-scroll">
-          <template v-for="zone in LIST_ZONES" :key="zone.key">
-            <p class="zone-title">
-              {{ zone.label }} <small>{{ zoneCounts[zone.key] }}</small>
-            </p>
-            <TransitionGroup name="deck-row" tag="div" class="deck-rows">
-              <div
-                v-for="entry in grouped[zone.key]"
-                :key="entry.card.id"
-                class="deck-row"
-                :class="{
-                  flash: flashes.has(entry.card.id),
-                  lacking: session.token && (entry.card.owned_qty ?? 0) < entry.qty
-                }"
-                :data-row="entry.card.id"
-                :style="{ '--row-art': `url(${cardThumb(entry.card.image_url, 200)})` }"
-                @pointerdown="onTilePointerDown(entry.card, 'deck', $event)"
-                @mouseenter="showPreview(entry.card, $event)"
-                @mouseleave="hidePreview"
-              >
-                <span class="row-cost" v-if="entry.card.energy != null">{{ entry.card.energy }}</span>
-                <span class="row-cost none" v-else></span>
-                <span class="row-name">{{ entry.card.name }}</span>
-                <!-- Texte plutôt qu'un « ! » : l'infobulle qui l'expliquait ne s'ouvre pas au doigt. -->
-                <span
-                  v-if="session.token && (entry.card.owned_qty ?? 0) < entry.qty"
-                  class="row-lack"
-                  :title="`${entry.qty - (entry.card.owned_qty ?? 0)} exemplaire(s) manquant(s) dans votre collection`"
-                  >manque {{ entry.qty - (entry.card.owned_qty ?? 0) }}</span
-                >
-                <span class="row-qty">×{{ entry.qty }}</span>
-                <span class="row-actions" v-if="canEdit">
-                  <button
-                    type="button"
-                    :aria-label="`Retirer un exemplaire de ${entry.card.name}`"
-                    @click.stop="setQty(entry, -1)"
-                  >
-                    −
-                  </button>
-                  <button
-                    type="button"
-                    :aria-label="`Ajouter un exemplaire de ${entry.card.name}`"
-                    @click.stop="setQty(entry, 1)"
-                  >
-                    +
-                  </button>
-                </span>
-              </div>
-            </TransitionGroup>
-            <p v-if="!grouped[zone.key].length" class="zone-empty">
-              <!-- Au tactile le glisser-déposer est désactivé : c'est le tap qui ajoute. -->
-              {{
-                !canEdit
-                  ? "Aucune carte dans cette zone."
-                  : finePointer
-                    ? "Glissez des cartes ici."
-                    : "Touchez une carte de la galerie pour l'ajouter."
-              }}
-            </p>
           </template>
-        </div>
-      </aside>
+        </DeckStatsPanel>
+      </div>
     </div>
 
-    <div class="dbuilder-overview">
-      <div class="overview-row">
-        <ul class="validator">
-          <li v-for="checkItem in deck.checks" :key="checkItem.rule" :class="checkItem.ok ? 'v-ok' : 'v-ko'">
-            {{ checkItem.message }}
-          </li>
-        </ul>
-        <button v-if="canEdit" class="btn btn-gold btn-sm missing-btn" @click="openMissing">
-          Trouver les cartes manquantes
-        </button>
-      </div>
-      <div class="overview-row overview-cost">
-        <p class="overview-energy">
-          <b>{{ energyTotal }}</b> énergie
-        </p>
-        <p v-if="deckValue" class="price-deck" :title="PRICE_NOTE">
-          Valeur du deck : <b class="price-amount">{{ deckValue }}</b>
-        </p>
-        <div class="curve" role="group" aria-label="Répartition des coûts en énergie du deck principal">
-          <div class="bar" v-for="bucket in curve" :key="bucket.cost">
-            <i :style="{ height: bucket.height + '%' }" :title="`${bucket.count} carte(s) à ${bucket.cost}`"></i>
-            <span class="sr-only">{{ bucket.count }} carte(s) à {{ bucket.cost }} d'énergie</span>
-            <small>{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
-          </div>
-        </div>
-        <!-- Doublon visuel des barres : aria-hidden, les .sr-only des barres le disent déjà. -->
-        <p v-if="curveLabel" class="curve-legend mono" aria-hidden="true">{{ curveLabel }}</p>
-        <div class="deck-domains" v-if="domainSpread.length">
-          <span class="chip chip-rune" v-for="[domain, count] in domainSpread" :key="domain">
-            <img
-              class="rb-glyph rune"
-              :src="glyphUrl(`rune_${DOMAIN_RUNE[domain] || 'rainbow'}`)"
-              :alt="RUNE_LABELS[DOMAIN_RUNE[domain]] || domain"
-              width="18"
-              height="18"
-            />
-            {{ DOMAINS[domain]?.label || domain }} · {{ count }}
-          </span>
-        </div>
-      </div>
-      <textarea
-        v-if="canEdit"
-        v-model="deck.description"
-        placeholder="Plan de jeu, forces, faiblesses…"
-        aria-label="Description du deck"
-      ></textarea>
-      <p v-else-if="deck.description" class="deck-read-desc">{{ deck.description }}</p>
-    </div>
+    <!-- Téléphone : la liste (et son message) est dans un autre onglet, le plafond s'affiche en toast. -->
+    <p
+      class="atelier-toast"
+      :class="{ 'atelier-toast--empty': !toastText, 'atelier-toast--raised': saveState }"
+      role="status"
+    >
+      {{ toastText }}
+    </p>
 
-    <!-- Fantôme de drag -->
+    <!-- Fantôme de glisser -->
     <Teleport to="body">
       <div
         v-if="drag.active && drag.card"
-        class="drag-ghost"
-        :class="{ 'over-deck': drag.overDeck, removing: drag.from === 'deck' && !drag.overDeck }"
+        class="atelier-ghost"
+        :class="{
+          'atelier-ghost--over': drag.overDeck,
+          'atelier-ghost--removing': drag.from === 'deck' && !drag.overDeck
+        }"
         :style="{ transform: `translate(${drag.x - 55}px, ${drag.y - 78}px) rotate(4deg)` }"
         aria-hidden="true"
       >
-        <img :src="cardThumb(drag.card.image_url, 220)" alt="" draggable="false" />
-        <span v-if="drag.from === 'deck'" class="ghost-hint">{{ drag.overDeck ? "" : "Relâchez pour retirer" }}</span>
-        <span v-else class="ghost-hint">{{ drag.overDeck ? "Ajouter au deck" : "" }}</span>
+        <img class="atelier-ghost-img" :src="cardThumb(drag.card.image_url, 220)" alt="" draggable="false" />
+        <span v-if="ghostHint" class="atelier-ghost-hint">{{ ghostHint }}</span>
       </div>
     </Teleport>
 
@@ -817,24 +533,27 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div
         v-if="preview"
-        class="builder-preview"
-        :class="{ large: preview.large }"
+        class="atelier-preview"
+        :class="{ 'atelier-preview--large': preview.large }"
         :style="{ left: `${preview.x}px`, top: `${preview.y}px` }"
         aria-hidden="true"
       >
-        <div class="card-art" :class="{ landscape: preview.card.orientation === 'landscape' }">
-          <img :src="cardThumb(preview.card.image_url, preview.large ? 720 : 460)" alt="" />
+        <div
+          class="atelier-preview-art"
+          :class="{ 'atelier-preview-art--landscape': preview.card.orientation === 'landscape' }"
+        >
+          <img class="atelier-preview-img" :src="cardThumb(preview.card.image_url, preview.large ? 720 : 460)" alt="" />
         </div>
-        <div class="builder-preview-copy" v-if="!preview.large">
-          <h3>{{ preview.card.name }}</h3>
-          <p class="muted mono" style="font-size: 0.7rem">
+        <div v-if="!preview.large" class="atelier-preview-copy">
+          <h3 class="atelier-preview-name">{{ preview.card.name }}</h3>
+          <p class="atelier-preview-meta">
             {{ TYPES[preview.card.type] || preview.card.type }} ·
             {{ RARITIES[preview.card.rarity] || preview.card.rarity }}
             <template v-if="formatEur(preview.card.price_eur)"> · {{ formatEur(preview.card.price_eur) }}</template>
             <template v-if="session.token"> · possédée ×{{ preview.card.owned_qty ?? 0 }}</template>
             <template v-if="inDeckQty(preview.card)"> · dans le deck ×{{ inDeckQty(preview.card) }}</template>
           </p>
-          <RiftText tag="p" class="card-text" v-if="preview.card.text" :text="preview.card.text" />
+          <RiftText v-if="preview.card.text" tag="p" class="atelier-preview-text" :text="preview.card.text" />
         </div>
       </div>
     </Teleport>
@@ -854,12 +573,299 @@ onBeforeUnmount(() => {
     <RiftModal v-if="showExport" title="Exporter le deck" wide @close="showExport = false">
       <DeckExportBar :deck="deck" />
     </RiftModal>
-  </section>
+  </div>
 
-  <section v-else>
-    <div class="wrap" style="padding-top: 44px">
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-else class="muted">Chargement du deck…</p>
-    </div>
-  </section>
+  <div v-else class="atelier-page">
+    <p v-if="error" class="atelier-state-error" role="alert">{{ error }}</p>
+    <p v-else class="atelier-state-text">Chargement du deck…</p>
+  </div>
 </template>
+
+<style scoped>
+.atelier-page {
+  display: grid;
+  gap: var(--space-4);
+  max-width: min(1680px, 100%);
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+@media (max-width: 767px) {
+  .atelier-page {
+    padding-inline: var(--space-4);
+  }
+}
+/* Les onglets restent visibles sous la barre du haut, elle aussi collante. */
+.atelier-page > .rift-segments {
+  top: var(--topbar-h);
+}
+.atelier-moderation {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  box-shadow: inset 0 0 0 1px var(--blood);
+  font-size: 14px;
+  color: var(--blood-text);
+}
+
+/* Trois zones. Bureau large : galerie | liste | analyse. */
+.atelier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px 300px;
+  grid-template-areas: "cards deck stats";
+  align-items: start;
+  gap: var(--space-5);
+}
+.atelier-pane {
+  min-width: 0;
+}
+.atelier-pane--cards {
+  grid-area: cards;
+}
+.atelier-pane--deck {
+  grid-area: deck;
+}
+.atelier-pane--stats {
+  grid-area: stats;
+}
+/* Liste et analyse collantes, avec un défilement interne borné à la fenêtre. La barre
+   du haut de la coquille est elle-même collante : on se cale sous elle. */
+.atelier-pane--deck,
+.atelier-pane--stats {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  max-height: calc(100dvh - var(--topbar-h) - 2 * var(--space-4));
+}
+.atelier-pane--deck {
+  display: flex;
+  flex-direction: column;
+}
+.atelier-pane--deck > .decklist {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.atelier-pane--stats {
+  overflow-y: auto;
+}
+
+.atelier-actions {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+/* Textarea neutralisé localement : main.css stylise `textarea` globalement. */
+.atelier-desc {
+  width: 100%;
+  min-height: 96px;
+  margin: 0;
+  padding: var(--space-3);
+  border: none;
+  border-radius: 0;
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: box-shadow var(--t-fast);
+}
+.atelier-desc:focus {
+  box-shadow: inset 0 0 0 1px var(--bronze-light);
+}
+
+/* Tablette et petit bureau : l'analyse passe sous la liste, dans la colonne de droite. */
+@media (max-width: 1279px) {
+  .atelier {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-areas:
+      "cards deck"
+      "cards stats";
+  }
+  .atelier-pane--deck,
+  .atelier-pane--stats {
+    position: static;
+    max-height: none;
+  }
+  .atelier-pane--stats {
+    overflow: visible;
+  }
+}
+
+/* Téléphone : une zone à la fois (onglets). */
+@media (max-width: 767px) {
+  .atelier {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+  .atelier-pane--cards,
+  .atelier-pane--deck,
+  .atelier-pane--stats {
+    grid-area: auto;
+  }
+}
+
+/* Message de plafond hors de l'onglet Deck : toast au-dessus des onglets du bas. */
+.atelier-toast {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(var(--shell-bottom, env(safe-area-inset-bottom, 0px)) + var(--space-3));
+  z-index: calc(var(--z-overlay) - 1);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--blood),
+    var(--shadow-deep);
+  font-size: 14px;
+  text-align: center;
+  color: var(--blood-text);
+}
+/* Vide : la région live reste montée (annonce fiable) mais disparaît à l'écran. */
+.atelier-toast--empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  box-shadow: none;
+  white-space: nowrap;
+}
+/* Mention d'enregistrement visible au même endroit : le toast de plafond monte d'un cran. */
+.atelier-toast--raised {
+  bottom: calc(var(--shell-bottom, env(safe-area-inset-bottom, 0px)) + var(--space-3) + 64px);
+}
+
+/* Fantôme suivi du curseur pendant le glisser (téléporté dans le body). */
+.atelier-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: calc(var(--z-overlay) + 2);
+  width: 110px;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.6));
+  transition: width var(--t-fast);
+}
+.atelier-ghost-img {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-card);
+}
+.atelier-ghost--over {
+  width: 126px;
+}
+.atelier-ghost--over .atelier-ghost-img {
+  outline: 3px solid var(--bronze-light);
+  outline-offset: -1px;
+}
+.atelier-ghost--removing .atelier-ghost-img {
+  outline: 3px solid var(--blood);
+  outline-offset: -1px;
+  opacity: 0.8;
+}
+.atelier-ghost-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 3px 10px;
+  background: rgba(13, 13, 15, 0.94);
+  box-shadow: inset 0 0 0 1px var(--bronze);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Aperçu lisible au survol (téléporté dans le body, au-dessus de la modale des manquantes). */
+.atelier-preview {
+  position: fixed;
+  z-index: calc(var(--z-overlay) + 1);
+  width: 320px;
+  padding: var(--space-3);
+  background: var(--bg-raised);
+  box-shadow:
+    inset 0 0 0 1px var(--bronze),
+    var(--shadow-deep);
+  pointer-events: none;
+  animation: atelier-preview-in 180ms ease-out;
+}
+@keyframes atelier-preview-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.atelier-preview--large {
+  width: 400px;
+  padding: var(--space-2);
+}
+.atelier-preview-art {
+  margin: 0;
+}
+.atelier-preview-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 744 / 1039;
+  object-fit: contain;
+  border-radius: var(--radius-card);
+}
+.atelier-preview-art--landscape .atelier-preview-img {
+  aspect-ratio: 1038 / 744;
+}
+.atelier-preview-copy {
+  margin-top: var(--space-3);
+}
+/* h3 neutralisé localement : marges, taille et couleur explicites. */
+.atelier-preview-name {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.atelier-preview-meta {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+.atelier-preview-text {
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+@media (hover: none) {
+  .atelier-preview {
+    display: none;
+  }
+}
+
+.atelier-state-error {
+  margin: 0;
+  color: var(--blood-text);
+}
+.atelier-state-text {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atelier-desc,
+  .atelier-ghost {
+    transition: none;
+  }
+  .atelier-preview {
+    animation: none;
+  }
+}
+</style>

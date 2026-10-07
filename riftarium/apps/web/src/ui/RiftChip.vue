@@ -8,7 +8,9 @@ const props = defineProps({
   removable: { type: Boolean, default: false },
   glyph: { type: String, default: "" },
   glyphKind: { type: String, default: "" },
-  color: { type: String, default: "" }
+  color: { type: String, default: "" },
+  /* Simple affichage : un span sans rôle de bascule, sans clic ni tabulation. */
+  static: { type: Boolean, default: false }
 })
 const emit = defineEmits(["toggle", "remove"])
 
@@ -19,19 +21,20 @@ function onClick() {
 </script>
 
 <template>
-  <button
-    type="button"
+  <component
+    :is="$props.static ? 'span' : 'button'"
+    :type="$props.static ? undefined : 'button'"
     class="rift-chip"
     :class="{ selected, removable }"
     :style="style"
-    :aria-pressed="removable ? undefined : String(selected)"
-    :aria-label="removable ? `Retirer le filtre ${label}` : undefined"
-    @click="onClick"
+    :aria-pressed="$props.static || removable ? undefined : String(selected)"
+    :aria-label="removable && !$props.static ? `Retirer le filtre ${label}` : undefined"
+    @click="!$props.static && onClick()"
   >
     <img v-if="glyph" class="rb-glyph" :class="glyphKind" :src="glyph" alt="" width="16" height="16" />
     <span>{{ label }}</span>
     <span v-if="removable" class="rift-chip-x" aria-hidden="true">✕</span>
-  </button>
+  </component>
 </template>
 
 <style scoped>

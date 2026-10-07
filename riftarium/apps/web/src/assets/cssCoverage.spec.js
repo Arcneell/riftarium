@@ -21,26 +21,25 @@ const UNSTYLED_ALLOWLIST = new Set([
   "chart-band",
   "chart-bar",
   "chart-segment",
-  "wish-from-deck", // à garder : DeckMissingModal, voir WORKFLOW.md / contraintes de la refonte
   "traceurs-ack",
   "rail-label",
   "topbar-account",
   "rift-text",
   "guide-fullscreen",
-  "dbuilder-gallery",
   "friends-panel",
   "profile-privacy",
   "rules-main",
   "souhait-remove",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",
-  "deck-view-board",
   "footer-contact",
   "admin-wrap",
   "topic-main",
   "learn-main",
   "profile-page",
-  "play-room"
+  "play-room",
+  // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
+  "rune"
 ])
 
 const walk = (dir) =>

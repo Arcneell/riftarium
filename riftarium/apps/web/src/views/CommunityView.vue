@@ -1,23 +1,23 @@
 <script setup>
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { api, session } from "../api.js"
-import { csvJoin, domainFilterOptions } from "../cardText.js"
+import { csvJoin } from "../cardText.js"
+import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
-import { FORMAT_OPTIONS } from "../deckDisplay.js"
-import { BANNERS } from "../banners.js"
-import DeckBox from "../components/DeckBox.vue"
-import FilterSelect from "../components/FilterSelect.vue"
-import PageBanner from "../components/PageBanner.vue"
+import CommunityFilters from "../decks/CommunityFilters.vue"
+import DeckCard from "../decks/DeckCard.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftSheet from "../ui/RiftSheet.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 
-const SORTS = [
-  { value: "likes", label: "Tendance" },
-  { value: "views", label: "Plus vus" },
-  { value: "recent", label: "Récents" }
-]
+const SORT_VALUES = ["likes", "views", "recent"]
 
 const router = useRouter()
 const size = 20
+const breakpoint = useBreakpoint()
+const desktop = computed(() => breakpoint.value === "desktop")
 
 const { state, result, loading, error, activeCount, pageCount, setFilter, reset, load } = useQuerySyncedFilters(
   {
@@ -26,7 +26,7 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
     domain: { kind: "list" },
     format: { kind: "list" },
     /* Le tri n'est pas un filtre : hors compteur et épargné par la remise à zéro. */
-    sort: { kind: "enum", values: SORTS.map((item) => item.value), default: "likes", reset: false },
+    sort: { kind: "enum", values: SORT_VALUES, default: "likes", reset: false },
     liked: { kind: "flag" },
     buildable: { kind: "flag" },
     page: { kind: "page" }
@@ -38,10 +38,22 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
 )
 
 const legends = ref([])
+const grid = ref(null)
+const sheetOpen = ref(false)
 
-const domainOptions = computed(() => domainFilterOptions())
-const legendOptions = computed(() =>
-  legends.value.map((item) => ({ value: item.id, label: `${item.name} (${item.deck_count})` }))
+const sheetLabel = computed(() => {
+  if (!result.value.total) return "Aucun deck"
+  return result.value.total === 1 ? "Voir le deck" : `Voir les ${result.value.total} decks`
+})
+
+watch(desktop, (isDesktop) => {
+  if (isDesktop) sheetOpen.value = false
+})
+
+/* Retour en haut de la grille au changement de page. */
+watch(
+  () => state.page,
+  () => grid.value?.scrollIntoView?.({ block: "start" })
 )
 
 function communityQuery() {
@@ -53,10 +65,6 @@ function communityQuery() {
   if (state.liked) params.set("liked", "1")
   if (state.buildable) params.set("buildable", "1")
   return params
-}
-
-function setSort(value) {
-  setFilter("sort", value)
 }
 
 function toggleLiked() {
@@ -106,102 +114,189 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.community" title="Decks partagés" />
+  <div class="communaute" :class="{ 'communaute--panel': desktop }">
+    <header class="communaute-head">
+      <h1 class="communaute-title">Decks de la communauté</h1>
+    </header>
 
-  <section>
-    <div class="wrap">
-      <div class="filter-board">
-        <label class="search filter-search">
-          <Icon name="search" :size="18" />
-          <input
-            type="search"
-            inputmode="search"
-            enterkeyhint="search"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            v-model="state.q"
-            placeholder="Nom, auteur, légende…"
-            aria-label="Rechercher un deck"
-          />
-        </label>
-        <div class="owned-seg" role="group" aria-label="Trier les decks">
-          <button
-            v-for="item in SORTS"
-            :key="item.value"
-            type="button"
-            :class="{ on: state.sort === item.value }"
-            @click="setSort(item.value)"
-          >
-            {{ item.label }}
-          </button>
+    <aside v-if="desktop" class="communaute-filters" aria-label="Filtres">
+      <CommunityFilters
+        :state="state"
+        :legends="legends"
+        :signed-in="Boolean(session.token)"
+        @update="setFilter"
+        @liked="toggleLiked"
+      />
+    </aside>
+
+    <div class="communaute-main">
+      <div class="communaute-bar">
+        <p class="communaute-count" aria-live="polite">
+          <template v-if="!(loading && !result.items.length)">{{ result.total }} deck(s)</template>
+        </p>
+        <div class="communaute-bar-actions">
+          <RiftButton v-if="activeCount" variant="ghost" size="sm" @click="reset">Réinitialiser</RiftButton>
+          <RiftButton v-if="!desktop" variant="secondary" size="sm" @click="sheetOpen = true">
+            Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
+          </RiftButton>
         </div>
-        <FilterSelect
-          label="Légendes"
-          searchable
-          :options="legendOptions"
-          :model-value="state.legend"
-          @update:model-value="setFilter('legend', $event)"
-        />
-        <FilterSelect
-          label="Domaines"
-          :options="domainOptions"
-          :model-value="state.domain"
-          @update:model-value="setFilter('domain', $event)"
-        />
-        <FilterSelect
-          label="Format"
-          :options="FORMAT_OPTIONS"
-          :model-value="state.format"
-          @update:model-value="setFilter('format', $event)"
-        />
-        <button type="button" class="btn btn-ghost btn-sm" :aria-pressed="state.liked" @click="toggleLiked">
-          {{ state.liked ? "Mes likes" : "Aimés" }}
-        </button>
-        <!-- Réservé aux connectés : la comparaison se fait avec leur collection. -->
-        <button
-          v-if="session.token"
-          type="button"
-          class="filter buildable-filter"
-          :aria-pressed="state.buildable"
-          @click="setFilter('buildable', !state.buildable)"
-        >
-          Constructibles avec ma collection
-        </button>
-        <button v-if="activeCount" class="btn btn-ghost btn-sm" @click="reset">
-          Réinitialiser ({{ activeCount }})
-        </button>
       </div>
 
-      <p class="muted mono" style="font-size: 0.82rem; margin-bottom: 18px">
-        {{ result.total }} deck(s) <span v-if="loading">— chargement…</span>
-      </p>
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="communaute-error" role="alert">{{ error }}</p>
 
-      <div class="deck-boxes">
-        <DeckBox
-          v-for="(deck, i) in result.items"
-          :key="deck.id"
-          v-reveal="i"
-          community
-          :deck="deck"
-          :like-busy="likeBusy.has(deck.id)"
-          :to="`/decks/${deck.id}`"
-          @like="toggleLike"
-        />
+      <div ref="grid" class="communaute-grid" :class="{ 'communaute-grid--reloading': loading && result.items.length }">
+        <template v-if="loading && !result.items.length">
+          <RiftSkeleton v-for="n in 6" :key="n" class="communaute-skeleton" block />
+        </template>
+        <template v-else>
+          <DeckCard
+            v-for="deck in result.items"
+            :key="deck.id"
+            community
+            :deck="deck"
+            :like-busy="likeBusy.has(deck.id)"
+            :to="`/decks/${deck.id}`"
+            @like="toggleLike"
+          />
+        </template>
       </div>
 
-      <div class="pager" v-if="pageCount > 1">
-        <button class="btn btn-ghost btn-sm" :disabled="state.page <= 1" @click="state.page--">← Précédent</button>
+      <RiftEmpty v-if="!loading && !error && !result.items.length" title="Aucun deck ne correspond">
+        <RiftButton v-if="activeCount" variant="secondary" size="sm" @click="reset">
+          Réinitialiser les filtres
+        </RiftButton>
+        <RiftButton variant="primary" size="sm" to="/decks">Créer un deck</RiftButton>
+      </RiftEmpty>
+
+      <nav v-if="pageCount > 1" class="communaute-pager" aria-label="Pagination">
+        <RiftButton variant="ghost" size="sm" :disabled="state.page <= 1" @click="state.page--">← Précédent</RiftButton>
         <span>page {{ state.page }} / {{ pageCount }}</span>
-        <button class="btn btn-ghost btn-sm" :disabled="state.page >= pageCount" @click="state.page++">
+        <RiftButton variant="ghost" size="sm" :disabled="state.page >= pageCount" @click="state.page++">
           Suivant →
-        </button>
-      </div>
-
-      <p v-if="!result.items.length && !error && !loading" class="muted">
-        Aucun deck publié ne correspond. Les decks se publient depuis <RouterLink to="/decks">l'éditeur</RouterLink>.
-      </p>
+        </RiftButton>
+      </nav>
     </div>
-  </section>
+  </div>
+
+  <RiftSheet v-if="sheetOpen && !desktop" title="Filtres" @close="sheetOpen = false">
+    <CommunityFilters
+      :state="state"
+      :legends="legends"
+      :signed-in="Boolean(session.token)"
+      @update="setFilter"
+      @liked="toggleLiked"
+    />
+    <div class="communaute-sheet-foot">
+      <RiftButton block @click="sheetOpen = false">{{ sheetLabel }}</RiftButton>
+    </div>
+  </RiftSheet>
 </template>
+
+<style scoped>
+.communaute {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "main";
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+.communaute--panel {
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-areas: "head head" "panel main";
+}
+.communaute-head {
+  grid-area: head;
+}
+/* main.css colore et anime les h1 : on neutralise pour la page. */
+.communaute-title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: none;
+  color: var(--ink);
+  animation: none;
+}
+.communaute-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.communaute-count {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.communaute-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.communaute-filters {
+  grid-area: panel;
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  align-self: start;
+  max-height: calc(100dvh - var(--topbar-h) - var(--space-6));
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.communaute-main {
+  grid-area: main;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.communaute-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  transition: opacity var(--t-base);
+}
+.communaute-grid--reloading {
+  opacity: 0.55;
+}
+@media (max-width: 560px) {
+  .communaute-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.communaute-skeleton :deep(.rift-skeleton-block) {
+  height: auto;
+  aspect-ratio: 5 / 7;
+}
+.communaute-error {
+  margin: 0;
+  color: var(--blood-text);
+}
+.communaute-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  font-family: var(--font-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.communaute-sheet-foot {
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  background: var(--bg-raised);
+}
+@media (max-width: 767px) {
+  .communaute {
+    padding: var(--space-4);
+  }
+}
+</style>
