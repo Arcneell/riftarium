@@ -7,9 +7,11 @@ import { richSegments } from "./richText.js"
 const props = defineProps({
   text: { type: String, default: "" },
   tag: { type: String, default: "span" },
-  rules: { type: Boolean, default: false }
+  rules: { type: Boolean, default: false },
+  /* Renvois « règle 123.4 » rendus en boutons [data-ref] ; la page délègue le clic. */
+  refs: { type: Boolean, default: false }
 })
-const segments = computed(() => richSegments(props.text, { rules: props.rules }))
+const segments = computed(() => richSegments(props.text, { rules: props.rules, refs: props.refs }))
 </script>
 
 <template>

@@ -26,10 +26,28 @@ export function expandRuleShorthand(text) {
   })
 }
 
-/* Segments gras / normal, chacun découpé en parties (texte, mot-clé, glyphe).
+/* Renvois entre règles (« règle 123.4 », « sections 103 ») : même expression que
+   l'ancien RulesView.formatText. */
+const REF_PATTERN = /\b(règles?|sections?)\s+(\d{3}(?:\.\d+)*(?:\.[a-z])?(?:\.\d+)*)/gi
+
+/* Découpe un morceau en parties : renvois (si demandés) puis texte / mot-clé / glyphe. */
+function chunkParts(chunk, refs) {
+  if (!refs) return parseCardText(chunk)
+  const parts = []
+  let last = 0
+  for (const match of chunk.matchAll(REF_PATTERN)) {
+    if (match.index > last) parts.push(...parseCardText(chunk.slice(last, match.index)))
+    parts.push({ type: "ref", value: match[0], ref: match[2].replace(/\.$/, "") })
+    last = match.index + match[0].length
+  }
+  if (last < chunk.length) parts.push(...parseCardText(chunk.slice(last)))
+  return parts
+}
+
+/* Segments gras / normal, chacun découpé en parties (texte, mot-clé, glyphe, renvoi).
    Clé composite : l'index seul faisait réutiliser un nœud de texte pour un glyphe
    quand le texte changeait à la même position. */
-export function richSegments(text, { rules = false } = {}) {
+export function richSegments(text, { rules = false, refs = false } = {}) {
   if (!text) return []
   const source = rules ? expandRuleShorthand(text) : String(text)
   const segments = []
@@ -37,7 +55,7 @@ export function richSegments(text, { rules = false } = {}) {
     if (!chunk) continue
     segments.push({
       bold: i % 2 === 1,
-      parts: parseCardText(chunk).map((part, j) => ({
+      parts: chunkParts(chunk, refs).map((part, j) => ({
         ...part,
         key: `${i}-${j}-${part.type}-${part.kind || ""}-${part.value || part.label || ""}`
       }))
