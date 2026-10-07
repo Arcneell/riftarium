@@ -105,7 +105,7 @@ Les noms sont neufs et décrivent leur rôle.
 | `RiftSheet` | feuille du bas sur téléphone (filtres, menu du compte) |
 | `RiftSkeleton` | squelettes de chargement |
 | `RiftEmpty` | état vide (titre, phrase, action) |
-| `RiftStepper` | compteur − valeur + (cibles de 44 px, 32 px sur les vignettes), valeur en `aria-live="polite"` ; livré en PR 4b |
+| `RiftStepper` | compteur − valeur + (cibles de 44 px ; 28 à 32 px sur les vignettes et dans les pochettes), valeur en `aria-live="polite"` ; livré en PR 4b |
 | `RiftChoice` | choix unique en puces (`role="radiogroup"`), à la place d’un menu déroulant ; livré en PR 4b |
 | `RiftStat` | glyphe officiel + valeur Cinzel + étiquette |
 | `CardTile` | vignette de carte : illustration, nom, prix, quantité possédée, reflet foil si rare / showcase |
@@ -332,7 +332,7 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
   court débounce (300 ms, une rafale de « + » = une relecture) avec des jetons de
   séquence, et en saisie rapide le classeur reste affiché même à 0 carte possédée (puce
   « Saisie rapide » dans l’état vide). Sur la cartothèque, le badge ×N de la vignette est
-  masqué quand le compteur rapide est présent. Sur téléphone, le stepper `sm` se resserre
+  masqué quand le compteur rapide est présent. Dans les pochettes (et sur les vignettes sous 430 px), le stepper `sm` se resserre
   (28 px, « + » à l'échelle 1) pour tenir dans une pochette de ≈ 96 px.
 
 ### PR 5 : decks et communauté

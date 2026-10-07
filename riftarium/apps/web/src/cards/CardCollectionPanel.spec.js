@@ -263,7 +263,7 @@ describe("CardCollectionPanel", () => {
     const lot = () => wrapper.get(".panel-lot")
     expect(lot().text()).toContain("NM · Français")
     expect(lot().get(".rift-stepper-value").text()).toBe("2")
-    expect(lot().find(".rift-stepper--sm").exists()).toBe(true)
+    expect(lot().find(".rift-stepper--md").exists()).toBe(true)
     const patchCalls = () =>
       api.mock.calls.filter(([path, o]) => path === "/api/collection/entries/1" && o?.method === "PATCH")
 
@@ -275,7 +275,7 @@ describe("CardCollectionPanel", () => {
       }
       return Promise.resolve({})
     })
-    await lot().get("[aria-label='Retirer un exemplaire de le lot NM · Français']").trigger("click")
+    await lot().get("[aria-label='Retirer un exemplaire de ce lot NM · Français']").trigger("click")
     await flushPromises()
     expect(patchCalls()[0][1].body).toEqual({ qty: 1 })
     expect(lot().get(".rift-stepper-value").text()).toBe("1")

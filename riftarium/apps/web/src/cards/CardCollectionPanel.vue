@@ -7,7 +7,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 import RiftStepper from "../ui/RiftStepper.vue"
 
-/* Panneau « collection et wishlist » de la fiche carte : compteur rapide, lots en puces,
+/* Panneau « collection et wishlist » de la fiche carte : compteur rapide, lots ajustables,
    ajout précis, bascule wishlist. Il ne modifie pas la carte : il émet `change({ id, ...patch })`
    avec `owned_qty` / `wished_qty` et l'id de la carte concernée (le parent ignore un patch
    qui ne vise plus la carte affichée), c'est le parent qui tient la fiche. */
@@ -161,10 +161,9 @@ async function toggleWish() {
           <li v-for="entry in entries" :key="entry.id" class="panel-lot">
             <span class="panel-lot-name">{{ lotName(entry) }}</span>
             <RiftStepper
-              size="sm"
               :value="entry.qty"
               :busy="busy"
-              :label="`le lot ${lotName(entry)}`"
+              :label="`ce lot ${lotName(entry)}`"
               @increment="setLotQty(entry, entry.qty + 1)"
               @decrement="setLotQty(entry, entry.qty - 1)"
             />
@@ -292,7 +291,7 @@ async function toggleWish() {
     transition: none;
   }
 }
-/* Liste neutralisée localement : main.css pose ses puces et marges sur ul/li. */
+/* Liste neutralisée localement : le navigateur pose puces et marges sur ul/li. */
 .panel-lots {
   display: grid;
   gap: var(--space-2);
