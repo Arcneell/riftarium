@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref } from "vue"
 import { atlasList, copyText, deckCode, nameList } from "../deckExport.js"
 import { pageUrl } from "../seo.js"
+import RiftButton from "../ui/RiftButton.vue"
 
 const props = defineProps({
   deck: { type: Object, required: true }
@@ -51,16 +52,42 @@ async function copyLink() {
 </script>
 
 <template>
-  <div class="dexport">
-    <p class="muted mono dexport-hint">
+  <div class="lecture-export">
+    <p class="lecture-export-hint">
       Collez la liste ou le code dans Rift Atlas, Piltover Archive, UVS Games ou un autre outil.
     </p>
-    <p v-if="note" class="dexport-note" role="status">{{ note }}</p>
-    <div class="dexport-actions">
-      <button type="button" class="btn btn-gold btn-sm" @click="copy('atlas')">Liste Rift Atlas</button>
-      <button type="button" class="btn btn-ghost btn-sm" @click="copy('code')">Code de deck</button>
-      <button type="button" class="btn btn-ghost btn-sm" @click="copy('names')">Liste texte</button>
-      <button v-if="shareable" type="button" class="btn btn-ghost btn-sm" @click="copyLink">Lien de partage</button>
+    <p v-if="note" class="lecture-export-note" role="status">{{ note }}</p>
+    <div class="lecture-export-actions">
+      <RiftButton variant="primary" size="sm" @click="copy('atlas')">Liste Rift Atlas</RiftButton>
+      <RiftButton variant="secondary" size="sm" @click="copy('code')">Code de deck</RiftButton>
+      <RiftButton variant="secondary" size="sm" @click="copy('names')">Liste texte</RiftButton>
+      <RiftButton v-if="shareable" variant="secondary" size="sm" @click="copyLink">Lien de partage</RiftButton>
     </div>
   </div>
 </template>
+
+<style scoped>
+.lecture-export {
+  display: grid;
+  gap: var(--space-3);
+}
+.lecture-export-hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+.lecture-export-note {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--bronze-light);
+}
+.lecture-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+</style>

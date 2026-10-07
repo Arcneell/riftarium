@@ -13,9 +13,9 @@ import {
   typeFilterOptions
 } from "../cardText.js"
 import RiftText from "../ui/RiftText.vue"
-import DeckExportBar from "../components/DeckExportBar.vue"
+import DeckExportBar from "../decks/DeckExportBar.vue"
 import DeckMissingModal from "../components/DeckMissingModal.vue"
-import DeckView from "../components/DeckView.vue"
+import DeckView from "../decks/DeckView.vue"
 import FilterSelect from "../components/FilterSelect.vue"
 import RiftModal from "../ui/RiftModal.vue"
 import { useDeckAutosave } from "../composables/useDeckAutosave.js"

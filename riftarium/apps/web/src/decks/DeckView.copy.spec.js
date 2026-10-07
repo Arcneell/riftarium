@@ -26,7 +26,16 @@ const DECK = {
 function mountView() {
   return mount(DeckView, {
     props: { deck: DECK },
-    global: { stubs: { Icon: true, RouterLink: true, DeckExportBar: true, DeckVisual: true, UserAvatar: true } }
+    global: {
+      stubs: {
+        Icon: true,
+        RouterLink: true,
+        DeckExportBar: true,
+        DeckVisual: true,
+        DeckStatsPanel: true,
+        UserAvatar: true
+      }
+    }
   })
 }
 
@@ -63,5 +72,14 @@ describe("DeckView — copier dans mes decks", () => {
         .findAll("button")
         .some((b) => b.text().includes("Copier"))
     ).toBe(false)
+  })
+
+  it("double clic sur Copier : un seul POST", async () => {
+    api.mockReturnValue(new Promise(() => {}))
+    const wrapper = mountView()
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Copier dans mes decks"))
+    await button.trigger("click")
+    await button.trigger("click")
+    expect(api).toHaveBeenCalledTimes(1)
   })
 })

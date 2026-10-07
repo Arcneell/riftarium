@@ -34,7 +34,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "souhait-remove",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",
-  "deck-view-board",
   "footer-contact",
   "admin-wrap",
   "topic-main",

@@ -479,9 +479,9 @@ describe("DeckEditView", () => {
     const { wrapper } = await mountView()
     expect(wrapper.find(".dbuilder-gallery").exists()).toBe(false)
     expect(wrapper.find(".dbuilder.readonly").exists()).toBe(false)
-    expect(wrapper.find(".deck-view").exists()).toBe(true)
-    expect(wrapper.find(".dvis").exists()).toBe(true)
-    expect(wrapper.get(".dbuilder-back").text()).toContain("Communauté")
+    expect(wrapper.find(".lecture").exists()).toBe(true)
+    expect(wrapper.find(".lecture-visual").exists()).toBe(true)
+    expect(wrapper.get(".lecture-back").text()).toContain("Communauté")
     expect(wrapper.text()).toContain("Liste Rift Atlas")
     expect(api.mock.calls.some(([path, options]) => path === "/api/decks/1/view" && options?.method === "POST")).toBe(
       true
