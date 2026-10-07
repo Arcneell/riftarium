@@ -5,7 +5,7 @@ import { cardThumb, session } from "../api.js"
 import { BANNERS } from "../banners.js"
 import AchievementMedal from "../components/AchievementMedal.vue"
 import CardTile from "../components/CardTile.vue"
-import DeckBox from "../components/DeckBox.vue"
+import DeckCard from "../decks/DeckCard.vue"
 import MatchRow from "../components/MatchRow.vue"
 import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
@@ -374,12 +374,12 @@ onMounted(load)
             </p>
           </div>
 
-          <!-- Decks publics : mêmes boîtes que la communauté, sans action. -->
+          <!-- Decks publics : mêmes fiches que la communauté, sans action. -->
           <div class="panel profile-section">
             <h2>Decks publics</h2>
             <template v-if="shows('show_decks')">
-              <div v-if="decks.length" class="deck-boxes">
-                <DeckBox v-for="deck in decks" :key="deck.id" readonly :deck="deck" :to="`/decks/${deck.id}`" />
+              <div v-if="decks.length" class="profil-decks-grid">
+                <DeckCard v-for="deck in decks" :key="deck.id" readonly :deck="deck" :to="`/decks/${deck.id}`" />
               </div>
               <p v-else class="muted">Aucun deck public pour l'instant.</p>
             </template>
@@ -393,3 +393,11 @@ onMounted(load)
     </section>
   </template>
 </template>
+
+<style scoped>
+.profil-decks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+</style>

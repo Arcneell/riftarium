@@ -152,7 +152,7 @@ describe("PublicProfileView", () => {
     expect(wrapper.findAll(".profile-cards .card-tile")).toHaveLength(1)
 
     /* Decks publics, en lecture seule : ni suppression, ni mention privé. */
-    expect(wrapper.get(".deck-box-title").text()).toContain("Fureur de Noxus")
+    expect(wrapper.get(".deck-card-title").text()).toContain("Fureur de Noxus")
     expect(buttonWith(wrapper, "Supprimer")).toBeUndefined()
     expect(wrapper.find(".profile-hidden").exists()).toBe(false)
     wrapper.unmount()
