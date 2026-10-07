@@ -335,7 +335,7 @@ describe("CardsView : saisie rapide", () => {
       method: "POST",
       body: { qty: 1, condition: "NM", lang: "FR" }
     })
-    expect(wrapper.findAll(".rift-tile")[0].get(".tile-owned").text()).toBe("×1")
+    expect(wrapper.findAll(".rift-tile")[0].get(".rift-stepper-value").text()).toBe("1")
     expect(router.currentRoute.value.path).toBe("/cartes")
     wrapper.unmount()
   })
@@ -347,7 +347,7 @@ describe("CardsView : saisie rapide", () => {
     await flushPromises()
     const calls = api.mock.calls.map(([path, opts]) => `${opts?.method ?? "GET"} ${path}`)
     expect(calls.slice(-2)).toEqual(["GET /api/collection/card-2", "PATCH /api/collection/entries/9"])
-    expect(wrapper.findAll(".rift-tile")[1].get(".tile-owned").text()).toBe("×1")
+    expect(wrapper.findAll(".rift-tile")[1].get(".rift-stepper-value").text()).toBe("1")
     wrapper.unmount()
   })
 

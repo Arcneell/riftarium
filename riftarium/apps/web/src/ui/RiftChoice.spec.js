@@ -23,6 +23,17 @@ describe("RiftChoice", () => {
     wrapper.unmount()
   })
 
+  it("la puce porte un nom accessible complet quand l'option a un titre, sinon son libellé seul", () => {
+    const wrapper = mountChoice()
+    expect(wrapper.findAll("[role=radio]")[0].attributes("aria-label")).toBe("NM, Near Mint")
+    wrapper.unmount()
+    const plain = mount(RiftChoice, {
+      props: { modelValue: "a", options: [{ value: "a", label: "Alpha" }], label: "Lettre" }
+    })
+    expect(plain.get("[role=radio]").attributes("aria-label")).toBeUndefined()
+    plain.unmount()
+  })
+
   it("garde une puce tabulable sans sélection valide", () => {
     const wrapper = mountChoice("")
     expect(wrapper.findAll("[role=radio]").map((r) => r.attributes("tabindex"))).toEqual(["0", "-1", "-1"])

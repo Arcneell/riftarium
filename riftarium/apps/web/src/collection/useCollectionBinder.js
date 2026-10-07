@@ -31,6 +31,10 @@ export function useCollectionBinder({ active, isBlocked }) {
   const turnDir = ref(1) // 1 : on avance (ou change de set), -1 : on recule
 
   let seq = 0
+  /* Un chargement avec voile est en cours (ou a été remplacé par un rechargement discret) :
+     si le rechargement discret échoue, l'erreur doit s'afficher, sinon le voile disparaîtrait
+     sur une page vide sans explication. */
+  let loudPending = false
 
   /* `silent` : rechargement de rattrapage (pochette périmée) : ni voile de chargement
      ni message d'erreur, la double page affichée reste en place jusqu'à la réponse. */
@@ -38,6 +42,7 @@ export function useCollectionBinder({ active, isBlocked }) {
     if (!binderSet.value || !active()) return
     const mine = ++seq
     if (!silent) {
+      loudPending = true
       binderLoading.value = true
       binderError.value = ""
     }
@@ -50,6 +55,7 @@ export function useCollectionBinder({ active, isBlocked }) {
       if (binderOwned.value) params.set("owned", binderOwned.value)
       const data = await api(`/api/cards?${params}`)
       if (mine !== seq) return
+      loudPending = false
       spread.value = {
         key: `${binderSet.value}|${binderOwned.value}|${data.page}`,
         items: data.items,
@@ -58,7 +64,8 @@ export function useCollectionBinder({ active, isBlocked }) {
         total: data.total
       }
     } catch (e) {
-      if (mine === seq && !silent) binderError.value = e.message
+      if (mine === seq && (!silent || loudPending)) binderError.value = e.message
+      if (mine === seq) loudPending = false
     } finally {
       if (mine === seq) binderLoading.value = false
     }
@@ -70,6 +77,7 @@ export function useCollectionBinder({ active, isBlocked }) {
      abandonne la requête en vol ; le composant recharge s'il est actif. */
   function invalidate() {
     seq++
+    loudPending = false
     spread.value = null
     binderLoading.value = false
   }

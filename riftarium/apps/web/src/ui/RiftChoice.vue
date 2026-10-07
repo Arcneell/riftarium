@@ -47,6 +47,7 @@ function onKey(event, index) {
       :aria-checked="String(option.value === modelValue)"
       :tabindex="option.value === tabbable ? 0 : -1"
       :title="option.title"
+      :aria-label="option.title ? `${option.label}, ${option.title}` : undefined"
       @click="$emit('update:modelValue', option.value)"
       @keydown="onKey($event, index)"
     >

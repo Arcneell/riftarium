@@ -60,4 +60,18 @@ describe("CardTile slot overlay", () => {
     })
     expect(wrapper.get(".tile-art .over").exists()).toBe(true)
   })
+
+  it("avec le slot overlay (compteur rapide), le badge ×N est masqué : il ferait doublon", () => {
+    const withSlot = mount(CardTile, {
+      props: { card: { ...base, owned_qty: 3 } },
+      slots: { overlay: '<b class="over">+</b>' },
+      global: { stubs: { RouterLink: RouterLinkStub } }
+    })
+    expect(withSlot.find(".tile-owned").exists()).toBe(false)
+    const without = mount(CardTile, {
+      props: { card: { ...base, owned_qty: 3 } },
+      global: { stubs: { RouterLink: RouterLinkStub } }
+    })
+    expect(without.get(".tile-owned").text()).toBe("×3")
+  })
 })

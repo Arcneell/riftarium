@@ -44,8 +44,11 @@ async function openSet(binder, id = "OGN") {
   await flushPromises()
 }
 
+const pending = []
+
 describe("useCollectionBinder", () => {
   beforeEach(() => {
+    pending.length = 0
     api.mockReset()
     api.mockImplementation(() =>
       Promise.resolve({ total: 298, page: 1, size: 18, items: [fakeCard(1, 3), fakeCard(9, 0)] })
@@ -195,6 +198,35 @@ describe("useCollectionBinder", () => {
     await openSet(binder)
     expect(binder.binderError.value).toBe("Hors ligne")
     expect(binder.binderLoading.value).toBe(false)
+  })
+
+  it("un rechargement discret qui remplace un chargement avec voile et échoue affiche l'erreur", async () => {
+    api.mockImplementation(
+      (path, opts) =>
+        new Promise((resolve, reject) => {
+          void opts
+          pending.push({ resolve, reject, path })
+        })
+    )
+    const { binder } = mountBinder()
+    binder.selectSet("OGN")
+    await flushPromises()
+    binder.loadBinder({ silent: true })
+    await flushPromises()
+    expect(pending).toHaveLength(2)
+    pending[1].reject(new Error("Hors ligne"))
+    await flushPromises()
+    expect(binder.binderError.value).toBe("Hors ligne")
+    expect(binder.binderLoading.value).toBe(false)
+  })
+
+  it("un rechargement discret seul qui échoue reste silencieux", async () => {
+    const { binder } = mountBinder()
+    await openSet(binder)
+    api.mockRejectedValue(new Error("Hors ligne"))
+    await binder.loadBinder({ silent: true })
+    expect(binder.binderError.value).toBe("")
+    expect(binder.spread.value).not.toBeNull()
   })
 
   it("ne charge rien tant que le classeur est inactif", async () => {
