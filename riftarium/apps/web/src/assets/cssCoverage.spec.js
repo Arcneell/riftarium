@@ -37,7 +37,9 @@ const UNSTYLED_ALLOWLIST = new Set([
   "topic-main",
   "learn-main",
   "profile-page",
-  "play-room"
+  "play-room",
+  // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
+  "rune"
 ])
 
 const walk = (dir) =>
