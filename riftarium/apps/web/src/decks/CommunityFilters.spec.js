@@ -23,15 +23,14 @@ const facet = (wrapper, legend) => wrapper.findAll("fieldset").find((node) => no
 describe("CommunityFilters", () => {
   it("filtre local des légendes insensible aux accents", async () => {
     const wrapper = mountFilters()
-    const labels = () =>
-      facet(wrapper, "Légendes")
-        .findAll("button.rift-chip")
-        .map((b) => b.text())
-    expect(labels()).toEqual(["Élise la Prêtresse (3)", "Jinx (5)"])
+    const names = () => facet(wrapper, "Légendes").findAll('[role="option"]')
+    await facet(wrapper, "Légendes").get("input").trigger("focus")
+    expect(names()).toHaveLength(2)
     await facet(wrapper, "Légendes").get("input").setValue("ELISE")
-    expect(labels()).toEqual(["Élise la Prêtresse (3)"])
+    expect(names()).toHaveLength(1)
+    expect(names()[0].text()).toContain("Élise la Prêtresse")
     await facet(wrapper, "Légendes").get("input").setValue("pretresse")
-    expect(labels()).toEqual(["Élise la Prêtresse (3)"])
+    expect(names()).toHaveLength(1)
   })
 
   it("masque le fieldset des légendes quand aucune n'est chargée", () => {
@@ -54,10 +53,13 @@ describe("CommunityFilters", () => {
 
   it("bascule d'une légende et du format, puce Aimés émet liked", async () => {
     const wrapper = mountFilters({ state: baseState({ legend: ["ogn-1"] }) })
-    const legends = facet(wrapper, "Légendes").findAll("button.rift-chip")
-    expect(legends[0].attributes("aria-pressed")).toBe("true")
+    await facet(wrapper, "Légendes").get("input").trigger("focus")
+    const legends = facet(wrapper, "Légendes").findAll('[role="option"]')
+    expect(legends[0].attributes("aria-selected")).toBe("true")
     await legends[0].trigger("click")
     expect(wrapper.emitted("update").at(-1)).toEqual(["legend", []])
+    await legends[1].trigger("click")
+    expect(wrapper.emitted("update").at(-1)).toEqual(["legend", ["ogn-1", "ogn-2"]])
     await facet(wrapper, "Format").findAll("button.rift-chip")[1].trigger("click")
     expect(wrapper.emitted("update").at(-1)).toEqual(["format", ["free"]])
     await facet(wrapper, "Mes decks aimés").get("button.rift-chip").trigger("click")

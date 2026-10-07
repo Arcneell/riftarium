@@ -1,17 +1,18 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { DOMAINS } from "../api.js"
 import { domainFilterOptions, toggleValue } from "../cardText.js"
 import { FORMAT_OPTIONS } from "../deckDisplay.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 import RiftField from "../ui/RiftField.vue"
+import LegendPicker from "./LegendPicker.vue"
 
 /* Contenu du panneau de filtres de la communauté : recherche, tri, puis une facette par
    fieldset en puces à bascule. L'état vit dans useQuerySyncedFilters (URL). */
 const props = defineProps({
   state: { type: Object, required: true },
-  legends: { type: Array, default: () => [] }, // [{ id, name, deck_count }]
+  legends: { type: Array, default: () => [] }, // [{ id, name, image_url, deck_count }]
   signedIn: { type: Boolean, default: false }
 })
 const emit = defineEmits(["update", "liked"])
@@ -23,17 +24,6 @@ const SORTS = [
 ]
 
 const domainOptions = computed(() => domainFilterOptions())
-
-/* Filtre local des légendes : sans casse ni accents. */
-const legendQuery = ref("")
-function fold(text) {
-  return String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-}
-const shownLegends = computed(() => {
-  const needle = fold(legendQuery.value.trim())
-  if (!needle) return props.legends
-  return props.legends.filter((item) => fold(item.name).includes(needle))
-})
 
 function toggle(key, value) {
   emit("update", key, toggleValue(props.state[key], value))
@@ -68,16 +58,11 @@ function toggle(key, value) {
 
     <fieldset v-if="legends.length" class="communaute-facet">
       <legend>Légendes</legend>
-      <RiftField v-model="legendQuery" search hide-label label="Filtrer les légendes" placeholder="Filtrer…" />
-      <div class="communaute-facet-options">
-        <RiftChip
-          v-for="item in shownLegends"
-          :key="item.id"
-          :label="`${item.name} (${item.deck_count})`"
-          :selected="state.legend.includes(item.id)"
-          @toggle="toggle('legend', item.id)"
-        />
-      </div>
+      <LegendPicker
+        :legends="legends"
+        :model-value="state.legend"
+        @update:model-value="emit('update', 'legend', $event)"
+      />
     </fieldset>
 
     <fieldset class="communaute-facet">
