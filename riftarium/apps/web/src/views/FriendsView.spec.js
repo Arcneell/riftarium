@@ -97,7 +97,16 @@ describe("FriendsView", () => {
     await buttonWith(result, "Suivre").trigger("click")
     await flushPromises()
     expect(lastCall("/api/users/novak/follow")[1]).toEqual({ method: "PUT" })
-    expect(buttonWith(result, "Suivi")).toBeTruthy()
+    const suivi = buttonWith(result, "Suivi")
+    expect(suivi).toBeTruthy()
+    expect(suivi.attributes("aria-pressed")).toBe("true")
+    expect(suivi.attributes("aria-label")).toBe("Ne plus suivre novak")
+    expect(suivi.attributes("title")).toBe("Ne plus suivre novak")
+
+    /* Un clic sur « Suivi » se désabonne réellement. */
+    await suivi.trigger("click")
+    await flushPromises()
+    expect(lastCall("/api/users/novak/follow")[1]).toEqual({ method: "DELETE" })
     wrapper.unmount()
   })
 

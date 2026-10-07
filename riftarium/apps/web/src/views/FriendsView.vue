@@ -185,10 +185,15 @@ onBeforeUnmount(() => {
               v-if="followedHandles.has(user.handle)"
               variant="ghost"
               size="sm"
+              class="amis-suivi"
+              aria-pressed="true"
+              :aria-label="`Ne plus suivre ${user.handle}`"
+              :title="`Ne plus suivre ${user.handle}`"
               :disabled="Boolean(busy)"
               @click="unfollow(user)"
             >
-              Suivi
+              <span class="amis-suivi-repos" aria-hidden="true">Suivi</span>
+              <span class="amis-suivi-survol" aria-hidden="true">Ne plus suivre</span>
             </RiftButton>
             <RiftButton v-else size="sm" :disabled="Boolean(busy)" @click="follow(user)">Suivre</RiftButton>
           </span>
@@ -344,6 +349,19 @@ onBeforeUnmount(() => {
 .amis-nom:focus-visible {
   outline: 2px solid var(--bronze-light);
   outline-offset: 2px;
+}
+
+/* Bouton « Suivi » : au survol et au focus, l'étiquette annonce l'action réelle. */
+.amis-suivi-survol {
+  display: none;
+}
+.amis-suivi:hover .amis-suivi-repos,
+.amis-suivi:focus-visible .amis-suivi-repos {
+  display: none;
+}
+.amis-suivi:hover .amis-suivi-survol,
+.amis-suivi:focus-visible .amis-suivi-survol {
+  display: inline;
 }
 
 /* ---------- Lignes ---------- */

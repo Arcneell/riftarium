@@ -99,7 +99,8 @@ async function mountView(path = "/u/nova") {
       { path: "/u/:handle", component: PublicProfileView },
       { path: "/profil", component: { template: "<div />" } },
       { path: "/connexion", component: { template: "<div />" } },
-      { path: "/decks/:id", component: { template: "<div />" } }
+      { path: "/decks/:id", component: { template: "<div />" } },
+      { path: "/cartes/:id", component: { template: "<div />" } }
     ]
   })
   router.push(path)
@@ -156,6 +157,7 @@ describe("PublicProfileView", () => {
     expect(collection.get(".profil-set-pct").text()).toBe("25 %")
     expect(called("/api/users/nova/collection")).toBe(true)
     expect(collection.findAll(".rift-tile")).toHaveLength(1)
+    expect(collection.get(".rift-tile").attributes("href")).toBe("/cartes/ogn-001")
 
     /* Decks publics, en lecture seule : ni suppression, ni mention de masquage. */
     expect(wrapper.get(".profil-decks-grid .deck-card-title").text()).toContain("Fureur de Noxus")
@@ -241,6 +243,38 @@ describe("PublicProfileView", () => {
     expect(wrapper.text()).toContain("Collection en panne")
     expect(wrapper.text()).toContain("Historique en panne")
     wrapper.unmount()
+  })
+
+  it("hauts faits du profil public : nombre de débloqués, jamais « n / n »", async () => {
+    const { wrapper } = await mountView()
+    const panel = wrapper.get("[data-section='hauts-faits']")
+    expect(panel.get(".profil-hf-compte").text()).toBe("1")
+    expect(panel.text()).not.toContain("1 / 1")
+    wrapper.unmount()
+  })
+
+  it("propriétaire avec une section masquée : note et lien vers les réglages", async () => {
+    setupApi(
+      makeProfile({
+        is_me: true,
+        visibility: { show_stats: false, show_collection: true, show_decks: true, show_achievements: true }
+      })
+    )
+    const { wrapper } = await mountView()
+    const note = wrapper.get("[data-testid='note-masque']")
+    expect(note.text()).toContain("Certaines sections sont masquées par vos réglages de confidentialité")
+    expect(note.get("a").attributes("href")).toBe("/profil")
+    wrapper.unmount()
+  })
+
+  it("pas de note si tout est visible, ni pour un visiteur", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.find("[data-testid='note-masque']").exists()).toBe(false)
+    wrapper.unmount()
+    setupApi(makeProfile({ visibility: { show_stats: false } }))
+    const second = await mountView()
+    expect(second.wrapper.find("[data-testid='note-masque']").exists()).toBe(false)
+    second.wrapper.unmount()
   })
 
   it("suit puis cesse de suivre le joueur, compteur mis à jour sans attendre", async () => {

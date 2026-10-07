@@ -51,6 +51,9 @@ const achievementGroups = computed(() => groupAchievements(unlockedFirst(profile
 const totals = computed(() => profile.value?.stats?.totals || null)
 const summary = computed(() => profile.value?.collection_summary || null)
 const byLegend = computed(() => profile.value?.stats?.by_legend || [])
+const hasHidden = computed(() =>
+  ["show_achievements", "show_stats", "show_collection", "show_decks"].some((key) => !shows(key))
+)
 const decks = computed(() => profile.value?.decks || [])
 
 /* Mentions sous la bio : ancienneté puis compteurs (qui bougent avec le suivi optimiste). */
@@ -220,12 +223,17 @@ onMounted(load)
           </RiftButton>
         </template>
       </ProfileHero>
+      <p v-if="profile.is_me && hasHidden" class="profil-note" data-testid="note-masque">
+        Certaines sections sont masquées par vos réglages de confidentialité.
+        <RouterLink class="profil-lien" to="/profil">Modifier ma confidentialité</RouterLink>
+      </p>
       <p v-if="followError" class="profil-erreur" role="alert">{{ followError }}</p>
 
       <!-- Une section masquée par le joueur n'apparaît pas du tout. -->
       <ProfileAchievements
         v-if="shows('show_achievements')"
         data-section="hauts-faits"
+        :show-totals="false"
         :groups="achievementGroups"
         empty-text="Aucun haut fait débloqué pour l'instant."
       />
@@ -360,6 +368,16 @@ onMounted(load)
 }
 .profil-erreur {
   color: var(--blood-text);
+}
+.profil-note {
+  color: var(--ink-muted);
+}
+.profil-lien {
+  color: var(--bronze-light);
+}
+.profil-lien:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
 }
 .profil-texte {
   color: var(--ink-muted);

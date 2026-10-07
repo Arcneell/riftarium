@@ -11,6 +11,8 @@ const props = defineProps({
   groups: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   error: { type: String, default: "" },
+  /* Faux sur le profil public : seuls les débloqués sont publiés, « n / n » serait trompeur. */
+  showTotals: { type: Boolean, default: true },
   /* Texte quand la liste est vide (le profil public ne publie que les débloqués). */
   emptyText: { type: String, default: "Aucun haut fait au catalogue pour l'instant." }
 })
@@ -23,7 +25,7 @@ const total = computed(() => props.groups.reduce((sum, group) => sum + group.tot
   <RiftPanel accent="var(--bronze)">
     <template #title>
       Hauts faits
-      <span v-if="total" class="profil-hf-compte">{{ unlocked }} / {{ total }}</span>
+      <span v-if="total" class="profil-hf-compte">{{ showTotals ? `${unlocked} / ${total}` : unlocked }}</span>
     </template>
     <p class="profil-hf-note">
       Les hauts faits liés aux parties ne comptent que les duels suivis et confirmés — jamais la partie libre.
@@ -36,7 +38,8 @@ const total = computed(() => props.groups.reduce((sum, group) => sum + group.tot
     <template v-else>
       <div v-for="group in groups" :key="group.family" class="profil-famille">
         <h3 class="profil-famille-titre">
-          {{ group.label }} <span class="profil-hf-compte">{{ group.unlocked }} / {{ group.total }}</span>
+          {{ group.label }}
+          <span class="profil-hf-compte">{{ showTotals ? `${group.unlocked} / ${group.total}` : group.unlocked }}</span>
         </h3>
         <ul class="profil-medailles">
           <li
