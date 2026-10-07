@@ -15,8 +15,6 @@ const props = defineProps({
 })
 const emit = defineEmits(["update:modelValue"])
 
-/* Filtre sans casse ni accents. */
-
 const uid = useId()
 const listId = `${uid}-list`
 const root = ref(null)

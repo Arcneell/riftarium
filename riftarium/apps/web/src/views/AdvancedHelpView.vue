@@ -11,8 +11,7 @@ const query = ref("")
 
 const crumbs = [{ label: "Règles", to: "/regles" }, { label: "Aide avancée" }]
 
-/* Plage des diacritiques combinants, écrite en points de code : les caractères
-   littéraux étaient invisibles dans l'éditeur et impossibles à relire. */
+/* Normalisation commune (sans casse ni accents) : celle de la recherche universelle. */
 const normalize = fold
 
 /* Texte cherchable de chaque sujet, calculé une fois au chargement du module :
