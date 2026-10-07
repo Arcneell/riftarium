@@ -27,7 +27,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "rift-text",
   "friends-panel",
   "profile-privacy",
-  "rules-main",
   "souhait-remove",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",
