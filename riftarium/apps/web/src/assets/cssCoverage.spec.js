@@ -1,5 +1,5 @@
 // Garde-fou : toute classe statique d'un gabarit .vue doit avoir une règle CSS quelque part
-// (main.css, src/styles/*.css ou un bloc <style> de .vue). Né d'une régression : le nettoyage
+// (main.css, une feuille .css de src/ ou un bloc <style> de .vue). Né d'une régression : le nettoyage
 // de main.css (67f7a46) avait supprimé des styles encore utilisés par les pages deck et profil.
 // Variable d'environnement CSS_COVERAGE_MAIN_CSS : chemin d'un autre main.css (démonstration).
 import { describe, it, expect } from "vitest"
@@ -48,7 +48,8 @@ const CLASS_SEL_RE = /\.(-?[_a-zA-Z][\w-]*)/g
 function definedClasses(vueFiles) {
   const defined = new Set()
   const cssTexts = [fs.readFileSync(MAIN_CSS, "utf8")]
-  for (const f of walk(path.join(SRC, "styles"))) if (f.endsWith(".css")) cssTexts.push(fs.readFileSync(f, "utf8"))
+  for (const f of walk(SRC))
+    if (f.endsWith(".css") && f !== path.join(SRC, "assets", "main.css")) cssTexts.push(fs.readFileSync(f, "utf8"))
   for (const [, text] of vueFiles) for (const m of text.matchAll(STYLE_RE)) cssTexts.push(m[1])
   for (const css of cssTexts) for (const m of stripComments(css).matchAll(CLASS_SEL_RE)) defined.add(m[1])
   return defined
