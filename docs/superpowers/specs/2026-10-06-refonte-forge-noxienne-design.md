@@ -421,6 +421,31 @@ Forge), profil, profil public (hauts faits), amis. Les contrats
 `docs/suivi-des-matchs.md` et `docs/profils-et-hauts-faits.md` restent
 inchangés.
 
+**Livré** (aucun changement d'API) :
+
+- `src/play/` : `MatchRow`, la ligne d'une partie suivie, commune à `/historique` et au
+  profil public. `src/social/` : identité, confidentialité, sécurité, bloc de tête du
+  profil, hauts faits (`AchievementMedal`, `ProfileAchievements`). `RoomView`,
+  `HistoryView`, `StatsView`, `ProfileView`, `PublicProfileView` et `FriendsView` sont
+  réécrites avec les composants de `src/ui/` et des styles scoped ; plus de
+  `PageBanner`, la coquille porte la rubrique Jouer et ses onglets
+  Salon / Historique / Statistiques ;
+- couleurs du jeu : victoire en `--bronze-light`, défaite en `--blood-text`, contesté en
+  `--ink-muted` avec une hachure (l'issue ne se lit pas qu'à la couleur) ;
+- graphiques (`ColumnChart`, `HBarChart`, `StackedBar`) : API des composants inchangée,
+  donc l'administration en profite sans modification. Leurs couleurs viennent des tokens
+  (volume en `--bronze`, victoires en `--blood`, grille en `--line`, textes en
+  `--ink-muted`), leur feuille commune est `src/components/charts/graphe.css`
+  (préfixe `graphe-`) et chacun garde une alternative textuelle (tableau ou `sr-only`) ;
+- préfixes de classes réservés : `salon-`, `partie-`, `histo-`, `stats-`, `profil-`,
+  `amis-`, `trophee-`, `graphe-`, `joueur-`, `compte-`, `duel-` ;
+- `main.css` : retrait d'environ 1 200 lignes héritées (avatar, `profile-*`, `play-*`,
+  `friend-*`, médailles et gemmes, confidentialité, lignes de progression, `chart-*` du
+  tableau de bord SVG, paliers responsive et keyframes associés). Restent ce dont
+  l'administration dépend encore (`admin-*`, `chart-panel-wide`, `stat`, `stat-row`,
+  `stat-delta`, variables `--chart-*` sous `.admin-stats`) ; `outcomeTone` de `play.js`
+  disparaît. `PageBanner` et `BANNERS` restent pour les pages de la PR 8.
+
 ### PR 8 : compte et pages annexes
 
 - Connexion et inscription : `RiftPanel` sur le splash.

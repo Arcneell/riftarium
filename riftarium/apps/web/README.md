@@ -56,6 +56,17 @@ de la recherche (`SearchPalette`, logique dans `src/search/search.js`). Une page
 fournir le dernier maillon du fil d'Ariane avec `setPageCrumb(nom)`
 (`src/shell/pageCrumb.js`).
 
+### Jeu et social `src/play/`, `src/social/`
+
+`RoomView`, `HistoryView` et `StatsView` (salon, historique, statistiques) partagent
+`MatchRow` (`src/play/`, la ligne d'une partie suivie, aussi utilisée sur le profil
+public). `ProfileView`, `PublicProfileView` et `FriendsView` s'appuient sur `src/social/` :
+identité, confidentialité, sécurité, bloc de tête du profil, hauts faits
+(`AchievementMedal`, `ProfileAchievements`). Préfixes de classes : `salon-`, `partie-`,
+`histo-`, `stats-`, `profil-`, `amis-`, `trophee-`, `joueur-`, `compte-`, `duel-`. Les
+graphiques de `src/components/charts/` partagent la feuille `graphe.css` (préfixe
+`graphe-`, couleurs prises dans les tokens).
+
 ### Decks `src/decks/`
 
 Pièces des pages `DecksView`, `CommunityView` et `DeckEditView` : fiches (`DeckCard`),
