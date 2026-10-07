@@ -1,6 +1,6 @@
 import { computed, reactive, ref, toValue, watch } from "vue"
 import { api, session } from "../api.js"
-import { readDefaults, writeDefaults } from "./collectionDefaults.js"
+import { applyDefaults, readDefaults } from "./collectionDefaults.js"
 
 /* Exemplaires possédés d'une carte : lots, total, compteur +/−, lots détaillés.
    `cardId` est une ref (ou un getter) ; `onChange({ id, owned_qty })` prévient le parent
@@ -20,8 +20,7 @@ export function useOwnedCopies(cardId, { onChange, autoload = true, defaults: sh
   let seq = 0
 
   function setDefaults(patch) {
-    Object.assign(defaults, patch)
-    writeDefaults({ condition: defaults.condition, lang: defaults.lang })
+    applyDefaults(defaults, patch)
   }
 
   async function load() {
@@ -43,12 +42,19 @@ export function useOwnedCopies(cardId, { onChange, autoload = true, defaults: sh
     }
   }
 
-  if (autoload) watch(() => toValue(cardId), load, { immediate: true })
-  else
-    watch(
-      () => toValue(cardId),
-      () => ++seq
-    )
+  /* Changement de carte : dans tous les cas, on invalide les opérations en vol et on vide l'état
+     (lots, chargement, erreur) pour qu'un « − » ne vise jamais les lots de l'ancienne carte. */
+  watch(
+    () => toValue(cardId),
+    () => {
+      ++seq
+      entries.value = []
+      loading.value = false
+      error.value = ""
+      if (autoload) load()
+    },
+    { immediate: autoload }
+  )
 
   /* Une mutation lancée pendant une autre est ignorée. Retourne vrai si elle est passée. */
   async function mutate(request) {
@@ -81,6 +87,8 @@ export function useOwnedCopies(cardId, { onChange, autoload = true, defaults: sh
   const increment = () => mutate(post(1, defaults.condition, defaults.lang))
   const addLot = ({ qty, condition, lang }) => mutate(post(qty, condition, lang))
   const removeLot = (entry) => mutate(patch(entry, 0))
+  /* Ajuste la quantité d'un lot précis (0 le supprime côté API). */
+  const setLotQty = (entryId, qty) => mutate(patch({ id: entryId }, qty))
 
   function decrement() {
     if (!total.value) return false
@@ -89,5 +97,19 @@ export function useOwnedCopies(cardId, { onChange, autoload = true, defaults: sh
     return mutate(patch(entry, entry.qty - 1))
   }
 
-  return { entries, total, loading, busy, error, defaults, setDefaults, load, increment, decrement, addLot, removeLot }
+  return {
+    entries,
+    total,
+    loading,
+    busy,
+    error,
+    defaults,
+    setDefaults,
+    load,
+    increment,
+    decrement,
+    addLot,
+    removeLot,
+    setLotQty
+  }
 }

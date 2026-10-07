@@ -25,3 +25,20 @@ export function writeDefaults({ condition, lang }) {
     /* stockage bloqué : la préférence ne survit simplement pas au rechargement */
   }
 }
+
+/* Options de puces (RiftChoice) pour l'état et la langue : la valeur sert de libellé court,
+   le libellé long va dans l'infobulle et le nom accessible. */
+const toOptions = (labels) => Object.entries(labels).map(([value, title]) => ({ value, label: value, title }))
+export const conditionOptions = toOptions(CONDITIONS)
+export const langOptions = toOptions(LANGS)
+
+/* « NM · Français » : la préférence en clair. */
+export function defaultsLabel(d) {
+  return `${d.condition} · ${LANGS[d.lang] ?? d.lang}`
+}
+
+/* Applique un changement de préférence à l'objet réactif partagé et le mémorise. */
+export function applyDefaults(target, patch) {
+  Object.assign(target, patch)
+  writeDefaults({ condition: target.condition, lang: target.lang })
+}

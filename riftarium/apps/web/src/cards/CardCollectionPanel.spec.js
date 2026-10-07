@@ -247,7 +247,7 @@ describe("CardCollectionPanel", () => {
     wrapper.unmount()
   })
 
-  it("les lots sont des puces retirables ; la puce retire le lot (PATCH qty 0)", async () => {
+  it("chaque lot a son stepper : ± 1 par PATCH, le « − » d'un lot à 1 le supprime (qty 0)", async () => {
     login()
     api.mockImplementation((path, options = {}) => {
       if (path === "/api/collection/ogn-037-298" && !options.method) {
@@ -260,17 +260,64 @@ describe("CardCollectionPanel", () => {
 
     expect(wrapper.get("summary").text()).toContain("Détail des exemplaires (1 lot)")
     expect(wrapper.get("details").attributes("open")).toBeUndefined()
-    const chip = wrapper.get("[aria-label='Retirer le lot 2× NM · Français']")
-    expect(chip.text()).toContain("2× NM · Français")
-    await chip.trigger("click")
-    await flushPromises()
+    const lot = () => wrapper.get(".panel-lot")
+    expect(lot().text()).toContain("NM · Français")
+    expect(lot().get(".rift-stepper-value").text()).toBe("2")
+    expect(lot().find(".rift-stepper--sm").exists()).toBe(true)
+    const patchCalls = () =>
+      api.mock.calls.filter(([path, o]) => path === "/api/collection/entries/1" && o?.method === "PATCH")
 
-    const patch = api.mock.calls.find(([path, o]) => path === "/api/collection/entries/1" && o?.method === "PATCH")
-    expect(patch[1].body).toEqual({ qty: 0 })
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/collection/entries/1" && options.method === "PATCH") {
+        return Promise.resolve(
+          stateOf(options.body.qty ? [{ id: 1, qty: options.body.qty, condition: "NM", lang: "FR" }] : [])
+        )
+      }
+      return Promise.resolve({})
+    })
+    await lot().get("[aria-label='Retirer un exemplaire de le lot NM · Français']").trigger("click")
+    await flushPromises()
+    expect(patchCalls()[0][1].body).toEqual({ qty: 1 })
+    expect(lot().get(".rift-stepper-value").text()).toBe("1")
+    expect(patches).toContainEqual({ id: "ogn-037-298", owned_qty: 1 })
+
+    await lot().get(".rift-stepper-plus").trigger("click")
+    await flushPromises()
+    expect(patchCalls()[1][1].body).toEqual({ qty: 2 })
+
+    await lot().get(".rift-stepper-minus").trigger("click")
+    await flushPromises()
+    await lot().get(".rift-stepper-minus").trigger("click")
+    await flushPromises()
+    expect(patchCalls()[3][1].body).toEqual({ qty: 0 })
     expect(patches).toContainEqual({ id: "ogn-037-298", owned_qty: 0 })
     expect(wrapper.find(".panel-lot").exists()).toBe(false)
     expect(wrapper.get("summary").text()).toBe("Détail des exemplaires")
     wrapper.unmount()
+  })
+
+  it("pendant une requête (busy), les steppers de lot sont désactivés", async () => {
+    login()
+    let release
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/collection/ogn-037-298" && !options.method) {
+        return Promise.resolve(stateOf([{ id: 1, qty: 2, condition: "NM", lang: "FR" }]))
+      }
+      return new Promise((resolve) => (release = resolve))
+    })
+    const { wrapper } = await mountPanel()
+    await wrapper.get(".panel-lot .rift-stepper-plus").trigger("click")
+    expect(wrapper.get(".panel-lot .rift-stepper-plus").attributes("disabled")).toBeDefined()
+    expect(wrapper.get(".panel-lot .rift-stepper-minus").attributes("disabled")).toBeDefined()
+    release(stateOf([{ id: 1, qty: 3, condition: "NM", lang: "FR" }]))
+    await flushPromises()
+    expect(wrapper.get(".panel-lot .rift-stepper-plus").attributes("disabled")).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("« changer » reste une cible de 44 px alignée (inline-flex)", () => {
+    const source = readFileSync(resolve("src/cards/CardCollectionPanel.vue"), "utf8")
+    expect(source).toMatch(/\.panel-pref-change\s*\{\s*display: inline-flex;\s*align-items: center;/)
   })
 
   it("le détail des exemplaires porte un chevron décoratif qui pivote selon [open]", async () => {

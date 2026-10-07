@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref, watch } from "vue"
-import { api, session, CONDITIONS, LANGS } from "../api.js"
+import { api, session } from "../api.js"
+import { conditionOptions, defaultsLabel, langOptions } from "../collection/collectionDefaults.js"
 import { useOwnedCopies } from "../collection/useOwnedCopies.js"
 import RiftButton from "../ui/RiftButton.vue"
-import RiftChip from "../ui/RiftChip.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 import RiftStepper from "../ui/RiftStepper.vue"
 
@@ -35,13 +35,10 @@ watch(
   }
 )
 
-const toOptions = (labels) => Object.entries(labels).map(([value, title]) => ({ value, label: value, title }))
-const conditionOptions = toOptions(CONDITIONS)
-const langOptions = toOptions(LANGS)
-const preference = computed(() => `${defaults.condition} · ${LANGS[defaults.lang] ?? defaults.lang}`)
+const preference = computed(() => defaultsLabel(defaults))
 const editingPref = ref(false)
 
-const lotLabel = (entry) => `${entry.qty}× ${entry.condition} · ${LANGS[entry.lang] ?? entry.lang}`
+const lotName = (entry) => defaultsLabel(entry)
 const detailTitle = computed(() => {
   const count = entries.value.length
   return count ? `Détail des exemplaires (${count} ${count > 1 ? "lots" : "lot"})` : "Détail des exemplaires"
@@ -59,7 +56,10 @@ async function run(action, message) {
 
 const increment = () => run(owned.increment, "Exemplaire ajouté.")
 const decrement = () => run(owned.decrement, "Exemplaire retiré.")
-const removeLot = (entry) => run(() => owned.removeLot(entry), "Lot retiré.")
+/* Ajustement d'un lot de ±1 ; à 0, l'API supprime le lot. Le reclassement (état, langue) d'un lot
+   n'existe pas ici : retrait puis ajout précis, ou l'Inventaire pour le reclassement de masse. */
+const setLotQty = (entry, qty) =>
+  run(() => owned.setLotQty(entry.id, qty), qty ? "Quantité du lot mise à jour." : "Lot retiré.")
 
 /* Ajout précis : la quantité est locale (1 à 999) ; après un ajout réussi elle revient à 1,
    les choix d'état et de langue restent. */
@@ -157,17 +157,19 @@ async function toggleWish() {
         <summary class="panel-detail-title">
           <span class="panel-detail-chevron" aria-hidden="true"></span>{{ detailTitle }}
         </summary>
-        <div v-if="entries.length" class="panel-lots">
-          <RiftChip
-            v-for="entry in entries"
-            :key="entry.id"
-            class="panel-lot"
-            removable
-            :label="lotLabel(entry)"
-            :aria-label="`Retirer le lot ${lotLabel(entry)}`"
-            @remove="removeLot(entry)"
-          />
-        </div>
+        <ul v-if="entries.length" class="panel-lots">
+          <li v-for="entry in entries" :key="entry.id" class="panel-lot">
+            <span class="panel-lot-name">{{ lotName(entry) }}</span>
+            <RiftStepper
+              size="sm"
+              :value="entry.qty"
+              :busy="busy"
+              :label="`le lot ${lotName(entry)}`"
+              @increment="setLotQty(entry, entry.qty + 1)"
+              @decrement="setLotQty(entry, entry.qty - 1)"
+            />
+          </li>
+        </ul>
         <div class="panel-add">
           <p class="panel-add-title">Ajouter un lot précis</p>
           <RiftStepper
@@ -227,9 +229,6 @@ async function toggleWish() {
 .panel-detail {
   display: block;
 }
-.panel-lot {
-  min-height: 44px;
-}
 .panel-add-submit {
   min-width: 44px;
 }
@@ -240,7 +239,8 @@ async function toggleWish() {
 }
 /* Bouton neutralisé localement : main.css stylise `button` globalement. */
 .panel-pref-change {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
   padding: 0 var(--space-1);
   border: 0;
@@ -292,11 +292,26 @@ async function toggleWish() {
     transition: none;
   }
 }
+/* Liste neutralisée localement : main.css pose ses puces et marges sur ul/li. */
 .panel-lots {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+.panel-lot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+}
+.panel-lot-name {
+  color: var(--ink);
+  font-size: 14px;
 }
 .panel-add {
   display: grid;

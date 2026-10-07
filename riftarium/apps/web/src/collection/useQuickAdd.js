@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from "vue"
 import { session } from "../api.js"
-import { readDefaults, writeDefaults } from "./collectionDefaults.js"
+import { applyDefaults, readDefaults } from "./collectionDefaults.js"
 
 /* Saisie rapide (membres) : interrupteur mémorisé pour la session et préférences d'ajout.
    `defaults` est un objet réactif unique, à passer à tous les compteurs : le prochain « + »
@@ -30,8 +30,7 @@ export function useQuickAdd() {
   }
 
   function setDefaults(patch) {
-    Object.assign(defaults, patch)
-    writeDefaults({ condition: defaults.condition, lang: defaults.lang })
+    applyDefaults(defaults, patch)
   }
 
   return { quickOn, toggleQuick, defaults, setDefaults }

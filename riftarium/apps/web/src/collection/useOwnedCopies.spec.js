@@ -169,6 +169,70 @@ describe("useOwnedCopies", () => {
     expect(owned.busy.value).toBe(false)
   })
 
+  it("changement de carte sans autoload : les lots de l'ancienne carte sont oubliés, « − » ne fait rien", async () => {
+    const cardId = ref("c1")
+    const owned = useOwnedCopies(cardId, { autoload: false })
+    api.mockResolvedValueOnce(state([lot(1, 2)]))
+    await owned.load()
+    expect(owned.entries.value).toHaveLength(1)
+    cardId.value = "c2"
+    await nextTick()
+    expect(owned.entries.value).toEqual([])
+    api.mockClear()
+    expect(owned.decrement()).toBe(false)
+    expect(api).not.toHaveBeenCalled()
+  })
+
+  it("changement de carte pendant un load : la réponse de l'ancienne carte est ignorée et le chargement s'arrête", async () => {
+    const slow = deferred()
+    api.mockReturnValueOnce(slow.promise)
+    const cardId = ref("c1")
+    const owned = useOwnedCopies(cardId, { autoload: false })
+    const pending = owned.load()
+    expect(owned.loading.value).toBe(true)
+    cardId.value = "c2"
+    await nextTick()
+    expect(owned.loading.value).toBe(false)
+    slow.resolve(state([lot(1, 4)]))
+    await pending
+    expect(owned.entries.value).toEqual([])
+    expect(owned.error.value).toBe("")
+  })
+
+  it("changement de carte : l'erreur de la précédente est effacée", async () => {
+    api.mockRejectedValueOnce(new Error("Hors ligne"))
+    const cardId = ref("c1")
+    const owned = useOwnedCopies(cardId, { autoload: false })
+    await owned.load()
+    expect(owned.error.value).toBe("Hors ligne")
+    cardId.value = "c2"
+    await nextTick()
+    expect(owned.error.value).toBe("")
+  })
+
+  it("setLotQty ajuste un lot précis par PATCH, 0 le supprime", async () => {
+    const onChange = vi.fn()
+    const owned = useOwnedCopies(ref("c1"), { autoload: false, onChange })
+    api.mockResolvedValueOnce(state([lot(7, 2), lot(8, 1, "PL", "EN")]))
+    await owned.setLotQty(7, 2)
+    expect(api).toHaveBeenLastCalledWith("/api/collection/entries/7", { method: "PATCH", body: { qty: 2 } })
+    expect(onChange).toHaveBeenCalledWith({ id: "c1", owned_qty: 3 })
+    api.mockResolvedValueOnce(state([lot(8, 1, "PL", "EN")]))
+    await owned.setLotQty(7, 0)
+    expect(owned.entries.value).toEqual([lot(8, 1, "PL", "EN")])
+  })
+
+  it("setLotQty est ignoré pendant une autre opération (busy)", async () => {
+    const owned = useOwnedCopies(ref("c1"), { autoload: false })
+    const slow = deferred()
+    api.mockReturnValueOnce(slow.promise)
+    const first = owned.increment()
+    expect(await owned.setLotQty(7, 1)).toBe(false)
+    expect(api).toHaveBeenCalledTimes(1)
+    slow.resolve(state([lot(1, 1)]))
+    await first
+  })
+
   it("addLot et removeLot passent par POST et PATCH", async () => {
     const owned = useOwnedCopies(ref("c1"), { autoload: false })
     api.mockResolvedValueOnce(state([lot(2, 3, "GD", "DE")]))

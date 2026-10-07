@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from "vue"
-import { CONDITIONS, LANGS } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
+import { conditionOptions, defaultsLabel, langOptions } from "./collectionDefaults.js"
 
 /* Rappel de la préférence d'ajout (« Ajouts en NM · Français · changer ») et feuille pour
    la modifier. `defaults` est l'objet réactif partagé (useQuickAdd) ; les changements
@@ -13,10 +13,7 @@ const props = defineProps({
 })
 const emit = defineEmits(["update"])
 
-const toOptions = (labels) => Object.entries(labels).map(([value, title]) => ({ value, label: value, title }))
-const conditionOptions = toOptions(CONDITIONS)
-const langOptions = toOptions(LANGS)
-const summary = computed(() => `${props.defaults.condition} · ${LANGS[props.defaults.lang] ?? props.defaults.lang}`)
+const summary = computed(() => defaultsLabel(props.defaults))
 const open = ref(false)
 </script>
 
