@@ -276,9 +276,10 @@ Chaque PR :
 
 - Résumé chiffré et complétion par set (barres Forgées).
 - Classeur actuel (pochettes, cartes manquantes en fantôme) rhabillé ;
-  l'édition fine des lots reste sur la fiche carte (`CardCollectionPanel`, PR 3),
-  l'inventaire couvre l'état et la langue en masse (pas de `RiftModal` d'édition
-  des lots).
+  l'édition fine des lots (quantité ±1 par lot) se fait sur la fiche carte
+  (`CardCollectionPanel`, un stepper par lot depuis la PR 4b) ; le reclassement d'un
+  lot (état, langue) passe par retrait puis ajout précis, et l'inventaire couvre
+  l'état et la langue en masse (pas de `RiftModal` d'édition des lots).
 - Wishlist avec les mêmes composants.
 - **Livré** : la page est découpée dans `src/collection/` (page, stats,
   classeur, inventaire, composable) ; les classes neuves portent les préfixes
@@ -287,9 +288,10 @@ Chaque PR :
   retirés). Le tournage de page est raccourci (fondu et glissement, 200 ms au
   plus) et la cascade d'apparition des pochettes est supprimée ; le classeur
   reste monté entre les deux affichages, et l'inventaire a une sélection dont la
-  tuile est inerte. L'édition fine des lots n'est pas dans une `RiftModal` : elle
-  reste sur la fiche carte, l'inventaire ne propose que l'état et la langue en
-  masse. Après une opération de masse, les statistiques sont rechargées et le
+  tuile est inerte. L'édition fine des lots n'est pas dans une `RiftModal` : la
+  quantité de chaque lot se règle sur la fiche carte (stepper par lot, PR 4b), le
+  reclassement d'un lot n'existe que par retrait puis ajout précis, et l'inventaire
+  ne propose que l'état et la langue en masse. Après une opération de masse, les statistiques sont rechargées et le
   classeur recharge sa double page.
 
 ### PR 4b : ajout à la collection (`feat/refonte-ajout-collection`)
@@ -298,25 +300,40 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
 
 - **A, compteur rapide** sur la fiche carte : un − / + (`RiftStepper`) ajoute ou retire un
   exemplaire dans l’état et la langue habituels.
-- **B, lots en puces** : les exemplaires se lisent « 2× NM · Français » et se retirent d’un
-  clic (`RiftChip` supprimable). L’ajout précis se fait par puces d’état et de langue
-  (`RiftChoice`).
+- **B, lots** : sur la fiche carte, chaque lot se lit « NM · Français » avec son propre
+  stepper `sm` (`RiftStepper`) : ± 1 par `PATCH /api/collection/entries/{id}`, et le « − »
+  d'un lot à 1 le supprime (qty 0) ; il n'y a plus de puce ✕, le « − » la remplace (un
+  seul geste, pas de suppression d'un lot entier par mégarde). **Pas de reclassement d'un
+  lot** (changement d'état ou de langue) : retrait puis ajout précis, et l'Inventaire
+  permet le reclassement de masse. L’ajout précis se fait par puces d’état et de langue
+  (`RiftChoice`, nom accessible « NM, Near Mint »).
 - **C, saisie rapide** : un interrupteur « Saisie rapide » (membres seulement) sur la
   cartothèque et dans le classeur pose un − / + sur chaque vignette ou pochette, fantômes
   compris, pour saisir un booster ou un classeur à la chaîne. L’interrupteur est mémorisé
   pour la session (`sessionStorage`).
 - **Aucun menu déroulant ni champ numérique** dans la saisie des exemplaires.
 - **Préférence mémorisée** : état et langue d’ajout, par défaut « NM · Français », dans
-  `localStorage` (clé `riftarium_collection_defaults`), toujours sous `try/catch`. Un rappel
-  « Ajouts en NM · Français · changer » ouvre une feuille pour la modifier.
+  `localStorage` (clé `riftarium_collection_defaults`), toujours sous `try/catch`. Un rappel pour la modifier :
+  sur la cartothèque et dans le classeur, « Ajouts en NM · Français · changer » ouvre une
+  feuille (`RiftSheet`) ; sur la fiche carte, le libellé est « Ajouté en NM · Français ·
+  changer » et le réglage s'ouvre en ligne, sous le libellé, sans feuille.
+- **Règle du « − »** (fiche et saisie rapide) : on retire un exemplaire du lot de la
+  préférence (état et langue par défaut) s'il existe, sinon du lot de plus grand id (le plus
+  récent). Dans la saisie rapide, les lots ne sont lus qu'au « − » (chargement paresseux,
+  `GET /api/collection/{id}`) et relus à chaque « − » : si le total réel diffère de celui
+  affiché, la vignette s'aligne et émet `change` sans rien retirer.
 - **API inchangée** : `POST /api/collection/{id}/entries` additionne un lot identique,
   `PATCH /api/collection/entries/{id}` (qty 0 supprime), `GET /api/collection/{id}`.
 - **Livré** : logique dans `src/collection/` (`useOwnedCopies`, `useQuickAdd`,
   `collectionDefaults`, `QuickCount`, `QuickAddPref`) ; un seul jeton de séquence couvre
   chargements et mutations d’une carte. Classeur : une pochette suit son compteur sans
   recharger la double page (rechargement discret si la page a tourné pendant l’écriture),
-  la progression est relue avec un jeton de séquence, et en saisie rapide le classeur reste
-  affiché même à 0 carte possédée (puce « Saisie rapide » dans l’état vide).
+  la progression et les statistiques (cartes, uniques, valeur) sont relues ensemble après un
+  court débounce (300 ms, une rafale de « + » = une relecture) avec des jetons de
+  séquence, et en saisie rapide le classeur reste affiché même à 0 carte possédée (puce
+  « Saisie rapide » dans l’état vide). Sur la cartothèque, le badge ×N de la vignette est
+  masqué quand le compteur rapide est présent. Sur téléphone, le stepper `sm` se resserre
+  (28 px, « + » à l'échelle 1) pour tenir dans une pochette de ≈ 96 px.
 
 ### PR 5 : decks et communauté
 
