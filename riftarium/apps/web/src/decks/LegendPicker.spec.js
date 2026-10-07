@@ -9,9 +9,10 @@ const LEGENDS = [
 ]
 
 let wrapper
-function mountPicker(modelValue = []) {
+function mountPicker(modelValue = [], attachTo) {
   wrapper = mount(LegendPicker, {
     props: { legends: LEGENDS, modelValue },
+    attachTo,
     global: { stubs: { Icon: true } }
   })
   return wrapper
@@ -110,6 +111,36 @@ describe("LegendPicker", () => {
     mountPicker()
     await input().setValue("zzz")
     expect(options()).toHaveLength(0)
-    expect(wrapper.get('[role="listbox"]').text()).toContain("Aucune légende ne correspond")
+    expect(wrapper.get('[role="status"]').text()).toBe("Aucune légende ne correspond")
+  })
+
+  it("Échap ne remonte pas au document tant qu'il sert à fermer ou vider, mais remonte à vide", async () => {
+    mountPicker([], document.body)
+    const seen = []
+    const spy = (event) => seen.push(event.key)
+    document.addEventListener("keydown", spy)
+    try {
+      await input().setValue("jin")
+      const first = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+      input().element.dispatchEvent(first)
+      await wrapper.vm.$nextTick()
+      expect(first.defaultPrevented).toBe(true)
+      input().element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }))
+      await wrapper.vm.$nextTick()
+      expect(input().element.value).toBe("")
+      expect(seen).toEqual([])
+      input().element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }))
+      expect(seen).toEqual(["Escape"])
+    } finally {
+      document.removeEventListener("keydown", spy)
+    }
+  })
+
+  it("une légende choisie absente de la liste reste une puce supprimable (identifiant en repli)", async () => {
+    mountPicker(["perime-9"])
+    const chips = wrapper.findAll("button.rift-chip")
+    expect(chips.map((c) => c.text())).toEqual(["perime-9✕"])
+    await chips[0].trigger("click")
+    expect(wrapper.emitted("update:modelValue").at(-1)).toEqual([[]])
   })
 })

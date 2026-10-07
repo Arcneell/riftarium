@@ -32,7 +32,10 @@ const shown = computed(() => {
   if (!needle) return props.legends
   return props.legends.filter((item) => fold(item.name).includes(needle))
 })
-const selectedLegends = computed(() => props.legends.filter((item) => props.modelValue.includes(item.id)))
+/* Un identifiant périmé (absent de la liste) reste retirable, son identifiant en libellé. */
+const selectedLegends = computed(() =>
+  props.modelValue.map((id) => props.legends.find((item) => item.id === id) ?? { id, name: id })
+)
 const optionId = (index) => `${uid}-opt-${index}`
 const activeId = computed(() => (open.value && activeIndex.value >= 0 ? optionId(activeIndex.value) : undefined))
 
@@ -82,8 +85,14 @@ function onKeydown(event) {
       }
       break
     case "Escape":
-      if (open.value) closeList()
-      else query.value = ""
+      /* Traité ici (le type=search viderait le champ seul) ; seul l'Échap « à vide »
+         remonte, pour fermer la feuille du téléphone. */
+      if (open.value || query.value) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (open.value) closeList()
+        else query.value = ""
+      }
       break
     case "Tab":
       closeList()
@@ -91,9 +100,9 @@ function onKeydown(event) {
   }
 }
 
-/* Une nouvelle saisie rouvre la liste et repart d'aucune option active. */
+/* Une saisie rouvre la liste (pas un vidage par Échap) et repart d'aucune option active. */
 watch(query, () => {
-  open.value = true
+  if (query.value) open.value = true
   activeIndex.value = -1
 })
 
@@ -113,6 +122,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", onOutside))
     <RiftField
       v-model="query"
       search
+      hide-label
       label="Légende"
       placeholder="Rechercher une légende…"
       role="combobox"
@@ -129,8 +139,10 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", onOutside))
       @keydown="onKeydown"
     />
 
+    <p class="legende-status" role="status">{{ open && !shown.length ? "Aucune légende ne correspond" : "" }}</p>
+
     <ul
-      v-show="open"
+      v-show="open && shown.length"
       :id="listId"
       ref="list"
       class="legende-list"
@@ -163,7 +175,6 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", onOutside))
         <span class="legende-count">{{ item.deck_count }}</span>
         <span class="legende-check" aria-hidden="true">{{ modelValue.includes(item.id) ? "✓" : "" }}</span>
       </li>
-      <li v-if="!shown.length" class="legende-empty" role="presentation">Aucune légende ne correspond</li>
     </ul>
 
     <div v-if="selectedLegends.length" class="legende-chosen">
@@ -199,9 +210,13 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", onOutside))
   cursor: pointer;
   transition: background var(--t-fast);
 }
-.legende-option:hover,
 .legende-option.active {
   background: var(--bg-sunken);
+}
+@media (hover: hover) {
+  .legende-option:hover {
+    background: var(--bg-sunken);
+  }
 }
 .legende-option.active {
   border-left-color: var(--blood);
@@ -230,9 +245,9 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", onOutside))
   width: 1em;
   color: var(--bronze-light);
 }
-.legende-empty {
+.legende-status {
   margin: 0;
-  padding: var(--space-3);
+  padding: 0;
   color: var(--ink-muted);
   font-size: 14px;
 }
