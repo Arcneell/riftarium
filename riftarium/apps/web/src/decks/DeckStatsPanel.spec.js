@@ -18,7 +18,7 @@ describe("DeckStatsPanel", () => {
     expect(bars).toHaveLength(8)
     expect(bars[2].find(".sr-only").text()).toBe("3 carte(s) à 2 d'énergie")
     expect(bars[7].find(".sr-only").text()).toBe("2 carte(s) à 7 d'énergie")
-    expect(bars[7].get(".analyse-bar-cost").text()).toBe("7+")
+    expect(bars[7].get(".analyse-bar-cost").text()).toBe("+")
     expect(bars[2].get(".analyse-bar-fill").attributes("style")).toContain("height: 100%")
     expect(wrapper.get(".analyse-curve").attributes("aria-label")).toBe(
       "Répartition des coûts en énergie du deck principal"
@@ -57,5 +57,18 @@ describe("DeckStatsPanel", () => {
   it("slot actions rendu", () => {
     const wrapper = mountPanel({}, { actions: '<button class="test-action">Trouver</button>' })
     expect(wrapper.get(".test-action").text()).toBe("Trouver")
+  })
+
+  it("glyphes d'énergie energy_0 à energy_7 sous les barres", () => {
+    const glyphs = mountPanel().findAll(".analyse-bar-cost img")
+    expect(glyphs).toHaveLength(8)
+    glyphs.forEach((img, cost) => {
+      expect(img.attributes("src")).toContain(`energy_${cost}`)
+      expect(img.attributes("alt")).toBe("")
+    })
+  })
+
+  it("puces de domaine statiques : aucun bouton", () => {
+    expect(mountPanel().findAll(".analyse-domains button")).toHaveLength(0)
   })
 })

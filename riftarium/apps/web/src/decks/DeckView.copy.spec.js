@@ -78,8 +78,9 @@ describe("DeckView — copier dans mes decks", () => {
     api.mockReturnValue(new Promise(() => {}))
     const wrapper = mountView()
     const button = wrapper.findAll("button").find((b) => b.text().includes("Copier dans mes decks"))
-    await button.trigger("click")
-    await button.trigger("click")
+    /* Deux clics synchrones : le rendu n'a pas encore désactivé le bouton. */
+    button.element.click()
+    button.element.click()
     expect(api).toHaveBeenCalledTimes(1)
   })
 })

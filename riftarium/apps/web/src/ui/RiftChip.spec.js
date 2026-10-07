@@ -28,4 +28,14 @@ describe("RiftChip", () => {
     expect(wrapper.get("img.rb-glyph.rune").attributes("src")).toBe("https://x/rune_fury.svg")
     expect(wrapper.attributes("style")).toContain("--chip-color: var(--fury)")
   })
+
+  it("statique : un span sans aria-pressed, sans événement", async () => {
+    const wrapper = mount(RiftChip, { props: { label: "Fureur · 3", static: true } })
+    expect(wrapper.element.tagName).toBe("SPAN")
+    expect(wrapper.classes()).toContain("rift-chip")
+    expect(wrapper.attributes("aria-pressed")).toBeUndefined()
+    expect(wrapper.attributes("tabindex")).toBeUndefined()
+    await wrapper.trigger("click")
+    expect(wrapper.emitted("toggle")).toBeUndefined()
+  })
 })

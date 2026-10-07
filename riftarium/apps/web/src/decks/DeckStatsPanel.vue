@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from "vue"
 import { DOMAIN_RUNE, glyphUrl } from "../cardText.js"
 import { DOMAINS } from "../api.js"
 import { useDeckStats } from "../composables/useDeckStats.js"
@@ -16,24 +17,24 @@ const props = defineProps({
 const { curve, curveLabel, energyTotal, domainSpread } = useDeckStats(() => props.cards || [])
 
 /* Valeur indicative du deck (deck_out.prices, null si rien de pricé). */
-const deckValue = () => formatEur(props.prices?.total_eur)
-
-/* Hauteur d'une barre : jamais NaN, même quand le deck est vide. */
-const barHeight = (bucket) => (Number.isFinite(bucket.height) ? bucket.height : 0)
+const deckValue = computed(() => formatEur(props.prices?.total_eur))
 </script>
 
 <template>
   <RiftPanel title="Analyse">
     <div class="analyse-stats">
       <RiftStat label="Énergie" :glyph="glyphUrl('energy_1')" glyph-kind="energy" :value="energyTotal" />
-      <RiftStat v-if="deckValue()" label="Valeur" :value="deckValue()" :title="PRICE_NOTE" />
+      <RiftStat v-if="deckValue" label="Valeur" :value="deckValue" :title="PRICE_NOTE" />
     </div>
 
     <div class="analyse-curve" role="group" aria-label="Répartition des coûts en énergie du deck principal">
       <div v-for="bucket in curve" :key="bucket.cost" class="analyse-bar">
-        <i class="analyse-bar-fill" :style="{ height: barHeight(bucket) + '%' }"></i>
+        <i class="analyse-bar-fill" :style="{ height: bucket.height + '%' }"></i>
         <span class="sr-only">{{ bucket.count }} carte(s) à {{ bucket.cost }} d'énergie</span>
-        <small class="analyse-bar-cost">{{ bucket.cost }}{{ bucket.cost === 7 ? "+" : "" }}</small>
+        <span class="analyse-bar-cost" aria-hidden="true">
+          <img class="rb-glyph energy" :src="glyphUrl(`energy_${bucket.cost}`)" alt="" width="16" height="16" />
+          <small v-if="bucket.cost === 7">+</small>
+        </span>
       </div>
     </div>
     <!-- Doublon visuel des barres : aria-hidden, les .sr-only des barres le disent déjà. -->
@@ -43,8 +44,7 @@ const barHeight = (bucket) => (Number.isFinite(bucket.height) ? bucket.height : 
       <RiftChip
         v-for="[domain, count] in domainSpread"
         :key="domain"
-        class="analyse-domain"
-        tabindex="-1"
+        static
         :label="`${DOMAINS[domain]?.label || domain} · ${count}`"
         :glyph="glyphUrl(`rune_${DOMAIN_RUNE[domain] || 'rainbow'}`)"
         glyph-kind="rune"
@@ -94,6 +94,8 @@ const barHeight = (bucket) => (Number.isFinite(bucket.height) ? bucket.height : 
   transition: height var(--t-fast);
 }
 .analyse-bar-cost {
+  display: inline-flex;
+  align-items: center;
   margin-top: var(--space-1);
   font-family: var(--font-label);
   font-size: 12px;
@@ -111,10 +113,6 @@ const barHeight = (bucket) => (Number.isFinite(bucket.height) ? bucket.height : 
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-4);
-}
-/* Simple affichage : la puce n'est pas une bascule ici. */
-.analyse-domain {
-  pointer-events: none;
 }
 .analyse-checks {
   display: grid;
