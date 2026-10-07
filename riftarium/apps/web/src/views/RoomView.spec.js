@@ -3,6 +3,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import RoomView from "./RoomView.vue"
 import { api, ApiError } from "../api.js"
+import Icon from "../components/Icon.vue"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -77,7 +78,7 @@ async function mountView(path = "/salon/ABC234") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(RoomView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], components: { Icon } },
     attachTo: document.body
   })
   await flushPromises()
@@ -109,12 +110,12 @@ describe("RoomView", () => {
     const { wrapper } = await mountView()
 
     expect(api).toHaveBeenCalledWith("/api/play/rooms/ABC234")
-    expect(wrapper.get(".play-room-code").text()).toContain("ABC234")
-    expect(wrapper.get(".play-mode").text()).toBe("Duel")
-    expect(wrapper.get(".play-status").text()).toBe("En attente d'un adversaire")
-    expect(wrapper.findAll(".play-seat")).toHaveLength(2)
+    expect(wrapper.get("h1 .salon-code").text()).toBe("ABC234")
+    expect(wrapper.get(".salon-format").text()).toBe("Duel")
+    expect(wrapper.get(".salon-statut").text()).toBe("En attente d'un adversaire")
+    expect(wrapper.findAll(".salon-seat")).toHaveLength(2)
     expect(wrapper.text()).toContain("nova")
-    expect(wrapper.text()).toContain("Prêt ✓")
+    expect(wrapper.findAll(".salon-pret").map((chip) => chip.text())).toEqual(["Prêt", "Pas encore prêt"])
 
     const tick = pollTick(timeoutSpy)
     expect(tick).toBeTruthy()
@@ -165,7 +166,7 @@ describe("RoomView", () => {
       return Promise.resolve(null)
     })
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toContain("Salon introuvable")
+    expect(wrapper.get(".salon-error").text()).toContain("Salon introuvable")
     expect(pollTick(timeoutSpy)).toBeUndefined()
     wrapper.unmount()
   })
@@ -184,15 +185,15 @@ describe("RoomView", () => {
     })
     await buttonWith(wrapper, "Rejoindre").trigger("click")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("Salon complet")
+    expect(wrapper.get(".salon-error").text()).toContain("Salon complet")
 
     const tick = pollTick(timeoutSpy, 5000)
     timeoutSpy.mockClear()
     tick()
     await flushPromises()
     /* Le salon reste affiché, l'erreur d'action aussi, et un avis de sondage s'ajoute. */
-    expect(wrapper.get(".error").text()).toContain("Salon complet")
-    expect(wrapper.find(".play-seat").exists()).toBe(true)
+    expect(wrapper.get(".salon-error").text()).toContain("Salon complet")
+    expect(wrapper.find(".salon-seat").exists()).toBe(true)
     expect(wrapper.text()).toContain("Mise à jour interrompue")
     /* Backoff : la tentative suivante est repoussée à 10 s. */
     expect(pollTick(timeoutSpy, 10000)).toBeTruthy()
@@ -228,7 +229,7 @@ describe("RoomView", () => {
     })
     await select.setValue("9")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("Salon verrouillé")
+    expect(wrapper.get(".salon-error").text()).toContain("Salon verrouillé")
     expect(select.element.value).toBe("7")
     wrapper.unmount()
   })
@@ -251,7 +252,7 @@ describe("RoomView", () => {
     })
     const { wrapper } = await mountView()
     expect(buttonWith(wrapper, "Rejoindre")).toBeUndefined()
-    expect(wrapper.find(".play-picker").exists()).toBe(false)
+    expect(wrapper.find(".salon-choix").exists()).toBe(false)
     expect(wrapper.text()).toContain("Ce salon est complet")
     wrapper.unmount()
   })
@@ -265,14 +266,14 @@ describe("RoomView", () => {
     })
     const { wrapper } = await mountView()
 
-    const search = wrapper.get("#room-legend")
+    const search = wrapper.get(".salon-legend-search input")
     await search.setValue("jin")
     /* Recherche débrayée de 300 ms : on laisse passer le délai réel. */
     await new Promise((resolve) => setTimeout(resolve, 360))
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/cards?type=Legend&q=jin")
 
-    await wrapper.get(".play-legend-results button").trigger("click")
+    await wrapper.get(".salon-legend-option").trigger("click")
     await flushPromises()
     /* Un changement de choix remet le joueur « pas prêt ». */
     expect(lastCall("/api/play/rooms/ABC234/me")).toMatchObject({
@@ -293,7 +294,7 @@ describe("RoomView", () => {
   it("renvoie l'hôte vers son téléphone quand les deux joueurs sont prêts", async () => {
     setupApi({ room: makeRoom({ players: [seat(HOST, { ready: true }), seat(GUEST, { ready: true })] }) })
     const { wrapper } = await mountView()
-    expect(wrapper.get(".play-notice").text()).toContain(
+    expect(wrapper.get(".salon-notice").text()).toContain(
       "Lancez la partie depuis l'application Riftarium sur votre téléphone"
     )
     /* Le lancement n'est jamais proposé sur le web : le compteur vit sur le mobile. */
@@ -341,10 +342,10 @@ describe("RoomView", () => {
     const { wrapper } = await mountView()
 
     expect(api).toHaveBeenCalledWith("/api/play/matches/31")
-    const panel = wrapper.get(".play-match")
+    const panel = wrapper.get(".salon-partie")
     expect(panel.text()).toContain("En attente de confirmation")
     expect(panel.text()).toContain("lecture seule")
-    expect(panel.findAll(".play-match-score").map((node) => node.text())).toEqual(["5", "8"])
+    expect(panel.findAll(".salon-score").map((node) => node.text())).toEqual(["5", "8"])
 
     await buttonWith(wrapper, "Confirmer le résultat").trigger("click")
     await flushPromises()
@@ -361,7 +362,7 @@ describe("RoomView", () => {
     expect(api).toHaveBeenCalledWith("/api/play/current")
     expect(api).not.toHaveBeenCalledWith("/api/play/rooms/")
 
-    await wrapper.get("#room-code").setValue("abc234")
+    await wrapper.get(".salon-code-field input").setValue("abc234")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
     expect(router.currentRoute.value.path).toBe("/salon/ABC234")
@@ -374,8 +375,8 @@ describe("RoomView", () => {
       return Promise.reject(new Error("Salon introuvable"))
     })
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toBe("Salon introuvable")
-    expect(wrapper.find(".play-seat").exists()).toBe(false)
+    expect(wrapper.get(".salon-error").text()).toBe("Salon introuvable")
+    expect(wrapper.find(".salon-seat").exists()).toBe(false)
     wrapper.unmount()
   })
   it("choisir un deck envoie la légende telle qu'elle est rangée dans le deck", async () => {
@@ -431,8 +432,112 @@ describe("RoomView", () => {
   it("le pseudo d'un joueur mène à son profil public", async () => {
     setupApi({ room: makeRoom({ players: [seat(HOST), seat(GUEST)] }) })
     const { wrapper } = await mountView()
-    const links = wrapper.findAll(".play-seat-who a").map((link) => link.attributes("href"))
+    const links = wrapper.findAll(".salon-who a").map((link) => link.attributes("href"))
     expect(links).toEqual(["/u/nyra", "/u/nova"])
+    wrapper.unmount()
+  })
+
+  it("une mise à jour du polling ne vide pas la recherche de légende en cours", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    const decks = [
+      { id: 7, name: "Fureur" },
+      { id: 9, name: "Calme" }
+    ]
+    setupApi({ room: makeRoom({ players: [seat(HOST, { deck: { id: 7, name: "Fureur" } })] }), decks })
+    const { wrapper } = await mountView()
+
+    const search = wrapper.get(".salon-legend-search input")
+    await search.setValue("jin")
+    await new Promise((resolve) => setTimeout(resolve, 360))
+    await flushPromises()
+    expect(wrapper.findAll(".salon-legend-option")).toHaveLength(1)
+
+    /* Le sondage ramène un salon modifié (un invité arrive) : mes choix en cours restent. */
+    setupApi({
+      room: makeRoom({ version: 4, players: [seat(HOST, { deck: { id: 7, name: "Fureur" } }), seat(GUEST)] }),
+      decks
+    })
+    pollTick(timeoutSpy)()
+    await flushPromises()
+    expect(wrapper.text()).toContain("nova")
+    expect(wrapper.get(".salon-legend-search input").element.value).toBe("jin")
+    expect(wrapper.findAll(".salon-legend-option")).toHaveLength(1)
+    expect(wrapper.get("#room-deck").element.value).toBe("7")
+    wrapper.unmount()
+  })
+
+  it("double clic sur Confirmer : un seul POST", async () => {
+    const match = {
+      id: 31,
+      mode: "duel",
+      status: "awaiting_confirmation",
+      host_id: HOST.id,
+      players: [
+        { user: HOST, seat: 0, score: 5, rounds_won: 0, confirmed: false },
+        { user: GUEST, seat: 1, score: 8, rounds_won: 1, confirmed: true }
+      ],
+      state: { round: 1, turn: 6 }
+    }
+    setupApi({ room: makeRoom({ status: "playing", match_id: 31, players: [seat(HOST), seat(GUEST)] }), match })
+    const { wrapper } = await mountView()
+
+    let resolveConfirm
+    api.mockImplementation((path) => {
+      if (path === "/api/play/matches/31/confirm") return new Promise((resolve) => (resolveConfirm = resolve))
+      if (path.startsWith("/api/play/matches/")) return Promise.resolve(match)
+      if (path.startsWith("/api/play/rooms/")) return Promise.resolve(makeRoom({ status: "playing", match_id: 31 }))
+      return Promise.resolve(null)
+    })
+    const button = buttonWith(wrapper, "Confirmer le résultat")
+    button.element.click()
+    button.element.click()
+    await flushPromises()
+    const posts = api.mock.calls.filter(([path]) => path === "/api/play/matches/31/confirm")
+    expect(posts).toHaveLength(1)
+    resolveConfirm({})
+    await flushPromises()
+    wrapper.unmount()
+  })
+
+  it("score annoncé en aria-live", async () => {
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout")
+    const match = (score) => ({
+      id: 31,
+      mode: "match",
+      status: "in_progress",
+      host_id: HOST.id,
+      players: [
+        { user: HOST, seat: 0, score, rounds_won: 1, confirmed: false },
+        { user: GUEST, seat: 1, score: 2, rounds_won: 0, confirmed: false }
+      ],
+      state: { round: 2, turn: 3 }
+    })
+    const room = makeRoom({ mode: "match", status: "playing", match_id: 31, players: [seat(HOST), seat(GUEST)] })
+    setupApi({ room, match: match(3) })
+    const { wrapper } = await mountView()
+
+    const live = wrapper.get(".salon-scores")
+    expect(live.attributes("aria-live")).toBe("polite")
+    expect(live.findAll(".salon-score").map((node) => node.text())).toEqual(["3", "2"])
+    expect(live.text()).toContain("1 manche(s)")
+
+    /* Le point marqué arrive par le sondage, dans la même région annoncée. */
+    setupApi({ room, match: match(4) })
+    pollTick(timeoutSpy)()
+    await flushPromises()
+    expect(wrapper.get('.salon-scores[aria-live="polite"]').findAll(".salon-score")[0].text()).toBe("4")
+    wrapper.unmount()
+  })
+
+  it("pseudo long : ellipse", async () => {
+    const long = { id: 27, handle: "chevalier-de-la-forge-noxienne-du-nord", avatar_url: null }
+    setupApi({ room: makeRoom({ players: [seat(HOST), seat(long)] }) })
+    const { wrapper } = await mountView()
+    const link = wrapper.findAll(".salon-who a")[1]
+    expect(link.classes()).toContain("salon-ellipse")
+    /* Tronqué à l'écran, le pseudo complet reste lisible au survol. */
+    expect(link.attributes("title")).toBe(long.handle)
+    expect(link.text()).toBe(long.handle)
     wrapper.unmount()
   })
 })

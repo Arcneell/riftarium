@@ -29,7 +29,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "footer-contact",
   "admin-wrap",
   "profile-page",
-  "play-room",
   // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
   "rune"
 ])
