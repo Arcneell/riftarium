@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { reactive } from "vue"
 import Icon from "../components/Icon.vue"
 import DeckList from "./DeckList.vue"
+import listSource from "./DeckList.vue?raw"
 
 const ZONES = [
   { key: "Legend", label: "Légende", target: 1 },
@@ -109,5 +110,23 @@ describe("DeckList", () => {
     expect(empties()[0]).toBe("Touchez une carte de la galerie pour l'ajouter.")
     await wrapper.setProps({ canEdit: false })
     expect(empties()[0]).toBe("Aucune carte dans cette zone.")
+  })
+
+  it("boutons −/+ atteignables au clavier : masqués par l'opacité, visibles au survol, au focus et au tactile", () => {
+    /* jsdom ne calcule pas les styles des SFC : on vérifie les règles de la feuille. */
+    const css = listSource.slice(listSource.indexOf("<style"))
+    const base = css.match(/\n\.decklist-actions\s*\{([^}]*)\}/)[1]
+    expect(base).not.toMatch(/display:\s*none/)
+    expect(base).toMatch(/opacity:\s*0/)
+    expect(base).toMatch(/pointer-events:\s*none/)
+    const shown = css.match(
+      /\.decklist-row:hover \.decklist-actions,\s*\.decklist-row:focus-within \.decklist-actions\s*\{([^}]*)\}/
+    )[1]
+    expect(shown).toMatch(/opacity:\s*1/)
+    expect(shown).toMatch(/pointer-events:\s*auto/)
+    const touch = css.match(/@media \(hover: none\)\s*\{(?:\s*\/\*[^*]*\*\/)?\s*\.decklist-actions\s*\{([^}]*)\}/)[1]
+    expect(touch).toMatch(/opacity:\s*1/)
+    expect(touch).toMatch(/pointer-events:\s*auto/)
+    expect(css).not.toMatch(/\.decklist-actions\s*\{[^}]*display:\s*none/)
   })
 })

@@ -4,7 +4,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 
-/* Barre d'édition d'un deck : nom, format, visibilité, mentions et état de sauvegarde.
+/* Barre d'édition d'un deck (édition seulement : la lecture passe par DeckView) : nom, format, visibilité, mentions et état de sauvegarde.
    Elle ne modifie pas `deck` : la page applique les changements émis. */
 defineProps({
   deck: { type: Object, required: true },
@@ -28,7 +28,6 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
       :value="deck.name"
       @input="emit('update:name', $event.target.value)"
     />
-    <h2 v-else class="atelier-name atelier-name--read">{{ deck.name }}</h2>
     <RiftChoice
       v-if="canEdit"
       label="Format"
@@ -120,13 +119,6 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
   border-bottom-color: var(--bronze-light);
   box-shadow: none;
 }
-/* h2 neutralisé localement : main.css le style globalement. */
-.atelier-name--read {
-  margin: 0;
-  border-bottom: none;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-}
 .atelier-stats {
   display: flex;
   align-items: center;
@@ -183,8 +175,10 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
     position: fixed;
     left: var(--space-3);
     right: var(--space-3);
-    bottom: calc(72px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
-    z-index: var(--z-overlay);
+    /* --shell-bottom contient déjà la barre d'onglets et la zone de sécurité (tokens.css). */
+    bottom: calc(var(--shell-bottom, env(safe-area-inset-bottom, 0px)) + var(--space-3));
+    /* Juste sous les modales. */
+    z-index: calc(var(--z-overlay) - 1);
     min-width: 0;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-raised);

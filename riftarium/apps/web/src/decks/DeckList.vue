@@ -490,14 +490,20 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
   font-weight: 600;
   color: var(--bronze-light);
 }
+/* Masqués par l'opacité et non par display: none : les boutons restent dans l'ordre
+   de tabulation, et réapparaissent dès que le focus clavier entre dans la ligne. */
 .decklist-actions {
   flex: none;
-  display: none;
+  display: flex;
   gap: var(--space-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fast);
 }
 .decklist-row:hover .decklist-actions,
 .decklist-row:focus-within .decklist-actions {
-  display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 /* Boutons neutralisés localement : main.css stylise `button` globalement. */
 .decklist-actions button {
@@ -526,7 +532,8 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
 @media (hover: none) {
   /* Pas de survol au tactile : les boutons restent visibles, à taille de doigt. */
   .decklist-actions {
-    display: flex;
+    opacity: 1;
+    pointer-events: auto;
   }
   .decklist-actions button {
     width: 44px;
@@ -564,6 +571,7 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
   .decklist-meter-bar,
   .decklist-row,
   .decklist-hero-remove,
+  .decklist-actions,
   .decklist-row-enter-active,
   .decklist-row-leave-active,
   .decklist-row-move {

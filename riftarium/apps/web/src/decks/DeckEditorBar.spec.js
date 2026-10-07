@@ -76,4 +76,18 @@ describe("DeckEditorBar", () => {
     /* jsdom ne calcule pas la mise en page : on vérifie la règle de la classe. */
     expect(barSource).toMatch(/\.atelier-name\s*\{[^}]*min-width:\s*0/)
   })
+
+  it("toast de sauvegarde : une seule fois la barre d'onglets, juste sous les modales", () => {
+    const toast = barSource.match(/\.atelier-save:not\(\.idle\)\s*\{([^}]*)\}/)[1]
+    /* --shell-bottom contient déjà --tabbar-h et la zone de sécurité. */
+    expect(toast).toMatch(
+      /bottom:\s*calc\(var\(--shell-bottom, env\(safe-area-inset-bottom, 0px\)\) \+ var\(--space-3\)\)/
+    )
+    expect(toast).not.toMatch(/72px|tabbar-h/)
+    expect(toast).toMatch(/z-index:\s*calc\(var\(--z-overlay\) - 1\)/)
+  })
+
+  it("pas de titre en lecture seule : la barre ne sert qu'en édition", () => {
+    expect(barSource).not.toMatch(/<h2/)
+  })
 })
