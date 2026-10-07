@@ -36,6 +36,19 @@ describe("abréviations de puissance (règles 135.2.e)", () => {
     expect(parts("[N] XP")[0]).toMatchObject({ type: "pill", value: "N", label: "niveau, quantité d'XP N" })
   })
 
+  it("[Y] reste la rune d'Ordre seule", () => {
+    expect(parts("Payez [Y].")[1]).toMatchObject({ type: "glyph", kind: "rune", token: "rune_order" })
+  })
+
+  it("[Y] devient une pastille quand le texte contient aussi [X]", () => {
+    const result = parts("Remplacez [X] par [Y].")
+    expect(result.find((p) => p.type === "pill" && p.value === "Y")).toMatchObject({
+      type: "pill",
+      label: "valeur variable Y"
+    })
+    expect(result.find((p) => p.type === "pill" && p.value === "X")).toMatchObject({ type: "pill" })
+  })
+
   it("les pastilles ne s'appliquent pas hors mode règles", () => {
     expect(richSegments("[C]")[0].parts[0].type).not.toBe("pill")
   })

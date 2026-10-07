@@ -22,7 +22,9 @@ const SHORT_TOKENS = {
 const PILL_TOKENS = {
   C: "puissance du domaine de la carte",
   X: "valeur variable X",
-  N: "niveau, quantité d'XP N"
+  N: "niveau, quantité d'XP N",
+  /* Y n'est une pastille que lorsque le texte contient aussi [X] (438.3, 439.5). */
+  Y: "valeur variable Y"
 }
 /* Marqueurs privés (zone d'usage privé Unicode) posés par expandRuleShorthand. */
 const PILL_OPEN = "\uE000"
@@ -34,7 +36,11 @@ const PILL_PATTERN = /\uE000([A-Z])\uE001/g
 const MAX_ENERGY_GLYPH = 12
 
 export function expandRuleShorthand(text) {
-  return String(text ?? "").replace(/\[([RGBOPYAEMSTCXN]|\d{1,2})\]/g, (raw, token) => {
+  const source = String(text ?? "")
+  /* [Y] est la rune d'Ordre, sauf comme paramètre générique à côté de [X]. */
+  const yIsParameter = source.includes("[X]")
+  return source.replace(/\[([RGBOPYAEMSTCXN]|\d{1,2})\]/g, (raw, token) => {
+    if (token === "Y" && yIsParameter) return `${PILL_OPEN}Y${PILL_CLOSE}`
     if (SHORT_TOKENS[token]) return SHORT_TOKENS[token]
     if (PILL_TOKENS[token]) return `${PILL_OPEN}${token}${PILL_CLOSE}`
     const amount = Number(token)

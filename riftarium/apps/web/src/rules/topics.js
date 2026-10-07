@@ -1038,7 +1038,7 @@ export const TOPICS = [
       "[Réaction] signifie : utilisables à l'instant précis où un coût doit être payé — pendant votre tour, pendant une confrontation, même pendant le tour adverse.",
       "Tout ce que produisent vos runes va dans votre **réserve runique**… qui se **vide** au début de chaque phase principale et à la fin de chaque tour : impossible de stocker, on produit ce qu'on dépense à l'instant.",
       "Les runes canalisées **restent en zone de runes** de tour en tour et se redressent à votre éveil : le moteur grandit de 2 runes par tour. Recycler est donc un vrai coût : la rune quitte la table temporairement.",
-      "Certaines essences sont **universelles** ([C]) et paient n'importe quel symbole de domaine."
+      "Certaines essences sont **universelles** ([A]) et paient n'importe quel symbole de domaine."
     ],
     cases: [
       {
@@ -1055,7 +1055,7 @@ export const TOPICS = [
       },
       {
         q: "L'essence universelle, ça existe ?",
-        a: "Oui : certaines essences sont universelles et paient n'importe quel symbole de domaine (règle 163.2.b) — l'icône [C]."
+        a: "Oui : certaines essences sont universelles et paient n'importe quel symbole de domaine (règle 163.2.b) — l'icône [A]."
       },
       {
         q: "Une rune recyclée est-elle perdue pour la partie ?",
