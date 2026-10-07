@@ -50,6 +50,10 @@ async function decrement() {
       @increment="increment"
       @decrement="decrement"
     />
+    <span v-if="owned.error.value" class="quick-count-error" role="alert" :title="owned.error.value">
+      <span aria-hidden="true">!</span>
+      <span class="sr-only">Échec de la mise à jour : {{ owned.error.value }}</span>
+    </span>
   </div>
 </template>
 
@@ -60,8 +64,24 @@ async function decrement() {
   bottom: 0;
   left: 0;
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--space-1);
   padding: var(--space-1);
   background: linear-gradient(to top, rgba(13, 13, 15, 0.92), rgba(13, 13, 15, 0));
+}
+.quick-count-error {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--blood-text);
+  color: var(--blood-text);
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
 }
 </style>

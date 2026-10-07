@@ -156,6 +156,7 @@ onMounted(async () => {
       :active="state.vue === 'classeur'"
       :version="binderVersion"
       :progress-error="progressError"
+      @changed="loadProgress"
     />
     <CollectionInventory
       v-if="state.vue === 'inventaire'"

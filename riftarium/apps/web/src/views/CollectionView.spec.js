@@ -220,6 +220,34 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("saisie rapide dans le classeur : la progression est rechargée sans recharger la double page", async () => {
+    session.token = "1"
+    sessionStorage.setItem("riftarium_quick_add", "1")
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, opts) => {
+      if (opts?.method === "POST") {
+        return Promise.resolve({
+          card_id: "card-9",
+          total_qty: 1,
+          entries: [{ id: 5, qty: 1, condition: "NM", lang: "FR" }]
+        })
+      }
+      return base(path, opts)
+    })
+    const { wrapper } = await mountView()
+    const calls = (prefix) => api.mock.calls.filter(([path]) => String(path).startsWith(prefix)).length
+    const sets = calls("/api/collection/sets")
+    const cards = calls("/api/cards?")
+    await wrapper.findAll(".classeur-pocket")[1].get(".rift-stepper-plus").trigger("click")
+    await flushPromises()
+    expect(calls("/api/collection/sets")).toBe(sets + 1)
+    expect(calls("/api/cards?")).toBe(cards)
+    expect(wrapper.findAll(".classeur-pocket")[1].classes()).not.toContain("ghost")
+    sessionStorage.clear()
+    session.token = null
+    wrapper.unmount()
+  })
+
   it("statistiques : « — » tant que rien n'est chargé, au lieu de zéros", async () => {
     api.mockImplementation(() => new Promise(() => {}))
     const { wrapper } = await mountView()

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue"
-import { api, CONDITIONS, LANGS, session } from "../api.js"
+import { computed, onMounted, ref, watch } from "vue"
+import { api, session } from "../api.js"
 import ActiveFilters from "../cards/ActiveFilters.vue"
 import CardFilters from "../cards/CardFilters.vue"
 import { cardsQuery } from "../cardText.js"
@@ -8,12 +8,12 @@ import { useBreakpoint } from "../composables/useBreakpoint.js"
 import { useGridMeasure } from "../composables/useGridMeasure.js"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { useScrollMemory } from "../composables/useScrollMemory.js"
-import { readDefaults, writeDefaults } from "../collection/collectionDefaults.js"
+import QuickAddPref from "../collection/QuickAddPref.vue"
 import QuickCount from "../collection/QuickCount.vue"
+import { useQuickAdd } from "../collection/useQuickAdd.js"
 import CardTile from "../ui/CardTile.vue"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
-import RiftChoice from "../ui/RiftChoice.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
@@ -57,37 +57,8 @@ const { state, result, loading, error, activeCount, pageCount, setFilter, reset,
     }
   )
 
-/* Saisie rapide (membres) : compteur sur chaque vignette. L'interrupteur est mémorisé pour la
-   session ; les préférences d'ajout sont un objet réactif unique, passé à tous les compteurs,
-   pour que le prochain « + » de n'importe quelle vignette suive le choix de la feuille. */
-const QUICK_KEY = "riftarium_quick_add"
-function readQuick() {
-  try {
-    return sessionStorage.getItem(QUICK_KEY) === "1"
-  } catch {
-    return false
-  }
-}
-const quick = ref(readQuick())
-const quickOn = computed(() => quick.value && !!session.token)
-function toggleQuick() {
-  quick.value = !quick.value
-  try {
-    sessionStorage.setItem(QUICK_KEY, quick.value ? "1" : "0")
-  } catch {
-    /* stockage bloqué : l'interrupteur ne survit pas au rechargement */
-  }
-}
-const quickDefaults = reactive(readDefaults())
-function setQuickDefaults(patch) {
-  Object.assign(quickDefaults, patch)
-  writeDefaults({ condition: quickDefaults.condition, lang: quickDefaults.lang })
-}
-const toOptions = (labels) => Object.entries(labels).map(([value, title]) => ({ value, label: value, title }))
-const conditionOptions = toOptions(CONDITIONS)
-const langOptions = toOptions(LANGS)
-const quickPref = computed(() => `${quickDefaults.condition} · ${LANGS[quickDefaults.lang] ?? quickDefaults.lang}`)
-const prefOpen = ref(false)
+/* Saisie rapide (membres) : compteur sur chaque vignette, préférences partagées. */
+const { quickOn, toggleQuick, defaults: quickDefaults, setDefaults: setQuickDefaults } = useQuickAdd()
 function onQuickChange({ id, owned_qty }) {
   const item = result.value.items.find((card) => card.id === id)
   if (item) item.owned_qty = owned_qty
@@ -157,10 +128,7 @@ onMounted(async () => {
     </aside>
 
     <div class="cards-main">
-      <p v-if="quickOn" class="quick-pref-line">
-        Ajouts en
-        <button type="button" class="quick-pref" @click="prefOpen = true">{{ quickPref }} · changer</button>
-      </p>
+      <QuickAddPref v-if="quickOn" :defaults="quickDefaults" @update="setQuickDefaults" />
       <ActiveFilters :state="state" :sets="setOptions" @update="setFilter" @reset="reset" />
       <p v-if="error" class="cards-error" role="alert">{{ error }}</p>
 
@@ -197,24 +165,6 @@ onMounted(async () => {
       </nav>
     </div>
   </section>
-
-  <RiftSheet v-if="prefOpen" title="Ajouts par défaut" @close="prefOpen = false">
-    <div class="quick-sheet">
-      <RiftChoice
-        label="État par défaut"
-        :model-value="quickDefaults.condition"
-        :options="conditionOptions"
-        @update:model-value="setQuickDefaults({ condition: $event })"
-      />
-      <RiftChoice
-        label="Langue par défaut"
-        :model-value="quickDefaults.lang"
-        :options="langOptions"
-        @update:model-value="setQuickDefaults({ lang: $event })"
-      />
-      <RiftButton block @click="prefOpen = false">Fermer</RiftButton>
-    </div>
-  </RiftSheet>
 
   <RiftSheet v-if="sheetOpen && !desktop" title="Filtres" @close="sheetOpen = false">
     <CardFilters :state="state" :sets="setOptions" @update="setFilter" />
@@ -258,35 +208,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
-}
-.quick-pref-line {
-  margin: 0;
-  font-family: var(--font-label);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--ink-muted);
-}
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
-.quick-pref {
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-bottom: 1px dotted var(--bronze);
-  border-radius: 0;
-  background: none;
-  color: var(--bronze-light);
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: none;
-  cursor: pointer;
-}
-.quick-pref:focus-visible {
-  outline: 2px solid var(--bronze-light);
-  outline-offset: 2px;
-}
-.quick-sheet {
-  display: grid;
-  gap: var(--space-4);
 }
 .cards-count {
   font-family: var(--font-label);

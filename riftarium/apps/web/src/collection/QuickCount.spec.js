@@ -64,6 +64,19 @@ describe("QuickCount", () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
+  it("un échec s'affiche en alerte accessible et ne change pas le compteur", async () => {
+    api.mockRejectedValue(new Error("Serveur indisponible"))
+    const wrapper = mount(QuickCount, { props: { card } })
+    expect(wrapper.find("[role=alert]").exists()).toBe(false)
+    await wrapper.get(".rift-stepper-plus").trigger("click")
+    await flushPromises()
+    const alert = wrapper.get("[role=alert]")
+    expect(alert.attributes("title")).toBe("Serveur indisponible")
+    expect(alert.text()).toContain("Serveur indisponible")
+    expect(wrapper.get(".rift-stepper-value").text()).toBe("2")
+    expect(wrapper.emitted("change")).toBeUndefined()
+  })
+
   it("utilise les préférences partagées passées en propriété", async () => {
     api.mockResolvedValue(state([{ id: 1, qty: 3, condition: "EX", lang: "EN" }]))
     const defaults = reactive({ condition: "NM", lang: "FR" })

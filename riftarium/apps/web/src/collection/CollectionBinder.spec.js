@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import CollectionBinder from "./CollectionBinder.vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
 import { makeRouter } from "../test/makeRouter.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -200,5 +200,98 @@ describe("CollectionBinder", () => {
     const wrapper = await mountBinder()
     expect(wrapper.find(".classeur-nav").exists()).toBe(false)
     wrapper.unmount()
+  })
+
+  describe("saisie rapide", () => {
+    const entry = (qty) => ({ id: 5, qty, condition: "NM", lang: "FR" })
+    const toggle = (wrapper) => wrapper.findAll("button.rift-chip").find((b) => b.text().includes("Saisie rapide"))
+
+    beforeEach(() => {
+      session.token = "1"
+      sessionStorage.clear()
+      localStorage.clear()
+    })
+    afterEach(() => {
+      session.token = null
+      sessionStorage.clear()
+      document.body.innerHTML = ""
+    })
+
+    it("pas d'interrupteur pour un visiteur", async () => {
+      session.token = null
+      const wrapper = await mountBinder()
+      expect(toggle(wrapper)).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it("l'activation pose un compteur sur chaque pochette et affiche le rappel de préférence", async () => {
+      const wrapper = await mountBinder()
+      expect(wrapper.findAll(".quick-count")).toHaveLength(0)
+      await toggle(wrapper).trigger("click")
+      expect(wrapper.findAll(".quick-count")).toHaveLength(2)
+      expect(wrapper.find(".classeur-qty").exists()).toBe(false)
+      expect(wrapper.get(".quick-pref").text()).toContain("NM · Français")
+      wrapper.unmount()
+    })
+
+    it("+ sur un fantôme le rend possédé (×1) sans recharger la double page", async () => {
+      const wrapper = await mountBinder()
+      await toggle(wrapper).trigger("click")
+      api.mockClear()
+      api.mockResolvedValue({ card_id: "card-9", total_qty: 1, entries: [entry(1)] })
+      await wrapper.findAll(".classeur-pocket")[1].get(".rift-stepper-plus").trigger("click")
+      await flushPromises()
+      expect(api.mock.calls).toEqual([
+        ["/api/collection/card-9/entries", { method: "POST", body: { qty: 1, condition: "NM", lang: "FR" } }]
+      ])
+      const pocket = wrapper.findAll(".classeur-pocket")[1]
+      expect(pocket.classes()).not.toContain("ghost")
+      expect(pocket.get(".rift-stepper-value").text()).toBe("1")
+      expect(wrapper.emitted("changed")).toHaveLength(1)
+      wrapper.unmount()
+    })
+
+    it("− à 1 le rend fantôme", async () => {
+      api.mockImplementation(() => Promise.resolve({ total: 298, page: 1, size: 18, items: [fakeCard(1, 1)] }))
+      const wrapper = await mountBinder()
+      await toggle(wrapper).trigger("click")
+      api.mockClear()
+      api.mockImplementation((path, opts) =>
+        Promise.resolve(
+          opts
+            ? { card_id: "card-1", total_qty: 0, entries: [] }
+            : { card_id: "card-1", total_qty: 1, entries: [entry(1)] }
+        )
+      )
+      await wrapper.get(".rift-stepper-minus").trigger("click")
+      await flushPromises()
+      expect(api.mock.calls[1]).toEqual(["/api/collection/entries/5", { method: "PATCH", body: { qty: 0 } }])
+      expect(wrapper.get(".classeur-pocket").classes()).toContain("ghost")
+      expect(wrapper.emitted("changed")).toHaveLength(1)
+      wrapper.unmount()
+    })
+
+    it("un clic sur le compteur ne navigue pas", async () => {
+      const wrapper = await mountBinder()
+      const router = wrapper.vm.$router
+      await toggle(wrapper).trigger("click")
+      api.mockResolvedValue({ card_id: "card-1", total_qty: 4, entries: [entry(4)] })
+      await wrapper.get(".rift-stepper-plus").trigger("click")
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe("/collection")
+      wrapper.unmount()
+    })
+
+    it("les flèches tournent toujours la double page, même depuis le compteur", async () => {
+      const wrapper = await mountBinder()
+      await toggle(wrapper).trigger("click")
+      api.mockClear()
+      wrapper
+        .get(".rift-stepper-plus")
+        .element.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }))
+      await flushPromises()
+      expect(api.mock.calls.some(([path]) => String(path).includes("page=2"))).toBe(true)
+      wrapper.unmount()
+    })
   })
 })
