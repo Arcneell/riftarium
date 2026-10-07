@@ -9,18 +9,34 @@ const SHORT_TOKENS = {
   O: ":rb_rune_body:",
   P: ":rb_rune_chaos:",
   Y: ":rb_rune_order:",
-  C: ":rb_rune_rainbow:",
+  A: ":rb_rune_rainbow:",
   E: ":rb_exhaust:",
-  M: ":rb_might:"
+  M: ":rb_might:",
+  /* Anciennes abréviations de l'épuisement et de la puissance (règles 135.2.e). */
+  T: ":rb_exhaust:",
+  S: ":rb_might:"
 }
+
+/* Abréviations sans glyphe : pastille texte. [C] est la puissance du domaine de la carte
+   (135.2.e.6), pas l'arc-en-ciel ([A]) ; [X] et [N] sont des valeurs variables. */
+const PILL_TOKENS = {
+  C: "puissance du domaine de la carte",
+  X: "valeur variable X",
+  N: "niveau, quantité d'XP N"
+}
+/* Marqueurs privés (zone d'usage privé Unicode) posés par expandRuleShorthand. */
+const PILL_OPEN = "\uE000"
+const PILL_CLOSE = "\uE001"
+const PILL_PATTERN = /\uE000([A-Z])\uE001/g
 
 /* Glyphes d'énergie publiés par Riot : de 0 à 12. Au-delà, aucun fichier n'existe :
    mieux vaut laisser « [42] » en clair qu'une image cassée. */
 const MAX_ENERGY_GLYPH = 12
 
 export function expandRuleShorthand(text) {
-  return String(text ?? "").replace(/\[([RGBOPYCEM]|\d{1,2})\]/g, (raw, token) => {
+  return String(text ?? "").replace(/\[([RGBOPYAEMSTCXN]|\d{1,2})\]/g, (raw, token) => {
     if (SHORT_TOKENS[token]) return SHORT_TOKENS[token]
+    if (PILL_TOKENS[token]) return `${PILL_OPEN}${token}${PILL_CLOSE}`
     const amount = Number(token)
     return Number.isInteger(amount) && amount <= MAX_ENERGY_GLYPH ? `:rb_energy_${amount}:` : raw
   })
@@ -30,8 +46,27 @@ export function expandRuleShorthand(text) {
    l'ancien RulesView.formatText. */
 const REF_PATTERN = /\b(règles?|sections?)\s+(\d{3}(?:\.\d+)*(?:\.[a-z])?(?:\.\d+)*)/gi
 
+/* Remplace les marqueurs de pastille, dans les parties de texte, par des parties « pill ». */
+function splitPills(parts) {
+  return parts.flatMap((part) => {
+    if (part.type !== "text" || !part.value.includes(PILL_OPEN)) return [part]
+    const out = []
+    let last = 0
+    for (const match of part.value.matchAll(PILL_PATTERN)) {
+      if (match.index > last) out.push({ type: "text", value: part.value.slice(last, match.index) })
+      out.push({ type: "pill", value: match[1], label: PILL_TOKENS[match[1]] })
+      last = match.index + match[0].length
+    }
+    if (last < part.value.length) out.push({ type: "text", value: part.value.slice(last) })
+    return out
+  })
+}
+
 /* Découpe un morceau en parties : renvois (si demandés) puis texte / mot-clé / glyphe. */
 function chunkParts(chunk, refs) {
+  return splitPills(chunkPartsRaw(chunk, refs))
+}
+function chunkPartsRaw(chunk, refs) {
   if (!refs) return parseCardText(chunk)
   const parts = []
   let last = 0

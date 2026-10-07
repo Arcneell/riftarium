@@ -7,6 +7,9 @@ defineProps({ part: { type: Object, required: true } })
 <template>
   <span v-if="part.type === 'text'">{{ part.value }}</span>
   <button v-else-if="part.type === 'ref'" type="button" class="rift-ref" :data-ref="part.ref">{{ part.value }}</button>
+  <span v-else-if="part.type === 'pill'" class="rift-pill" role="img" :aria-label="part.label" :title="part.label">{{
+    part.value
+  }}</span>
   <span v-else-if="part.type === 'keyword'" class="rb-kw" :class="[part.family, { arrow: part.arrow }]">{{
     part.label
   }}</span>
@@ -32,6 +35,20 @@ defineProps({ part: { type: Object, required: true } })
 </template>
 
 <style scoped>
+.rift-pill {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border: 1px solid var(--bronze);
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--bronze-light);
+  font-family: var(--font-label);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
 .rift-ref {
   display: inline;
   padding: 0;

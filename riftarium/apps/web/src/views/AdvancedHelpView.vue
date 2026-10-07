@@ -12,7 +12,11 @@ const crumbs = [{ label: "Règles", to: "/regles" }, { label: "Aide avancée" }]
 
 /* Plage des diacritiques combinants, écrite en points de code : les caractères
    littéraux étaient invisibles dans l'éditeur et impossibles à relire. */
-const normalize = (value) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+const normalize = (value) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
 
 /* Texte cherchable de chaque sujet, calculé une fois au chargement du module :
    le recomposer à chaque frappe refaisait un `normalize` sur tout le catalogue.

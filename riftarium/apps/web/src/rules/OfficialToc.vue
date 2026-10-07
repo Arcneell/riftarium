@@ -13,9 +13,26 @@ const emit = defineEmits(["pick", "toggle"])
 const root = ref(null)
 const bare = (number) => number.replace(/\.$/, "")
 
+/* Premier ancêtre à défilement vertical (colonne collante ou feuille). */
+function scrollParent(element) {
+  for (let node = element?.parentElement; node && node !== document.body; node = node.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node
+  }
+  return null
+}
+
 /* La section courante reste visible dans le défilement interne de la table. */
 function revealCurrent() {
-  nextTick(() => root.value?.querySelector("[aria-current]")?.scrollIntoView?.({ block: "nearest" }))
+  nextTick(() => {
+    const current = root.value?.querySelector("[aria-current]")
+    const box = scrollParent(root.value)
+    if (!current || !box) return
+    /* Seul le conteneur de la table défile (pas la fenêtre) : on règle son scrollTop. */
+    const top = current.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
+    if (top < box.scrollTop) box.scrollTop = top
+    else if (top + current.offsetHeight > box.scrollTop + box.clientHeight)
+      box.scrollTop = top + current.offsetHeight - box.clientHeight
+  })
 }
 watch(() => props.sectionId, revealCurrent)
 onMounted(revealCurrent)

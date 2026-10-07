@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useOnline } from "../composables/useOnline.js"
 import OfficialToc from "../rules/OfficialToc.vue"
 import RulesHeader from "../rules/RulesHeader.vue"
@@ -44,6 +44,10 @@ const docOptions = computed(() =>
 )
 const compact = computed(() => breakpoint.value !== "desktop")
 const tocOpen = ref(false)
+/* Retour sur bureau : la feuille n'a plus lieu d'être, elle ne doit pas rouvrir au prochain passage en compact. */
+watch(compact, (value) => {
+  if (!value) tocOpen.value = false
+})
 
 function pickSection(id) {
   tocOpen.value = false

@@ -182,6 +182,8 @@ describe("RulesView : table des matières", () => {
 
     await sections[1].trigger("click")
     expect(window.scrollTo).toHaveBeenCalled()
+    const targets = Element.prototype.scrollIntoView.mock.contexts
+    expect(targets.some((el) => el.classList?.contains("officiel-text"))).toBe(false)
     expect(wrapper.findAll(".officiel-toc-section")[1].attributes("aria-current")).toBe("true")
     expect(wrapper.get(".officiel-title").text()).toBe("La partie")
     wrapper.unmount()
@@ -202,6 +204,8 @@ describe("RulesView : table des matières", () => {
     await flushPromises()
     expect(document.querySelector("[role='dialog']")).toBeNull()
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
+    const targets = Element.prototype.scrollIntoView.mock.contexts
+    expect(targets.some((el) => el.classList?.contains("officiel-text"))).toBe(true)
     expect(window.scrollTo).not.toHaveBeenCalled()
     expect(wrapper.get(".officiel-title").text()).toBe("La partie")
     wrapper.unmount()
@@ -215,6 +219,45 @@ describe("RulesView : table des matières", () => {
     await flushPromises()
     expect(wrapper.text()).not.toContain("Sommaire ↑")
     window.scrollY = 0
+    wrapper.unmount()
+  })
+})
+
+describe("RulesView : feuille et paliers", () => {
+  it("retour sur bureau : la feuille se ferme et ne rouvre pas au retour en compact", async () => {
+    let listeners = []
+    const state = { mobile: true }
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query) => ({
+        get matches() {
+          return state.mobile
+        },
+        media: query,
+        addEventListener(_, fn) {
+          listeners.push(fn)
+        },
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent() {
+          return false
+        }
+      }))
+    )
+    const { wrapper } = await mountView()
+    await wrapper.get(".officiel-toc-bar button").trigger("click")
+    expect(document.querySelector("[role='dialog']")).not.toBeNull()
+
+    state.mobile = false
+    listeners.forEach((fn) => fn())
+    await flushPromises()
+    expect(wrapper.find(".officiel-toc").exists()).toBe(true)
+
+    state.mobile = true
+    listeners.forEach((fn) => fn())
+    await flushPromises()
+    expect(document.querySelector("[role='dialog']")).toBeNull()
     wrapper.unmount()
   })
 })
@@ -256,9 +299,14 @@ describe("RulesView : lecture et renvois", () => {
   })
 
   it("lien venu de l'aide avancée (?doc=&ref=) : place le lecteur sur la règle et remplace l'URL", async () => {
+    /* rAF différé : la règle ciblée doit être rendue avant le défilement. */
+    vi.stubGlobal("requestAnimationFrame", (callback) => setTimeout(callback, 0))
     const { wrapper, router } = await mountView("/?doc=tournament&ref=201.1")
+    await new Promise((resolve) => setTimeout(resolve, 10))
     expect(wrapper.get(".officiel-title").text()).toBe("Arbitrage")
     expect(wrapper.find(".officiel-rule--target").exists()).toBe(true)
+    /* chargement par lien profond : défilement instantané */
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center" })
     expect(router.currentRoute.value.query).toEqual({ doc: "tournament", section: "201", rule: "201-1" })
     wrapper.unmount()
   })

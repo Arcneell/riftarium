@@ -13,7 +13,11 @@ import { loadRulesDocuments } from "./rulesStore.js"
    La longueur est conservée tant que la source est en NFC sans signe combinant
    (c'est le cas de rules-fr.json) : snippet() s'appuie dessus pour retrouver, dans
    le texte d'origine, une position trouvée dans le texte replié. */
-export const normalize = (value) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+export const normalize = (value) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
 export const bare = (number) => number.replace(/\.$/, "")
 
 const MAX_HITS = 40
@@ -93,23 +97,30 @@ export function useRulesReader() {
     })
   }
 
-  /* Change de section et met l'URL à jour (doc, section, rule). */
-  function go(docKey, section, rule = null) {
+  /* Numéro de règle ou de section : d'abord le document donné, puis les autres. */
+  function resolveRef(docKey, number) {
+    return locate.get(`${docKey}:${number}`) ?? locate.get(`core:${number}`) ?? locate.get(`tournament:${number}`)
+  }
+
+  /* Change de section et met l'URL à jour (doc, section, rule). `smooth: false` : défilement
+     instantané (chargement par lien profond). */
+  function go(docKey, section, rule = null, smooth = true) {
     doc.value = docKey
     sectionId.value = section ?? sections.value[0]?.id
     ruleId.value = rule
     const chapter = currentSection.value?.chapter
     if (chapter) openChapters.value.add(chapter.id)
     router.replace({ query: { doc: docKey, section: sectionId.value, ...(rule ? { rule } : {}) } })
+    const behavior = smooth ? "smooth" : "instant"
     if (rule) {
-      scrollToRule(rule)
+      scrollToRule(rule, smooth)
     } else if (breakpoint.value !== "desktop") {
       /* Sommaire en feuille (< 1 024 px) : on amène le lecteur sur le texte, pas en haut de page. */
       requestAnimationFrame(() => {
-        document.querySelector(".officiel-text")?.scrollIntoView?.({ block: "start", behavior: "smooth" })
+        document.querySelector(".officiel-text")?.scrollIntoView?.({ block: "start", behavior })
       })
     } else {
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      window.scrollTo({ top: 0, behavior })
     }
   }
 
@@ -120,8 +131,7 @@ export function useRulesReader() {
   /* Numéro de règle ou de section : d'abord le document courant, puis les autres.
      Numéro introuvable : rien ne se passe. */
   function followRef(number) {
-    const hit =
-      locate.get(`${doc.value}:${number}`) ?? locate.get(`core:${number}`) ?? locate.get(`tournament:${number}`)
+    const hit = resolveRef(doc.value, number)
     if (hit) go(hit.doc, hit.section, hit.rule ?? null)
   }
 
@@ -173,9 +183,9 @@ export function useRulesReader() {
     const chapters = documents.value[docKey].chapters
     if (typeof q.ref === "string" && q.ref) {
       doc.value = docKey
-      const hit = locate.get(`${docKey}:${q.ref}`) ?? locate.get(`core:${q.ref}`) ?? locate.get(`tournament:${q.ref}`)
-      if (hit) go(hit.doc, hit.section, hit.rule ?? null)
-      else go(docKey, chapters[0].sections[0].id)
+      const hit = resolveRef(docKey, q.ref)
+      if (hit) go(hit.doc, hit.section, hit.rule ?? null, false)
+      else go(docKey, chapters[0].sections[0].id, null, false)
       return
     }
     const wanted = chapters.flatMap((c) => c.sections).find((s) => s.id === q.section)

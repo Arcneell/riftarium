@@ -13,6 +13,34 @@ describe("expandRuleShorthand", () => {
   })
 })
 
+describe("abréviations de puissance (règles 135.2.e)", () => {
+  const parts = (text) => richSegments(text, { rules: true })[0].parts
+
+  it("[A] → glyphe arc-en-ciel", () => {
+    expect(parts("[A]")[0]).toMatchObject({ type: "glyph", kind: "rune", domain: "rainbow" })
+  })
+
+  it("[1][C] → énergie 1 puis pastille C", () => {
+    const [energy, pill] = parts("[1][C]")
+    expect(energy).toMatchObject({ type: "glyph", kind: "energy", amount: "1" })
+    expect(pill).toMatchObject({ type: "pill", value: "C", label: "puissance du domaine de la carte" })
+  })
+
+  it("[S] → puissance et [T] → épuisement (anciennes abréviations)", () => {
+    expect(parts("[S]")[0]).toMatchObject({ type: "glyph", kind: "ink", token: "might" })
+    expect(parts("[T]")[0]).toMatchObject({ type: "glyph", kind: "ink", token: "exhaust" })
+  })
+
+  it("[X] et [N] → pastilles texte avec libellé", () => {
+    expect(parts("Assaut [X]")[1]).toMatchObject({ type: "pill", value: "X", label: "valeur variable X" })
+    expect(parts("[N] XP")[0]).toMatchObject({ type: "pill", value: "N", label: "niveau, quantité d'XP N" })
+  })
+
+  it("les pastilles ne s'appliquent pas hors mode règles", () => {
+    expect(richSegments("[C]")[0].parts[0].type).not.toBe("pill")
+  })
+})
+
 describe("richSegments", () => {
   it("découpe le gras et analyse chaque segment", () => {
     const segments = richSegments("Avant **Assaut** après")
