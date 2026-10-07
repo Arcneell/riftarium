@@ -33,7 +33,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "classeur-tab-name",
   "footer-contact",
   "admin-wrap",
-  "topic-main",
   "profile-page",
   "play-room",
   // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
