@@ -96,6 +96,7 @@ async function createExample(mode) {
 function closeCreate() {
   if (creating.value || generating.value) return
   showCreate.value = false
+  createError.value = ""
 }
 
 function askRemove(deck) {
@@ -277,7 +278,7 @@ onMounted(load)
 }
 @media (max-width: 560px) {
   .mesdecks-grid {
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .mesdecks-skeleton :deep(.rift-skeleton-block) {

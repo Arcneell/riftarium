@@ -122,6 +122,29 @@ describe("CommunityView", () => {
     wrapper.unmount()
   })
 
+  it("sous Aimés, ne plus aimer retire la fiche et décrémente le total", async () => {
+    session.token = "jeton"
+    session.handle = "visiteur"
+    api.mockImplementation((path, options = {}) => {
+      if (path.startsWith("/api/community/decks")) {
+        return Promise.resolve({ total: 1, page: 1, size: 20, items: [{ ...deck, liked_by_me: true }] })
+      }
+      if (path === "/api/community/legends") return Promise.resolve([])
+      if (path === "/api/decks/3/like" && options.method === "POST") {
+        return Promise.resolve({ likes: 3, liked_by_me: false })
+      }
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView("/communaute?liked=1")
+    expect(wrapper.findAll(".deck-card")).toHaveLength(1)
+    expect(wrapper.get(".communaute-count").text()).toBe("1 deck(s)")
+    await wrapper.get("button.deck-card-like").trigger("click")
+    await flushPromises()
+    expect(wrapper.findAll(".deck-card")).toHaveLength(0)
+    expect(wrapper.get(".communaute-count").text()).toBe("0 deck(s)")
+    wrapper.unmount()
+  })
+
   it("double clic sur j'aime : un seul POST", async () => {
     session.token = "jeton"
     let release

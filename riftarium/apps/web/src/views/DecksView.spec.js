@@ -102,6 +102,30 @@ describe("DecksView", () => {
     wrapper.unmount()
   })
 
+  it("création en échec puis Annuler : l'alerte périmée disparaît de la page", async () => {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/decks/mine") return Promise.resolve([])
+      if (path === "/api/decks" && options.method === "POST") return Promise.reject(new Error("Nom déjà pris"))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await wrapper.get(".mesdecks-new").trigger("click")
+    const modal = document.body.querySelector(".rift-modal")
+    const nameInput = modal.querySelector("input[type=text]")
+    nameInput.value = "Fureur de Noxus"
+    nameInput.dispatchEvent(new Event("input"))
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    expect(document.body.querySelector(".mesdecks-error")).not.toBeNull()
+
+    const cancel = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Annuler")
+    cancel.click()
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+    expect(document.body.querySelector(".mesdecks-error")).toBeNull()
+    wrapper.unmount()
+  })
+
   it("la modale se ferme avec Échap sans créer de deck", async () => {
     const { wrapper } = await mountView()
     await wrapper.get(".mesdecks-new").trigger("click")

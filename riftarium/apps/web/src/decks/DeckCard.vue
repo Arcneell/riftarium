@@ -40,7 +40,12 @@ function missingNote(deck) {
        domaines habillent le liseré (deckIdentity pose --cover, --d1 et --d2). Le
        lien principal couvre toute la fiche, les autres contrôles passent au-dessus. -->
   <article class="deck-card" :class="{ 'deck-card--blank': !legend }" :style="deckIdentity(deck)">
-    <RouterLink class="deck-card-link" :to="to" :aria-label="`Ouvrir le deck ${deck.name}`"></RouterLink>
+    <RouterLink
+      class="deck-card-link"
+      :to="to"
+      :aria-label="`Ouvrir le deck ${deck.name}`"
+      :title="deck.name"
+    ></RouterLink>
     <span v-if="!legend" class="deck-card-nolegend">Sans légende</span>
 
     <div class="deck-card-top">
@@ -142,7 +147,6 @@ function missingNote(deck) {
   min-width: 0;
   aspect-ratio: 5 / 7;
   padding: var(--space-3);
-  overflow: hidden;
   color: var(--ink);
   background-color: var(--bg);
   /* Voile --bg : transparent en haut, opaque sur le dernier tiers ; l'illustration
