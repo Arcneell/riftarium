@@ -50,4 +50,13 @@ describe("CardFilters", () => {
     await wrapper.get("input").setValue("jinx")
     expect(wrapper.emitted("update").at(-1)).toEqual(["q", "jinx"])
   })
+
+  it("hide-search retire le champ de recherche et garde les facettes", () => {
+    const wrapper = mount(CardFilters, {
+      props: { state: empty(), sets: SETS, hideSearch: true },
+      global: { components: { Icon } }
+    })
+    expect(wrapper.find("input").exists()).toBe(false)
+    expect(wrapper.findAll("fieldset")).toHaveLength(5)
+  })
 })
