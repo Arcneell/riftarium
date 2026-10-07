@@ -337,6 +337,62 @@ describe("RulesView : recherche", () => {
     wrapper.unmount()
   })
 
+  async function withHits() {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
+    const { wrapper } = await mountView()
+    const input = wrapper.get("input[type='search']")
+    await input.setValue("seconde")
+    vi.advanceTimersByTime(200)
+    await flushPromises()
+    expect(wrapper.findAll(".officiel-hit")).toHaveLength(1)
+    return { wrapper, input }
+  }
+
+  it("un pointerdown hors de la recherche ferme les résultats et garde la saisie", async () => {
+    const { wrapper, input } = await withHits()
+    document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))
+    await flushPromises()
+    expect(wrapper.find(".officiel-hit").exists()).toBe(false)
+    expect(input.element.value).toBe("seconde")
+    wrapper.unmount()
+  })
+
+  it("un pointerdown dans la recherche laisse les résultats ouverts", async () => {
+    const { wrapper } = await withHits()
+    wrapper.get(".officiel-hit").element.dispatchEvent(new Event("pointerdown", { bubbles: true }))
+    await flushPromises()
+    expect(wrapper.find(".officiel-hit").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("un focusout vers l'extérieur ferme, le focus dans le champ rouvre", async () => {
+    const { wrapper, input } = await withHits()
+    const outside = document.createElement("button")
+    document.body.appendChild(outside)
+    await wrapper.get(".officiel-search").trigger("focusout", { relatedTarget: outside })
+    expect(wrapper.find(".officiel-hit").exists()).toBe(false)
+    expect(input.element.value).toBe("seconde")
+    await input.trigger("focusin")
+    expect(wrapper.find(".officiel-hit").exists()).toBe(true)
+    outside.remove()
+    wrapper.unmount()
+  })
+
+  it("un focusout vers un résultat reste ouvert, une nouvelle saisie rouvre", async () => {
+    const { wrapper, input } = await withHits()
+    const hit = wrapper.get(".officiel-hit").element
+    await wrapper.get(".officiel-search").trigger("focusout", { relatedTarget: hit })
+    expect(wrapper.find(".officiel-hit").exists()).toBe(true)
+    document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }))
+    await flushPromises()
+    expect(wrapper.find(".officiel-hit").exists()).toBe(false)
+    await input.setValue("seconde ")
+    vi.advanceTimersByTime(200)
+    await flushPromises()
+    expect(wrapper.find(".officiel-hit").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
   it("aucun résultat : message vide dès 2 caractères", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
     const { wrapper } = await mountView()

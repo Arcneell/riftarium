@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { expandRuleShorthand, richSegments } from "./richText.js"
 
@@ -98,5 +99,84 @@ describe("richSegments", () => {
   it("renvoie une liste vide pour un texte vide", () => {
     expect(richSegments("")).toEqual([])
     expect(richSegments(null)).toEqual([])
+  })
+})
+
+describe("symbole [>] du texte officiel", () => {
+  const parts = (text, options) => richSegments(text, options)[0].parts
+
+  it("règles : [>] hors mot-clé devient une pastille avec libellé", () => {
+    const result = parts("indiqué par le symbole [>].", { rules: true, refs: true })
+    expect(result.find((p) => p.type === "pill")).toMatchObject({
+      value: "›",
+      label: "symbole de compétence dépendante"
+    })
+  })
+
+  it("règles : « [Niveau] [N][>] [Texte] » garde N, la flèche et le mot-clé", () => {
+    const result = parts("[Niveau] [N][>] [Texte]", { rules: true, refs: true })
+    expect(result.filter((p) => p.type === "pill").map((p) => p.value)).toEqual(["N", "›"])
+  })
+
+  it("règles : la flèche après un mot-clé reste portée par le mot-clé", () => {
+    const result = parts("[Niveau][>] 3", { rules: true, refs: true })
+    expect(result[0]).toMatchObject({ type: "keyword", arrow: true })
+    expect(result.some((p) => p.type === "pill")).toBe(false)
+  })
+
+  it("cartes (hors règles) : un [>] isolé reste ignoré, après un mot-clé il devient une flèche", () => {
+    expect(parts("symbole [>].").map((p) => p.type)).toEqual(["text"])
+    expect(parts("[Assault][>] 2")[0]).toMatchObject({ type: "keyword", arrow: true })
+  })
+
+  it("[Y] en tête de règle (438.3.b) est un paramètre, pas la rune d'Ordre", () => {
+    const result = parts("[Y] est l'élément qui va remplacer la cible.", { rules: true })
+    expect(result[0]).toMatchObject({ type: "pill", value: "Y", label: "valeur variable Y" })
+  })
+
+  it("[Y] garde la rune d'Ordre en 134.2.f, 429.5 et dans l'exemple de 206", () => {
+    const order = (text) => parts(text, { rules: true, refs: true }).find((p) => p.token === "rune_order")
+    expect(order("L'ordre est associé à la couleur jaune. Son abréviation est [Y]")).toBeTruthy()
+    expect(order("Ajoutez [une ou plusieurs ressources]. Par exemple, « [Ajout] [Y]. » signifie")).toBeTruthy()
+    expect(order("Atakhan indique « Payez [Y] pour me jouer. »")).toBeTruthy()
+  })
+})
+
+describe("corpus de data/rules-fr.json", () => {
+  const corpus = JSON.parse(readFileSync("../../data/rules-fr.json", "utf8"))
+  const texts = []
+  for (const doc of Object.values(corpus)) {
+    for (const chapter of doc.chapters) {
+      for (const section of chapter.sections) {
+        for (const entry of section.entries) {
+          texts.push(entry.text)
+          for (const example of entry.examples ?? []) texts.push(typeof example === "string" ? example : example.text)
+        }
+      }
+    }
+  }
+  const TOKEN = /\[[^\][]+\]/g
+
+  it("couvre un corpus non vide", () => {
+    expect(texts.length).toBeGreaterThan(500)
+  })
+
+  it("chaque jeton [...] du texte source est rendu, jamais perdu", () => {
+    const lost = []
+    for (const text of texts) {
+      if (!text) continue
+      /* [NO TEXT] est volontairement muet (marqueur des données de cartes). */
+      const expected = (text.match(TOKEN) ?? []).filter((token) => token.toUpperCase() !== "[NO TEXT]").length
+      let rendered = 0
+      for (const segment of richSegments(text, { rules: true, refs: true })) {
+        for (const part of segment.parts) {
+          if (part.type === "glyph" || part.type === "pill" || part.type === "keyword") rendered += 1
+          if (part.type === "keyword" && part.arrow) rendered += 1
+          if (part.type === "text" || part.type === "ref") rendered += (part.value.match(TOKEN) ?? []).length
+        }
+      }
+      if (rendered !== expected) lost.push(`${expected} → ${rendered} : ${text.slice(0, 100)}`)
+    }
+    expect(lost).toEqual([])
   })
 })

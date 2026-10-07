@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useOnline } from "../composables/useOnline.js"
 import OfficialToc from "../rules/OfficialToc.vue"
 import RulesHeader from "../rules/RulesHeader.vue"
@@ -49,6 +49,26 @@ watch(compact, (value) => {
   if (!value) tocOpen.value = false
 })
 
+/* Panneau de résultats : refermable sans perdre la saisie. Un clic ou un focus hors du bloc
+   de recherche le ferme ; le focus dans le champ ou une nouvelle saisie le rouvre. */
+const searchRoot = ref(null)
+const hitsOpen = ref(true)
+function onDocumentPointerDown(event) {
+  if (searchRoot.value && !searchRoot.value.contains(event.target)) hitsOpen.value = false
+}
+function onSearchFocusOut(event) {
+  /* relatedTarget nul (clic sur un bouton sous Safari, fenêtre quittée) : on laisse ouvert,
+     pointerdown se charge des clics extérieurs et le clic sur un résultat doit aboutir. */
+  const next = event.relatedTarget
+  if (next && !searchRoot.value?.contains(next)) hitsOpen.value = false
+}
+function onSearchTyped() {
+  hitsOpen.value = true
+  onSearchInput()
+}
+onMounted(() => document.addEventListener("pointerdown", onDocumentPointerDown))
+onBeforeUnmount(() => document.removeEventListener("pointerdown", onDocumentPointerDown))
+
 function pickSection(id) {
   tocOpen.value = false
   go(doc.value, id)
@@ -84,7 +104,13 @@ function onTextClick(event) {
     </div>
 
     <template v-else>
-      <div class="officiel-search" @keydown.esc="clearSearch">
+      <div
+        ref="searchRoot"
+        class="officiel-search"
+        @keydown.esc="clearSearch"
+        @focusin="hitsOpen = true"
+        @focusout="onSearchFocusOut"
+      >
         <RiftField
           v-model="searchQuery"
           search
@@ -96,9 +122,9 @@ function onTextClick(event) {
           autocapitalize="off"
           autocorrect="off"
           spellcheck="false"
-          @input="onSearchInput"
+          @input="onSearchTyped"
         />
-        <div v-if="searchHits.length" class="officiel-hits">
+        <div v-if="searchHits.length && hitsOpen" class="officiel-hits">
           <button
             v-for="hit in searchHits"
             :key="hit.doc + hit.id"
@@ -111,7 +137,7 @@ function onTextClick(event) {
             <span class="officiel-hit-text">{{ hit.snippet }}</span>
           </button>
         </div>
-        <p v-else-if="searchQuery.trim().length >= 2" class="officiel-nohit">
+        <p v-else-if="!searchHits.length && hitsOpen && searchQuery.trim().length >= 2" class="officiel-nohit">
           Aucune règle trouvée — essayez un autre mot-clé, ou un numéro comme 002.
         </p>
       </div>

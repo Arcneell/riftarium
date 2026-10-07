@@ -37,8 +37,9 @@ const MAX_ENERGY_GLYPH = 12
 
 export function expandRuleShorthand(text) {
   const source = String(text ?? "")
-  /* [Y] est la rune d'Ordre, sauf comme paramètre générique à côté de [X]. */
-  const yIsParameter = source.includes("[X]")
+  /* [Y] est la rune d'Ordre, sauf comme paramètre générique : à côté de [X], ou en tête de
+     règle (438.3.b : « [Y] est le nombre… »). */
+  const yIsParameter = source.includes("[X]") || /^\[Y\]\s/.test(source)
   return source.replace(/\[([RGBOPYAEMSTCXN]|\d{1,2})\]/g, (raw, token) => {
     if (token === "Y" && yIsParameter) return `${PILL_OPEN}Y${PILL_CLOSE}`
     if (SHORT_TOKENS[token]) return SHORT_TOKENS[token]
@@ -69,19 +70,19 @@ function splitPills(parts) {
 }
 
 /* Découpe un morceau en parties : renvois (si demandés) puis texte / mot-clé / glyphe. */
-function chunkParts(chunk, refs) {
-  return splitPills(chunkPartsRaw(chunk, refs))
+function chunkParts(chunk, refs, rules) {
+  return splitPills(chunkPartsRaw(chunk, refs, rules))
 }
-function chunkPartsRaw(chunk, refs) {
-  if (!refs) return parseCardText(chunk)
+function chunkPartsRaw(chunk, refs, rules) {
+  if (!refs) return parseCardText(chunk, { rules })
   const parts = []
   let last = 0
   for (const match of chunk.matchAll(REF_PATTERN)) {
-    if (match.index > last) parts.push(...parseCardText(chunk.slice(last, match.index)))
+    if (match.index > last) parts.push(...parseCardText(chunk.slice(last, match.index), { rules }))
     parts.push({ type: "ref", value: match[0], ref: match[2].replace(/\.$/, "") })
     last = match.index + match[0].length
   }
-  if (last < chunk.length) parts.push(...parseCardText(chunk.slice(last)))
+  if (last < chunk.length) parts.push(...parseCardText(chunk.slice(last), { rules }))
   return parts
 }
 
@@ -96,7 +97,7 @@ export function richSegments(text, { rules = false, refs = false } = {}) {
     if (!chunk) continue
     segments.push({
       bold: i % 2 === 1,
-      parts: chunkParts(chunk, refs).map((part, j) => ({
+      parts: chunkParts(chunk, refs, rules).map((part, j) => ({
         ...part,
         key: `${i}-${j}-${part.type}-${part.kind || ""}-${part.value || part.label || ""}`
       }))
