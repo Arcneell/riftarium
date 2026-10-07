@@ -268,6 +268,30 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
+  it("progression : une réponse tardive d'une lecture ancienne n'écrase pas la plus récente", async () => {
+    const original = api.getMockImplementation()
+    const { wrapper } = await mountView()
+    const resolvers = []
+    api.mockImplementation((path) =>
+      path === "/api/collection/sets" ? new Promise((resolve) => resolvers.push(resolve)) : original(path)
+    )
+    const binder = wrapper.findComponent(CollectionBinder)
+    binder.vm.$emit("changed")
+    binder.vm.$emit("changed")
+    await flushPromises()
+    expect(resolvers).toHaveLength(2)
+    const withOwned = (owned) => ({
+      sets: [{ set_id: "OGN", name: "Origins", total: 298, owned, missing: 298 - owned, missing_cost_eur: 1 }],
+      overall: { total: 298, owned, missing: 298 - owned, missing_cost_eur: 1 }
+    })
+    resolvers[1](withOwned(7))
+    await flushPromises()
+    resolvers[0](withOwned(3))
+    await flushPromises()
+    expect(binder.props("progress").overall.owned).toBe(7)
+    wrapper.unmount()
+  })
+
   it("entrée directe en inventaire : une seule requête, un vrai changement de taille recharge", async () => {
     const { wrapper } = await mountView("/collection?vue=inventaire")
     await new Promise((resolve) => setTimeout(resolve, 400))

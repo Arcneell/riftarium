@@ -80,14 +80,20 @@ const progress = ref(null) // { sets: [...], overall: {...} } — null tant que 
 
 const progressError = ref("")
 
+/* Jeton de séquence : des « + » en rafale lancent plusieurs lectures ; seule la plus récente
+   compte, une réponse tardive ne doit pas écraser un total plus à jour. */
+let progressSeq = 0
+
 async function loadProgress() {
+  const mine = ++progressSeq
   try {
     const data = await api("/api/collection/sets")
+    if (mine !== progressSeq) return
     if (data && Array.isArray(data.sets) && data.overall) progress.value = data
     progressError.value = ""
   } catch (e) {
     /* la stat de complétion reste masquée ; le classeur affiche l'erreur s'il n'a rien. */
-    progressError.value = e.message
+    if (mine === progressSeq) progressError.value = e.message
   }
 }
 

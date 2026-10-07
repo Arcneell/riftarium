@@ -32,11 +32,15 @@ export function useCollectionBinder({ active, isBlocked }) {
 
   let seq = 0
 
-  async function loadBinder() {
+  /* `silent` : rechargement de rattrapage (pochette périmée) : ni voile de chargement
+     ni message d'erreur, la double page affichée reste en place jusqu'à la réponse. */
+  async function loadBinder({ silent = false } = {}) {
     if (!binderSet.value || !active()) return
     const mine = ++seq
-    binderLoading.value = true
-    binderError.value = ""
+    if (!silent) {
+      binderLoading.value = true
+      binderError.value = ""
+    }
     try {
       const params = new URLSearchParams({
         set_id: binderSet.value,
@@ -54,13 +58,13 @@ export function useCollectionBinder({ active, isBlocked }) {
         total: data.total
       }
     } catch (e) {
-      if (mine === seq) binderError.value = e.message
+      if (mine === seq && !silent) binderError.value = e.message
     } finally {
       if (mine === seq) binderLoading.value = false
     }
   }
 
-  watch([binderSet, binderPage, binderOwned], loadBinder)
+  watch([binderSet, binderPage, binderOwned], () => loadBinder())
 
   /* Données périmées (opération de masse ailleurs) : on oublie la double page et on
      abandonne la requête en vol ; le composant recharge s'il est actif. */

@@ -282,6 +282,74 @@ describe("CollectionBinder", () => {
       wrapper.unmount()
     })
 
+    it("page tournée pendant l'écriture : la double page courante est rechargée sans voile", async () => {
+      const wrapper = await mountBinder()
+      await toggle(wrapper).trigger("click")
+      /* Le compteur de la pochette card-9 annonce sa mutation après que la page a tourné
+         (pendant la transition de sortie, son écouteur est encore branché). */
+      const onChange = wrapper.findAllComponents({ name: "QuickCount" })[1].vm.$.vnode.props.onChange
+      api.mockImplementation((path) => {
+        const page = Number(new URL(path, "http://x").searchParams.get("page"))
+        return Promise.resolve({ total: 298, page, size: 18, items: [fakeCard(20 + page, 0)] })
+      })
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }))
+      await flushPromises()
+      expect(wrapper.find(".classeur-pocket").attributes("href")).toBe("/cartes/card-22")
+
+      api.mockClear()
+      onChange({ id: "card-9", owned_qty: 1 })
+      expect(wrapper.find(".classeur-stage.loading").exists()).toBe(false)
+      await flushPromises()
+      const reloads = api.mock.calls.filter(([path]) => String(path).startsWith("/api/cards?"))
+      expect(reloads).toHaveLength(1)
+      expect(String(reloads[0][0])).toContain("page=2")
+      expect(wrapper.find(".classeur-stage.loading").exists()).toBe(false)
+      expect(wrapper.emitted("changed")).toHaveLength(1)
+      wrapper.unmount()
+    })
+
+    describe("collection vide", () => {
+      const empty = {
+        sets: [{ set_id: "OGN", name: "Origins", total: 298, owned: 0, missing: 298, missing_cost_eur: 99 }],
+        overall: { total: 298, owned: 0, missing: 298, missing_cost_eur: 99 }
+      }
+
+      it("un membre active la saisie rapide depuis l'état vide : le classeur et ses fantômes restent affichés", async () => {
+        api.mockImplementation(() =>
+          Promise.resolve({ total: 298, page: 1, size: 18, items: [fakeCard(1, 0), fakeCard(2, 0)] })
+        )
+        const wrapper = await mountBinder(empty)
+        expect(wrapper.find(".classeur-pocket").exists()).toBe(false)
+        expect(api).not.toHaveBeenCalled()
+        await toggle(wrapper).trigger("click")
+        await flushPromises()
+        expect(wrapper.text()).not.toContain("attend ses premières cartes")
+        expect(wrapper.findAll(".classeur-pocket.ghost")).toHaveLength(2)
+        expect(wrapper.findAll(".quick-count")).toHaveLength(2)
+        /* la progression repasse à 0 (dernière carte retirée) : le classeur ne disparaît pas */
+        await wrapper.setProps({ progress: { ...empty } })
+        expect(wrapper.findAll(".quick-count")).toHaveLength(2)
+        wrapper.unmount()
+      })
+
+      it("désactiver la saisie rapide à 0 possédée ramène l'état vide", async () => {
+        sessionStorage.setItem("riftarium_quick_add", "1")
+        const wrapper = await mountBinder(empty)
+        expect(wrapper.findAll(".quick-count").length).toBeGreaterThan(0)
+        await toggle(wrapper).trigger("click")
+        expect(wrapper.text()).toContain("attend ses premières cartes")
+        wrapper.unmount()
+      })
+
+      it("pas de puce de saisie rapide pour un visiteur", async () => {
+        session.token = null
+        const wrapper = await mountBinder(empty)
+        expect(wrapper.text()).toContain("attend ses premières cartes")
+        expect(toggle(wrapper)).toBeUndefined()
+        wrapper.unmount()
+      })
+    })
+
     it("les flèches tournent toujours la double page, même depuis le compteur", async () => {
       const wrapper = await mountBinder()
       await toggle(wrapper).trigger("click")

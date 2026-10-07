@@ -54,12 +54,18 @@ const { quickOn, toggleQuick, defaults: quickDefaults, setDefaults: setQuickDefa
 function onQuickChange({ id, owned_qty }) {
   const item = spread.value?.items.find((card) => card.id === id)
   if (item) item.owned_qty = owned_qty
+  /* La page a tourné pendant l'écriture : la double page affichée vient d'une lecture
+     peut-être antérieure à la mutation. On la recharge sans voile pour ne laisser aucune
+     pochette périmée. */
+  else loadBinder({ silent: true })
   emit("changed")
 }
 
 const sets = computed(() => props.progress?.sets || [])
 const currentSet = computed(() => sets.value.find((row) => row.set_id === binderSet.value) || null)
-const isEmptyCollection = computed(() => !!props.progress && props.progress.overall?.owned === 0)
+/* Classeur vide : l'état vide remplace tout, sauf en saisie rapide (sinon retirer la dernière
+   carte ferait disparaître les compteurs, et un membre ne pourrait pas commencer ici). */
+const isEmptyCollection = computed(() => !!props.progress && props.progress.overall?.owned === 0 && !quickOn.value)
 
 function percentOf(row) {
   if (!row.total) return 0
@@ -72,16 +78,15 @@ function missingText(row) {
   return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
 }
 
-/* Set ouvert par défaut : le premier incomplet, celui qu'on a envie de finir. */
-watch(
-  () => props.progress,
-  (progress) => {
-    if (!binderSet.value && progress?.sets?.length && progress.overall?.owned !== 0) {
-      binderSet.value = (progress.sets.find((row) => row.missing) || progress.sets[0]).set_id
-    }
-  },
-  { immediate: true }
-)
+/* Set ouvert par défaut : le premier incomplet, celui qu'on a envie de finir. Rien à ouvrir
+   tant que l'état vide est affiché (collection à 0, hors saisie rapide). */
+function openDefaultSet() {
+  const progress = props.progress
+  if (!binderSet.value && progress?.sets?.length && !isEmptyCollection.value) {
+    binderSet.value = (progress.sets.find((row) => row.missing) || progress.sets[0]).set_id
+  }
+}
+watch(() => [props.progress, quickOn.value], openDefaultSet, { immediate: true })
 
 watch(
   () => props.active,
@@ -109,6 +114,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
   <div class="classeur">
     <RiftEmpty v-if="isEmptyCollection" title="Votre classeur attend ses premières cartes">
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
+      <RiftChip v-if="session.token" label="Saisie rapide" :selected="quickOn" @toggle="toggleQuick" />
     </RiftEmpty>
 
     <p v-else-if="!progress && progressError" class="classeur-error" role="alert">
