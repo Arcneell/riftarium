@@ -388,12 +388,13 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
     `AdvancedTopicView` et `RulesView` les assemblent ;
   - préfixes de classes propres à la PR (`regles-`, `portail-`, `chapitre-`, `lecon-`,
     `plateau-`, `aide-`, `sujet-`, `scene-`, `officiel-`, `carte-zoom`, `rift-ref`),
-    absents de `main.css` ; les styles sont `scoped` ;
+    absents de `main.css` ; les styles sont scoped, sauf `CardZoom` (contenu téléporté,
+    classe préfixée `carte-zoom`) ;
   - texte officiel : table des matières collante à gauche sur bureau, en feuille
     (`RiftSheet`) sous 1 024 px ;
   - plus aucun `v-html` dans les pages de règles : le texte passe par
     `<RiftText rules>`, avec `refs` pour les renvois cliquables ;
-  - `main.css` : les quelque 1 900 lignes héritées des règles (page Règles, hub, guide,
+  - `main.css` : environ 2 000 lignes héritées des règles (page Règles, hub, guide,
     plateau, aide avancée, mini-scènes) et leurs paliers responsive sont retirées ;
     `BANNERS.rules` reste (page des mentions légales) ;
   - données inchangées (`learn.js`, `guide.js`, structure de `topics.js`) : le format de
@@ -402,9 +403,13 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
     l'essence arc-en-ciel, `[C]` la puissance du domaine de la carte (pastille texte),
     `[S]` la puissance et `[T]` l'épuisement (anciennes abréviations), `[X]` et `[N]`
     des valeurs variables (pastilles). `[Y]` reste la rune d'Ordre, sauf quand le texte
-    contient aussi `[X]` (règles 438.3, 439.5) : c'est alors le paramètre générique,
+    contient aussi `[X]` (règles 438.3, 439.5) ou commence par `[Y]` (438.3.b) : c'est alors le paramètre générique,
     rendu en pastille « valeur variable Y ». Deux textes de `topics.js` écrivaient `[C]`
     pour l'arc-en-ciel : corrigés en `[A]` ;
+  - symbole `[>]` (compétence dépendante, 135.2.e.7) : après un mot-clé il reste la flèche
+    du mot-clé ; seul, en mode règles, il devient une pastille « › » (libellé « symbole de
+    compétence dépendante »). Un test de corpus vérifie qu'aucun jeton `[...]` de
+    `rules-fr.json` n'est perdu au rendu ;
   - le mobile (`lib/app/design/glyphs.dart`, `'C': 'rune_rainbow'`) garde l'ancienne
     inversion et devra être réaligné ; `guides-fr.json` est à ré-exporter (`topics.js`
     a changé).
