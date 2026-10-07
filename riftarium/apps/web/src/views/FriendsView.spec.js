@@ -138,6 +138,7 @@ describe("FriendsView", () => {
     expect(buttonWith(suivis, "Inviter dans un salon")).toBeTruthy()
     expect(buttonWith(suivis, "Ne plus suivre")).toBeTruthy()
     expect(buttonWith(abonnes, "Suivre en retour")).toBeTruthy()
+    expect(buttonWith(abonnes, "Inviter dans un salon")).toBeUndefined()
     wrapper.unmount()
   })
 

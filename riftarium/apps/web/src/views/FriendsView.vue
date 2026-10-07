@@ -266,15 +266,13 @@ onBeforeUnmount(() => {
               </RouterLink>
             </span>
             <span class="amis-actions">
-              <template v-if="followedHandles.has(user.handle)">
-                <RiftButton size="sm" :disabled="inviting" @click="inviteToRoom(user)">
-                  Inviter dans un salon
-                </RiftButton>
-                <RiftButton variant="ghost" size="sm" :disabled="Boolean(busy)" @click="unfollow(user)">
-                  Ne plus suivre
-                </RiftButton>
-              </template>
-              <RiftButton v-else variant="secondary" size="sm" :disabled="Boolean(busy)" @click="follow(user)">
+              <RiftButton
+                v-if="!followedHandles.has(user.handle)"
+                variant="secondary"
+                size="sm"
+                :disabled="Boolean(busy)"
+                @click="follow(user)"
+              >
                 Suivre en retour
               </RiftButton>
             </span>

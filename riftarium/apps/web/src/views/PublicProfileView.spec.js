@@ -12,6 +12,16 @@ vi.mock("../api.js", async (importOriginal) => {
 
 const LEGEND = { id: "leg-1", name: "Jinx", type: "Legend", domains: ["Fury"], image_url: "https://cdn.example/j.png" }
 
+const CARD = {
+  id: "ogn-001",
+  riftbound_id: "ogn-001",
+  name: "Poro glouton",
+  image_url: "https://cdn.example/poro.png",
+  type: "Unit",
+  rarity: "Common",
+  domains: ["Body"]
+}
+
 const HISTORY_ITEM = {
   match_id: 31,
   mode: "duel",
@@ -68,10 +78,13 @@ function makeProfile(over = {}) {
   }
 }
 
-function setupApi(profile = makeProfile()) {
+function setupApi(profile = makeProfile(), { collectionTotal = 1, historyTotal = 1 } = {}) {
   api.mockImplementation((path) => {
     if (path === "/api/users/nova") return Promise.resolve(profile)
-    if (path.startsWith("/api/users/nova/history")) return Promise.resolve({ total: 1, page: 1, items: [HISTORY_ITEM] })
+    if (path.startsWith("/api/users/nova/collection"))
+      return Promise.resolve({ total: collectionTotal, page: 1, size: 24, items: [{ card: CARD, total_qty: 3 }] })
+    if (path.startsWith("/api/users/nova/history"))
+      return Promise.resolve({ total: historyTotal, page: 1, items: [HISTORY_ITEM] })
     return Promise.resolve(null)
   })
 }
@@ -133,11 +146,16 @@ describe("PublicProfileView", () => {
     expect(row.text()).toContain("kai")
     expect(row.text()).not.toContain("Moi")
 
+    /* Légendes jouées. */
+    expect(duels.get(".profil-legende-nom").text()).toBe("Jinx")
+
     /* Collection : totaux puis progression par set. */
     const collection = wrapper.get("[data-section='collection']")
     expect(collection.findAll(".rift-stat")).toHaveLength(2)
     expect(collection.get(".profil-set-compte").text()).toBe("50 / 200")
     expect(collection.get(".profil-set-pct").text()).toBe("25 %")
+    expect(called("/api/users/nova/collection")).toBe(true)
+    expect(collection.findAll(".rift-tile")).toHaveLength(1)
 
     /* Decks publics, en lecture seule : ni suppression, ni mention de masquage. */
     expect(wrapper.get(".profil-decks-grid .deck-card-title").text()).toContain("Fureur de Noxus")
@@ -162,6 +180,7 @@ describe("PublicProfileView", () => {
     expect(wrapper.find("[data-section]").exists()).toBe(false)
     expect(wrapper.text()).not.toContain("Masqué par ce joueur")
     expect(called("/api/users/nova/history")).toBe(false)
+    expect(called("/api/users/nova/collection")).toBe(false)
     expect(wrapper.find(".profil-medaille").exists()).toBe(false)
     wrapper.unmount()
   })
@@ -176,6 +195,51 @@ describe("PublicProfileView", () => {
     expect(wrapper.find("[data-section='duels']").exists()).toBe(false)
     expect(wrapper.find("[data-section='collection']").exists()).toBe(true)
     expect(called("/api/users/nova/history")).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("pagine l'historique des duels et la collection", async () => {
+    setupApi(makeProfile(), { collectionTotal: 30, historyTotal: 25 })
+    const { wrapper } = await mountView()
+    const duels = wrapper.get("[data-section='duels']")
+    expect(duels.text()).toContain("page 1 / 3")
+    await buttonWith(duels, "Suivant").trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/users/nova/history?page=2&size=10")
+    expect(duels.text()).toContain("page 2 / 3")
+
+    const collection = wrapper.get("[data-section='collection']")
+    expect(collection.text()).toContain("page 1 / 2")
+    expect(buttonWith(collection, "Précédent").attributes("disabled")).toBeDefined()
+    await buttonWith(collection, "Suivant").trigger("click")
+    await flushPromises()
+    expect(api.mock.calls.some(([path]) => /collection?.*page=2/.test(String(path)))).toBe(true)
+    expect(collection.text()).toContain("page 2 / 2")
+    wrapper.unmount()
+  })
+
+  it("collection masquée entre-temps (403) : la section se tait, sans erreur", async () => {
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) => {
+      if (path.startsWith("/api/users/nova/collection")) return Promise.reject(new ApiError(403, "Collection privée"))
+      return base(path, options)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".rift-tile").exists()).toBe(false)
+    expect(wrapper.text()).not.toContain("Collection privée")
+    wrapper.unmount()
+  })
+
+  it("erreur de chargement de la collection ou des duels : message affiché", async () => {
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) => {
+      if (path.startsWith("/api/users/nova/collection")) return Promise.reject(new ApiError(500, "Collection en panne"))
+      if (path.startsWith("/api/users/nova/history")) return Promise.reject(new ApiError(500, "Historique en panne"))
+      return base(path, options)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.text()).toContain("Collection en panne")
+    expect(wrapper.text()).toContain("Historique en panne")
     wrapper.unmount()
   })
 

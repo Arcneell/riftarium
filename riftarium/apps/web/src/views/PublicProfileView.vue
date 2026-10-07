@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
-import { session } from "../api.js"
+import { cardThumb, session } from "../api.js"
 import DeckCard from "../decks/DeckCard.vue"
 import MatchRow from "../play/MatchRow.vue"
 import ProfileAchievements from "../social/ProfileAchievements.vue"
@@ -11,12 +11,14 @@ import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftPanel from "../ui/RiftPanel.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import RiftStat from "../ui/RiftStat.vue"
-import { formatWinRate } from "../play.js"
+import CardTile from "../ui/CardTile.vue"
+import { formatWinRate, winRatePercent } from "../play.js"
 import { applySeo } from "../seo.js"
 import {
   followUser,
   formatMemberSince,
   getPublicProfile,
+  getUserCollection,
   getUserHistory,
   groupAchievements,
   setPercent,
@@ -24,7 +26,7 @@ import {
   unlockedFirst
 } from "../social.js"
 
-/* Les derniers duels seulement : l'historique complet reste sur /historique (le sien). */
+const COLLECTION_SIZE = 24
 const HISTORY_SIZE = 10
 
 const route = useRoute()
@@ -38,7 +40,8 @@ const notFound = ref(false)
 const followBusy = ref(false)
 const followError = ref("")
 
-const history = ref({ items: [], error: "" })
+const collection = ref({ items: [], total: 0, page: 1, loading: false, error: "" })
+const history = ref({ items: [], total: 0, page: 1, loading: false, error: "" })
 
 const visibility = computed(() => profile.value?.visibility || {})
 const shows = (key) => Boolean(visibility.value[key])
@@ -47,6 +50,7 @@ const memberSince = computed(() => formatMemberSince(profile.value?.created_at))
 const achievementGroups = computed(() => groupAchievements(unlockedFirst(profile.value?.achievements)))
 const totals = computed(() => profile.value?.stats?.totals || null)
 const summary = computed(() => profile.value?.collection_summary || null)
+const byLegend = computed(() => profile.value?.stats?.by_legend || [])
 const decks = computed(() => profile.value?.decks || [])
 
 /* Mentions sous la bio : ancienneté puis compteurs (qui bougent avec le suivi optimiste). */
@@ -62,15 +66,53 @@ const rateOf = (row) => (row?.played ? row.won / row.played : null)
 /* Suivre n'a de sens que connecté, et jamais soi-même (l'API renvoie 409). */
 const canFollow = computed(() => Boolean(session.token && profile.value && !profile.value.is_me))
 
-async function loadHistory() {
-  history.value = { items: [], error: "" }
+const collectionPages = computed(() => Math.max(1, Math.ceil(collection.value.total / COLLECTION_SIZE)))
+const historyPages = computed(() => Math.max(1, Math.ceil(history.value.total / HISTORY_SIZE)))
+
+async function loadCollection(page = 1) {
+  collection.value.loading = true
+  collection.value.error = ""
   try {
-    const payload = await getUserHistory(handle.value, 1, HISTORY_SIZE)
+    const payload = await getUserCollection(handle.value, { page, size: COLLECTION_SIZE })
+    collection.value.items = payload?.items || []
+    collection.value.total = payload?.total ?? collection.value.items.length
+    collection.value.page = page
+  } catch (e) {
+    /* 403 : la collection vient d'être masquée entre-temps — la section se tait. */
+    collection.value.items = []
+    collection.value.total = 0
+    collection.value.error = e.status === 403 ? "" : e.message
+  } finally {
+    collection.value.loading = false
+  }
+}
+
+async function loadHistory(page = 1) {
+  history.value.loading = true
+  history.value.error = ""
+  try {
+    const payload = await getUserHistory(handle.value, page, HISTORY_SIZE)
     history.value.items = payload?.items || []
+    history.value.total = payload?.total ?? history.value.items.length
+    history.value.page = page
   } catch (e) {
     /* 403 : les duels viennent d'être masqués entre-temps — la section se tait. */
+    history.value.items = []
+    history.value.total = 0
     history.value.error = e.status === 403 ? "" : e.message
+  } finally {
+    history.value.loading = false
   }
+}
+
+function goCollection(next) {
+  if (next < 1 || next > collectionPages.value || collection.value.loading) return
+  loadCollection(next)
+}
+
+function goHistory(next) {
+  if (next < 1 || next > historyPages.value || history.value.loading) return
+  loadHistory(next)
 }
 
 async function load() {
@@ -78,7 +120,8 @@ async function load() {
   error.value = ""
   notFound.value = false
   followError.value = ""
-  history.value = { items: [], error: "" }
+  collection.value = { items: [], total: 0, page: 1, loading: false, error: "" }
+  history.value = { items: [], total: 0, page: 1, loading: false, error: "" }
   try {
     profile.value = await getPublicProfile(handle.value)
     applySeo({
@@ -88,7 +131,8 @@ async function load() {
       /* Bêta fermée : un profil public reste hors des moteurs de recherche. */
       noindex: true
     })
-    if (shows("show_stats")) loadHistory()
+    if (shows("show_collection")) loadCollection(1)
+    if (shows("show_stats")) loadHistory(1)
   } catch (e) {
     profile.value = null
     if (e.status === 404) {
@@ -195,6 +239,29 @@ onMounted(load)
         </div>
         <p v-else class="profil-texte">Aucune partie suivie pour l'instant.</p>
 
+        <ul v-if="byLegend.length" class="profil-legendes">
+          <li v-for="row in byLegend" :key="row.card_id" class="profil-legende">
+            <img
+              v-if="row.image_url"
+              class="profil-legende-vignette"
+              :src="cardThumb(row.image_url, 72)"
+              :alt="`Légende : ${row.name}`"
+              width="36"
+              height="36"
+              loading="lazy"
+              decoding="async"
+            />
+            <span v-else class="profil-legende-vignette" aria-hidden="true"></span>
+            <span class="profil-legende-nom">{{ row.name }}</span>
+            <span class="profil-set-barre" aria-hidden="true">
+              <span class="profil-set-fill" :style="{ width: `${winRatePercent(rateOf(row))}%` }"></span>
+            </span>
+            <span class="profil-legende-bilan">
+              {{ row.won }} V / {{ row.lost }} D · {{ formatWinRate(rateOf(row)) }}
+            </span>
+          </li>
+        </ul>
+
         <p v-if="history.error" class="profil-erreur" role="alert">{{ history.error }}</p>
         <ol v-if="history.items.length" class="profil-duels">
           <MatchRow
@@ -204,6 +271,20 @@ onMounted(load)
             :self="{ handle: profile.handle, avatar_url: profile.avatar_url }"
           />
         </ol>
+        <div v-if="historyPages > 1" class="profil-pager">
+          <RiftButton variant="ghost" size="sm" :disabled="history.page <= 1" @click="goHistory(history.page - 1)">
+            ← Précédent
+          </RiftButton>
+          <span class="profil-page">page {{ history.page }} / {{ historyPages }}</span>
+          <RiftButton
+            variant="ghost"
+            size="sm"
+            :disabled="history.page >= historyPages"
+            @click="goHistory(history.page + 1)"
+          >
+            Suivant →
+          </RiftButton>
+        </div>
       </RiftPanel>
 
       <RiftPanel v-if="shows('show_collection')" data-section="collection" title="Collection">
@@ -226,6 +307,35 @@ onMounted(load)
           </li>
         </ul>
         <p v-else-if="!summary" class="profil-texte">Aucune carte enregistrée pour l'instant.</p>
+
+        <p v-if="collection.error" class="profil-erreur" role="alert">{{ collection.error }}</p>
+        <p v-else-if="collection.loading" class="profil-texte" role="status">Chargement de la collection…</p>
+        <div v-if="collection.items.length" class="profil-cartes">
+          <CardTile
+            v-for="item in collection.items"
+            :key="item.card.id"
+            :card="{ ...item.card, owned_qty: item.total_qty }"
+          />
+        </div>
+        <div v-if="collectionPages > 1" class="profil-pager">
+          <RiftButton
+            variant="ghost"
+            size="sm"
+            :disabled="collection.page <= 1"
+            @click="goCollection(collection.page - 1)"
+          >
+            ← Précédent
+          </RiftButton>
+          <span class="profil-page">page {{ collection.page }} / {{ collectionPages }}</span>
+          <RiftButton
+            variant="ghost"
+            size="sm"
+            :disabled="collection.page >= collectionPages"
+            @click="goCollection(collection.page + 1)"
+          >
+            Suivant →
+          </RiftButton>
+        </div>
       </RiftPanel>
 
       <RiftPanel v-if="shows('show_decks')" data-section="decks" title="Decks publics">
@@ -316,6 +426,57 @@ onMounted(load)
 .profil-set-pct {
   text-align: right;
   color: var(--bronze-light);
+}
+
+.profil-legendes {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.profil-legende {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.profil-legende-vignette {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-sunken);
+}
+.profil-legende-nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.profil-legende-bilan {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.profil-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.profil-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.profil-page {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
 }
 
 .profil-decks-grid {
