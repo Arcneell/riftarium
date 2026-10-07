@@ -25,7 +25,9 @@ const props = defineProps({
   tournament: { type: Boolean, default: false },
   shakes: { type: Object, required: true }
 })
-const emit = defineEmits(["update", "reset", "add", "tile-pointerdown", "preview", "hide-preview"])
+/* `page` : numéro de page voulu (borné entre 1 et pageCount) ; la page de l'éditeur écrit gallery.page
+   (update passerait par setFilter, qui ramène à la page 1). */
+const emit = defineEmits(["update", "reset", "add", "tile-pointerdown", "preview", "hide-preview", "page"])
 
 const breakpoint = useBreakpoint()
 const desktop = computed(() => breakpoint.value === "desktop")
@@ -50,9 +52,8 @@ function openFilters() {
 }
 
 function goPage(delta) {
-  // L'état de la page est partagé (setFilter ramènerait à la page 1) : on le fait avancer ici.
-  const state = props.gallery
-  state.page += delta
+  const next = Math.min(Math.max(props.gallery.page + delta, 1), props.pageCount)
+  if (next !== props.gallery.page) emit("page", next)
 }
 
 /* La page branche useGridMeasure sur la grille. */
@@ -83,7 +84,7 @@ defineExpose({ grid })
           variant="secondary"
           size="sm"
           :aria-expanded="desktop ? String(facetsOpen) : undefined"
-          :aria-controls="desktop ? 'galerie-facets' : undefined"
+          :aria-controls="desktop && facetsOpen ? 'galerie-facets' : undefined"
           @click="openFilters"
         >
           Filtres<template v-if="activeCount"> ({{ activeCount }})</template>
@@ -274,7 +275,7 @@ defineExpose({ grid })
   outline-offset: -2px;
 }
 /* Hors domaine en tournoi : estompée et hachurée. */
-.galerie-card.offdomain {
+.galerie-card.offdomain .galerie-img {
   opacity: 0.35;
 }
 .galerie-card.offdomain::after {
@@ -286,6 +287,7 @@ defineExpose({ grid })
   pointer-events: none;
 }
 .galerie-owned {
+  z-index: 1;
   position: absolute;
   left: 7px;
   bottom: 7px;
@@ -300,6 +302,7 @@ defineExpose({ grid })
   pointer-events: none;
 }
 .galerie-indeck {
+  z-index: 1;
   position: absolute;
   top: 7px;
   right: 7px;
@@ -316,6 +319,7 @@ defineExpose({ grid })
   pointer-events: none;
 }
 .galerie-price {
+  z-index: 1;
   position: absolute;
   right: 7px;
   bottom: 7px;

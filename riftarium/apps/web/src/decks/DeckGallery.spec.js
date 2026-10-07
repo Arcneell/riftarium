@@ -184,6 +184,29 @@ describe("DeckGallery", () => {
     wrapper.unmount()
   })
 
+  it("Suivant émet page avec la page suivante", async () => {
+    const { wrapper } = await mountGallery({ pageCount: 3 })
+    await wrapper.findAll("nav button").at(-1).trigger("click")
+    expect(wrapper.emitted("page")).toEqual([[2]])
+    await wrapper.findAll("nav button")[0].trigger("click")
+    expect(wrapper.emitted("page")).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it("Précédent désactivé en page 1 et Suivant désactivé en dernière page", async () => {
+    const { wrapper } = await mountGallery({ pageCount: 3 })
+    const [prev, next] = wrapper.findAll("nav button")
+    expect(prev.attributes("disabled")).toBeDefined()
+    expect(next.attributes("disabled")).toBeUndefined()
+    wrapper.unmount()
+
+    const last = await mountGallery({ pageCount: 3, gallery: { ...gallery(), page: 3 } })
+    const buttons = last.wrapper.findAll("nav button")
+    expect(buttons[0].attributes("disabled")).toBeUndefined()
+    expect(buttons[1].attributes("disabled")).toBeDefined()
+    last.wrapper.unmount()
+  })
+
   it("survol, focus et pointerdown relayés ; pagination", async () => {
     const { wrapper } = await mountGallery({ pageCount: 3 })
     const t = tile(wrapper, "Phénix Immortel")
@@ -196,9 +219,7 @@ describe("DeckGallery", () => {
     await t.trigger("pointerdown")
     expect(wrapper.emitted("tile-pointerdown").at(-1)[0]).toEqual(unit)
 
-    const next = wrapper.findAll("nav button").at(-1)
-    await next.trigger("click")
-    expect(wrapper.text()).toContain("page 2 / 3")
+    expect(wrapper.text()).toContain("page 1 / 3")
     wrapper.unmount()
   })
 })
