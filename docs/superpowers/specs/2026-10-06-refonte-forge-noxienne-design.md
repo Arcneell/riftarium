@@ -340,7 +340,7 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
 
 - **Mes decks** : fiches de deck sur l'illustration de la légende.
 - **Éditeur** : trois zones (recherche de cartes, liste par zone, stats et
-  règles en direct), qui passent en `RiftTabs` sur téléphone. La logique
+  règles en direct), qui passent en `RiftSegments` sur téléphone. La logique
   existante est conservée (`useDeckRules`, `useDeckStats`, `useDeckAutosave`,
   `deckExport`).
 - **Communauté** : filtres par légende et par domaine, pagination.
@@ -366,8 +366,9 @@ Décision du mainteneur (6 octobre 2026) : fusion de trois propositions, **A + B
     `useDeckDrag`, est conservée ;
   - `CardFilters` (`src/cards/`) sert la galerie de l'éditeur avec sa prop `hide-search`,
     qui masque sa recherche parce que la galerie porte déjà son propre champ ;
-    les filtres de la communauté (`CommunityFilters`, puces `RiftChip`) s'ouvrent
-    dans un `RiftSheet` sur téléphone.
+    les filtres de la communauté (`CommunityFilters`, puces `RiftChip`) et ceux de
+    la galerie s'ouvrent dans un `RiftSheet` sous 1 024 px (téléphone et tablette) ;
+  - `.price-tag` reste dans `main.css` : `CardTile` l'utilise encore.
 
 ### PR 6 : règles
 

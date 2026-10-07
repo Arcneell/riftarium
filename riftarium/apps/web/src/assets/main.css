@@ -3627,8 +3627,8 @@ body.drag-active * {
    Ton volontairement sobre : encre et muted, jamais criard.
    ============================================================ */
 
-/* Badge € dans la zone méta des tuiles (cartothèque, collection)
-   et mention € des boîtes de deck : discret, jamais sur l'illustration. */
+/* Badge € dans la zone méta des tuiles (CardTile : cartothèque, collection) :
+   discret, jamais sur l'illustration. */
 .price-tag {
   flex: 0 0 auto;
   color: var(--ink);
