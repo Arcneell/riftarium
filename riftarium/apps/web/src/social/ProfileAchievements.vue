@@ -10,7 +10,9 @@ import { achievementPercent, achievementProgress, formatUnlockedAt, isUnlocked, 
 const props = defineProps({
   groups: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
-  error: { type: String, default: "" }
+  error: { type: String, default: "" },
+  /* Texte quand la liste est vide (le profil public ne publie que les débloqués). */
+  emptyText: { type: String, default: "Aucun haut fait au catalogue pour l'instant." }
 })
 
 const unlocked = computed(() => props.groups.reduce((sum, group) => sum + group.unlocked, 0))
@@ -68,7 +70,7 @@ const total = computed(() => props.groups.reduce((sum, group) => sum + group.tot
           </li>
         </ul>
       </div>
-      <p v-if="!groups.length" class="profil-hf-note">Aucun haut fait au catalogue pour l'instant.</p>
+      <p v-if="!groups.length" class="profil-hf-note">{{ emptyText }}</p>
     </template>
   </RiftPanel>
 </template>

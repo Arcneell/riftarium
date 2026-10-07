@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import FriendsView from "./FriendsView.vue"
+import Icon from "../components/Icon.vue"
 import { api, session } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -41,7 +42,7 @@ async function mountView() {
   router.push("/amis")
   await router.isReady()
   const wrapper = mount(FriendsView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], components: { Icon } },
     attachTo: document.body
   })
   await flushPromises()
@@ -64,12 +65,14 @@ describe("FriendsView", () => {
     const { wrapper } = await mountView()
     expect(api).toHaveBeenCalledWith("/api/me/follows")
 
-    const panels = wrapper.findAll(".friends-panel")
-    expect(panels[0].text()).toContain("Suivis")
-    expect(panels[0].get(".friend-name").attributes("href")).toBe("/u/nova")
+    expect(wrapper.get("h1").text()).toBe("Mes amis")
+    const panels = wrapper.findAll(".amis-panel")
+    expect(panels[0].text()).toContain("Je suis")
+    expect(panels[0].text()).toContain("(1)")
+    expect(panels[0].get(".amis-nom").attributes("href")).toBe("/u/nova")
     expect(panels[0].text()).toContain("Dernière partie")
-    expect(panels[1].text()).toContain("Abonnés")
-    expect(panels[1].get(".friend-name").attributes("href")).toBe("/u/kai")
+    expect(panels[1].text()).toContain("Ils me suivent")
+    expect(panels[1].get(".amis-nom").attributes("href")).toBe("/u/kai")
     wrapper.unmount()
   })
 
@@ -77,34 +80,34 @@ describe("FriendsView", () => {
     setupApi({ search: [{ id: 9, handle: "novak", avatar_url: null }] })
     const { wrapper } = await mountView()
 
-    await wrapper.get("#friends-q").setValue("n")
+    await wrapper.get("input[type='search']").setValue("n")
     await waitDebounce()
     await flushPromises()
     expect(api.mock.calls.some(([path]) => String(path).startsWith("/api/users/search"))).toBe(false)
 
-    await wrapper.get("#friends-q").setValue("nov")
+    await wrapper.get("input[type='search']").setValue("nov")
     await waitDebounce()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/users/search?q=nov")
-    const result = wrapper.get(".friends-search .friend-row")
+    const result = wrapper.get(".amis-recherche .amis-row")
     expect(result.text()).toContain("novak")
-    expect(result.get(".friend-name").attributes("href")).toBe("/u/novak")
+    expect(result.get(".amis-nom").attributes("href")).toBe("/u/novak")
 
     /* Un joueur déjà suivi ne se propose pas deux fois. */
     await buttonWith(result, "Suivre").trigger("click")
     await flushPromises()
     expect(lastCall("/api/users/novak/follow")[1]).toEqual({ method: "PUT" })
-    expect(buttonWith(result, "Ne plus suivre")).toBeTruthy()
+    expect(buttonWith(result, "Suivi")).toBeTruthy()
     wrapper.unmount()
   })
 
   it("cesse de suivre un joueur et le retire de la liste", async () => {
     const { wrapper } = await mountView()
-    const row = wrapper.get(".friends-panel .friend-row")
+    const row = wrapper.get(".amis-panel .amis-row")
     await buttonWith(row, "Ne plus suivre").trigger("click")
     await flushPromises()
     expect(lastCall("/api/users/nova/follow")[1]).toEqual({ method: "DELETE" })
-    expect(wrapper.findAll(".friends-panel")[0].text()).toContain("Personne pour l'instant")
+    expect(wrapper.findAll(".amis-panel")[0].find(".rift-empty").text()).toContain("Personne pour l'instant")
     wrapper.unmount()
   })
 
@@ -117,32 +120,52 @@ describe("FriendsView", () => {
     await flushPromises()
     expect(lastCall("/api/play/rooms")[1]).toEqual({ method: "POST", body: { mode: "duel" } })
 
-    const invite = wrapper.get(".friends-invite")
+    const invite = wrapper.get(".amis-invite")
     expect(invite.text()).toContain("Salon pour nova")
-    expect(invite.get(".friends-invite-code").text()).toBe("ABC234")
+    expect(invite.get(".amis-invite-code").text()).toBe("ABC234")
     expect(invite.get("a").attributes("href")).toBe("/salon/ABC234")
 
     await buttonWith(invite, "Copier le lien").trigger("click")
     await flushPromises()
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/salon/ABC234"))
-    expect(wrapper.get(".friends-invite").text()).toContain("Lien copié")
+    expect(wrapper.get(".amis-invite").text()).toContain("Lien copié")
+    wrapper.unmount()
+  })
+
+  it("un suivi garde Inviter dans un salon et Ne plus suivre ; un abonné non suivi se suit en retour", async () => {
+    const { wrapper } = await mountView()
+    const [suivis, abonnes] = wrapper.findAll(".amis-panel")
+    expect(buttonWith(suivis, "Inviter dans un salon")).toBeTruthy()
+    expect(buttonWith(suivis, "Ne plus suivre")).toBeTruthy()
+    expect(buttonWith(abonnes, "Suivre en retour")).toBeTruthy()
+    wrapper.unmount()
+  })
+
+  it("pseudo long : ellipse, pseudo complet en infobulle", async () => {
+    const long = "nova".repeat(10)
+    setupApi({ following: [{ id: 3, handle: long, avatar_url: null }] })
+    const { wrapper } = await mountView()
+    const name = wrapper.get(".amis-panel .amis-nom")
+    expect(name.text()).toBe(long)
+    expect(name.attributes("title")).toBe(long)
     wrapper.unmount()
   })
 
   it("listes vides : précise que le suivi reste privé", async () => {
     setupApi({ following: [], followers: [] })
     const { wrapper } = await mountView()
+    expect(wrapper.findAll(".amis-panel .rift-empty")).toHaveLength(2)
     expect(wrapper.text()).toContain("Personne pour l'instant")
     expect(wrapper.text()).toContain("Personne ne vous suit encore")
-    expect(wrapper.get(".friends-note").text()).toContain("reste privé")
+    expect(wrapper.get(".amis-note").text()).toContain("reste privé")
     wrapper.unmount()
   })
 
   it("affiche l'erreur de l'API sans liste trompeuse", async () => {
     api.mockRejectedValue(new Error("Le serveur a rencontré une erreur"))
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toBe("Le serveur a rencontré une erreur")
-    expect(wrapper.find(".friends-panel").exists()).toBe(false)
+    expect(wrapper.get("[role='alert']").text()).toBe("Le serveur a rencontré une erreur")
+    expect(wrapper.find(".amis-panel").exists()).toBe(false)
     wrapper.unmount()
   })
 })

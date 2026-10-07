@@ -21,7 +21,6 @@ const UNSTYLED_ALLOWLIST = new Set([
   "rail-label",
   "topbar-account",
   "rift-text",
-  "friends-panel",
   "souhait-remove",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",

@@ -1,16 +1,20 @@
 <script setup>
+import { computed } from "vue"
 import UserAvatar from "../components/UserAvatar.vue"
 
 /* En-tête Forgé d'un profil (le mien sur /profil, celui d'un joueur sur /u/:handle) :
    grand portrait, pseudo en h1 (ellipse, pseudo complet au survol), bio, mentions
    (ancienneté, abonnés…) et un emplacement d'actions propre à chaque page. */
-defineProps({
+const props = defineProps({
   handle: { type: String, required: true },
   avatarUrl: { type: String, default: "" },
   bio: { type: String, default: "" },
   /* Mentions courtes affichées sous la bio, dans l'ordre (chaînes vides ignorées). */
   meta: { type: Array, default: () => [] }
 })
+
+/* Chaînes vides écartées ; la clé suit l'index, deux mentions peuvent être identiques. */
+const mentions = computed(() => props.meta.filter(Boolean))
 </script>
 
 <template>
@@ -20,8 +24,8 @@ defineProps({
       <h1 class="profil-hero-pseudo" :title="handle">{{ handle }}</h1>
       <p v-if="bio" class="profil-hero-bio">{{ bio }}</p>
       <p v-else class="profil-hero-bio profil-hero-vide">Pas encore de bio.</p>
-      <p v-if="meta.filter(Boolean).length" class="profil-hero-meta">
-        <span v-for="item in meta.filter(Boolean)" :key="item" class="profil-hero-mention">{{ item }}</span>
+      <p v-if="mentions.length" class="profil-hero-meta">
+        <span v-for="(item, index) in mentions" :key="index" class="profil-hero-mention">{{ item }}</span>
       </p>
     </div>
     <div v-if="$slots.actions" class="profil-hero-actions">
