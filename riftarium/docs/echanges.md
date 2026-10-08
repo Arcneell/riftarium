@@ -104,7 +104,7 @@ filtre sur une zone précise.
 
 | Méthode | Chemin | Effet |
 | --- | --- | --- |
-| POST | `/api/trades/requests` | `{offer_id, message?}` → 201 `RequestOut`. 403 si e-mail non vérifié, ou si l'une des deux parties n'a pas activé les échanges ; 404 si offre inconnue ou d'un compte suspendu ; 409 si c'est ma propre offre ou si une demande `pending` existe déjà ; 429 au-delà de 10 demandes `pending` sortantes. |
+| POST | `/api/trades/requests` | `{offer_id, message?}` → 201 `RequestOut`. 403 si mon e-mail n'est pas vérifié ou si je n'ai pas activé les échanges ; 404 si offre inconnue, ou d'un compte suspendu ou désinscrit ; 422 si le message est refusé par la modération (même filtre que la bio) ; 409 si c'est ma propre offre ou si une demande `pending` existe déjà ; 429 au-delà de 10 demandes `pending` sortantes. |
 | GET | `/api/trades/requests?box=in\|out&status&page&size` | mes demandes reçues (`in`) ou envoyées (`out`), les plus récentes d'abord |
 | GET | `/api/trades/requests/{id}` | une demande (404 si je n'en suis pas partie) |
 | POST | `/api/trades/requests/{id}/accept` | owner, depuis `pending` |

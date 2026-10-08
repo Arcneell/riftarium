@@ -6,12 +6,12 @@ fait que l'authentification, la validation et la sérialisation.
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import trades
+from .. import mailer, trades
 from ..auth import current_user
 from ..db import get_db
 from ..models import CollectionItem, TradeOffer, TradeRequest, User
@@ -126,6 +126,7 @@ Action = Literal["accept", "decline", "cancel", "done"]
 @router.post("/requests", status_code=201, dependencies=[Depends(limit_trades)])
 def create_request(
     payload: TradeRequestIn,
+    background: BackgroundTasks,
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
@@ -136,6 +137,11 @@ def create_request(
         db.rollback()
         raise HTTPException(status_code=409, detail="Vous avez déjà une demande en cours sur cette offre") from None
     db.refresh(req)
+    owner = trades.request_mail_recipient(db, req)
+    if owner is not None:
+        background.add_task(
+            mailer.send_trade_request_email, owner.email, user.handle, req.card.name, req.message, req.id
+        )
     return trades.request_out(db, user, req)
 
 
@@ -176,6 +182,7 @@ def get_request(request_id: int, user: User = Depends(current_user), db: Session
 def act_on_request(
     request_id: int,
     action: Action,
+    background: BackgroundTasks,
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
@@ -183,4 +190,8 @@ def act_on_request(
     trades.transition(req, user, action)
     db.commit()
     db.refresh(req)
+    if action == "accept":  # seul l'accord est notifié (refus, annulation, « fait » : sur le site)
+        requester = trades.accepted_mail_recipient(db, req)
+        if requester is not None:
+            background.add_task(mailer.send_trade_accepted_email, requester.email, user.handle, req.card.name, req.id)
     return trades.request_out(db, user, req)

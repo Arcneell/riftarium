@@ -8,7 +8,7 @@ cascade est donc aussi faite par le code.
 
 from __future__ import annotations
 
-from datetime import UTC
+from datetime import UTC, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import and_, delete, or_, select, update
@@ -406,6 +406,38 @@ def create_request(db: Session, viewer: User, offer_id: int, message: str) -> Tr
     )
     db.add(req)
     return req
+
+
+REQUEST_MAIL_WINDOW = timedelta(hours=24)
+
+
+def _wants_mail(user: User | None) -> bool:
+    return bool(user and user.notify_trades and user.email_verified_at is not None)
+
+
+def request_mail_recipient(db: Session, req: TradeRequest) -> User | None:
+    """Propriétaire à prévenir d'une nouvelle demande, ou None.
+
+    Un e-mail au plus par couple (demandeur → propriétaire) toutes les 24 h :
+    les demandes suivantes restent visibles sur le site.
+    """
+    owner = db.get(User, req.owner_id)
+    if not _wants_mail(owner):
+        return None
+    recent = db.scalar(
+        select(TradeRequest.id).where(
+            TradeRequest.requester_id == req.requester_id,
+            TradeRequest.owner_id == req.owner_id,
+            TradeRequest.id != req.id,
+            TradeRequest.created_at > utcnow() - REQUEST_MAIL_WINDOW,
+        )
+    )
+    return None if recent is not None else owner
+
+
+def accepted_mail_recipient(db: Session, req: TradeRequest) -> User | None:
+    requester = db.get(User, req.requester_id)
+    return requester if _wants_mail(requester) else None
 
 
 def find_request(db: Session, viewer: User, request_id: int) -> TradeRequest:

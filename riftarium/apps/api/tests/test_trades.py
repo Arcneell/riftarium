@@ -6,6 +6,8 @@ Contrat : docs/echanges.md.
 from datetime import UTC, datetime, timedelta
 
 import app.db as db_module
+import pytest
+from app import mailer
 from app.models import TradeOffer, TradeRequest, User
 from sqlalchemy import select
 
@@ -443,3 +445,64 @@ def test_export_includes_trades(client, register_user):
 def test_request_message_is_moderated(client, register_user):
     alice, _, offer_id = pair(client, register_user)
     assert ask(client, alice, offer_id, "espece de connard").status_code == 422
+
+
+# ---------- Notifications e-mail ----------
+
+
+@pytest.fixture()
+def outbox(monkeypatch):
+    """Capture les deux notifications : liste de tuples (type, to, handle, card_name, request_id)."""
+    sent = []
+    monkeypatch.setattr(
+        mailer,
+        "send_trade_request_email",
+        lambda to, handle, card_name, message, request_id: sent.append(("request", to, handle, card_name, request_id)),
+    )
+    monkeypatch.setattr(
+        mailer,
+        "send_trade_accepted_email",
+        lambda to, handle, card_name, request_id: sent.append(("accepted", to, handle, card_name, request_id)),
+    )
+    return sent
+
+
+def test_request_notifies_owner(client, register_user, outbox):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id, "coucou").json()["id"]
+    assert outbox == [("request", "bob@example.org", "alice", "Immortal Phoenix", request_id)]
+    act(client, bob, request_id, "accept")
+    assert outbox[-1] == ("accepted", "alice@example.org", "bob", "Immortal Phoenix", request_id)
+
+
+def test_no_mail_when_opted_out_or_unverified(client, register_user, outbox):
+    alice, bob, offer_id = pair(client, register_user)
+    set_user("bob", notify_trades=False)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    set_user("alice", email_verified_at=None)
+    act(client, bob, request_id, "accept")
+    assert outbox == []
+
+
+def test_request_mail_throttled_per_pair(client, register_user, outbox):
+    alice, bob, offer_id = pair(client, register_user)
+    other = offer(client, bob, add_lot(client, bob, AHRI))
+    ask(client, alice, offer_id)
+    ask(client, alice, other)
+    assert [kind for kind, *_ in outbox] == ["request"]
+    # Au-delà de 24 h, un nouvel e-mail repart.
+    with db_module.SessionLocal() as session:
+        for req in session.scalars(select(TradeRequest)).all():
+            req.created_at = datetime.now(UTC) - timedelta(hours=25)
+        session.commit()
+    third = offer(client, bob, add_lot(client, bob, LEE))
+    ask(client, alice, third)
+    assert [kind for kind, *_ in outbox] == ["request", "request"]
+
+
+def test_mail_copy_hides_contact():
+    copy = mailer._trade_accepted_copy("bob", "Immortal Phoenix")
+    text = " ".join((copy.subject, copy.title, *copy.paragraphs))
+    assert "bob" in text and "Immortal Phoenix" in text and "Discord" not in text
+    request = mailer._trade_request_copy("alice", "Immortal Phoenix", "Je te propose <b>Lee</b>")
+    assert "alice" in request.subject and any("Je te propose" in line for line in request.paragraphs)
