@@ -7,13 +7,16 @@ import {
   getOffers,
   getRequests,
   getRequestsSummary,
+  ensureTradeSettings,
   getWanted,
   sendRequest,
   setOffer,
   statusLabel,
+  tradeSettings,
   updateTradeSettings,
   zoneLabel
 } from "./trades.js"
+import { session } from "./api.js"
 
 /* Les appels sont vérifiés au niveau du réseau (chemin, méthode, corps) :
    c'est ce que fige docs/echanges.md. */
@@ -94,5 +97,30 @@ describe("trades — demandes", () => {
     expect(sent(1).path).toBe("/api/trades/requests/summary")
     await actOnRequest(3, "accept")
     expect(sent(2)).toMatchObject({ path: "/api/trades/requests/3/accept", method: "POST" })
+  })
+})
+
+describe("trades — réglages partagés", () => {
+  it("charge les réglages une fois et les met à jour à l'enregistrement", async () => {
+    session.token = "1"
+    tradeSettings.loaded = false
+    fetchMock.mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: async () => ({ trade_enabled: true, trade_zone: "est", trade_contact: "x" })
+    })
+    await ensureTradeSettings()
+    await ensureTradeSettings()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(tradeSettings).toMatchObject({ loaded: true, enabled: true, zone: "est" })
+
+    fetchMock.mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: async () => ({ trade_enabled: false, trade_zone: "est" })
+    })
+    await updateTradeSettings({ trade_enabled: false })
+    expect(tradeSettings.enabled).toBe(false)
+    session.token = null
   })
 })

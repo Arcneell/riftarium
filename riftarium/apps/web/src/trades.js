@@ -34,9 +34,34 @@ export const MESSAGE_MAX = 280
 
 /* ---------- Réglages et offres ---------- */
 
+/* Réglages d'échange du compte connecté, partagés par la fiche carte et ses lots :
+   lus une fois par session (`ensureTradeSettings`), tenus à jour à chaque
+   enregistrement et vidés à la fermeture de session. */
+export const tradeSettings = reactive({ loaded: false, enabled: false, zone: null })
+
+export function applyTradeSettings(profile) {
+  tradeSettings.loaded = true
+  tradeSettings.enabled = Boolean(profile?.trade_enabled)
+  tradeSettings.zone = profile?.trade_zone ?? null
+  return profile
+}
+
+let settingsRequest = null
+export function ensureTradeSettings() {
+  if (!session.token || tradeSettings.loaded) return Promise.resolve(tradeSettings)
+  settingsRequest ??= Promise.resolve()
+    .then(() => api("/api/auth/me"))
+    .then(applyTradeSettings)
+    .catch(() => null)
+    .finally(() => {
+      settingsRequest = null
+    })
+  return settingsRequest.then(() => tradeSettings)
+}
+
 /** Réglages d'échange (`trade_enabled`, `trade_zone`, `trade_contact`, `notify_trades`). Renvoie le `user_out`. */
-export function updateTradeSettings(patch) {
-  return api("/api/auth/me", { method: "PATCH", body: patch })
+export async function updateTradeSettings(patch) {
+  return applyTradeSettings(await api("/api/auth/me", { method: "PATCH", body: patch }))
 }
 
 /** Mes offres : `[{id, entry_id, card, condition, lang, qty, entry_qty}]`. */
@@ -113,5 +138,6 @@ export async function refreshTradeBadge() {
 if (typeof window !== "undefined") {
   window.addEventListener("riftarium:session-closed", () => {
     tradeBadge.incoming = 0
+    Object.assign(tradeSettings, { loaded: false, enabled: false, zone: null })
   })
 }

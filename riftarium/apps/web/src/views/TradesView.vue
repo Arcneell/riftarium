@@ -6,7 +6,7 @@ import TradeActivate from "../trades/TradeActivate.vue"
 import TradeMatches from "../trades/TradeMatches.vue"
 import TradeOffers from "../trades/TradeOffers.vue"
 import TradeRequests from "../trades/TradeRequests.vue"
-import { tradeBadge, zoneLabel } from "../trades.js"
+import { applyTradeSettings, tradeBadge, zoneLabel } from "../trades.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftSegments from "../ui/RiftSegments.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
@@ -35,7 +35,7 @@ const target = computed(() => Number(route.query.id) || null)
 
 async function load() {
   try {
-    me.value = await api("/api/auth/me")
+    me.value = applyTradeSettings(await api("/api/auth/me"))
   } catch (e) {
     error.value = e.message
   } finally {

@@ -7,6 +7,7 @@ import ProfileHero from "../social/ProfileHero.vue"
 import ProfileIdentity from "../social/ProfileIdentity.vue"
 import ProfilePrivacy from "../social/ProfilePrivacy.vue"
 import ProfileSecurity from "../social/ProfileSecurity.vue"
+import ProfileTrades from "../social/ProfileTrades.vue"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftField from "../ui/RiftField.vue"
 import RiftModal from "../ui/RiftModal.vue"
@@ -261,6 +262,7 @@ onMounted(() => {
             :public-path="profilePath(me.handle)"
             @toggle="togglePrivacy"
           />
+          <ProfileTrades :profile="me" @saved="applyProfile" />
         </div>
 
         <div class="profil-colonne">

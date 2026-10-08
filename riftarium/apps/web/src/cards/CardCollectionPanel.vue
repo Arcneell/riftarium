@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { api, session } from "../api.js"
 import { conditionOptions, defaultsLabel, langOptions } from "../collection/collectionDefaults.js"
 import { useOwnedCopies } from "../collection/useOwnedCopies.js"
+import { ensureTradeSettings, getOffers, setOffer, tradeSettings } from "../trades.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
 import RiftStepper from "../ui/RiftStepper.vue"
@@ -68,6 +69,45 @@ async function addLot() {
   const { qty, condition, lang } = draft.value
   if (await run(() => owned.addLot({ qty, condition, lang }), "Lot ajouté.")) draft.value.qty = 1
 }
+
+/* « À échanger » : quantité proposée par lot (0 = pas d'offre), visible si les échanges
+   sont activés. Rechargée quand les lots changent : l'API ramène une offre à la
+   quantité du lot quand celui-ci diminue. */
+const tradeQty = ref({})
+const tradeBusy = ref(false)
+
+async function loadOffers() {
+  if (!session.token) return
+  await ensureTradeSettings()
+  if (!tradeSettings.enabled) {
+    tradeQty.value = {}
+    return
+  }
+  try {
+    tradeQty.value = Object.fromEntries((await getOffers()).map((offer) => [offer.entry_id, offer.qty]))
+  } catch {
+    /* Les offres ne conditionnent pas la fiche : on garde l'état connu. */
+  }
+}
+
+async function setTradeQty(entry, qty) {
+  if (tradeBusy.value) return
+  tradeBusy.value = true
+  acted.value = true
+  saved.value = ""
+  wishError.value = ""
+  try {
+    await setOffer(entry.id, qty)
+    tradeQty.value = { ...tradeQty.value, [entry.id]: qty }
+    saved.value = qty ? "Quantité à échanger mise à jour." : "Lot retiré des échanges."
+  } catch (e) {
+    wishError.value = e.message
+  } finally {
+    tradeBusy.value = false
+  }
+}
+
+watch(entries, loadOffers, { immediate: true })
 
 /* Wishlist : un seul clic bascule « je la veux » (qty 1) / retrait complet.
    La quantité fine se règle ensuite sur la page Ma wishlist. */
@@ -167,6 +207,18 @@ async function toggleWish() {
               @increment="setLotQty(entry, entry.qty + 1)"
               @decrement="setLotQty(entry, entry.qty - 1)"
             />
+            <div v-if="tradeSettings.enabled" class="panel-lot-trade">
+              <span class="panel-lot-trade-label">À échanger</span>
+              <RiftStepper
+                size="sm"
+                :value="Math.min(tradeQty[entry.id] ?? 0, entry.qty)"
+                :max="entry.qty"
+                :busy="tradeBusy"
+                :label="`à échanger du lot ${lotName(entry)}`"
+                @increment="setTradeQty(entry, (tradeQty[entry.id] ?? 0) + 1)"
+                @decrement="setTradeQty(entry, (tradeQty[entry.id] ?? 0) - 1)"
+              />
+            </div>
           </li>
         </ul>
         <div class="panel-add">
@@ -301,12 +353,31 @@ async function toggleWish() {
 }
 .panel-lot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
   min-height: 44px;
   margin: 0;
   padding: 0;
+}
+/* Ligne « À échanger » sous le compteur du lot, pleine largeur. */
+.panel-lot-trade {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--bronze);
+}
+.panel-lot-trade-label {
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
 }
 .panel-lot-name {
   color: var(--ink);

@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, DOMAINS, TYPES, RARITIES } from "../api.js"
 import CardCollectionPanel from "../cards/CardCollectionPanel.vue"
+import CardTradeOffers from "../cards/CardTradeOffers.vue"
 import { DOMAIN_RUNE, glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
 import { PRICE_SOURCE_NOTE, cardmarketUrl, formatEur, usePricesMeta } from "../prices.js"
 import { applySeo } from "../seo.js"
@@ -209,6 +210,7 @@ function openVariant(id) {
           </div>
 
           <CardCollectionPanel :card="card" @change="onCollectionChange" />
+          <CardTradeOffers :card="card" />
 
           <p class="fiche-credit">
             {{ (card.riftbound_id || "").toUpperCase() }}
