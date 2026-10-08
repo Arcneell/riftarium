@@ -1,13 +1,9 @@
 /* Feuille commune de la console d'administration (statistiques, utilisateurs, decks).
-   Non scopée : le préfixe `console-` est réservé et absent de main.css. Les balises
-   héritées (h2, table, th, td, textarea, select, section) y sont neutralisées
-   localement tant que main.css est chargé. Densité utilitaire : lignes de 40 px sur
+   Non scopée : le préfixe `console-` lui est réservé. Densité utilitaire : lignes de 40 px sur
    bureau, 44 px au tactile ; sous 768 px, chaque ligne devient une carte empilée. */
 
 .console-heading {
   margin: 0 0 var(--space-2);
-  background: none;
-  animation: none;
   font-family: var(--font-label);
   font-size: 13px;
   font-weight: 600;
@@ -112,10 +108,17 @@
   flex-wrap: wrap;
   gap: var(--space-1);
 }
-.console-chips .rift-chip {
+/* Classe doublée : prime sur le style scopé de RiftChip quel que soit l'ordre de chargement. */
+.console-chips .rift-chip.rift-chip {
   min-height: 24px;
   padding: 0 var(--space-2);
   font-size: 11px;
+}
+/* Écran tactile : les puces à bascule de l'admin reviennent à 44 px (plus spécifique que le réglage compact). */
+@media (hover: none) {
+  .console-chips button.rift-chip.rift-chip {
+    min-height: 44px;
+  }
 }
 .console-actions {
   display: flex;

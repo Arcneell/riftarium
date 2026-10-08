@@ -1,6 +1,11 @@
 import { mount } from "@vue/test-utils"
 import { describe, expect, it } from "vitest"
 import RiftChip from "./RiftChip.vue"
+import source from "./RiftChip.vue?raw"
+import fs from "node:fs"
+import path from "node:path"
+
+const consoleCss = fs.readFileSync(path.resolve("src/admin/console.css"), "utf8")
 
 describe("RiftChip", () => {
   it("bascule : aria-pressed et événement toggle", async () => {
@@ -37,5 +42,17 @@ describe("RiftChip", () => {
     expect(wrapper.attributes("tabindex")).toBeUndefined()
     await wrapper.trigger("click")
     expect(wrapper.emitted("toggle")).toBeUndefined()
+  })
+
+  it("tactile : la puce bouton fait 44 px, la puce statique reste compacte", () => {
+    expect(source).toMatch(/@media \(hover: none\)\s*\{\s*button\.rift-chip\s*\{\s*min-height: 44px;/)
+    expect(source).not.toMatch(/span\.rift-chip/)
+  })
+
+  it("admin : compact sur bureau (classe doublée), 44 px sous hover: none", () => {
+    expect(consoleCss).toMatch(/\.console-chips \.rift-chip\.rift-chip\s*\{\s*min-height: 24px/)
+    expect(consoleCss).toMatch(
+      /@media \(hover: none\)\s*\{\s*\.console-chips button\.rift-chip\.rift-chip\s*\{\s*min-height: 44px/
+    )
   })
 })
