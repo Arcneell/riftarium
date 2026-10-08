@@ -25,10 +25,11 @@ const UNSTYLED_ALLOWLIST = new Set([
   "topbar-account",
   "rift-text",
   "souhait-remove",
+  "console-row",
+  "console-deck-name",
   // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
   "classeur-tab-name",
   "footer-contact",
-  "admin-wrap",
   // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
   "rune"
 ])

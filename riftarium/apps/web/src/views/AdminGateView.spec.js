@@ -44,7 +44,7 @@ describe("AdminGateView (/admin masqué)", () => {
     const wrapper = await mountGate()
     expect(wrapper.text()).toContain("404")
     expect(wrapper.text()).toContain("Page introuvable")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(false)
+    expect(wrapper.find("[role=tablist]").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
     wrapper.unmount()
   })
@@ -82,7 +82,7 @@ describe("AdminGateView (/admin masqué)", () => {
     session.isAdmin = null
     const wrapper = await mountGate()
     expect(wrapper.text()).not.toContain("404")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(false)
+    expect(wrapper.find("[role=tablist]").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
     wrapper.unmount()
   })
@@ -114,8 +114,8 @@ describe("AdminGateView (/admin masqué)", () => {
     })
     const wrapper = await mountGate()
     await flushPromises()
-    expect(wrapper.text()).toContain("Console d'administration")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(true)
+    expect(wrapper.get("h1").text()).toBe("Administration")
+    expect(wrapper.find("[role=tablist]").exists()).toBe(true)
     wrapper.unmount()
   })
 

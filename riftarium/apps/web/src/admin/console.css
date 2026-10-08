@@ -1,0 +1,242 @@
+/* Feuille commune de la console d'administration (statistiques, utilisateurs, decks).
+   Non scopée : le préfixe `console-` est réservé et absent de main.css. Les balises
+   héritées (h2, table, th, td, textarea, select, section) y sont neutralisées
+   localement tant que main.css est chargé. Densité utilitaire : lignes de 40 px sur
+   bureau, 44 px au tactile ; sous 768 px, chaque ligne devient une carte empilée. */
+
+.console-heading {
+  margin: 0 0 var(--space-2);
+  background: none;
+  animation: none;
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bronze-light);
+}
+.console-error {
+  margin: 0;
+  color: var(--blood-text);
+}
+.console-muted {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.console-mono {
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+.console-link {
+  color: var(--ink);
+  text-decoration: none;
+}
+.console-link:hover {
+  color: var(--bronze-light);
+  text-decoration: underline;
+}
+.console-link:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+
+/* ---------- Barre d'outils ---------- */
+.console-toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.console-toolbar .console-search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+.console-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.console-count {
+  margin-left: auto;
+  align-self: center;
+}
+
+/* ---------- Tableau compact ---------- */
+.console-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.console-table th,
+.console-table td {
+  height: 40px;
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  color: var(--ink);
+}
+.console-table th {
+  height: 32px;
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--bg-sunken);
+}
+.console-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--bg-raised), var(--bronze) 6%);
+}
+/* Écran tactile : la ligne reste une cible de 44 px. */
+@media (hover: none) {
+  .console-table td {
+    height: 44px;
+  }
+}
+.console-id {
+  display: grid;
+  gap: 2px;
+}
+.console-id-name {
+  font-weight: 600;
+}
+.console-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.console-chips .rift-chip {
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  font-size: 11px;
+}
+.console-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.console-actions-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+/* Plus spécifique que le style scopé de RiftButton (fantôme en encre atténuée). */
+.console-actions .rift-btn.console-danger {
+  color: var(--blood-text);
+}
+.console-row-error {
+  flex-basis: 100%;
+  margin: var(--space-1) 0 0;
+  font-size: 13px;
+  color: var(--blood-text);
+  white-space: normal;
+}
+
+/* ---------- Pagination ---------- */
+.console-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* ---------- Modales ---------- */
+.console-form {
+  display: grid;
+  gap: var(--space-3);
+}
+.console-form p {
+  margin: 0;
+}
+.console-label {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.console-form .console-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.console-form .console-input:focus {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+  border-color: var(--bronze-light);
+  box-shadow: none;
+}
+.console-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* ---------- Sous 768 px : chaque ligne devient une carte empilée ---------- */
+@media (max-width: 767px) {
+  .console-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .console-table,
+  .console-table tbody,
+  .console-table tr,
+  .console-table td {
+    display: block;
+  }
+  .console-table tr {
+    display: grid;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-raised);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .console-table td {
+    height: auto;
+    padding: 0;
+    border: 0;
+  }
+  .console-table tbody tr:hover td {
+    background: none;
+  }
+  .console-table td[data-label]:not(.console-id-cell):not(.console-actions-cell)::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-label);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .console-actions-cell {
+    width: auto;
+    white-space: normal;
+  }
+}

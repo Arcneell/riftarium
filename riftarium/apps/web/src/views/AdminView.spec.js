@@ -122,9 +122,13 @@ async function mountView() {
 }
 
 async function openTab(wrapper, index) {
-  await wrapper.findAll(".admin-tabs .filter")[index].trigger("click")
+  await wrapper.findAll("[role=tab]")[index].trigger("click")
   await flushPromises()
 }
+
+/* Couleur d'une puce statique (RiftChip static selected color=…). */
+const chipColor = (chip) => chip.attributes("style") || ""
+const rowChips = (row) => row.findAll(".rift-chip")
 
 const modalEl = () => document.body.querySelector(".rift-modal")
 
@@ -161,10 +165,13 @@ describe("AdminView", () => {
     expect(wrapper.text()).toContain("Dernières inscriptions")
     expect(wrapper.text()).toContain("nova")
     expect(wrapper.text()).toContain("Contrôle Ordre")
-    /* Statut de modération en badge sur les derniers decks. */
-    expect(wrapper.find(".admin-badge.is-wait").text()).toBe("En attente")
+    /* Statut de modération en puce statique sur les derniers decks (attente : --ink-muted). */
+    const chip = wrapper.get(".console-recent .rift-chip")
+    expect(chip.text()).toBe("En attente")
+    expect(chip.element.tagName).toBe("SPAN")
+    expect(chipColor(chip)).toContain("var(--ink-muted)")
     /* Deltas 7 j sous les tuiles Total (utilisateurs : new_7d ; decks : somme de la série). */
-    const deltas = wrapper.findAll(".stat-delta").map((node) => node.text())
+    const deltas = wrapper.findAll(".console-delta").map((node) => node.text())
     expect(deltas).toContain("+3 (7 j)")
     expect(deltas).toContain("+4 (7 j)")
     expect(wrapper.text()).toContain("210")
@@ -179,13 +186,13 @@ describe("AdminView", () => {
     const frequentation = figures.find((figure) => figure.text().includes("Fréquentation (30 jours)"))
     expect(frequentation).toBeTruthy()
     expect(frequentation.findAll(".graphe-band")).toHaveLength(30)
-    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--chart-teal)")
+    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood)")
     expect(frequentation.findAll(".graphe-legend .graphe-key").map((key) => key.text())).toEqual([
       "Visites",
       "Visiteurs uniques"
     ])
 
-    /* Séries serveur : inscriptions (sarcelle) et decks créés (violet), 30 colonnes chacune. */
+    /* Séries serveur : inscriptions et decks créés, 30 colonnes chacune. */
     const inscriptions = figures.find((figure) => figure.text().includes("Inscriptions (30 jours)"))
     expect(inscriptions.findAll(".graphe-band")).toHaveLength(30)
     const decksCrees = figures.find((figure) => figure.text().includes("Decks créés (30 jours)"))
@@ -237,7 +244,9 @@ describe("AdminView", () => {
     )
     expect(wrapper.text()).toContain("nyra@example.org")
     expect(wrapper.text()).toContain("2 decks · 40 cartes")
-    expect(wrapper.findAll(".admin-badge.is-ko")).toHaveLength(1)
+    const suspended = wrapper.findAll(".console-row .rift-chip").filter((c) => chipColor(c).includes("--blood-text"))
+    expect(suspended).toHaveLength(1)
+    expect(suspended[0].attributes("title")).toBe("Spam")
     expect(wrapper.text()).toContain("Suspendu jusqu'au")
 
     api.mockClear()
@@ -254,7 +263,7 @@ describe("AdminView", () => {
     const { wrapper } = await mountView()
     await openTab(wrapper, 1)
 
-    const buttons = wrapper.findAll(".admin-row")[0].findAll("button")
+    const buttons = wrapper.findAll(".console-row")[0].findAll("button")
     await buttons.find((button) => button.text() === "Suspendre").trigger("click")
     const modal = modalEl()
     expect(modal).not.toBeNull()
@@ -278,13 +287,15 @@ describe("AdminView", () => {
     const { wrapper } = await mountView()
     await openTab(wrapper, 1)
 
-    const rows = wrapper.findAll(".admin-row")
+    const rows = wrapper.findAll(".console-row")
     const lift = rows[1].findAll("button").find((button) => button.text() === "Lever la suspension")
     expect(lift).toBeTruthy()
     api.mockImplementationOnce(() => Promise.reject(new Error("Suspension introuvable")))
     await lift.trigger("click")
     await flushPromises()
-    expect(wrapper.get(".admin-row-error").text()).toBe("Suspension introuvable")
+    expect(wrapper.get(".console-row-error").text()).toBe("Suspension introuvable")
+    expect(wrapper.get(".console-row-error").attributes("role")).toBe("alert")
+    expect(wrapper.findAll(".console-row")[1].find(".console-row-error").exists()).toBe(true)
 
     await lift.trigger("click")
     await flushPromises()
@@ -296,7 +307,7 @@ describe("AdminView", () => {
     const { wrapper } = await mountView()
     await openTab(wrapper, 1)
 
-    const buttons = wrapper.findAll(".admin-row")[0].findAll("button")
+    const buttons = wrapper.findAll(".console-row")[0].findAll("button")
     await buttons.find((button) => button.text() === "Supprimer").trigger("click")
     const modal = modalEl()
     expect(modal).not.toBeNull()
@@ -323,12 +334,12 @@ describe("AdminView", () => {
     expect(
       api.mock.calls.some(([path]) => path.startsWith("/api/admin/decks?") && path.includes("status=pending"))
     ).toBe(true)
-    const link = wrapper.get(".admin-deck-name")
+    const link = wrapper.get(".console-deck-name")
     expect(link.text()).toBe("Aggro Fureur")
     expect(link.attributes("href")).toBe("/decks/7")
 
     api.mockClear()
-    const row = wrapper.findAll(".admin-row")[0]
+    const row = wrapper.findAll(".console-row")[0]
     await row
       .findAll("button")
       .find((button) => button.text() === "Approuver")
@@ -339,7 +350,7 @@ describe("AdminView", () => {
 
     api.mockClear()
     await wrapper
-      .findAll(".admin-row")[0]
+      .findAll(".console-row")[0]
       .findAll("button")
       .find((button) => button.text() === "Rejeter")
       .trigger("click")
@@ -354,7 +365,7 @@ describe("AdminView", () => {
 
     api.mockClear()
     await wrapper
-      .findAll(".admin-row")[0]
+      .findAll(".console-row")[0]
       .findAll("button")
       .find((button) => button.text() === "Supprimer")
       .trigger("click")
@@ -367,6 +378,174 @@ describe("AdminView", () => {
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/admin/decks/7", { method: "DELETE" })
     expect(api.mock.calls.some(([path]) => path.startsWith("/api/admin/decks?"))).toBe(true)
+    expect(modalEl()).toBeNull()
+    wrapper.unmount()
+  })
+
+  it("page : h1 « Administration », sans bandeau illustré", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.get("h1").text()).toBe("Administration")
+    expect(wrapper.find(".page-banner").exists()).toBe(false)
+    const tabs = wrapper.findAll("[role=tab]")
+    expect(tabs.map((tab) => tab.text())).toEqual(["Statistiques", "Utilisateurs", "Decks"])
+    expect(tabs[0].attributes("aria-selected")).toBe("true")
+    expect(wrapper.get("[role=tabpanel]").attributes("aria-labelledby")).toBe(tabs[0].attributes("id"))
+    wrapper.unmount()
+  })
+
+  it("onglets : RiftSegments au clavier", async () => {
+    const { wrapper } = await mountView()
+    const tabs = () => wrapper.findAll("[role=tab]")
+    expect(wrapper.get("[role=tablist]").attributes("aria-label")).toBe("Sections d'administration")
+    api.mockClear()
+    await tabs()[0].trigger("keydown", { key: "ArrowRight" })
+    await flushPromises()
+    expect(tabs()[1].attributes("aria-selected")).toBe("true")
+    expect(document.activeElement).toBe(tabs()[1].element)
+    expect(api.mock.calls.some(([path]) => path.startsWith("/api/admin/users?"))).toBe(true)
+    expect(wrapper.get("[role=tabpanel]").attributes("id")).toContain("users")
+
+    await tabs()[1].trigger("keydown", { key: "End" })
+    await flushPromises()
+    expect(tabs()[2].attributes("aria-selected")).toBe("true")
+    expect(api.mock.calls.some(([path]) => path.startsWith("/api/admin/decks?"))).toBe(true)
+
+    await tabs()[2].trigger("keydown", { key: "ArrowRight" })
+    await flushPromises()
+    expect(tabs()[0].attributes("aria-selected")).toBe("true")
+    expect(api).toHaveBeenCalledWith("/api/admin/stats")
+    wrapper.unmount()
+  })
+
+  it("graphiques : couleurs en tokens, aucune var(--chart-…)", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.html()).not.toContain("--chart-")
+    const figures = wrapper.findAll("figure.graphe-figure")
+    const byTitle = (title) => figures.find((figure) => figure.text().includes(title))
+
+    /* Volume en bronze, deuxième série en sang, troisième en encre atténuée. */
+    const frequentation = byTitle("Fréquentation (30 jours)")
+    expect(frequentation.get(".graphe-col").attributes("fill")).toBe("var(--bronze)")
+    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood)")
+    expect(byTitle("Inscriptions (30 jours)").get(".graphe-col").attributes("fill")).toBe("var(--blood)")
+    expect(byTitle("Decks créés (30 jours)").get(".graphe-col").attributes("fill")).toBe("var(--ink-muted)")
+    expect(byTitle("Rubriques les plus visitées").get(".graphe-bar").attributes("fill")).toBe("var(--bronze)")
+
+    /* Statuts : ok bronze clair, attente encre atténuée, ko sang. */
+    const fills = byTitle("Statuts de modération")
+      .findAll(".graphe-segment")
+      .map((segment) => segment.attributes("fill"))
+    expect(fills).toEqual(["var(--bronze-light)", "var(--ink-muted)", "var(--blood)"])
+    wrapper.unmount()
+  })
+
+  it("tableaux denses : en-têtes, intitulés de cellule et actions compactes", async () => {
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 2)
+    const table = wrapper.get("table.console-table")
+    expect(table.findAll("thead th").map((th) => th.text())).toEqual(["Deck", "Statut", "Activité", "Actions"])
+    const row = wrapper.findAll(".console-row")[0]
+    /* Chaque cellule porte son intitulé pour l'empilement en carte sous 768 px. */
+    expect(row.findAll("td").every((td) => td.attributes("data-label"))).toBe(true)
+    const status = rowChips(row)[0]
+    expect(status.text()).toBe("En attente")
+    expect(chipColor(status)).toContain("var(--ink-muted)")
+    expect(row.findAll(".rift-btn--sm").length).toBeGreaterThanOrEqual(2)
+    wrapper.unmount()
+  })
+
+  it("statuts de deck : publié en bronze clair, rejeté en encre de sang", async () => {
+    api.mockImplementation((path) => {
+      if (path.startsWith("/api/admin/decks?")) {
+        const fixture = structuredClone(decksFixture)
+        fixture.items.push(
+          { ...fixture.items[0], id: 8, name: "Rampe", moderation_status: "published" },
+          { ...fixture.items[0], id: 9, name: "Spam", moderation_status: "rejected" }
+        )
+        return Promise.resolve(fixture)
+      }
+      if (path === "/api/admin/stats") return Promise.resolve(structuredClone(statsFixture))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 2)
+    const rows = wrapper.findAll(".console-row")
+    expect(rowChips(rows[1])[0].text()).toBe("Publié")
+    expect(chipColor(rowChips(rows[1])[0])).toContain("var(--bronze-light)")
+    expect(rowChips(rows[2])[0].text()).toBe("Rejeté")
+    expect(chipColor(rowChips(rows[2])[0])).toContain("var(--blood-text)")
+    /* Un deck publié ne propose plus « Approuver », un deck rejeté plus « Rejeter ». */
+    expect(rows[1].findAll("button").map((b) => b.text())).not.toContain("Approuver")
+    expect(rows[2].findAll("button").map((b) => b.text())).not.toContain("Rejeter")
+    wrapper.unmount()
+  })
+
+  it("modération en échec : erreur sur la ligne, statut inchangé", async () => {
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 2)
+    api.mockClear()
+    api.mockImplementationOnce(() => Promise.reject(new Error("Deck introuvable")))
+    await wrapper
+      .findAll(".console-row")[0]
+      .findAll("button")
+      .find((button) => button.text() === "Approuver")
+      .trigger("click")
+    await flushPromises()
+
+    expect(api).toHaveBeenCalledTimes(1)
+    expect(api).toHaveBeenCalledWith("/api/admin/decks/7/moderation", { method: "POST", body: { status: "approved" } })
+    const row = wrapper.findAll(".console-row")[0]
+    const error = row.get(".console-row-error")
+    expect(error.attributes("role")).toBe("alert")
+    expect(error.text()).toBe("Deck introuvable")
+    expect(rowChips(row)[0].text()).toBe("En attente")
+    /* Les actions redeviennent disponibles. */
+    expect(row.findAll("button").every((b) => b.attributes("disabled") === undefined)).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("sanction définitive : modale de confirmation, annuler n'envoie rien", async () => {
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 1)
+
+    const openModal = async () => {
+      await wrapper
+        .findAll(".console-row")[0]
+        .findAll("button")
+        .find((button) => button.text() === "Suspendre")
+        .trigger("click")
+      const modal = modalEl()
+      setNativeValue(modal.querySelector("textarea"), "Triche répétée", "input")
+      setNativeValue(modal.querySelector("select"), "876000", "change")
+      await flushPromises()
+      modal.querySelector("form").dispatchEvent(new Event("submit"))
+      await flushPromises()
+      return modalEl()
+    }
+
+    api.mockClear()
+    let modal = await openModal()
+    /* Première validation : aucune requête, la modale demande confirmation. */
+    expect(api).not.toHaveBeenCalled()
+    expect(modal.textContent).toContain("définitive")
+    expect(modal.querySelector("form")).toBeNull()
+    const cancel = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Annuler")
+    cancel.click()
+    await flushPromises()
+    expect(modalEl()).toBeNull()
+    expect(api).not.toHaveBeenCalled()
+
+    /* Confirmée, la sanction part avec les 876000 h et le motif. */
+    modal = await openModal()
+    const confirm = [...modal.querySelectorAll("button")].find((b) =>
+      b.textContent.includes("Suspendre définitivement")
+    )
+    confirm.click()
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/admin/users/1/suspend", {
+      method: "POST",
+      body: { hours: 876000, reason: "Triche répétée" }
+    })
     expect(modalEl()).toBeNull()
     wrapper.unmount()
   })
