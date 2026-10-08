@@ -63,3 +63,12 @@ describe("ProfileTrades", () => {
     expect(wrapper.get("[role=alert]").text()).toContain("Choisissez une zone")
   })
 })
+
+describe("ProfileTrades — désactivation", () => {
+  it("prévient que désactiver annule les demandes en attente", async () => {
+    const wrapper = await mountPanel()
+    expect(wrapper.find(".echanges-alerte").exists()).toBe(false)
+    await wrapper.get("input[type=checkbox][name=trade_enabled]").setValue(false)
+    expect(wrapper.get(".echanges-alerte").text()).toContain("annule vos demandes en attente")
+  })
+})

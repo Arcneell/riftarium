@@ -192,3 +192,23 @@ describe("TradesView", () => {
     expect(wrapper.get(".demande").classes()).toContain("ciblee")
   })
 })
+
+describe("TradesView — contact retiré", () => {
+  beforeEach(() => {
+    session.token = "1"
+    api.mockReset()
+    setupApi()
+    document.body.innerHTML = ""
+  })
+
+  it("explique l'absence de contact sur une demande acceptée", async () => {
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) =>
+      path.startsWith("/api/trades/requests?box=in")
+        ? Promise.resolve({ items: [{ ...REQUEST_IN, status: "accepted", contact: null }], total: 1 })
+        : base(path, options)
+    )
+    const { wrapper } = await mountView("/echanges?onglet=demandes")
+    expect(wrapper.get(".demande-sans-contact").text()).toContain("retiré son contact")
+  })
+})

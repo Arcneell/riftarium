@@ -129,6 +129,12 @@ export const tradeBadge = reactive({ incoming: 0 })
 export async function refreshTradeBadge() {
   if (!session.token) return
   try {
+    /* Compte sans échanges : aucune demande possible, pas d'appel à chaque page. */
+    await ensureTradeSettings()
+    if (!tradeSettings.enabled) {
+      tradeBadge.incoming = 0
+      return
+    }
     tradeBadge.incoming = (await getRequestsSummary()).incoming_pending || 0
   } catch {
     /* La pastille est un confort : un échec ne doit rien casser. */

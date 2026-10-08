@@ -61,6 +61,10 @@ async function save() {
         <input v-model="form.enabled" type="checkbox" name="trade_enabled" />
         <span>Participer aux échanges</span>
       </label>
+      <p v-if="profile.trade_enabled && !form.enabled" class="echanges-alerte" role="status">
+        Désactiver annule vos demandes en attente (reçues et envoyées) et masque vos offres. Les échanges déjà acceptés
+        restent visibles.
+      </p>
       <RiftChoice v-model="form.zone" label="Ma zone" :options="TRADE_ZONES" />
       <RiftField
         v-model="form.contact"
@@ -113,6 +117,13 @@ async function save() {
 }
 .echanges-erreur {
   color: var(--blood-text);
+}
+.echanges-alerte {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--blood);
+  font-size: 14px;
+  color: var(--ink);
 }
 .echanges-succes {
   color: var(--bronze-light);

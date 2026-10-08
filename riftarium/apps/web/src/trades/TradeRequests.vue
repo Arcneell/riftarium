@@ -127,6 +127,9 @@ onMounted(async () => {
             {{ copied === item.id ? "Copié" : "Copier" }}
           </RiftButton>
         </RiftPanel>
+        <p v-else-if="item.status === 'accepted' || item.status === 'done'" class="demande-sans-contact">
+          Ce joueur a retiré son contact de son profil : retrouvez-le via son profil public.
+        </p>
         <div v-if="actionsFor(item).length" class="demande-actions">
           <RiftButton
             v-for="[action, label, variant] in actionsFor(item)"
@@ -235,6 +238,11 @@ onMounted(async () => {
   padding-left: var(--space-3);
   border-left: 2px solid var(--bronze);
   color: var(--ink);
+}
+.demande-sans-contact {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-muted);
 }
 .demande-contact-texte {
   margin: 0 0 var(--space-2);

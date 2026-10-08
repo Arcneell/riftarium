@@ -12,6 +12,8 @@ import {
   sendRequest,
   setOffer,
   statusLabel,
+  refreshTradeBadge,
+  tradeBadge,
   tradeSettings,
   updateTradeSettings,
   zoneLabel
@@ -121,6 +123,24 @@ describe("trades — réglages partagés", () => {
     })
     await updateTradeSettings({ trade_enabled: false })
     expect(tradeSettings.enabled).toBe(false)
+    session.token = null
+  })
+})
+
+describe("trades — pastille", () => {
+  it("n'interroge pas les demandes d'un compte sans échanges", async () => {
+    session.token = "1"
+    Object.assign(tradeSettings, { loaded: true, enabled: false, zone: null })
+    tradeBadge.incoming = 3
+    await refreshTradeBadge()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(tradeBadge.incoming).toBe(0)
+
+    tradeSettings.enabled = true
+    fetchMock.mockResolvedValue({ status: 200, ok: true, json: async () => ({ incoming_pending: 2 }) })
+    await refreshTradeBadge()
+    expect(sent().path).toBe("/api/trades/requests/summary")
+    expect(tradeBadge.incoming).toBe(2)
     session.token = null
   })
 })
