@@ -1,6 +1,7 @@
 import { mount, RouterLinkStub } from "@vue/test-utils"
 import { describe, expect, it } from "vitest"
 import RiftButton from "./RiftButton.vue"
+import source from "./RiftButton.vue?raw"
 
 const stubs = { RouterLink: RouterLinkStub }
 
@@ -37,5 +38,9 @@ describe("RiftButton", () => {
     const wrapper = mount(RiftButton, { global: { stubs } })
     await wrapper.get("button").trigger("click")
     expect(wrapper.emitted("click")).toHaveLength(1)
+  })
+
+  it("taille sm : cible de 44 px sur écran tactile", () => {
+    expect(source).toMatch(/@media \(hover: none\)\s*\{\s*\.rift-btn--sm\s*\{\s*min-height: 44px;/)
   })
 })
