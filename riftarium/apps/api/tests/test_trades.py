@@ -107,3 +107,84 @@ def test_notify_trades_toggle(client, register_user):
     headers = account(client, register_user, "alice")
     body = client.patch("/api/auth/me", json={"notify_trades": False}, headers=headers).json()
     assert body["notify_trades"] is False
+
+
+# ---------- Ma liste « À échanger » ----------
+
+
+def my_offers(client, headers):
+    return client.get("/api/trades/offers", headers=headers).json()
+
+
+def test_offer_bounded_by_lot(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX, qty=3)
+    assert client.put(f"/api/trades/offers/{entry}", json={"qty": 4}, headers=headers).status_code == 422
+    response = client.put(f"/api/trades/offers/{entry}", json={"qty": 2}, headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["qty"] == 2 and body["entry_qty"] == 3 and body["entry_id"] == entry
+    assert body["card"]["id"] == PHOENIX and body["condition"] == "NM" and body["lang"] == "EN"
+    # Mise à jour de la même offre (pas de doublon).
+    offer(client, headers, entry, qty=3)
+    assert [item["qty"] for item in my_offers(client, headers)] == [3]
+    assert client.put(f"/api/trades/offers/{entry}", json={"qty": 0}, headers=headers).status_code == 204
+    assert my_offers(client, headers) == []
+
+
+def test_offer_delete_is_idempotent(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX)
+    offer(client, headers, entry)
+    assert client.delete(f"/api/trades/offers/{entry}", headers=headers).status_code == 204
+    assert client.delete(f"/api/trades/offers/{entry}", headers=headers).status_code == 204
+    assert my_offers(client, headers) == []
+
+
+def test_offer_on_someone_elses_lot_is_404(client, register_user):
+    alice = account(client, register_user, "alice")
+    entry = add_lot(client, alice, PHOENIX)
+    bob = account(client, register_user, "bob")
+    assert client.put(f"/api/trades/offers/{entry}", json={"qty": 1}, headers=bob).status_code == 404
+    assert client.put("/api/trades/offers/99999", json={"qty": 1}, headers=bob).status_code == 404
+
+
+def test_offers_require_login(client):
+    assert client.get("/api/trades/offers").status_code == 401
+
+
+def test_offer_clamped_when_lot_shrinks(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX, qty=3)
+    offer(client, headers, entry, qty=3)
+    assert client.patch(f"/api/collection/entries/{entry}", json={"qty": 1}, headers=headers).status_code == 200
+    assert [(item["qty"], item["entry_qty"]) for item in my_offers(client, headers)] == [(1, 1)]
+
+
+def test_offer_clamped_by_bulk(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX, qty=3)
+    offer(client, headers, entry, qty=3)
+    bulk = {"card_ids": [PHOENIX], "qty_delta": -2}
+    assert client.post("/api/collection/bulk", json=bulk, headers=headers).status_code == 200
+    assert [item["qty"] for item in my_offers(client, headers)] == [1]
+
+
+def test_offer_dropped_when_lot_merged(client, register_user):
+    headers = account(client, register_user, "alice")
+    played = add_lot(client, headers, PHOENIX, qty=1, condition="LP")
+    add_lot(client, headers, PHOENIX, qty=1, condition="NM")
+    offer(client, headers, played)
+    # Reclassement LP → NM : le lot LP fusionne dans le lot NM et disparaît.
+    patch = client.patch(f"/api/collection/entries/{played}", json={"condition": "NM"}, headers=headers)
+    assert patch.status_code == 200
+    assert my_offers(client, headers) == []
+
+
+def test_offer_dropped_when_lot_removed(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX, qty=2)
+    offer(client, headers, entry)
+    put = client.put(f"/api/collection/{PHOENIX}", json={"qty": 0, "condition": "NM", "lang": "EN"}, headers=headers)
+    assert put.status_code == 200
+    assert my_offers(client, headers) == []

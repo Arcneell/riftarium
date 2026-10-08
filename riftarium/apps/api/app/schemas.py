@@ -453,3 +453,9 @@ class PublicProfileOut(BaseModel):
     achievements: list[AchievementOut] | None = None
     collection_summary: ProfileCollectionOut | None = None
     decks: list[ProfileDeckOut] | None = None
+
+
+class TradeOfferPut(BaseModel):
+    """Quantité proposée à l'échange sur un lot (0 retire l'offre)."""
+
+    qty: int = Field(ge=0, le=999)

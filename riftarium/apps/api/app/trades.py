@@ -11,7 +11,8 @@ from __future__ import annotations
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.orm import Session
 
-from .models import TradeOffer, TradeRequest, User, utcnow
+from .models import CollectionItem, TradeOffer, TradeRequest, User, utcnow
+from .routers.cards import card_out
 
 
 def _iso(moment) -> str | None:
@@ -72,4 +73,75 @@ def export_trades(db: Session, user: User) -> dict:
             }
             for req in requests
         ],
+    }
+
+
+# ---------- Offres ----------
+
+
+def _drop_offers(db: Session, offer_ids: list[int]) -> None:
+    """Supprime des offres : leurs demandes en attente sont annulées, les autres détachées."""
+    if not offer_ids:
+        return
+    db.execute(
+        update(TradeRequest)
+        .where(TradeRequest.trade_offer_id.in_(offer_ids), TradeRequest.status == "pending")
+        .values(status="cancelled", responded_at=utcnow())
+        .execution_options(synchronize_session=False)
+    )
+    db.execute(
+        update(TradeRequest)
+        .where(TradeRequest.trade_offer_id.in_(offer_ids))
+        .values(trade_offer_id=None)
+        .execution_options(synchronize_session=False)
+    )
+    db.execute(delete(TradeOffer).where(TradeOffer.id.in_(offer_ids)).execution_options(synchronize_session=False))
+
+
+def remove_offer(db: Session, offer: TradeOffer) -> None:
+    _drop_offers(db, [offer.id])
+
+
+def sync_offers(db: Session, user_id: int) -> None:
+    """Recale les offres d'un compte sur sa collection, après toute modification de lots.
+
+    Lot disparu (supprimé, fusionné dans un autre) : l'offre part et ses demandes
+    en attente sont annulées. Lot diminué : l'offre est ramenée à sa quantité.
+    En production, PostgreSQL a déjà supprimé l'offre (CASCADE) et détaché ses
+    demandes (SET NULL) au flush : les demandes en attente sans offre sont donc
+    annulées elles aussi.
+    """
+    db.flush()
+    gone: list[int] = []
+    for item in db.scalars(select(TradeOffer).where(TradeOffer.user_id == user_id)).all():
+        entry = db.get(CollectionItem, item.collection_item_id)
+        if entry is None or entry.user_id != user_id:
+            gone.append(item.id)
+        elif item.qty > entry.qty:
+            item.qty = entry.qty
+    _drop_offers(db, gone)
+    db.execute(
+        update(TradeRequest)
+        .where(
+            TradeRequest.owner_id == user_id,
+            TradeRequest.status == "pending",
+            TradeRequest.trade_offer_id.is_(None),
+        )
+        .values(status="cancelled", responded_at=utcnow())
+        .execution_options(synchronize_session=False)
+    )
+
+
+def offer_out(item: TradeOffer) -> dict:
+    """Une offre de ma liste « À échanger »."""
+    entry = item.entry
+    return {
+        "id": item.id,
+        "entry_id": entry.id,
+        "card": card_out(entry.card),
+        "condition": entry.condition,
+        "lang": entry.lang,
+        "qty": item.qty,
+        "entry_qty": entry.qty,
+        "created_at": _iso(item.created_at),
     }

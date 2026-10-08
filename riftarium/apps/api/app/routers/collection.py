@@ -12,6 +12,7 @@ from ..db import get_db
 from ..models import Card, CardSet, CollectionItem, User
 from ..prices import current_rate, to_eur
 from ..schemas import CollectionBulk, CollectionEntryIn, CollectionEntryPatch, CollectionPut
+from ..trades import sync_offers
 from .cards import apply_filters, card_out, find_card
 
 router = APIRouter(prefix="/api/collection", tags=["collection"])
@@ -310,6 +311,7 @@ def bulk_update(
             else:  # reclassement qui retombe sur un lot existant : fusion des quantités
                 twin.qty = min(MAX_QTY, twin.qty + entry.qty)
                 db.delete(entry)
+    sync_offers(db, user.id)
     db.commit()
     return {"updated": updated, "removed": removed}
 
@@ -373,6 +375,7 @@ def update_entry(
             entry.qty = qty
             entry.condition = condition
             entry.lang = lang
+    sync_offers(db, user.id)
     db.commit()
     return card_state(db, user, card)
 
@@ -405,6 +408,7 @@ def set_quantity(
     if payload.qty == 0:
         if entry:
             db.delete(entry)
+            sync_offers(db, user.id)
             db.commit()
         return {"card_id": card.id, "qty": 0, "condition": payload.condition, "lang": payload.lang}
 
@@ -412,6 +416,7 @@ def set_quantity(
         entry = CollectionItem(user_id=user.id, card_id=card.id, condition=payload.condition, lang=payload.lang)
         db.add(entry)
     entry.qty = payload.qty
+    sync_offers(db, user.id)
     db.commit()
     return {
         "card_id": card.id,
