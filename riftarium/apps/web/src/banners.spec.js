@@ -13,6 +13,7 @@ describe("banners", () => {
   })
 
   it("donne une illustration distincte à chaque fonction de page", () => {
-    expect(new Set([BANNERS.cards, BANNERS.decks, BANNERS.collection, BANNERS.community, BANNERS.rules]).size).toBe(5)
+    expect(new Set(Object.values(BANNERS)).size).toBe(Object.keys(BANNERS).length)
+    expect(Object.keys(BANNERS)).toEqual(["home", "cards", "decks", "community"])
   })
 })

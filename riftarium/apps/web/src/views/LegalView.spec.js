@@ -98,4 +98,42 @@ describe("LegalView", () => {
       expect(wrapper.get('.mentions-toc a[aria-current="page"]').attributes("href")).toBe(path)
     }
   })
+
+  it("sans ancre à l'arrivée, aucune entrée du sommaire n'est courante", async () => {
+    const wrapper = await mountPage("/cgu")
+    expect(wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')).toHaveLength(0)
+  })
+
+  it("arrivée avec #droit : l'entrée correspondante est courante", async () => {
+    const wrapper = await mountPage("/cgu#droit")
+    const current = wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')
+    expect(current).toHaveLength(1)
+    expect(current[0].attributes("href")).toBe("#droit")
+    expect(current[0].attributes("aria-current")).toBe("location")
+  })
+
+  it("le clic sur une entrée la rend courante", async () => {
+    const wrapper = await mountPage("/confidentialite")
+    const links = wrapper.findAll('.mentions-toc a[href^="#"]')
+    await links[2].trigger("click")
+    const current = wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')
+    expect(current).toHaveLength(1)
+    expect(current[0].attributes("href")).toBe(links[2].attributes("href"))
+    await links[4].trigger("click")
+    expect(wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')[0].attributes("href")).toBe(
+      links[4].attributes("href")
+    )
+  })
+
+  it("sur toutes les pages légales, le libellé du sommaire est égal au texte du h2", async () => {
+    for (const item of LEGAL_NAV) {
+      const wrapper = await mountPage(item.path)
+      const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+      expect(anchors.length).toBeGreaterThan(0)
+      for (const a of anchors) {
+        expect(wrapper.get(a.attributes("href")).text()).toBe(a.text())
+      }
+      wrapper.unmount()
+    }
+  })
 })

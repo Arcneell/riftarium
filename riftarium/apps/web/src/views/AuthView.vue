@@ -31,10 +31,10 @@ const title = computed(() =>
 )
 
 function proceed() {
-  /* Seul un chemin interne est accepté (`/…` mais pas `//…`) : une valeur forgée
+  /* Seul un chemin interne est accepté (`/…` mais ni `//…` ni `/\…`) : une valeur forgée
      dans ?suite= ne doit jamais servir de redirection ouverte. */
   const next = String(route.query.suite ?? "")
-  router.push(/^\/(?!\/)/.test(next) ? next : "/")
+  router.push(/^\/(?![/\\])/.test(next) ? next : "/")
 }
 
 /* Changer de mode repart d'une ardoise propre : ni erreur de l'autre formulaire,

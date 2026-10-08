@@ -79,6 +79,26 @@ describe("AuthView", () => {
     expect(router.currentRoute.value.path).toBe("/")
   })
 
+  it("« Continuer » après une inscription suit ?suite=", async () => {
+    const { wrapper, router } = await mountView("/connexion?suite=/collection")
+    await wrapper.get("[role=tab]:last-child").trigger("click")
+    await wrapper.get("input[name=handle]").setValue("nyra")
+    await wrapper.get("input[name=email]").setValue("nyra@example.org")
+    await wrapper.get("input[name=password]").setValue("motdepasse123")
+    const checks = wrapper.findAll(".acces-check input")
+    await checks[0].setValue(true)
+    await checks[1].setValue(true)
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/connexion")
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Continuer")
+      .trigger("click")
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe("/collection")
+  })
+
   it("propose le lien « Mot de passe oublié ? » en mode connexion uniquement", async () => {
     const { wrapper } = await mountView()
     const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
@@ -99,7 +119,7 @@ describe("AuthView", () => {
   })
 
   it("ignore un ?suite= externe ou protocole-relatif (pas de redirection ouverte)", async () => {
-    for (const suite of ["https://evil.example/x", "//evil.example/x", "javascript:alert(1)"]) {
+    for (const suite of ["https://evil.example/x", "//evil.example/x", "/\\evil.example", "javascript:alert(1)"]) {
       const { wrapper, router } = await mountView(`/connexion?suite=${encodeURIComponent(suite)}`)
       await wrapper.get("input[name=email]").setValue("nyra@example.org")
       await wrapper.get("input[name=password]").setValue("motdepasse123")

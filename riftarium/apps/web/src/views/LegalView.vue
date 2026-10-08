@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import { useRoute } from "vue-router"
 import {
   CONTACT_EMAIL,
@@ -72,12 +72,10 @@ const page = computed(() => route.meta.legal || "mentions")
 const copy = computed(() => TITLES[page.value] || TITLES.mentions)
 const sections = computed(() => SECTIONS[page.value] || SECTIONS.mentions)
 
-/* Section courante du sommaire : la première par défaut, puis celle qu'on active. */
-const activeId = ref(sections.value[0].id)
+/* Section courante du sommaire : celle de l'ancre d'arrivée (sans le #), vide sinon ; puis celle qu'on active.
+   La vue est remontée à chaque changement de chemin : pas de suivi des pages ici. */
+const activeId = ref(route.hash.replace(/^#/, ""))
 const toc = ref(null)
-watch(sections, (list) => {
-  activeId.value = list[0].id
-})
 
 function pick(id) {
   activeId.value = id
@@ -524,7 +522,7 @@ function pick(id) {
   color: var(--bronze-light);
 }
 .mentions-doc code {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: ui-monospace, monospace;
   font-size: 0.9em;
 }
 .mentions-quote {
