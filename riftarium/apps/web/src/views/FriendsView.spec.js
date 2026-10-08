@@ -102,7 +102,7 @@ describe("FriendsView", () => {
     const suivi = buttonWith(result, "Suivi")
     expect(suivi).toBeTruthy()
     expect(suivi.attributes("aria-pressed")).toBeUndefined()
-    expect(suivi.attributes("aria-label")).toBe("Ne plus suivre novak")
+    expect(suivi.attributes("aria-label")).toBe("Suivi, ne plus suivre novak")
     expect(suivi.attributes("title")).toBe("Ne plus suivre novak")
 
     /* Un clic sur « Suivi » se désabonne réellement. */

@@ -253,14 +253,6 @@ onMounted(load)
 .stats-squelette :deep(.rift-skeleton-block) {
   height: 96px;
 }
-.stats-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 /* ---------- Chiffres clés ---------- */
 .stats-kpis {

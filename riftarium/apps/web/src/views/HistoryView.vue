@@ -128,14 +128,6 @@ onMounted(load)
 .histo-squelette :deep(.rift-skeleton-block) {
   height: 84px;
 }
-.histo-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .histo-pager {
   display: flex;
   flex-wrap: wrap;
