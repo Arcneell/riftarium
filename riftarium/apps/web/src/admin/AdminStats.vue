@@ -159,7 +159,7 @@ watch(
     </div>
 
     <template v-if="stats">
-      <section v-for="group in groups" :key="group.title" class="console-group">
+      <section v-for="group in groups" :key="group.title">
         <h2 class="console-heading">{{ group.title }}</h2>
         <dl class="console-kpis">
           <div v-for="item in group.items" :key="item.label" class="console-kpi">
@@ -270,11 +270,6 @@ watch(
 .console-stats {
   display: grid;
   gap: var(--space-4);
-}
-/* `section` hérite des marges de main.css : on les neutralise. */
-.console-group {
-  margin: 0;
-  padding: 0;
 }
 .console-kpis {
   display: grid;

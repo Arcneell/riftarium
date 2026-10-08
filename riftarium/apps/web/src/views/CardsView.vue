@@ -198,9 +198,7 @@ onMounted(async () => {
   font-size: clamp(28px, 4vw, 40px);
   font-weight: 700;
   text-transform: uppercase;
-  background: none;
   color: var(--ink);
-  animation: none;
 }
 .cards-head-actions {
   display: flex;

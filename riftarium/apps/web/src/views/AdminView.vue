@@ -51,13 +51,9 @@ watch(tab, (value) => {
   padding-top: var(--space-5);
   padding-bottom: var(--space-6);
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .console-title {
   margin: 0;
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
-  animation: none;
   color: var(--ink);
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 3vw, 2.2rem);

@@ -1,8 +1,6 @@
-/* Feuille commune des graphiques (Column, HBar, StackedBar). Non scopée : le préfixe
-   `graphe-` est réservé et absent de main.css, donc rien n'y fuit ni n'en est hérité.
-   Tout vient des tokens ; les règles propres à un graphique restent dans son composant. */
-/* Graphique rhabillé « Forge noxienne » : tout vient des tokens. Les classes
-   graphe-* évitent les règles héritées de main.css (chart-*, table, th, h3). */
+/* Feuille commune des graphiques (Column, HBar, StackedBar), rhabillée « Forge noxienne ». Non scopée :
+   le préfixe `graphe-` leur est réservé. Tout vient des tokens ; les règles propres à un graphique
+   restent dans son composant. */
 .graphe-figure {
   margin: 0;
 }

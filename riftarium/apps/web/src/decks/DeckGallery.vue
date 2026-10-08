@@ -222,7 +222,7 @@ defineExpose({ grid })
   position: relative;
   display: grid;
 }
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .galerie-card {
   position: relative;
   display: block;

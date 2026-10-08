@@ -198,7 +198,7 @@ function zoom(placed) {
 </template>
 
 <style scoped>
-/* Repris de main.css (« Guide du débutant : table de jeu ») et rhabillé en Forge.
+/* Plateau du guide du débutant (table de jeu), rhabillé en Forge.
    Les positions restent en % : le plateau s'adapte à toute largeur. */
 .plateau {
   position: relative;

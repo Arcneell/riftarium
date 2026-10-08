@@ -186,7 +186,7 @@ describe("CollectionView", () => {
     wrapper.unmount()
   })
 
-  it("la page est un div (pas de section : main.css y poserait 88 px de marge)", async () => {
+  it("la page est un div (racine neutre, pas de section)", async () => {
     const { wrapper } = await mountView()
     expect(wrapper.element.tagName).toBe("DIV")
     expect(wrapper.element.classList.contains("collection-page")).toBe(true)

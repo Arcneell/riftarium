@@ -25,7 +25,7 @@ defineProps({
 
 <style scoped>
 /* Portrait rond de la Forge : liseré bronze de 1 px, repli sombre avec l'initiale
-   en Cinzel. Classes rift-avatar* : `.avatar` (main.css) fuirait ses bordures dorées. */
+   en Cinzel. Classes rift-avatar* propres au composant. */
 .rift-avatar {
   display: inline-grid;
   place-items: center;

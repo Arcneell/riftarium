@@ -651,7 +651,7 @@ onBeforeUnmount(() => {
   gap: var(--space-3);
   margin-top: var(--space-4);
 }
-/* Textarea neutralisé localement : main.css stylise `textarea` globalement. */
+/* Textarea : reprend le champ de la Forge. */
 .atelier-desc {
   width: 100%;
   min-height: 96px;

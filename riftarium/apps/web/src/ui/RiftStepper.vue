@@ -49,7 +49,7 @@ defineEmits(["increment", "decrement"])
 .rift-stepper--sm {
   --stepper-size: 32px;
 }
-/* Les boutons sont neutralisés localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .rift-stepper-btn {
   display: inline-flex;
   align-items: center;

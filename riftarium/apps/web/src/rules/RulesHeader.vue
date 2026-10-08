@@ -81,12 +81,10 @@ defineProps({
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .regles-title {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-family: var(--font-display);
   font-size: clamp(26px, 4vw, 40px);
   font-weight: 700;

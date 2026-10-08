@@ -184,7 +184,7 @@ async function copyDeck() {
   outline: 2px solid var(--bronze-light);
   outline-offset: 2px;
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .lecture-title {
   display: -webkit-box;
   max-width: 100%;
@@ -193,9 +193,7 @@ async function copyDeck() {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-family: var(--font-display);
   font-size: clamp(26px, 4vw, 40px);
   font-weight: 700;

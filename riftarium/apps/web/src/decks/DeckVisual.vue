@@ -28,7 +28,7 @@ const packs = computed(() =>
 <template>
   <div class="lecture-visual">
     <div v-for="pack in packs" :key="pack.key" :class="{ 'lecture-zone-identity': pack.key === 'identity' }">
-      <section v-for="zone in pack.zones" :key="zone.key" class="lecture-zone">
+      <section v-for="zone in pack.zones" :key="zone.key">
         <h2 class="decklist-zone-title">
           {{ zone.label }}
           <small>{{ zone.count }}</small>
@@ -84,11 +84,7 @@ const packs = computed(() =>
   display: grid;
   gap: var(--space-6);
 }
-/* main.css style les section : on neutralise. */
-.lecture-zone {
-  padding: 0;
-}
-/* main.css colore et dimensionne les h2 : tout est posé ici. */
+/* h2 : taille, couleur et marge posées ici. */
 .decklist-zone-title {
   display: flex;
   align-items: baseline;

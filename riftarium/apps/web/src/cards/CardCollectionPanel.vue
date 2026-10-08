@@ -236,7 +236,7 @@ async function toggleWish() {
   color: var(--ink-muted);
   font-size: 14px;
 }
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .panel-pref-change {
   display: inline-flex;
   align-items: center;

@@ -582,16 +582,14 @@ onBeforeUnmount(() => {
 .salon p {
   margin: 0;
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .salon-title {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2) var(--space-4);
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .salon-code {
@@ -793,7 +791,7 @@ a.salon-pseudo:hover {
   max-height: 320px;
   overflow-y: auto;
 }
-/* Bouton de résultat entièrement redéfini : rien ne doit venir de main.css. */
+/* Bouton de résultat entièrement redéfini : rien ne vient du style de base. */
 .salon-legend-option {
   display: flex;
   align-items: center;
@@ -855,7 +853,7 @@ a.salon-pseudo:hover {
   transform: translateY(-70%) rotate(45deg);
   pointer-events: none;
 }
-/* main.css style `select` (fond, arrondi, halo au focus) : on reprend tout. */
+/* Select : fond, arrondi et halo au focus repris ici. */
 .salon-select {
   display: block;
   width: 100%;

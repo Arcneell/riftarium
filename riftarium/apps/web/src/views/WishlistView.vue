@@ -158,12 +158,10 @@ const stats = computed(() => [
   font-size: 0.88rem;
   color: var(--blood-text);
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .souhait-title {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .souhait-grid {
@@ -193,7 +191,7 @@ const stats = computed(() => [
   align-items: center;
   gap: var(--space-1);
 }
-/* main.css donne width:100% et un halo de focus aux input : largeur explicite, halo coupé. */
+/* Champ : largeur explicite, halo de focus coupé. */
 .souhait-qty {
   width: 56px;
   min-height: 36px;

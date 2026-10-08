@@ -379,9 +379,7 @@ function openVariant(id) {
   font-size: clamp(2rem, 4.4vw, 3rem);
   font-weight: 700;
   line-height: 1.1;
-  background: none;
   color: var(--ink);
-  animation: none;
 }
 .fiche-stats {
   display: flex;

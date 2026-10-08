@@ -82,12 +82,7 @@ const format = (n) => n.toLocaleString("fr-FR")
   font-weight: 900;
   line-height: 1.02;
   text-transform: uppercase;
-  /* neutralise la règle globale h1 de main.css (dégradé doré animé en background-clip: text) */
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
   color: var(--ink);
-  animation: none;
 }
 .splash-title em {
   font-style: normal;

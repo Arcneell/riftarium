@@ -69,7 +69,6 @@ watch(() => props.sets, load, { immediate: true })
 .wall {
   position: relative;
   height: 460px;
-  padding: 0; /* la règle globale section de main.css ajoute 88px de marge intérieure */
   overflow: hidden;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);

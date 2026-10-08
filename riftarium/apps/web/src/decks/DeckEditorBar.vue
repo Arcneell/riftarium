@@ -132,7 +132,7 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
   font-size: 15px;
   color: var(--ink-muted);
 }
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .atelier-like {
   min-height: 44px;
   min-width: 44px;

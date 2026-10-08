@@ -74,7 +74,7 @@ onMounted(revealCurrent)
 .officiel-toc-chapter {
   border-bottom: 1px solid var(--line);
 }
-/* Boutons neutralisés localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .officiel-toc-chapter-btn,
 .officiel-toc-section {
   display: flex;

@@ -225,12 +225,10 @@ onMounted(load)
 .stats p {
   margin: 0;
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .stats-title {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .stats-error {
@@ -287,7 +285,7 @@ onMounted(load)
   gap: var(--space-4);
 }
 
-/* ---------- Tableaux (neutralise les règles table / th / td de main.css) ---------- */
+/* ---------- Tableaux (table, th et td : habillage posé ici) ---------- */
 .stats-scroll {
   overflow-x: auto;
 }

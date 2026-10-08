@@ -115,7 +115,7 @@ const selectedType = ref(props.block.type === "types" ? (props.block.items[0]?.k
 </template>
 
 <style scoped>
-/* main.css style h2, h3, table, th : tout est neutralisé ici. */
+/* h2, h3, table et th : tout est posé ici. */
 .lecon-h {
   margin: var(--space-6) 0 var(--space-3);
   padding: 0;

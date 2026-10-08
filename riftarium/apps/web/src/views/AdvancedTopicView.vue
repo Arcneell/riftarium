@@ -210,7 +210,7 @@ const zoomCard = ref(null)
   position: sticky;
   top: calc(var(--topbar-h) + var(--space-4));
 }
-/* main.css style `h2` : on neutralise localement. */
+/* `h2` : neutralise le style de base. */
 .sujet-part {
   margin: var(--space-6) 0 var(--space-3);
   padding: 0;

@@ -68,7 +68,7 @@ const art = pickSplash()
   text-transform: uppercase;
   color: var(--blood-text);
 }
-/* neutralise la règle globale h1 de main.css (dégradé doré animé) */
+/* Titre de page : neutralise le style de base des h1 (taille, interlettrage). */
 .acces-titre {
   letter-spacing: normal;
   margin: 0;
@@ -77,11 +77,7 @@ const art = pickSplash()
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
   color: var(--ink);
-  animation: none;
 }
 /* Éléments communs du contenu des pages d'accès (posés par les vues dans le slot). */
 .acces-page :deep(.acces-form) {

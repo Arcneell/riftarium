@@ -207,15 +207,13 @@ onMounted(async () => {
 .communaute-head {
   grid-area: head;
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .communaute-title {
   margin: 0;
   font-size: clamp(28px, 4vw, 40px);
   font-weight: 700;
   text-transform: uppercase;
-  background: none;
   color: var(--ink);
-  animation: none;
 }
 .communaute-bar {
   display: flex;
