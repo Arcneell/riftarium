@@ -97,7 +97,7 @@ const total = computed(() => props.groups.reduce((sum, group) => sum + group.tot
 .profil-famille + .profil-famille {
   margin-top: var(--space-5);
 }
-/* h3 neutralisé : main.css le passe en or et en Cinzel. */
+/* h3 : encre et police posées ici (le style de base le passe en bronze). */
 .profil-famille-titre {
   margin: 0 0 var(--space-3);
   font-family: var(--font-label);

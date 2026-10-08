@@ -1,8 +1,10 @@
 <script setup>
 import { onBeforeUnmount, ref } from "vue"
 import { api, session } from "../api.js"
+import RiftButton from "../ui/RiftButton.vue"
+import ShellBandeau from "./ShellBandeau.vue"
 
-/* Bandeau discret affiché sous l'en-tête quand la session est active mais l'adresse e-mail non vérifiée. */
+/* Bandeau en haut du contenu quand la session est active mais l'adresse e-mail non vérifiée. */
 
 /* Délai laissé au lecteur pour voir « déjà vérifiée » avant que le bandeau s'efface. */
 const ALREADY_VERIFIED_DELAY_MS = 2500
@@ -40,14 +42,32 @@ async function resend() {
 </script>
 
 <template>
-  <div v-if="session.token && session.emailVerified === false" class="verify-notice" role="status">
+  <ShellBandeau
+    v-if="session.token && session.emailVerified === false"
+    tone="action"
+    class="bandeau-verif"
+    role="status"
+  >
     <p>
-      <strong>Adresse e-mail non vérifiée.</strong>
+      <strong class="bandeau-verif-titre">Adresse e-mail non vérifiée.</strong>
       <template v-if="info">{{ info }}</template>
-      <span v-if="error" class="error">{{ error }}</span>
+      <span v-if="error" class="bandeau-erreur" role="alert">{{ error }}</span>
     </p>
-    <button class="btn btn-ghost btn-sm" type="button" :disabled="sending" @click="resend">
-      {{ sending ? "Envoi…" : "Renvoyer l'e-mail" }}
-    </button>
-  </div>
+    <template #actions>
+      <RiftButton variant="secondary" size="sm" class="bandeau-verif-renvoi" :disabled="sending" @click="resend">
+        {{ sending ? "Envoi…" : "Renvoyer l'e-mail" }}
+      </RiftButton>
+    </template>
+  </ShellBandeau>
 </template>
+
+<style scoped>
+.bandeau-verif-titre {
+  margin-right: var(--space-1);
+  font-weight: 600;
+}
+.bandeau-erreur {
+  margin-left: var(--space-1);
+  color: var(--blood-text);
+}
+</style>

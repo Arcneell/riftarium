@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import AdminGateView from "./AdminGateView.vue"
+import NotFoundView from "./NotFoundView.vue"
 import { api, session } from "../api.js"
 import { router as appRouter } from "../router.js"
 
@@ -22,7 +23,7 @@ async function mountGate() {
   router.push("/admin")
   await router.isReady()
   const wrapper = mount(AdminGateView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   /* Laisse l'import dynamique de la console se résoudre le cas échéant. */
   await vi.dynamicImportSettled()
@@ -43,8 +44,24 @@ describe("AdminGateView (/admin masqué)", () => {
     const wrapper = await mountGate()
     expect(wrapper.text()).toContain("404")
     expect(wrapper.text()).toContain("Page introuvable")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(false)
+    expect(wrapper.find("[role=tablist]").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("la porte admin rend la 404 à l'identique", async () => {
+    const wrapper = await mountGate()
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        { path: "/admin", component: { template: "<div />" } }
+      ]
+    })
+    router.push("/admin")
+    await router.isReady()
+    const notFound = mount(NotFoundView, { global: { plugins: [router] } })
+    expect(wrapper.get(".perdu-page").html()).toBe(notFound.html())
     wrapper.unmount()
   })
 
@@ -65,7 +82,7 @@ describe("AdminGateView (/admin masqué)", () => {
     session.isAdmin = null
     const wrapper = await mountGate()
     expect(wrapper.text()).not.toContain("404")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(false)
+    expect(wrapper.find("[role=tablist]").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
     wrapper.unmount()
   })
@@ -97,8 +114,8 @@ describe("AdminGateView (/admin masqué)", () => {
     })
     const wrapper = await mountGate()
     await flushPromises()
-    expect(wrapper.text()).toContain("Console d'administration")
-    expect(wrapper.find(".admin-tabs").exists()).toBe(true)
+    expect(wrapper.get("h1").text()).toBe("Administration")
+    expect(wrapper.find("[role=tablist]").exists()).toBe(true)
     wrapper.unmount()
   })
 

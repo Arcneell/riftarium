@@ -50,7 +50,7 @@ const open = ref(false)
   letter-spacing: 0.08em;
   color: var(--ink-muted);
 }
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .quick-pref {
   min-height: 0;
   padding: 0;

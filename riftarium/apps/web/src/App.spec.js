@@ -1,4 +1,6 @@
 import { mount } from "@vue/test-utils"
+import fs from "node:fs"
+import path from "node:path"
 import { nextTick } from "vue"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import App from "./App.vue"
@@ -17,6 +19,13 @@ function stubWidth(px) {
     removeEventListener() {}
   })
 }
+
+/* Chemins relatifs à la racine vitest (import.meta.url est une URL http sous jsdom). */
+const walk = (dir) =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name)
+    return entry.isDirectory() ? walk(full) : [full]
+  })
 
 const original = window.matchMedia
 async function mountApp(path = "/", px = 1440) {
@@ -134,6 +143,47 @@ describe("App (coquille)", () => {
     await nextTick()
     expect(document.querySelector(".palette")).toBeNull()
     wrapper.unmount()
+  })
+
+  it("avis hors ligne : role=status, en haut du contenu, effacé à la navigation suivante", async () => {
+    const wrapper = await mountApp("/")
+    expect(wrapper.find(".bandeau-horsligne").exists()).toBe(false)
+    window.dispatchEvent(new Event("riftarium:offline-page"))
+    await nextTick()
+    const notice = wrapper.get(".bandeau-horsligne")
+    expect(notice.attributes("role")).toBe("status")
+    expect(notice.classes()).toContain("bandeau-cadre--info")
+    expect(notice.text()).toContain("Hors ligne : cette page n'est pas disponible sans connexion.")
+    /* Bandeaux globaux au-dessus du contenu de la page, pas dedans. */
+    expect(wrapper.get(".shell-main").element.contains(notice.element)).toBe(true)
+    expect(wrapper.get("#contenu").element.contains(notice.element)).toBe(false)
+    await wrapper.vm.$router.push("/cartes")
+    await nextTick()
+    expect(wrapper.find(".bandeau-horsligne").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("bandeau des traceurs : en haut du contenu, avant la page", async () => {
+    const wrapper = await mountApp("/")
+    const notice = wrapper.get(".bandeau-traceurs")
+    expect(wrapper.get(".shell-main").element.contains(notice.element)).toBe(true)
+    expect(wrapper.get("#contenu").element.contains(notice.element)).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("App : aucune directive v-reveal / v-tilt enregistrée", async () => {
+    const wrapper = await mountApp("/")
+    const directives = wrapper.vm.$.appContext.directives
+    expect(directives.reveal).toBeUndefined()
+    expect(directives.tilt).toBeUndefined()
+    wrapper.unmount()
+    /* L'application réelle (main.js) n'en déclare plus, et aucun gabarit ne s'en sert. */
+    const main = fs.readFileSync("src/main.js", "utf8")
+    expect(main).not.toMatch(/\.directive\(/)
+    const offenders = walk("src")
+      .filter((file) => file.endsWith(".vue"))
+      .filter((file) => /\sv-(reveal|tilt)\b/.test(fs.readFileSync(file, "utf8")))
+    expect(offenders).toEqual([])
   })
 
   it("« / » ouvre la palette, sauf pendant une saisie", async () => {

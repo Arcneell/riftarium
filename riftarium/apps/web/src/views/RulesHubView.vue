@@ -196,7 +196,7 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-/* main.css style les h2 : on neutralise. */
+/* `h2` : neutralise le style de base. */
 .portail h2 {
   margin: 0;
   padding: 0;

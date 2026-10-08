@@ -1,0 +1,38 @@
+/* ============================================================
+   Riftarium — mise en page commune « Forge noxienne »
+   Conteneurs de page partagés par toutes les vues, état global
+   de glisser-déposer, pictogrammes. Valeurs reprises telles
+   quelles de l'ancienne feuille globale : les pages refaites
+   s'appuient dessus.
+   ============================================================ */
+
+/* Conteneur de page : largeur de lecture et gouttières. */
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+/* Pages de cartes et d'outils : presque toute la largeur disponible. */
+.cards-wrap {
+  max-width: min(1680px, calc(100% - 16px));
+}
+@media (max-width: 560px) {
+  .wrap {
+    padding: 0 var(--space-4);
+  }
+}
+
+/* Pendant un glisser-déposer du deck (useDeckDrag) : curseur de saisie partout. */
+body.drag-active {
+  cursor: grabbing;
+  user-select: none;
+}
+body.drag-active * {
+  cursor: grabbing !important;
+}
+
+/* Pictogramme (composant global Icon) : bloc qui ne se tasse pas dans une rangée flex. */
+.icon {
+  display: block;
+  flex: none;
+}

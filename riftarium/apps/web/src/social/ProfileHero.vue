@@ -64,15 +64,13 @@ const mentions = computed(() => props.meta.filter(Boolean))
   gap: var(--space-2);
   min-width: 0;
 }
-/* main.css colore, anime et dimensionne les h1 : on neutralise. */
+/* Titre : neutralise le style de base des h1 (taille posée ici). */
 .profil-hero-pseudo {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-family: var(--font-display);
   font-size: clamp(26px, 4vw, 38px);
   font-weight: 700;

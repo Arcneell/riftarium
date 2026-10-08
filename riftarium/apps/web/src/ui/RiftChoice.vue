@@ -62,7 +62,7 @@ function onKey(event, index) {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* Boutons neutralisés localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .rift-choice-opt {
   min-height: 44px;
   min-width: 44px;

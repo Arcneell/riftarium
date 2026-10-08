@@ -85,7 +85,7 @@ const stats = computed(() => [
 
     <CollectionStats :items="stats" />
 
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <p v-if="error" class="souhait-erreur" role="alert">{{ error }}</p>
 
     <div v-if="loading" class="souhait-grid">
       <RiftSkeleton v-for="n in 6" :key="n" block />
@@ -153,12 +153,15 @@ const stats = computed(() => [
   padding-top: var(--space-5);
   padding-bottom: var(--space-6);
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+.souhait-erreur {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--blood-text);
+}
+/* Titre de page : neutralise le style de base des h1. */
 .souhait-title {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .souhait-grid {
@@ -188,7 +191,7 @@ const stats = computed(() => [
   align-items: center;
   gap: var(--space-1);
 }
-/* main.css donne width:100% et un halo de focus aux input : largeur explicite, halo coupé. */
+/* Champ : largeur explicite, halo de focus coupé. */
 .souhait-qty {
   width: 56px;
   min-height: 36px;

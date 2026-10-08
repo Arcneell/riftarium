@@ -132,7 +132,7 @@ describe("CollectionInventory", () => {
     const tile = wrapper.get(".rift-tile")
     await tile.trigger("mouseenter")
     await new Promise((resolve) => setTimeout(resolve, 600))
-    expect(document.body.querySelector(".card-preview")).toBeNull()
+    expect(document.body.querySelector(".apercu-bulle")).toBeNull()
     expect(tile.attributes("href")).toBe("/cartes/card-1")
     wrapper.unmount()
   })

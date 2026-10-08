@@ -246,7 +246,7 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
   text-transform: uppercase;
   color: var(--bronze-light);
 }
-/* h3 neutralisé localement : main.css le style globalement. */
+/* h3 : couleur et taille posées ici. */
 .decklist-hero-name {
   margin: 0;
   font-family: var(--font-display);
@@ -265,7 +265,7 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
 .decklist-hero-runes img {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
-/* Bouton neutralisé localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .decklist-hero-remove {
   position: absolute;
   top: var(--space-2);
@@ -528,7 +528,7 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
   opacity: 1;
   pointer-events: auto;
 }
-/* Boutons neutralisés localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .decklist-actions button {
   display: grid;
   place-items: center;

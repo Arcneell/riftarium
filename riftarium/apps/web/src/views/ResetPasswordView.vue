@@ -2,8 +2,9 @@
 import { onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api } from "../api.js"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
+import AccessLayout from "../account/AccessLayout.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftField from "../ui/RiftField.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +40,8 @@ async function submit() {
       method: "POST",
       body: { token: token.value, new_password: password.value }
     })
+    password.value = ""
+    confirm.value = ""
     done.value = true
   } catch (e) {
     /* 400 : jeton invalide ou expiré — on propose d'en redemander un. */
@@ -51,55 +54,51 @@ async function submit() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" title="Nouveau mot de passe" show-title />
-
-  <section>
-    <div class="wrap" style="max-width: 480px">
-      <div v-if="!token" class="panel">
-        <p class="error" style="margin-top: 0">
-          Ce lien de réinitialisation est incomplet : le jeton est manquant. Ouvrez le lien reçu par e-mail, ou
-          demandez-en un nouveau.
-        </p>
-        <RouterLink class="btn btn-gold" to="/mot-de-passe-oublie">Demander un nouveau lien</RouterLink>
+  <AccessLayout title="Nouveau mot de passe">
+    <template v-if="!token">
+      <p class="acces-erreur" role="alert">
+        Ce lien de réinitialisation est incomplet : le jeton est manquant. Ouvrez le lien reçu par e-mail, ou
+        demandez-en un nouveau.
+      </p>
+      <div class="acces-actions">
+        <RiftButton to="/mot-de-passe-oublie">Demander un nouveau lien</RiftButton>
       </div>
+    </template>
 
-      <div v-else-if="done" class="panel">
-        <p class="success" style="margin-top: 0; margin-bottom: 20px">Mot de passe mis à jour, reconnectez-vous.</p>
-        <RouterLink class="btn btn-gold" to="/connexion">Se connecter</RouterLink>
+    <template v-else-if="done">
+      <p class="acces-succes" role="status">Mot de passe mis à jour, reconnectez-vous.</p>
+      <div class="acces-actions">
+        <RiftButton to="/connexion">Se connecter</RiftButton>
       </div>
+    </template>
 
-      <form v-else class="panel" @submit.prevent="submit">
-        <div class="field">
-          <label for="reset-password">Nouveau mot de passe</label>
-          <input
-            id="reset-password"
-            type="password"
-            v-model="password"
-            minlength="8"
-            autocomplete="new-password"
-            required
-            placeholder="8 caractères minimum"
-          />
-        </div>
-        <div class="field">
-          <label for="reset-confirm">Confirmation</label>
-          <input
-            id="reset-confirm"
-            type="password"
-            v-model="confirm"
-            minlength="8"
-            autocomplete="new-password"
-            required
-          />
-        </div>
-        <button class="btn btn-gold" type="submit" style="width: 100%" :disabled="submitting">
-          {{ submitting ? "Un instant…" : "Changer le mot de passe" }}
-        </button>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="tokenRejected" class="muted" style="margin-top: 12px">
-          <RouterLink to="/mot-de-passe-oublie">Demander un nouveau lien</RouterLink>
-        </p>
-      </form>
-    </div>
-  </section>
+    <form v-else class="acces-form" @submit.prevent="submit">
+      <RiftField
+        v-model="password"
+        label="Nouveau mot de passe"
+        type="password"
+        name="password"
+        minlength="8"
+        autocomplete="new-password"
+        placeholder="8 caractères minimum"
+        required
+      />
+      <RiftField
+        v-model="confirm"
+        label="Confirmation"
+        type="password"
+        name="confirm"
+        minlength="8"
+        autocomplete="new-password"
+        required
+      />
+      <RiftButton type="submit" block :disabled="submitting">
+        {{ submitting ? "Un instant…" : "Changer le mot de passe" }}
+      </RiftButton>
+      <p v-if="error" class="acces-erreur" role="alert">{{ error }}</p>
+      <p v-if="tokenRejected" class="acces-note">
+        <RouterLink class="acces-lien" to="/mot-de-passe-oublie">Demander un nouveau lien</RouterLink>
+      </p>
+    </form>
+  </AccessLayout>
 </template>

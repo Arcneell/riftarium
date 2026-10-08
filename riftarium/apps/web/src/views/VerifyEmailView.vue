@@ -2,8 +2,8 @@
 import { onBeforeUnmount, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session } from "../api.js"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
+import AccessLayout from "../account/AccessLayout.vue"
+import RiftButton from "../ui/RiftButton.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -67,35 +67,33 @@ async function resend() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" title="Vérification de l'adresse e-mail" show-title />
+  <AccessLayout title="Vérification de l'adresse e-mail">
+    <p v-if="state === 'loading'" class="acces-note" role="status">Vérification en cours…</p>
 
-  <section>
-    <div class="wrap" style="max-width: 480px">
-      <p v-if="state === 'loading'" class="muted">Vérification en cours…</p>
-
-      <div v-else-if="state === 'ok'" class="panel">
-        <p class="success" style="margin-top: 0; margin-bottom: 20px">
-          Adresse vérifiée ! Votre compte est maintenant confirmé.
-        </p>
-        <RouterLink class="btn btn-gold" to="/" style="margin-right: 10px">Retour à l'accueil</RouterLink>
-        <RouterLink v-if="!session.token" class="btn" to="/connexion">Se connecter</RouterLink>
+    <template v-else-if="state === 'ok'">
+      <p class="acces-succes" role="status">Adresse vérifiée ! Votre compte est maintenant confirmé.</p>
+      <div class="acces-actions">
+        <RiftButton to="/">Retour à l'accueil</RiftButton>
+        <RiftButton v-if="!session.token" to="/connexion" variant="secondary">Se connecter</RiftButton>
       </div>
+    </template>
 
-      <div v-else class="panel">
-        <p class="error" style="margin-top: 0">{{ error }}</p>
-        <template v-if="session.token">
-          <p class="muted" style="margin-bottom: 16px">Vous pouvez demander un nouvel e-mail de vérification.</p>
-          <button class="btn btn-gold" type="button" :disabled="resending" @click="resend">
-            {{ resending ? "Envoi…" : "Renvoyer l'e-mail" }}
-          </button>
-          <p v-if="resendOk" class="success">{{ resendOk }}</p>
-          <p v-if="resendError" class="error">{{ resendError }}</p>
-        </template>
-        <p v-else class="muted" style="margin-top: 12px">
-          <RouterLink to="/connexion">Connectez-vous</RouterLink>
-          pour demander un nouvel e-mail de vérification.
-        </p>
-      </div>
-    </div>
-  </section>
+    <template v-else>
+      <p class="acces-erreur" role="alert">{{ error }}</p>
+      <template v-if="session.token">
+        <p class="acces-note">Vous pouvez demander un nouvel e-mail de vérification.</p>
+        <div class="acces-actions">
+          <RiftButton :disabled="resending" @click="resend">{{
+            resending ? "Envoi…" : "Renvoyer l'e-mail"
+          }}</RiftButton>
+        </div>
+        <p v-if="resendOk" class="acces-succes" role="status">{{ resendOk }}</p>
+        <p v-if="resendError" class="acces-erreur" role="alert">{{ resendError }}</p>
+      </template>
+      <p v-else class="acces-note">
+        <RouterLink class="acces-lien" to="/connexion">Connectez-vous</RouterLink>
+        pour demander un nouvel e-mail de vérification.
+      </p>
+    </template>
+  </AccessLayout>
 </template>

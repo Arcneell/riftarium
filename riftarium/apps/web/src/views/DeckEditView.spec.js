@@ -161,7 +161,7 @@ async function mountView() {
   router.push("/decks/1")
   await router.isReady()
   const wrapper = mount(DeckEditView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()
@@ -436,7 +436,7 @@ describe("DeckEditView", () => {
     let preview = document.body.querySelector(".atelier-preview.atelier-preview--large img")
     expect(preview).not.toBeNull()
     expect(preview.getAttribute("src")).toContain("cdn.example")
-    /* Téléporté dans le body, sans les anciennes classes de main.css. */
+    /* Téléporté dans le body, hors des classes de la page. */
     expect(preview.closest(".atelier-preview").parentElement).toBe(document.body)
     expect(document.body.querySelector(".builder-preview")).toBeNull()
 

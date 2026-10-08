@@ -151,7 +151,7 @@ function openVariant(id) {
           </div>
 
           <RiftPanel v-if="card.text" title="Capacité">
-            <RiftText tag="p" class="card-text" :text="card.text" />
+            <RiftText tag="p" class="fiche-texte" :text="card.text" />
           </RiftPanel>
 
           <p v-if="card.flavour" class="fiche-flavour">« {{ card.flavour }} »</p>
@@ -372,21 +372,23 @@ function openVariant(id) {
   text-transform: uppercase;
   color: var(--ink-muted);
 }
-/* Neutralise le h1 doré animé hérité de l'ancien style global. */
+/* Titre de la fiche : Cinzel 700, plus grand que le style de base des h1. */
 .fiche-title {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(2rem, 4.4vw, 3rem);
   font-weight: 700;
   line-height: 1.1;
-  background: none;
   color: var(--ink);
-  animation: none;
 }
 .fiche-stats {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+/* Texte de jeu : interligne aéré, les glyphes et pastilles débordent de la ligne. */
+.fiche-texte {
+  line-height: 1.75;
 }
 .fiche-flavour {
   margin: 0;

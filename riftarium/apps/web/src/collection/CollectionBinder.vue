@@ -134,7 +134,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
           @click="selectSet(row.set_id)"
         >
           <span class="classeur-tab-top">
-            <span class="classeur-tab-name">{{ row.name }}</span>
+            <span>{{ row.name }}</span>
             <span v-if="!row.missing" class="classeur-tab-pct">
               <span aria-hidden="true">✓</span><span class="sr-only"> set complet</span>
             </span>

@@ -105,9 +105,8 @@ const grouped = computed(() =>
 .aide-search {
   max-width: 420px;
 }
-/* main.css style `section` et `h2` : on neutralise localement. */
+/* Section d'aide : espacement vertical. */
 .aide-section {
-  padding: 0;
   margin-bottom: var(--space-6);
 }
 .aide-heading {
@@ -117,7 +116,6 @@ const grouped = computed(() =>
   margin: 0 0 var(--space-3);
   padding: 0 0 var(--space-2);
   border-bottom: 1px solid var(--line);
-  background: none;
   color: var(--bronze-light);
   font-family: var(--font-display);
   font-size: 18px;

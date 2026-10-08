@@ -372,7 +372,7 @@ function onTextClick(event) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-/* main.css style `h2` : on neutralise localement. */
+/* `h2` : neutralise le style de base. */
 .officiel-title {
   margin: var(--space-2) 0 var(--space-1);
   padding: 0;

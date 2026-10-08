@@ -67,6 +67,12 @@ function onClick() {
   border-color: var(--chip-color);
   background: color-mix(in srgb, var(--bg-sunken), var(--chip-color) 10%);
 }
+/* Écran tactile : la puce bouton reste une cible de 44 px (les puces statiques, des span, restent compactes). */
+@media (hover: none) {
+  button.rift-chip {
+    min-height: 44px;
+  }
+}
 .rift-chip-x {
   margin-left: var(--space-1);
   font-size: 11px;

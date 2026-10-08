@@ -253,12 +253,10 @@ onMounted(load)
   align-items: baseline;
   gap: var(--space-2) var(--space-4);
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .mesdecks-title {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .mesdecks-count {
@@ -320,7 +318,7 @@ onMounted(load)
   text-transform: uppercase;
   color: var(--ink-muted);
 }
-/* main.css style `textarea` globalement : on reprend le champ de la Forge. */
+/* Textarea : reprend le champ de la Forge. */
 .mesdecks-textarea {
   min-height: 96px;
   padding: var(--space-2) var(--space-3);

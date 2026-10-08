@@ -43,13 +43,28 @@ body.nav-locked {
   overscroll-behavior: none;
 }
 
+/* Titres : valeurs reprises de l'ancienne feuille globale, qui les imposait jusqu'ici
+   à toutes les pages (graisse, interlettrage, tailles). Les pages refaites ne posent
+   souvent que ce qui change : ces valeurs restent donc celles qu'elles affichent. */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 700;
-  line-height: 1.15;
+  font-weight: 400;
+  line-height: 1.16;
+  letter-spacing: 0.02em;
   color: var(--ink);
+}
+h1 {
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+}
+h2 {
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  margin-bottom: 18px;
+}
+h3 {
+  font-size: 1.15rem;
+  color: var(--bronze-light);
 }
 
 ::selection {
@@ -94,6 +109,69 @@ button:disabled {
 :focus-visible {
   outline: 2px solid var(--bronze-light);
   outline-offset: 3px;
+}
+
+/* Champs de saisie : fond creusé, filet discret, focus bronze clair. Les composants
+   (RiftField…) et les pages les rhabillent ; ceci est le plancher commun. */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--bronze-light);
+}
+/* Focus clavier visible : l'anneau bronze revient, rentrant pour ne pas déborder.
+   Sélecteur plus spécifique que `outline: none` ci-dessus. */
+input:is([type="text"], [type="search"], [type="email"], [type="password"], [type="number"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-muted);
+}
+textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+/* Zoom iOS : tout champ sous 16 px fait grossir la page au premier tap, sans retour. */
+@media (max-width: 760px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Tableaux : cellules alignées à gauche, filets fusionnés ; l'habillage est local. */
+table {
+  border-collapse: collapse;
+}
+th,
+td {
+  text-align: left;
+  vertical-align: middle;
 }
 
 .sr-only {

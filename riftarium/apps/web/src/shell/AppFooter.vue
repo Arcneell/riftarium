@@ -31,7 +31,7 @@ import {
         >
         <a v-if="SHOW_DONATIONS" href="https://ko-fi.com/arcneell" target="_blank" rel="noopener">Soutenir</a>
       </nav>
-      <p class="footer-contact">
+      <p>
         <a :href="CONTACT_MAILTO">{{ CONTACT_EMAIL }}</a>
         <span v-if="CLOSED_BETA"> · bêta fermée, accès sur invitation</span>
       </p>

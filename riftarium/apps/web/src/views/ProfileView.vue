@@ -342,12 +342,10 @@ onMounted(() => {
   padding-top: var(--space-5);
   padding-bottom: var(--space-6);
 }
-/* main.css colore et anime les h1 : on neutralise pour la page. */
+/* Titre de page : neutralise le style de base des h1. */
 .profil-titre {
   margin: 0;
-  background: none;
   color: var(--ink);
-  animation: none;
   font-weight: 700;
 }
 .profil-erreur {

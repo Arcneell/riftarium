@@ -1,17 +1,3 @@
-import { vi } from "vitest"
-
-class IntersectionObserverMock {
-  constructor(callback) {
-    this.callback = callback
-    this.observe = vi.fn()
-    this.unobserve = vi.fn()
-    this.disconnect = vi.fn()
-    IntersectionObserverMock.instances.push(this)
-  }
-}
-IntersectionObserverMock.instances = []
-globalThis.IntersectionObserver = IntersectionObserverMock
-
 if (!window.matchMedia) {
   window.matchMedia = (query) => ({
     matches: false,
@@ -25,8 +11,6 @@ if (!window.matchMedia) {
     }
   })
 }
-
-globalThis.__io = IntersectionObserverMock
 
 // Node 26 définit un accesseur natif globalThis.localStorage qui renvoie
 // undefined tant que --localstorage-file n'est pas fourni. Comme il est déjà

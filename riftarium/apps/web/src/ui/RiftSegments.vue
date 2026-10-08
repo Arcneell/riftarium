@@ -72,7 +72,7 @@ function onKey(event, index) {
   background: var(--bg-raised);
   border-bottom: 1px solid var(--line);
 }
-/* Boutons neutralisés localement : main.css stylise `button` globalement. */
+/* Bouton redéfini ici : fond, filet et curseur ne viennent pas du style de base. */
 .rift-segments-tab {
   flex: 1 1 0;
   display: inline-flex;

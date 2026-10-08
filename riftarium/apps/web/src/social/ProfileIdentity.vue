@@ -166,7 +166,7 @@ async function submit() {
   text-transform: uppercase;
   color: var(--ink-muted);
 }
-/* Neutralise la règle textarea de main.css (fond, arrondi, halo au focus). */
+/* Textarea : reprend le champ de la Forge (fond, arrondi, halo au focus). */
 .compte-bio-input {
   width: 100%;
   min-height: 96px;

@@ -22,7 +22,7 @@ async function mountView(path = "/verification-email?token=jeton-mail") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(VerifyEmailView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }
@@ -88,13 +88,13 @@ describe("VerifyEmailView", () => {
   it("sans jeton dans l'adresse : erreur immédiate, aucun appel à l'API", async () => {
     const { wrapper } = await mountView("/verification-email")
     expect(api).not.toHaveBeenCalled()
-    expect(wrapper.get(".error").text()).toContain("jeton est manquant")
+    expect(wrapper.get("[role=alert]").text()).toContain("jeton est manquant")
   })
 
   it("jeton expiré (400), visiteur déconnecté : message et invitation à se connecter", async () => {
     api.mockRejectedValue(new ApiError(400, "Jeton invalide ou expiré"))
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toContain("invalide ou a expiré")
+    expect(wrapper.get("[role=alert]").text()).toContain("invalide ou a expiré")
     const login = wrapper.findAll("a").find((a) => a.attributes("href") === "/connexion")
     expect(login).toBeTruthy()
     expect(wrapper.find("button").exists()).toBe(false)
@@ -109,7 +109,7 @@ describe("VerifyEmailView", () => {
     await wrapper.get("button").trigger("click")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/auth/resend-verification", { method: "POST" })
-    expect(wrapper.get(".success").text()).toContain("vient d'être envoyé")
+    expect(wrapper.get("[role=status]").text()).toContain("vient d'être envoyé")
   })
 
   it("renvoi limité (429) : message dédié sans casser la page", async () => {

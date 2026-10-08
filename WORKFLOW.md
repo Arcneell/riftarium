@@ -211,16 +211,18 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   officiels), `google_mlkit_text_recognition` + `camera`, `share_plus`,
   `url_launcher`, `path_provider`. Chaque ajout de plugin natif = `flutter build
   apk --debug` avant push.
-- **Rendu** : la charte du site (`apps/web/src/assets/main.css`) transposée dans
-  `lib/app/design/` (tokens, typographie Cinzel / Outfit / IBM Plex Mono
-  embarquées, thème unique « nuit de Piltover », bannières, reflet foil,
-  révélations en cascade, squelettes, boutons or, puces de domaine). **Lire
-  `lib/app/design/README.md` avant tout écran.** iOS garde ses gestes et
-  transitions ; l'habillage est celui de la marque sur les deux plateformes.
-- **Charte à venir** : le site est passé à la charte « Forge noxienne » (noir, rouge
-  sang, bronze ; Cinzel + Barlow ; rail latéral). `lib/app/design/` devra la reprendre
-  dans un chantier dédié ; référence : `apps/web/README.md` et la spec
-  `docs/superpowers/specs/2026-10-06-refonte-forge-noxienne-design.md`.
+- **Rendu** : `lib/app/design/` transpose l'ancienne charte du site (tokens,
+  typographie Cinzel / Outfit / IBM Plex Mono embarquées, thème unique « nuit de
+  Piltover », bannières, reflet foil, révélations en cascade, squelettes, boutons
+  or, puces de domaine). **Lire `lib/app/design/README.md` avant tout écran.** iOS
+  garde ses gestes et transitions ; l'habillage est celui de la marque sur les deux
+  plateformes.
+- **Charte à venir** : le site est entièrement passé à la charte « Forge noxienne »
+  (noir, rouge sang, bronze ; Cinzel + Barlow ; rail latéral). `lib/app/design/`
+  devra la reprendre dans un chantier dédié. Charte de référence :
+  `apps/web/src/styles/tokens.css` (couleurs, polices, espacements, dimensions) et
+  la spec `docs/superpowers/specs/2026-10-06-refonte-forge-noxienne-design.md` ;
+  règles d'usage et composants dans `apps/web/README.md`.
 - **Images** : jamais d'URL de carte brute. `CardImage` redimensionne via le CDN
   (`w=`), met en cache 30 jours (`riftImageCache`) et `precacheCardThumbs`
   précharge la page suivante d'une grille.

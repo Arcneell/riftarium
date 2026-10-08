@@ -22,7 +22,7 @@ async function mountView(path = "/reinitialisation?token=jeton-mail") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(ResetPasswordView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }
@@ -43,7 +43,8 @@ describe("ResetPasswordView", () => {
   it("sans jeton dans l'adresse : message d'erreur et lien pour redemander un e-mail", async () => {
     const { wrapper } = await mountView("/reinitialisation")
     expect(wrapper.find("form").exists()).toBe(false)
-    expect(wrapper.get(".error").text()).toContain("jeton est manquant")
+    expect(wrapper.get("[role=alert]").text()).toContain("jeton est manquant")
+    expect(wrapper.get("[role=alert]").text()).toContain("lien")
     const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
     expect(link).toBeTruthy()
     expect(api).not.toHaveBeenCalled()
@@ -53,8 +54,8 @@ describe("ResetPasswordView", () => {
     const { wrapper, router } = await mountView()
     expect(router.currentRoute.value.query.token).toBeUndefined()
     expect(wrapper.find("form").exists()).toBe(true)
-    await wrapper.get("#reset-password").setValue("nouveausecret")
-    await wrapper.get("#reset-confirm").setValue("nouveausecret")
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/auth/reset-password", {
@@ -65,18 +66,18 @@ describe("ResetPasswordView", () => {
 
   it("refuse un nouveau mot de passe non confirmé, sans appeler l'API", async () => {
     const { wrapper } = await mountView()
-    await wrapper.get("#reset-password").setValue("nouveausecret")
-    await wrapper.get("#reset-confirm").setValue("autrechose")
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("autrechose")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("Les mots de passe ne correspondent pas")
+    expect(wrapper.get("[role=alert]").text()).toContain("Les mots de passe ne correspondent pas")
     expect(api).not.toHaveBeenCalled()
   })
 
   it("envoie le jeton et le nouveau mot de passe puis invite à se reconnecter", async () => {
     const { wrapper } = await mountView()
-    await wrapper.get("#reset-password").setValue("nouveausecret")
-    await wrapper.get("#reset-confirm").setValue("nouveausecret")
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/auth/reset-password", {
@@ -91,11 +92,11 @@ describe("ResetPasswordView", () => {
   it("jeton expiré (400) : message clair et lien pour redemander un e-mail", async () => {
     api.mockRejectedValue(new ApiError(400, "Jeton invalide ou expiré"))
     const { wrapper } = await mountView()
-    await wrapper.get("#reset-password").setValue("nouveausecret")
-    await wrapper.get("#reset-confirm").setValue("nouveausecret")
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("invalide ou a expiré")
+    expect(wrapper.get("[role=alert]").text()).toContain("invalide ou a expiré")
     const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
     expect(link).toBeTruthy()
   })
@@ -103,11 +104,27 @@ describe("ResetPasswordView", () => {
   it("affiche les autres erreurs de l'API telles quelles", async () => {
     api.mockRejectedValue(new ApiError(422, "Mot de passe trop court"))
     const { wrapper } = await mountView()
-    await wrapper.get("#reset-password").setValue("nouveausecret")
-    await wrapper.get("#reset-confirm").setValue("nouveausecret")
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("Mot de passe trop court")
+    expect(wrapper.get("[role=alert]").text()).toContain("Mot de passe trop court")
     expect(wrapper.findAll("a").some((a) => a.attributes("href") === "/mot-de-passe-oublie")).toBe(false)
+  })
+
+  it("autocomplete : new-password sur les deux champs", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.get("input[name=password]").attributes("autocomplete")).toBe("new-password")
+    expect(wrapper.get("input[name=confirm]").attributes("autocomplete")).toBe("new-password")
+  })
+
+  it("vide les deux champs après la réinitialisation", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(wrapper.vm.password).toBe("")
+    expect(wrapper.vm.confirm).toBe("")
   })
 })
