@@ -46,6 +46,14 @@ Cette charte est aussi la référence du futur réalignement de l'app Flutter.
 | --- | --- |
 | `RiftButton` | `variant` primary / secondary / ghost, `size` sm / md, `to` ou `href` |
 | `RiftField` | champ avec label (masquable), `search`, `error` ; attributs transmis à l'`<input>` |
+| `RiftChip` | puce de filtre : `selected` (bascule, `aria-pressed`), `removable` (filtre actif retirable), `glyph` / `color`, `static` (simple `span` d'affichage) ; 44 px au tactile pour le bouton, compacte en `static` |
+| `RiftChoice` | choix unique en puces (groupe radio, flèches au clavier ; `options`, `label`, `v-model`) |
+| `RiftStepper` | compteur « − valeur + » (`value`, `min`, `max`, `busy`) ; le parent tient la valeur |
+| `RiftPanel` | panneau habillé (`title`, `tag`, `accent`) |
+| `RiftEmpty` | état vide (`title`, `text`, slot par défaut pour l'action) |
+| `RiftStat` / `RiftSkeleton` | chiffre-clé avec glyphe officiel ; squelette de chargement |
+| `CardTile` | vignette de carte des grilles (racine `rift-tile`, `preview` pour l'aperçu au survol) |
+| `CardHoverPreview` | aperçu agrandi d'une carte au survol et au focus (`card`, `disabled`), préfixe `apercu-` |
 | `RiftTabs` | onglets de sous-rubriques liés aux routes (`items: [{ label, to }]`) |
 | `RiftSegments` | onglets dans une page (`tablist`, `items: [{ value, label, badge? }]`, `v-model`, `label`, `id-base`) ; les panneaux restent à la page |
 | `RiftModal` | modale accessible (`title`, `wide`, `@close`) |
@@ -60,6 +68,28 @@ mobiles (`AppTabbar`), sous-onglets, fil d'Ariane (`AppTopbar`) et groupe « Pag
 de la recherche (`SearchPalette`, logique dans `src/search/search.js`). Une page peut
 fournir le dernier maillon du fil d'Ariane avec `setPageCrumb(nom)`
 (`src/shell/pageCrumb.js`).
+
+Les bandeaux globaux (`EmailVerifyNotice`, `TraceursNotice`, page hors ligne dans
+`App.vue`) reposent tous sur `ShellBandeau` : `tone` `info` (filet de bronze) ou `action`
+(filet de sang), texte dans le slot par défaut, boutons dans le slot `actions`. Le rôle ARIA
+et les crochets de test arrivent par les attributs ; préfixe de classes `bandeau-`.
+
+### Compte `src/account/`
+
+`AccessLayout` est le gabarit des pages d'accès (`AuthView`, `ForgotPasswordView`,
+`ResetPasswordView`, `VerifyEmailView`) : illustration du splash en fond voilé, `RiftPanel`
+centré, `h1` dans le gabarit (prop `title`, `kicker` en option). Préfixe `acces-` ; les
+classes de formulaire (`acces-form`, `acces-actions`, `acces-note`…) sont posées par le
+gabarit pour son slot. Après connexion, `?suite=` ne redirige que vers un chemin interne
+(ni `//…`, ni `/\…`).
+
+### Administration `src/admin/`
+
+`AdminView` (porte admin : une session non admin rend la 404) monte trois onglets,
+`AdminStats`, `AdminUsers` et `AdminDecks`. `useAdmin.js` porte les briques communes
+(formats, statuts de modération, listes paginées débouncées, actions par ligne) et
+`console.css` la feuille non scopée, préfixe `console-` : interface dense et utilitaire,
+lignes de 40 px au bureau, 44 px au tactile, cartes empilées sous 768 px.
 
 ### Jeu et social `src/play/`, `src/social/`
 
