@@ -9,7 +9,7 @@ dans son propre `README.md`.
 
 - **La PWA n'est plus la cible mobile.** Elle reste servie par le site tant que
   l'application n'est pas publiée (icône iOS capricieuse, premier chargement
-  lent à cause du moteur OCR tesseract.js de 15 Mo, service worker complexe pour
+  lent à cause du moteur OCR tesseract.js de 15 Mo (retiré depuis), service worker complexe pour
   peu de gain).
 - **Cible mobile : une application native iOS + Android en Flutter**, dans
   `riftarium/apps/mobile`. Une seule base de code Dart, rendu natif, caméra et
@@ -58,9 +58,10 @@ CLAUDE.md        pointeur vers ce fichier pour Claude Code
 4. **Ne pas modifier `apps/web` ou `apps/api` pour un besoin mobile**, sauf
    changement de contrat d'API décrit en §6 : dans ce cas l'API bouge d'abord,
    avec tests pytest, en restant compatible avec le web existant.
-5. **Ne pas retirer** le scanner web (`scanOcr.js`, `useCardScanner.js`,
-   `ScanView.vue`, `/ocr/*`), le service worker (`public/sw.js`) ni le manifest
+5. **Ne pas retirer** le service worker (`public/sw.js`) ni le manifest
    (`site.webmanifest`) tant que l'application n'est pas en store (§8, phase 9).
+   Le scanner web (tesseract.js, `/scan`, `/ocr/*`) a été retiré avec la refonte
+   « Forge noxienne » (octobre 2026) : le scan est réservé à l'application mobile.
 6. Secrets et signatures hors git : `android/key.properties`, `*.jks`,
    `*.keystore`, profils et certificats iOS. Les `.gitignore` de `apps/mobile`,
    `android/` et `ios/` générés par Flutter les couvrent ; vérifier avant d'ajouter
@@ -184,8 +185,8 @@ docker compose -f compose.yaml config --quiet && python scripts/check_compose_se
 - **Règles officielles** : `data/rules-fr.json` embarqué dans l'app comme asset
   (consultation hors ligne, comme le service worker le permettait) ; rafraîchi
   depuis `https://riftarium.re/data/rules-fr.json` quand le réseau est là.
-- **Scan** : le web identifie par empreinte dHash côté client + lecture OCR du
-  code collector, contre l'index `GET /api/cards/hashes`. Le mobile lit le code
+- **Scan** : le scanner web a été retiré (octobre 2026) ; l'index
+  `GET /api/cards/hashes` reste servi pour le mobile. Le mobile lit le code
   collector avec ML Kit (natif, instantané) ; la dHash n'est réimplémentée en
   Dart (paquet `image`) que si la lecture du code ne suffit pas.
 
@@ -210,12 +211,18 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   officiels), `google_mlkit_text_recognition` + `camera`, `share_plus`,
   `url_launcher`, `path_provider`. Chaque ajout de plugin natif = `flutter build
   apk --debug` avant push.
-- **Rendu** : la charte du site (`apps/web/src/assets/main.css`) transposée dans
-  `lib/app/design/` (tokens, typographie Cinzel / Outfit / IBM Plex Mono
-  embarquées, thème unique « nuit de Piltover », bannières, reflet foil,
-  révélations en cascade, squelettes, boutons or, puces de domaine). **Lire
-  `lib/app/design/README.md` avant tout écran.** iOS garde ses gestes et
-  transitions ; l'habillage est celui de la marque sur les deux plateformes.
+- **Rendu** : `lib/app/design/` transpose l'ancienne charte du site (tokens,
+  typographie Cinzel / Outfit / IBM Plex Mono embarquées, thème unique « nuit de
+  Piltover », bannières, reflet foil, révélations en cascade, squelettes, boutons
+  or, puces de domaine). **Lire `lib/app/design/README.md` avant tout écran.** iOS
+  garde ses gestes et transitions ; l'habillage est celui de la marque sur les deux
+  plateformes.
+- **Charte à venir** : le site est entièrement passé à la charte « Forge noxienne »
+  (noir, rouge sang, bronze ; Cinzel + Barlow ; rail latéral). `lib/app/design/`
+  devra la reprendre dans un chantier dédié. Charte de référence :
+  `apps/web/src/styles/tokens.css` (couleurs, polices, espacements, dimensions) et
+  la spec `docs/superpowers/specs/2026-10-06-refonte-forge-noxienne-design.md` ;
+  règles d'usage et composants dans `apps/web/README.md`.
 - **Images** : jamais d'URL de carte brute. `CardImage` redimensionne via le CDN
   (`w=`), met en cache 30 jours (`riftImageCache`) et `precacheCardThumbs`
   précharge la page suivante d'une grille.
@@ -225,7 +232,7 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
 - **Guides de règles** : `assets/rules/guides-fr.json` est exporté depuis
   `apps/web/src/rules/{topics,guide}.js` (depuis `apps/web`) :
   `node --input-type=module -e "import {TOPICS,CATEGORIES} from './src/rules/topics.js'; import {STEPS,CARDS,SPOTS} from './src/rules/guide.js'; import {writeFileSync} from 'node:fs'; writeFileSync('../mobile/assets/rules/guides-fr.json', JSON.stringify({categories:CATEGORIES,topics:TOPICS,guide:{steps:STEPS,cards:CARDS,spots:SPOTS}}))"`.
-  À relancer quand les guides du site changent.
+  À relancer quand les guides du site changent. L'export de `guides-fr.json` est à relancer en même temps que le réalignement de `lib/app/design/glyphs.dart` (A → `rune_rainbow`, C → pastille), sinon `[A]` s'afficherait en brut dans l'app.
 - **Suivi des matchs** (`/api/play`, salons, matchs confirmés, historique,
   statistiques) : contrat dans `riftarium/docs/suivi-des-matchs.md`, source de
   vérité pour l'API, le mobile et le site. Toute évolution passe d'abord par ce
@@ -295,8 +302,8 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
       signature) côté site et passer l'intent-filter en `autoVerify` ; iOS :
       entitlement Associated Domains + `apple-app-site-association` (Team ID).
       Régénérer les icônes depuis un visuel ≥ 1024 px.
-- [ ] **Phase 9 : après publication.** Décider du retrait du service worker, du
-      manifest PWA et du scanner web (15 Mo d'OCR). Décision à reprendre, pas acquise.
+- [ ] **Phase 9 : après publication.** Décider du retrait du service worker et du
+      manifest PWA (le scanner web est déjà retiré). Décision à reprendre, pas acquise.
 
 ## 9. Workflow git
 
@@ -309,6 +316,13 @@ Cocher au fil de l'eau ; une phase = une ou plusieurs branches `feat/mobile-*`.
 - Pousser la branche ; le mainteneur merge et déploie (généralement le soir).
   Conditions : CI verte (`mobile-check` pour le mobile ; `api-test`, `web-check`,
   `compose-security` pour le reste) et vérifications locales de §5 passées.
+- **Exception : refonte « Forge noxienne » du site (octobre 2026).** Pour ne rien
+  mettre en production avant la fin, ses PR (`feat/refonte-<bloc>`) partent de la
+  branche d'intégration `refonte/forge` et y sont mergées, jamais dans `main`.
+  `refonte/forge` reçoit `main` régulièrement (Dependabot, correctifs) ; un seul
+  merge `refonte/forge` → `main` met la refonte en production, après validation
+  complète. La CI tourne sur ces PR (`ci.yml` sur `pull_request`, sans filtre de
+  branche) ; `deploy.yml` ne réagit qu'aux push sur `main`.
 - Les bumps Dependabot `pub` ne sont pas auto-mergés : valider avec un build sur appareil.
 
 ## 10. Quelle tâche, quelles étapes (pour les agents)

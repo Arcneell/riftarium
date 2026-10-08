@@ -4,6 +4,7 @@
   valeur directe au bout de chaque barre (encre du site, jamais la couleur de série).
   Survol : tooltip par barre. Alternative texte : tableau des valeurs.
 */
+import "./graphe.css"
 import { computed, ref, useId } from "vue"
 import { useMeasuredWidth } from "./chartUtils.js"
 
@@ -11,7 +12,7 @@ const props = defineProps({
   title: { type: String, required: true },
   rows: { type: Array, required: true }, // [{ label, value }]
   valueLabel: { type: String, required: true },
-  color: { type: String, default: "var(--chart-gold)" }
+  color: { type: String, default: "var(--bronze)" }
 })
 
 const ROW_HEIGHT = 30
@@ -27,10 +28,12 @@ const hovered = ref(-1)
 const plotWidth = computed(() => Math.max(240, width.value))
 const height = computed(() => props.rows.length * ROW_HEIGHT + 8)
 const gutter = computed(() => Math.min(118, Math.max(88, Math.round(plotWidth.value * 0.3))))
-const maxValue = computed(() => Math.max(1, ...props.rows.map((row) => row.value)))
+const maxValue = computed(() => Math.max(1, ...props.rows.map((row) => num(row.value))))
 const round = (n) => Math.round(n * 100) / 100
+/* Valeur absente ou non numérique (charge utile partielle) : 0, jamais NaN dans le SVG. */
+const num = (value) => (Number.isFinite(value) ? value : 0)
 
-const barLength = (row) => round((row.value / maxValue.value) * (plotWidth.value - gutter.value - PAD_RIGHT))
+const barLength = (row) => round((num(row.value) / maxValue.value) * (plotWidth.value - gutter.value - PAD_RIGHT))
 
 /* Libellés tronqués à la gouttière réelle : ancrés à droite, les noms longs
    sortaient du viewBox par la gauche sur un écran de 360 px (illisibles et
@@ -58,20 +61,20 @@ const shownRows = computed(() => {
 const rowTop = (index) => 4 + ROW_HEIGHT * index
 const barTop = (index) => rowTop(index) + (ROW_HEIGHT - BAR_HEIGHT) / 2
 
-/* Barre : bout arrondi 4px côté valeur, base carrée sur l'axe des libellés. */
+/* Barre : bout aux angles coupés de 2px côté valeur, base carrée sur l'axe des libellés. */
 function barPath(index) {
   const length = barLength(props.rows[index])
   if (length <= 0) return ""
   const x = gutter.value
   const y = barTop(index)
-  const r = Math.min(4, length / 2)
+  const r = Math.min(2, length / 2)
   const end = round(x + length)
   return [
     `M${x},${y}`,
     `L${round(end - r)},${y}`,
-    `Q${end},${y} ${end},${round(y + r)}`,
+    `L${end},${round(y + r)}`,
     `L${end},${round(y + BAR_HEIGHT - r)}`,
-    `Q${end},${y + BAR_HEIGHT} ${round(end - r)},${y + BAR_HEIGHT}`,
+    `L${round(end - r)},${y + BAR_HEIGHT}`,
     `L${x},${y + BAR_HEIGHT}`,
     "Z"
   ].join(" ")
@@ -85,12 +88,12 @@ const tooltipStyle = computed(() => {
 </script>
 
 <template>
-  <figure ref="host" class="chart-figure">
-    <figcaption class="chart-head">
+  <figure ref="host" class="graphe-figure">
+    <figcaption class="graphe-head">
       <h3>{{ title }}</h3>
       <button
         type="button"
-        class="chart-toggle"
+        class="graphe-toggle"
         :aria-expanded="showTable"
         :aria-controls="tableId"
         @click="showTable = !showTable"
@@ -99,7 +102,7 @@ const tooltipStyle = computed(() => {
       </button>
     </figcaption>
 
-    <div v-if="!showTable" class="chart-plot" @mouseleave="hovered = -1">
+    <div v-if="!showTable" class="graphe-plot" @mouseleave="hovered = -1">
       <svg
         :viewBox="`0 0 ${plotWidth} ${height}`"
         :height="height"
@@ -109,16 +112,16 @@ const tooltipStyle = computed(() => {
         <g v-for="(row, i) in shownRows" :key="row.label">
           <!-- Le nom entier reste accessible : <title> au survol, infobulle, tableau des données. -->
           <title v-if="row.clipped">{{ row.label }}</title>
-          <text class="chart-row-label" :x="gutter - 10" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="end">
+          <text class="graphe-row-label" :x="gutter - 10" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="end">
             {{ row.short }}
           </text>
-          <!-- `chart-bar` et `chart-band` : sans règle CSS, point d'accroche des tests. -->
-          <path class="chart-bar" :d="row.d" :fill="color" />
-          <text class="chart-value-text" :x="row.end + 7" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="start">
+          <!-- Barre et bande de survol (aussi points d'accroche des tests). -->
+          <path class="graphe-bar" :d="row.d" :fill="color" />
+          <text class="graphe-value-text" :x="row.end + 7" :y="row.top + ROW_HEIGHT / 2 + 4" text-anchor="start">
             {{ row.value }}
           </text>
           <rect
-            class="chart-band"
+            class="graphe-band"
             :x="0"
             :y="row.top"
             :width="plotWidth"
@@ -131,15 +134,15 @@ const tooltipStyle = computed(() => {
 
       <!-- aria-hidden : infobulle de survol sans équivalent clavier, doublon du
            tableau « Voir les données » (voir ColumnChart). -->
-      <div v-if="hovered >= 0" class="chart-tooltip" :style="tooltipStyle" aria-hidden="true">
-        <span class="chart-tooltip-row">
-          <i class="chart-dot" :style="{ background: color }"></i>{{ rows[hovered].label }} — {{ valueLabel }}
+      <div v-if="hovered >= 0" class="graphe-tooltip" :style="tooltipStyle" aria-hidden="true">
+        <span class="graphe-tooltip-row">
+          <i class="graphe-dot" :style="{ background: color }"></i>{{ rows[hovered].label }} — {{ valueLabel }}
           <b>{{ rows[hovered].value }}</b>
         </span>
       </div>
     </div>
 
-    <div v-if="showTable" :id="tableId" class="chart-table">
+    <div v-if="showTable" :id="tableId" class="graphe-table">
       <table>
         <thead>
           <tr>
@@ -157,3 +160,19 @@ const tooltipStyle = computed(() => {
     </div>
   </figure>
 </template>
+
+<style scoped>
+/* Propre à ce graphique ; le reste est dans graphe.css. */
+.graphe-row-label {
+  fill: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.graphe-bar {
+  transition: opacity var(--t-fast);
+}
+.graphe-band {
+  cursor: crosshair;
+}
+</style>

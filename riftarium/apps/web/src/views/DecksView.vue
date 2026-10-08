@@ -1,18 +1,29 @@
 <script setup>
-import { nextTick, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 import { api } from "../api.js"
-import { BANNERS } from "../banners.js"
-import DeckBox from "../components/DeckBox.vue"
-import ModalDialog from "../components/ModalDialog.vue"
-import PageBanner from "../components/PageBanner.vue"
+import DeckCard from "../decks/DeckCard.vue"
 import { usePlayStats } from "../composables/usePlayStats.js"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftChip from "../ui/RiftChip.vue"
+import RiftChoice from "../ui/RiftChoice.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftField from "../ui/RiftField.vue"
+import RiftModal from "../ui/RiftModal.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 
 const router = useRouter()
-/* Un seul GET /api/play/stats pour toute la session : chaque boîte y lit son W/L. */
+/* Un seul GET /api/play/stats pour toute la session : chaque fiche y lit son W/L. */
 const playStats = usePlayStats()
 const decks = ref([])
 const error = ref("")
+/* Premier chargement (ou « Réessayer ») : un rechargement après suppression garde la grille. */
+const loading = ref(true)
+
+const FORMATS = [
+  { value: "tournament", label: "Légal", title: "Règles officielles vérifiées" },
+  { value: "free", label: "Illégal", title: "Format libre, non officiel" }
+]
 
 const showCreate = ref(false)
 const creating = ref(false)
@@ -23,13 +34,22 @@ const deleting = ref(false)
 const deleteError = ref("")
 const nameInput = ref(null)
 const draft = ref({ name: "", description: "", format: "tournament", is_public: false })
+const formatNote = computed(() => FORMATS.find((f) => f.value === draft.value.format)?.title || "")
 
 async function load() {
+  error.value = ""
   try {
     decks.value = await api("/api/decks/mine")
   } catch (e) {
     error.value = e.message
+  } finally {
+    loading.value = false
   }
+}
+
+function retry() {
+  loading.value = true
+  load()
 }
 
 async function openCreate() {
@@ -41,7 +61,7 @@ async function openCreate() {
 }
 
 async function createDeck() {
-  if (!draft.value.name.trim() || creating.value) return
+  if (!draft.value.name.trim() || creating.value || generating.value) return
   creating.value = true
   createError.value = ""
   try {
@@ -58,7 +78,7 @@ async function createDeck() {
 }
 
 async function createExample(mode) {
-  if (generating.value) return
+  if (generating.value || creating.value) return
   generating.value = true
   createError.value = ""
   try {
@@ -76,6 +96,7 @@ async function createExample(mode) {
 function closeCreate() {
   if (creating.value || generating.value) return
   showCreate.value = false
+  createError.value = ""
 }
 
 function askRemove(deck) {
@@ -109,20 +130,27 @@ onMounted(load)
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.decks" title="Mes decks" />
+  <div class="wrap cards-wrap mesdecks">
+    <header class="mesdecks-head">
+      <h1 class="mesdecks-title">Mes decks</h1>
+      <p v-if="!loading && !error" class="mesdecks-count">{{ decks.length }} deck(s)</p>
+      <RiftButton class="mesdecks-new" variant="primary" @click="openCreate">Nouveau deck</RiftButton>
+    </header>
 
-  <section>
-    <div class="wrap">
-      <div class="toolbar">
-        <button class="btn btn-gold" @click="openCreate">+ Nouveau deck</button>
+    <div v-if="loading" class="mesdecks-grid">
+      <RiftSkeleton v-for="n in 6" :key="n" class="mesdecks-skeleton" block />
+    </div>
+
+    <template v-else>
+      <div v-if="error" class="mesdecks-fail">
+        <p class="mesdecks-error" role="alert">{{ error }}</p>
+        <RiftButton variant="secondary" @click="retry">Réessayer</RiftButton>
       </div>
-      <p v-if="error" class="error">{{ error }}</p>
 
-      <div class="deck-boxes">
-        <DeckBox
-          v-for="(deck, i) in decks"
+      <div v-if="decks.length" class="mesdecks-grid">
+        <DeckCard
+          v-for="deck in decks"
           :key="deck.id"
-          v-reveal="i"
           :deck="deck"
           :record="playStats.byDeck[deck.id] || null"
           :to="`/decks/${deck.id}`"
@@ -130,71 +158,210 @@ onMounted(load)
         />
       </div>
       <!-- Un échec de chargement n'est pas une collection vide : un seul message à la fois. -->
-      <p v-if="!decks.length && !error" class="muted">Aucun deck. Créez-en un avec « Nouveau deck ».</p>
-    </div>
-  </section>
+      <RiftEmpty
+        v-else-if="!error"
+        title="Forgez votre premier deck"
+        text="Partez de zéro ou d'un deck d'exemple, construit avec votre collection ou à compléter."
+      >
+        <RiftButton variant="primary" @click="openCreate">Nouveau deck</RiftButton>
+        <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('owned')">
+          Exemple avec ma collection
+        </RiftButton>
+        <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('discover')">
+          Exemple à compléter
+        </RiftButton>
+      </RiftEmpty>
+      <!-- La modale est fermée dans l'état vide : l'échec d'un exemple se lit ici. -->
+      <p v-if="createError && !showCreate" class="mesdecks-error" role="alert">{{ createError }}</p>
+    </template>
+  </div>
 
-  <ModalDialog v-if="showCreate" title="Nouveau deck" @close="closeCreate">
-    <form class="modal-form" @submit.prevent="createDeck">
-      <label>
-        Nom du deck
-        <input
-          ref="nameInput"
-          type="text"
-          v-model="draft.name"
-          maxlength="80"
-          placeholder="Fureur de Noxus…"
-          required
-        />
-      </label>
-      <label>
-        Format
-        <select v-model="draft.format">
-          <option value="tournament">Légal — règles officielles vérifiées</option>
-          <option value="free">Illégal — format libre, non officiel</option>
-        </select>
-      </label>
-      <label>
-        Description <span class="muted">(optionnel)</span>
+  <RiftModal v-if="showCreate" title="Nouveau deck" @close="closeCreate">
+    <form class="mesdecks-form" @submit.prevent="createDeck">
+      <RiftField
+        ref="nameInput"
+        v-model="draft.name"
+        label="Nom du deck"
+        maxlength="80"
+        placeholder="Fureur de Noxus…"
+        required
+      />
+      <div class="mesdecks-format">
+        <RiftChoice v-model="draft.format" label="Format" :options="FORMATS" />
+        <p class="mesdecks-format-note">{{ formatNote }}</p>
+      </div>
+      <label class="mesdecks-label">
+        <span class="mesdecks-label-text">Description (optionnel)</span>
         <textarea
           v-model="draft.description"
+          class="mesdecks-textarea"
           maxlength="2000"
           placeholder="Plan de jeu, forces, faiblesses…"
         ></textarea>
       </label>
-      <label class="switch"> <input type="checkbox" v-model="draft.is_public" /><i></i> Rendre ce deck public </label>
-      <p v-if="createError" class="error">{{ createError }}</p>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" :disabled="creating || generating" @click="closeCreate">
-          Annuler
-        </button>
-        <button type="submit" class="btn btn-gold" :disabled="!draft.name.trim() || creating">
+      <div>
+        <RiftChip
+          label="Rendre ce deck public"
+          :selected="draft.is_public"
+          @toggle="draft.is_public = !draft.is_public"
+        />
+      </div>
+      <p v-if="createError" class="mesdecks-error" role="alert">{{ createError }}</p>
+      <div class="mesdecks-actions">
+        <RiftButton variant="ghost" :disabled="creating || generating" @click="closeCreate">Annuler</RiftButton>
+        <RiftButton type="submit" variant="primary" :disabled="!draft.name.trim() || creating || generating">
           {{ creating ? "Création…" : "Créer et ouvrir l'éditeur" }}
-        </button>
+        </RiftButton>
       </div>
     </form>
-    <div class="modal-sep">ou partez d'un deck d'exemple</div>
-    <div class="example-actions">
-      <button type="button" class="btn btn-ghost" :disabled="generating" @click="createExample('owned')">
+    <div class="mesdecks-sep">ou partez d'un deck d'exemple</div>
+    <div class="mesdecks-examples">
+      <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('owned')">
         Avec ma collection
-      </button>
-      <button type="button" class="btn btn-ghost" :disabled="generating" @click="createExample('discover')">
+      </RiftButton>
+      <RiftButton variant="secondary" :disabled="generating || creating" @click="createExample('discover')">
         À compléter (liste d'achats)
-      </button>
+      </RiftButton>
     </div>
-    <p v-if="generating" class="muted" style="margin-top: 10px">Génération du deck…</p>
-  </ModalDialog>
+    <p v-if="generating" class="mesdecks-hint" role="status">Génération du deck…</p>
+  </RiftModal>
 
-  <ModalDialog v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
+  <RiftModal v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
     <p>
       Le deck <strong>{{ pendingDelete.name }}</strong> sera supprimé pour de bon — impossible de le récupérer ensuite.
     </p>
-    <p v-if="deleteError" class="error">{{ deleteError }}</p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" :disabled="deleting" @click="cancelRemove">Annuler</button>
-      <button type="button" class="btn btn-danger" :disabled="deleting" @click="confirmRemove">
+    <p v-if="deleteError" class="mesdecks-error" role="alert">{{ deleteError }}</p>
+    <div class="mesdecks-actions">
+      <RiftButton variant="ghost" :disabled="deleting" @click="cancelRemove">Annuler</RiftButton>
+      <RiftButton variant="primary" :disabled="deleting" @click="confirmRemove">
         {{ deleting ? "Suppression…" : "Supprimer" }}
-      </button>
+      </RiftButton>
     </div>
-  </ModalDialog>
+  </RiftModal>
 </template>
+
+<style scoped>
+.mesdecks {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+.mesdecks-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+}
+/* Titre de page : neutralise le style de base des h1. */
+.mesdecks-title {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+}
+.mesdecks-count {
+  margin: 0;
+  font-family: var(--font-label);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+.mesdecks-new {
+  margin-left: auto;
+  align-self: center;
+}
+.mesdecks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+@media (max-width: 560px) {
+  .mesdecks-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mesdecks-skeleton :deep(.rift-skeleton-block) {
+  height: auto;
+  aspect-ratio: 5 / 7;
+}
+.mesdecks-fail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.mesdecks-error {
+  margin: 0;
+  color: var(--blood-text);
+}
+.mesdecks-form {
+  display: grid;
+  gap: var(--space-4);
+}
+.mesdecks-format {
+  display: grid;
+  gap: var(--space-2);
+}
+.mesdecks-format-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.mesdecks-label {
+  display: grid;
+  gap: var(--space-1);
+}
+.mesdecks-label-text {
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+/* Textarea : reprend le champ de la Forge. */
+.mesdecks-textarea {
+  min-height: 96px;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
+  font: inherit;
+  box-shadow: none;
+}
+.mesdecks-textarea:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--bronze-light);
+}
+.mesdecks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.mesdecks-form .mesdecks-actions {
+  margin-top: 0;
+}
+.mesdecks-sep {
+  margin: var(--space-4) 0 var(--space-3);
+  text-align: center;
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.mesdecks-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.mesdecks-hint {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-muted);
+}
+</style>

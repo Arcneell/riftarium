@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { sectionOf } from "./router.js"
+import { router, sectionOf } from "./router.js"
 
 /* `sectionOf` alimente la mesure de fréquentation anonyme : une rubrique par page,
    jamais l'URL complète. L'ordre des `startsWith` est le point fragile — la fiche
@@ -27,7 +27,6 @@ describe("sectionOf", () => {
       "/regles/officielles": "regles",
       "/communaute": "communaute",
       "/collection": "collection",
-      "/scan": "scan",
       "/profil": "profil",
       "/u/nyra": "profil-public",
       "/amis": "amis",
@@ -44,6 +43,10 @@ describe("sectionOf", () => {
     expect(sectionOf("/mentions-legales")).toBe("autre")
     expect(sectionOf("/wishlist")).toBe("autre")
     expect(sectionOf("/nawak")).toBe("autre")
+  })
+
+  it("le scanner web n'existe plus : /scan tombe sur la page introuvable", () => {
+    expect(router.resolve("/scan").matched[0].path).toBe("/:pathMatch(.*)*")
   })
 
   it("« /u » sans pseudo n'est pas un profil public", () => {

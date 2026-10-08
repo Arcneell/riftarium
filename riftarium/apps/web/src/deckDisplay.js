@@ -72,7 +72,7 @@ function coverStyle(deck) {
    deux couleurs de ses domaines, servies en variables CSS (halo, liseré). */
 export function deckIdentity(deck) {
   const domains = (legendOf(deck)?.domains || []).filter((domain) => domain !== "Colorless")
-  const first = DOMAINS[domains[0]]?.color || "var(--gold)"
+  const first = DOMAINS[domains[0]]?.color || "var(--bronze)"
   const second = DOMAINS[domains[1]]?.color || first
   return { ...coverStyle(deck), "--d1": first, "--d2": second }
 }

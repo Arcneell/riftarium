@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import PublicProfileView from "./PublicProfileView.vue"
+import Icon from "../components/Icon.vue"
 import { ApiError, api, session } from "../api.js"
 
 vi.mock("../api.js", async (importOriginal) => {
@@ -77,12 +78,13 @@ function makeProfile(over = {}) {
   }
 }
 
-function setupApi(profile = makeProfile()) {
+function setupApi(profile = makeProfile(), { collectionTotal = 1, historyTotal = 1 } = {}) {
   api.mockImplementation((path) => {
     if (path === "/api/users/nova") return Promise.resolve(profile)
     if (path.startsWith("/api/users/nova/collection"))
-      return Promise.resolve({ total: 1, page: 1, size: 24, items: [{ card: CARD, total_qty: 3 }] })
-    if (path.startsWith("/api/users/nova/history")) return Promise.resolve({ total: 1, page: 1, items: [HISTORY_ITEM] })
+      return Promise.resolve({ total: collectionTotal, page: 1, size: 24, items: [{ card: CARD, total_qty: 3 }] })
+    if (path.startsWith("/api/users/nova/history"))
+      return Promise.resolve({ total: historyTotal, page: 1, items: [HISTORY_ITEM] })
     return Promise.resolve(null)
   })
 }
@@ -104,7 +106,7 @@ async function mountView(path = "/u/nova") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(PublicProfileView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], components: { Icon } },
     attachTo: document.body
   })
   await flushPromises()
@@ -125,40 +127,47 @@ describe("PublicProfileView", () => {
     const { wrapper } = await mountView()
     expect(api).toHaveBeenCalledWith("/api/users/nova")
 
-    const hero = wrapper.get(".profile-hero")
-    expect(hero.text()).toContain("nova")
+    const hero = wrapper.get(".profil-hero")
+    expect(hero.get("h1").text()).toBe("nova")
     expect(hero.text()).toContain("Main Ahri")
     expect(hero.text()).toContain("Membre depuis janvier 2026")
     expect(hero.text()).toContain("2 abonné(s)")
     expect(hero.text()).toContain("5 suivi(s)")
 
-    /* Hauts faits débloqués, en médaillons colorés par palier. */
-    const medal = wrapper.get(".medal")
-    expect(medal.text()).toContain("Premier sang")
-    expect(medal.classes()).toContain("tier-bronze")
+    /* Hauts faits débloqués, en médaillons. */
+    expect(wrapper.get(".profil-medaille").text()).toContain("Premier sang")
+    expect(wrapper.get(".profil-medaille-meta").text()).toContain("Bronze")
 
-    /* Duels : totaux, top légendes et historique du point de vue du profil. */
-    expect(wrapper.text()).toContain("Taux de victoire")
-    expect(wrapper.get(".play-legend-name").text()).toBe("Jinx")
+    /* Duels : totaux (RiftStat) puis historique du point de vue du profil. */
+    const duels = wrapper.get("[data-section='duels']")
+    expect(duels.text()).toContain("Taux de victoire")
+    expect(duels.findAll(".rift-stat")).toHaveLength(4)
     expect(called("/api/users/nova/history")).toBe(true)
-    const row = wrapper.get(".profile-history .play-row")
+    const row = duels.get(".partie-row")
     expect(row.text()).toContain("nova")
     expect(row.text()).toContain("kai")
     expect(row.text()).not.toContain("Moi")
 
-    /* Collection : résumé par set puis grille paginée. */
-    expect(called("/api/users/nova/collection")).toBe(true)
-    expect(wrapper.get(".profile-sets .progress-count").text()).toBe("50 / 200")
-    expect(wrapper.findAll(".profile-cards .card-tile")).toHaveLength(1)
+    /* Légendes jouées. */
+    expect(duels.get(".duel-legende-nom").text()).toBe("Jinx")
 
-    /* Decks publics, en lecture seule : ni suppression, ni mention privé. */
-    expect(wrapper.get(".deck-box-title").text()).toContain("Fureur de Noxus")
+    /* Collection : totaux puis progression par set. */
+    const collection = wrapper.get("[data-section='collection']")
+    expect(collection.findAll(".rift-stat")).toHaveLength(2)
+    expect(collection.get(".profil-set-compte").text()).toBe("50 / 200")
+    expect(collection.get(".profil-set-pct").text()).toBe("25 %")
+    expect(called("/api/users/nova/collection")).toBe(true)
+    expect(collection.findAll(".rift-tile")).toHaveLength(1)
+    expect(collection.get(".rift-tile").attributes("href")).toBe("/cartes/ogn-001")
+
+    /* Decks publics, en lecture seule : ni suppression, ni mention de masquage. */
+    expect(wrapper.get(".profil-decks-grid .deck-card-title").text()).toContain("Fureur de Noxus")
     expect(buttonWith(wrapper, "Supprimer")).toBeUndefined()
-    expect(wrapper.find(".profile-hidden").exists()).toBe(false)
+    expect(wrapper.text()).not.toContain("Masqué par ce joueur")
     wrapper.unmount()
   })
 
-  it("tait les sections masquées et ne les demande pas à l'API", async () => {
+  it("n'affiche pas les sections masquées et ne les demande pas à l'API", async () => {
     setupApi(
       makeProfile({
         visibility: { show_stats: false, show_collection: false, show_decks: false, show_achievements: false },
@@ -170,31 +179,143 @@ describe("PublicProfileView", () => {
     )
     const { wrapper } = await mountView()
 
-    expect(wrapper.findAll(".profile-hidden")).toHaveLength(4)
-    expect(wrapper.get(".profile-hidden").text()).toContain("Masqué par ce joueur")
-    expect(called("/api/users/nova/collection")).toBe(false)
+    expect(wrapper.find(".profil-hero").exists()).toBe(true)
+    expect(wrapper.find("[data-section]").exists()).toBe(false)
+    expect(wrapper.text()).not.toContain("Masqué par ce joueur")
     expect(called("/api/users/nova/history")).toBe(false)
-    expect(wrapper.find(".medal").exists()).toBe(false)
+    expect(called("/api/users/nova/collection")).toBe(false)
+    expect(wrapper.find(".profil-medaille").exists()).toBe(false)
     wrapper.unmount()
+  })
+
+  it("duels masqués par la confidentialité : section absente, les autres restent", async () => {
+    setupApi(
+      makeProfile({
+        visibility: { show_stats: false, show_collection: true, show_decks: true, show_achievements: true }
+      })
+    )
+    const { wrapper } = await mountView()
+    expect(wrapper.find("[data-section='duels']").exists()).toBe(false)
+    expect(wrapper.find("[data-section='collection']").exists()).toBe(true)
+    expect(called("/api/users/nova/history")).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("pagine l'historique des duels et la collection", async () => {
+    setupApi(makeProfile(), { collectionTotal: 30, historyTotal: 25 })
+    const { wrapper } = await mountView()
+    const duels = wrapper.get("[data-section='duels']")
+    expect(duels.text()).toContain("page 1 / 3")
+    await buttonWith(duels, "Suivant").trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/users/nova/history?page=2&size=10")
+    expect(duels.text()).toContain("page 2 / 3")
+
+    const collection = wrapper.get("[data-section='collection']")
+    expect(collection.text()).toContain("page 1 / 2")
+    expect(buttonWith(collection, "Précédent").attributes("disabled")).toBeDefined()
+    await buttonWith(collection, "Suivant").trigger("click")
+    await flushPromises()
+    expect(api.mock.calls.some(([path]) => /collection?.*page=2/.test(String(path)))).toBe(true)
+    expect(collection.text()).toContain("page 2 / 2")
+    wrapper.unmount()
+  })
+
+  it("collection masquée entre-temps (403) : la section se tait, sans erreur", async () => {
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) => {
+      if (path.startsWith("/api/users/nova/collection")) return Promise.reject(new ApiError(403, "Collection privée"))
+      return base(path, options)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.find(".rift-tile").exists()).toBe(false)
+    expect(wrapper.text()).not.toContain("Collection privée")
+    wrapper.unmount()
+  })
+
+  it("erreur de chargement de la collection ou des duels : message affiché", async () => {
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) => {
+      if (path.startsWith("/api/users/nova/collection")) return Promise.reject(new ApiError(500, "Collection en panne"))
+      if (path.startsWith("/api/users/nova/history")) return Promise.reject(new ApiError(500, "Historique en panne"))
+      return base(path, options)
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.text()).toContain("Collection en panne")
+    expect(wrapper.text()).toContain("Historique en panne")
+    wrapper.unmount()
+  })
+
+  it("hauts faits du profil public : nombre de débloqués, jamais « n / n »", async () => {
+    const { wrapper } = await mountView()
+    const panel = wrapper.get("[data-section='hauts-faits']")
+    expect(panel.get(".profil-hf-compte").text()).toBe("1")
+    expect(panel.text()).not.toContain("1 / 1")
+    wrapper.unmount()
+  })
+
+  it("propriétaire avec une section masquée : note et lien vers les réglages", async () => {
+    setupApi(
+      makeProfile({
+        is_me: true,
+        visibility: { show_stats: false, show_collection: true, show_decks: true, show_achievements: true }
+      })
+    )
+    const { wrapper } = await mountView()
+    const note = wrapper.get("[data-testid='note-masque']")
+    expect(note.text()).toContain("Certaines sections sont masquées par vos réglages de confidentialité")
+    expect(note.get("a").attributes("href")).toBe("/profil")
+    wrapper.unmount()
+  })
+
+  it("pas de note si tout est visible, ni pour un visiteur", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.find("[data-testid='note-masque']").exists()).toBe(false)
+    wrapper.unmount()
+    setupApi(makeProfile({ visibility: { show_stats: false } }))
+    const second = await mountView()
+    expect(second.wrapper.find("[data-testid='note-masque']").exists()).toBe(false)
+    second.wrapper.unmount()
   })
 
   it("suit puis cesse de suivre le joueur, compteur mis à jour sans attendre", async () => {
     const { wrapper } = await mountView()
-    const follow = buttonWith(wrapper, "Suivre")
-    await follow.trigger("click")
-    expect(wrapper.get(".profile-follow-counts").text()).toContain("3 abonné(s)")
+    const toggle = buttonWith(wrapper, "Suivre")
+    expect(toggle.attributes("aria-pressed")).toBeUndefined()
+    expect(toggle.attributes("aria-label")).toBe("Suivre nova")
+    await toggle.trigger("click")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonné(s)")
+    expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-label")).toBe("Ne plus suivre nova")
+    expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-pressed")).toBeUndefined()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/users/nova/follow", { method: "PUT" })
 
     await buttonWith(wrapper, "Ne plus suivre").trigger("click")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/users/nova/follow", { method: "DELETE" })
-    expect(wrapper.get(".profile-follow-counts").text()).toContain("2 abonné(s)")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonné(s)")
+    wrapper.unmount()
+  })
+
+  it("double clic sur Suivre : une seule requête", async () => {
+    let release
+    const base = api.getMockImplementation()
+    api.mockImplementation((path, options) => {
+      if (path === "/api/users/nova/follow") return new Promise((resolve) => (release = resolve))
+      return base(path, options)
+    })
+    const { wrapper } = await mountView()
+    const follow = buttonWith(wrapper, "Suivre")
+    await follow.trigger("click")
+    await follow.trigger("click")
+    release(null)
+    await flushPromises()
+    expect(api.mock.calls.filter(([path]) => path === "/api/users/nova/follow")).toHaveLength(1)
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonné(s)")
     wrapper.unmount()
   })
 
   it("revient en arrière si l'API refuse le suivi", async () => {
-    setupApi()
     const base = api.getMockImplementation()
     api.mockImplementation((path, options) => {
       if (path === "/api/users/nova/follow") return Promise.reject(new ApiError(409, "On ne se suit pas soi-même"))
@@ -203,8 +324,8 @@ describe("PublicProfileView", () => {
     const { wrapper } = await mountView()
     await buttonWith(wrapper, "Suivre").trigger("click")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toBe("On ne se suit pas soi-même")
-    expect(wrapper.get(".profile-follow-counts").text()).toContain("2 abonné(s)")
+    expect(wrapper.get("[role='alert']").text()).toBe("On ne se suit pas soi-même")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonné(s)")
     expect(buttonWith(wrapper, "Suivre")).toBeTruthy()
     wrapper.unmount()
   })
@@ -213,7 +334,7 @@ describe("PublicProfileView", () => {
     setupApi(makeProfile({ is_me: true }))
     const { wrapper } = await mountView()
     expect(buttonWith(wrapper, "Suivre")).toBeUndefined()
-    expect(wrapper.get(".profile-hero-actions a").attributes("href")).toBe("/profil")
+    expect(wrapper.get(".profil-hero-actions a").attributes("href")).toBe("/profil")
     wrapper.unmount()
   })
 
@@ -221,23 +342,55 @@ describe("PublicProfileView", () => {
     session.token = null
     const { wrapper } = await mountView()
     expect(buttonWith(wrapper, "Suivre")).toBeUndefined()
-    expect(wrapper.get(".profile-hero-actions a").attributes("href")).toBe("/connexion")
+    expect(wrapper.get(".profil-hero-actions a").attributes("href")).toBe("/connexion")
     wrapper.unmount()
   })
 
-  it("pseudo inconnu : la page 404 du site", async () => {
+  it("légende supprimée : libellé de repli au nom comme à l'alt", async () => {
+    setupApi(
+      makeProfile({
+        stats: {
+          totals: { played: 4, won: 1, lost: 3 },
+          by_legend: [{ card_id: null, name: null, image_url: LEGEND.image_url, played: 4, won: 1, lost: 3 }]
+        }
+      })
+    )
+    const { wrapper } = await mountView()
+    const row = wrapper.get("[data-section='duels'] .duel-legende")
+    expect(row.get(".duel-legende-nom").text()).toBe("Légende supprimée")
+    expect(row.get("img").attributes("alt")).toBe("Légende : Légende supprimée")
+    expect(row.text()).toContain("1 V / 3 D")
+    wrapper.unmount()
+  })
+
+  it("profil privé ou inconnu : RiftEmpty, pas de squelette ni d'en-tête", async () => {
     api.mockImplementation(() => Promise.reject(new ApiError(404, "Joueur introuvable")))
     const { wrapper } = await mountView()
-    expect(wrapper.text()).toContain("Page introuvable")
-    expect(wrapper.find(".profile-hero").exists()).toBe(false)
+    const empty = wrapper.get(".rift-empty")
+    expect(empty.text()).toContain("Profil introuvable")
+    expect(empty.text()).toContain("n'existe pas ou n'est pas public")
+    expect(wrapper.find(".rift-skeleton").exists()).toBe(false)
+    expect(wrapper.find(".profil-hero").exists()).toBe(false)
     wrapper.unmount()
   })
 
-  it("erreur serveur : le message est affiché, sans page 404 trompeuse", async () => {
+  it("erreur serveur : le message est affiché, sans état « introuvable » trompeur", async () => {
     api.mockImplementation(() => Promise.reject(new ApiError(500, "Le serveur a rencontré une erreur")))
     const { wrapper } = await mountView()
-    expect(wrapper.get(".error").text()).toBe("Le serveur a rencontré une erreur")
-    expect(wrapper.text()).not.toContain("Page introuvable")
+    expect(wrapper.get("[role='alert']").text()).toBe("Le serveur a rencontré une erreur")
+    expect(wrapper.find(".rift-empty").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("pseudo long : ellipse, pseudo complet en infobulle", async () => {
+    const long = "nova".repeat(10)
+    api.mockImplementation((path) =>
+      path === `/api/users/${long}` ? Promise.resolve(makeProfile({ handle: long })) : Promise.resolve(null)
+    )
+    const { wrapper } = await mountView(`/u/${long}`)
+    const title = wrapper.get(".profil-hero-pseudo")
+    expect(title.text()).toBe(long)
+    expect(title.attributes("title")).toBe(long)
     wrapper.unmount()
   })
 })

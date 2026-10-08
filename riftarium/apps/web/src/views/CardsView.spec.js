@@ -1,8 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils"
-import { createMemoryHistory, createRouter } from "vue-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import CardsView from "./CardsView.vue"
-import { api } from "../api.js"
+import { api, session } from "../api.js"
+import { makeRouter } from "../test/makeRouter.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -26,73 +26,61 @@ function viewport(width, height) {
   window.innerHeight = height
 }
 
-async function mountView() {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: "/cartes", component: CardsView },
-      { path: "/cartes/:id", component: { template: "<div />" } }
-    ]
+const originalMatchMedia = window.matchMedia
+function stubWidth(px) {
+  window.matchMedia = (query) => ({
+    matches: px <= Number(query.match(/max-width:\s*(\d+)px/)?.[1] ?? 0),
+    addEventListener() {},
+    removeEventListener() {}
   })
-  router.push("/cartes")
-  await router.isReady()
+}
+
+async function mountView(path = "/cartes") {
+  const router = await makeRouter(path)
   const wrapper = mount(CardsView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()
   return { wrapper, router }
 }
 
+const facet = (wrapper, legend) =>
+  wrapper.findAll("fieldset.facet").find((node) => node.get("legend").text() === legend)
+const SETS = [
+  { set_id: "ogn", name: "Origins" },
+  { set_id: "sfd", name: "Spiritforged" }
+]
+
 describe("CardsView", () => {
   beforeEach(() => {
     api.mockReset()
     api.mockImplementation((path) => {
-      if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN", name: "Origins" }])
+      if (path === "/api/sets") return Promise.resolve(SETS)
       return Promise.resolve({ total: 300, page: 1, size: 30, items: [fakeCard(1), fakeCard(2)] })
     })
   })
 
   afterEach(() => {
     viewport(1024, 768)
+    window.matchMedia = originalMatchMedia
+    document.body.innerHTML = ""
   })
 
   it("propose les raretés officielles dans l'ordre du jeu", async () => {
     const { wrapper } = await mountView()
-    await wrapper.findAll(".fsel-btn")[2].trigger("click")
-    expect(wrapper.findAll(".fsel-opt").map((button) => button.text().trim())).toEqual([
-      "Commun",
-      "Peu commun",
-      "Rare",
-      "Épique",
-      "Showcase",
-      "Promo"
-    ])
-    wrapper.unmount()
-  })
-
-  it("propose des filtres repliés plutôt qu'une longue liste de chips", async () => {
-    const { wrapper } = await mountView()
-    const labels = wrapper.findAll(".fsel-btn").map((button) => button.text().trim())
-    expect(labels).toEqual(["Domaines", "Types", "Raretés", "Coût", "Sets"])
-    expect(wrapper.findAll(".fsel-pop")).toHaveLength(0)
-    wrapper.unmount()
-  })
-
-  it("habille la page d'une illustration officielle Riftbound", async () => {
-    const { wrapper } = await mountView()
-    expect(wrapper.get(".page-banner").attributes("style")).toContain("4e9fa6cb")
-    expect(wrapper.get(".splash-credit").text()).toContain("© Riot Games")
+    const labels = facet(wrapper, "Raretés")
+      .findAll("button.rift-chip")
+      .map((button) => button.text().trim())
+    expect(labels).toEqual(["Commun", "Peu commun", "Rare", "Épique", "Showcase", "Promo"])
     wrapper.unmount()
   })
 
   it("affiche les runes officielles dans le filtre des domaines", async () => {
     const { wrapper } = await mountView()
-    await wrapper.findAll(".fsel-btn")[0].trigger("click")
-    const runes = wrapper.findAll(".fsel-opt img.rb-glyph.rune")
+    const runes = facet(wrapper, "Domaines").findAll("button.rift-chip img.rb-glyph.rune")
     expect(runes).toHaveLength(6)
     expect(runes[0].attributes("src")).toContain("rune_fury.svg")
-    expect(wrapper.find(".fsel-opt .fsel-tick").exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -119,39 +107,266 @@ describe("CardsView", () => {
 
   it("aucun résultat : la page le dit et propose de réinitialiser les filtres", async () => {
     api.mockImplementation((path) => {
-      if (path === "/api/sets") return Promise.resolve([{ set_id: "OGN", name: "Origins" }])
+      if (path === "/api/sets") return Promise.resolve(SETS)
       return Promise.resolve({ total: 0, page: 1, size: 30, items: [] })
     })
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: "/cartes", component: CardsView },
-        { path: "/cartes/:id", component: { template: "<div />" } }
-      ]
-    })
-    router.push("/cartes?q=zzz")
-    await router.isReady()
-    const wrapper = mount(CardsView, {
-      global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } },
-      attachTo: document.body
-    })
-    await flushPromises()
+    const { wrapper } = await mountView("/cartes?q=zzz")
 
-    const empty = wrapper.get(".col-empty")
+    const empty = wrapper.get(".rift-empty")
     expect(empty.text()).toContain("Aucune carte ne correspond")
-    await empty.get(".col-empty-actions button").trigger("click")
+    await empty.get("button").trigger("click")
     await flushPromises()
-    expect(wrapper.find(".filter-search input").element.value).toBe("")
+    expect(wrapper.get(".card-filters input").element.value).toBe("")
     wrapper.unmount()
   })
 
   it("répercute les filtres choisis dans l'URL et dans la requête", async () => {
     const { wrapper, router } = await mountView()
-    await wrapper.findAll(".fsel-btn")[0].trigger("click")
-    await wrapper.get(".fsel-opt").trigger("click")
+    await facet(wrapper, "Domaines").get("button.rift-chip").trigger("click")
     await flushPromises()
     await vi.waitFor(() => expect(router.currentRoute.value.query.domain).toBe("Fury"))
     await vi.waitFor(() => expect(api.mock.calls.at(-1)[0]).toContain("domain=Fury"))
+    wrapper.unmount()
+  })
+
+  it("une URL avec filtres (lien du mur de l'accueil) s'affiche en puces actives", async () => {
+    const { wrapper } = await mountView("/cartes?set=sfd&domain=Fury")
+    const labels = wrapper
+      .get(".active-filters")
+      .findAll("button.rift-chip")
+      .map((chip) => chip.text())
+    expect(labels.some((label) => label.includes("Fureur"))).toBe(true)
+    expect(labels.some((label) => label.includes("Spiritforged"))).toBe(true)
+    expect(api.mock.calls.some(([path]) => path.includes("domain=Fury") && path.includes("set_id=sfd"))).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("téléphone : bouton Filtres (N), feuille qui reste ouverte au changement, fermée par « Voir les N cartes »", async () => {
+    stubWidth(390)
+    viewport(390, 780)
+    const { wrapper } = await mountView("/cartes?domain=Fury")
+    expect(wrapper.find(".filters-panel").exists()).toBe(false)
+    const open = wrapper.findAll("button").find((button) => button.text().startsWith("Filtres"))
+    expect(open.text().replace(/\s+/g, " ")).toBe("Filtres (1)")
+    await open.trigger("click")
+
+    const sheet = () => document.body.querySelector(".rift-sheet")
+    expect(sheet()).not.toBeNull()
+    const rarity = [...sheet().querySelectorAll("fieldset.facet")].find(
+      (node) => node.querySelector("legend").textContent === "Raretés"
+    )
+    rarity.querySelector("button.rift-chip").click()
+    await flushPromises()
+    expect(sheet()).not.toBeNull()
+    await vi.waitFor(() => expect(api.mock.calls.at(-1)[0]).toContain("rarity=Common"))
+
+    const done = [...sheet().querySelectorAll("button")].find((button) =>
+      /^Voir les \d+ cartes$/.test(button.textContent.trim())
+    )
+    expect(done.textContent.trim()).toBe("Voir les 300 cartes")
+    done.click()
+    await flushPromises()
+    expect(sheet()).toBeNull()
+    wrapper.unmount()
+  })
+
+  it("un seul appel à /api/cards au montage, même quand la grille se remesure à l'identique", async () => {
+    const cardCalls = () => api.mock.calls.filter(([path]) => path.startsWith("/api/cards")).length
+    const { wrapper } = await mountView()
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(cardCalls()).toBe(1)
+    window.dispatchEvent(new Event("resize"))
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(cardCalls()).toBe(1)
+    wrapper.unmount()
+  })
+
+  it("compteur : caché au premier chargement, annoncé poliment, au singulier ou au pluriel", async () => {
+    let release
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      return new Promise((resolve) => {
+        release = resolve
+      })
+    })
+    const { wrapper } = await mountView()
+    const count = () => wrapper.get(".cards-count")
+    expect(count().attributes("aria-live")).toBe("polite")
+    expect(count().text()).toBe("")
+    release({ total: 1, page: 1, size: 30, items: [fakeCard(1)] })
+    await flushPromises()
+    expect(count().text()).toBe("1 carte")
+    wrapper.unmount()
+  })
+
+  it("le bouton de la feuille s'accorde au nombre de résultats", async () => {
+    stubWidth(390)
+    viewport(390, 780)
+    const totals = { total: 0, page: 1, size: 30, items: [] }
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      return Promise.resolve({ ...totals, items: totals.total ? [fakeCard(1)] : [] })
+    })
+    const labelFor = async (total) => {
+      totals.total = total
+      const { wrapper } = await mountView("/cartes")
+      await wrapper
+        .findAll("button")
+        .find((b) => b.text().startsWith("Filtres"))
+        .trigger("click")
+      const done = document.body.querySelector(".sheet-foot button")
+      const text = done.textContent.trim()
+      wrapper.unmount()
+      document.body.innerHTML = ""
+      return text
+    }
+    expect(await labelFor(0)).toBe("Aucune carte")
+    expect(await labelFor(1)).toBe("Voir la carte")
+    expect(await labelFor(42)).toBe("Voir les 42 cartes")
+  })
+
+  it("le bouton du panneau de filtres annonce son état et son panneau", async () => {
+    viewport(1280, 800)
+    stubWidth(1280)
+    const { wrapper } = await mountView()
+    const toggle = wrapper.get(".cards-head button")
+    const panelId = wrapper.get(".filters-panel").attributes("id")
+    expect(panelId).toBeTruthy()
+    expect(toggle.attributes("aria-controls")).toBe(panelId)
+    expect(toggle.attributes("aria-expanded")).toBe("true")
+    await toggle.trigger("click")
+    expect(toggle.attributes("aria-expanded")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("premier chargement : squelettes ; rechargement : grille atténuée, pas vidée", async () => {
+    let release
+    api.mockImplementation((path) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      return new Promise((resolve) => {
+        release = resolve
+      })
+    })
+    const { wrapper } = await mountView()
+    expect(wrapper.findAll(".rift-skeleton")).toHaveLength(12)
+    expect(wrapper.findAll(".cards-grid")).toHaveLength(1)
+    release({ total: 2, page: 1, size: 30, items: [fakeCard(1), fakeCard(2)] })
+    await flushPromises()
+    expect(wrapper.findAll(".rift-skeleton")).toHaveLength(0)
+    expect(wrapper.findAll(".rift-tile")).toHaveLength(2)
+    expect(wrapper.get(".cards-grid").classes()).not.toContain("reloading")
+
+    await facet(wrapper, "Domaines").get("button.rift-chip").trigger("click")
+    await vi.waitFor(() => expect(wrapper.find(".cards-grid.reloading").exists()).toBe(true))
+    expect(wrapper.findAll(".rift-tile")).toHaveLength(2)
+    expect(wrapper.findAll(".rift-skeleton")).toHaveLength(0)
+    release({ total: 1, page: 1, size: 30, items: [fakeCard(1)] })
+    await flushPromises()
+    expect(wrapper.find(".cards-grid.reloading").exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe("CardsView : saisie rapide", () => {
+  const post = (path, opts) => opts?.method === "POST"
+  beforeEach(() => {
+    api.mockReset()
+    sessionStorage.clear()
+    localStorage.clear()
+    session.token = "1"
+    api.mockImplementation((path, opts) => {
+      if (path === "/api/sets") return Promise.resolve(SETS)
+      if (post(path, opts))
+        return Promise.resolve({
+          card_id: "card-1",
+          total_qty: 1,
+          entries: [{ id: 5, qty: 1, condition: opts.body.condition, lang: opts.body.lang }]
+        })
+      if (path === "/api/collection/card-2")
+        return Promise.resolve({
+          card_id: "card-2",
+          total_qty: 2,
+          entries: [{ id: 9, qty: 2, condition: "NM", lang: "FR" }]
+        })
+      if (path.startsWith("/api/collection/entries/"))
+        return Promise.resolve({
+          card_id: "card-2",
+          total_qty: 1,
+          entries: [{ id: 9, qty: 1, condition: "NM", lang: "FR" }]
+        })
+      return Promise.resolve({
+        total: 2,
+        page: 1,
+        size: 30,
+        items: [fakeCard(1), { ...fakeCard(2), owned_qty: 2 }]
+      })
+    })
+  })
+  afterEach(() => {
+    session.token = null
+    document.body.innerHTML = ""
+  })
+  const toggle = (wrapper) => wrapper.findAll("button.rift-chip").find((b) => b.text().includes("Saisie rapide"))
+
+  it("pas d'interrupteur pour un visiteur", async () => {
+    session.token = null
+    const { wrapper } = await mountView()
+    expect(toggle(wrapper)).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("l'activation fait apparaître les compteurs, mémorisés pour la session", async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.findAll(".quick-count")).toHaveLength(0)
+    await toggle(wrapper).trigger("click")
+    expect(wrapper.findAll(".quick-count")).toHaveLength(2)
+    wrapper.unmount()
+    const { wrapper: again } = await mountView()
+    expect(again.findAll(".quick-count")).toHaveLength(2)
+    again.unmount()
+  })
+
+  it("+ envoie le POST avec les préférences et met la vignette à jour sans naviguer", async () => {
+    const { wrapper, router } = await mountView()
+    await toggle(wrapper).trigger("click")
+    await wrapper.findAll(".rift-stepper-plus")[0].trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/collection/card-1/entries", {
+      method: "POST",
+      body: { qty: 1, condition: "NM", lang: "FR" }
+    })
+    expect(wrapper.findAll(".rift-tile")[0].get(".rift-stepper-value").text()).toBe("1")
+    expect(router.currentRoute.value.path).toBe("/cartes")
+    wrapper.unmount()
+  })
+
+  it("− enchaîne GET puis PATCH", async () => {
+    const { wrapper } = await mountView()
+    await toggle(wrapper).trigger("click")
+    await wrapper.findAll(".rift-stepper-minus")[1].trigger("click")
+    await flushPromises()
+    const calls = api.mock.calls.map(([path, opts]) => `${opts?.method ?? "GET"} ${path}`)
+    expect(calls.slice(-2)).toEqual(["GET /api/collection/card-2", "PATCH /api/collection/entries/9"])
+    expect(wrapper.findAll(".rift-tile")[1].get(".rift-stepper-value").text()).toBe("1")
+    wrapper.unmount()
+  })
+
+  it("la préférence se change depuis la feuille et sert au + suivant", async () => {
+    const { wrapper } = await mountView()
+    await toggle(wrapper).trigger("click")
+    const pref = wrapper.get(".quick-pref")
+    expect(pref.text()).toContain("NM")
+    await pref.trigger("click")
+    const radios = [...document.body.querySelectorAll("[role=radio]")]
+    radios.find((r) => r.textContent.trim() === "EX").click()
+    radios.find((r) => r.textContent.trim() === "EN").click()
+    await flushPromises()
+    await wrapper.findAll(".rift-stepper-plus")[0].trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/collection/card-1/entries", {
+      method: "POST",
+      body: { qty: 1, condition: "EX", lang: "EN" }
+    })
     wrapper.unmount()
   })
 })

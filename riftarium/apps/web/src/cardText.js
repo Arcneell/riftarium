@@ -150,7 +150,8 @@ export function variantLabel(card) {
   return "Normale"
 }
 
-export function parseCardText(text) {
+/* `rules` : texte officiel des règles, où le symbole [>] peut apparaître seul (135.2.e.7). */
+export function parseCardText(text, { rules = false } = {}) {
   if (!text) return []
   const source = decodeEntities(text)
   const parts = []
@@ -162,7 +163,7 @@ export function parseCardText(text) {
     if (match[1] !== undefined) {
       pushGlyph(parts, match[1], match[0])
     } else {
-      pushBracket(parts, match[2].trim(), match[0])
+      pushBracket(parts, match[2].trim(), match[0], rules)
     }
   }
   if (last < source.length) pushText(parts, source.slice(last))
@@ -197,10 +198,11 @@ function pushGlyph(parts, token, raw) {
   pushText(parts, raw)
 }
 
-function pushBracket(parts, label, raw) {
+function pushBracket(parts, label, raw, rules) {
   if (/^>+$/.test(label)) {
     const previous = parts[parts.length - 1]
     if (previous?.type === "keyword") previous.arrow = true
+    else if (rules) parts.push({ type: "pill", value: "›", label: "symbole de compétence dépendante" })
     return
   }
   if (label.toUpperCase() === "NO TEXT") return

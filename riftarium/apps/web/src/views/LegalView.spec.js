@@ -18,7 +18,7 @@ async function mountPage(path) {
   router.push(path)
   await router.isReady()
   return mount(LegalView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
 }
 
@@ -33,7 +33,7 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("Banque centrale européenne")
     expect(wrapper.text()).toContain("OVH SAS")
     expect(wrapper.text()).toContain("contact@riftarium.re")
-    expect(wrapper.find(".legal-nav").text()).toContain("CGU")
+    expect(wrapper.find(".mentions-toc").text()).toContain("CGU")
   })
 
   it("décrit le hash d'IP et l'export du compte dans la confidentialité", async () => {
@@ -64,5 +64,76 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("par jour et par rubrique")
     expect(wrapper.text()).toContain("sans aucune donnée personnelle ni cookie")
     expect(wrapper.text()).toContain("48 heures")
+  })
+
+  it("mentions : sommaire avec aria-current, ancres conservées", async () => {
+    const wrapper = await mountPage("/mentions-legales")
+    expect(wrapper.get("h1").text()).toBe("Mentions légales")
+    expect(wrapper.find(".mentions-layout").exists()).toBe(true)
+    expect(wrapper.text()).toContain("Mise à jour")
+    const current = wrapper.get('.mentions-toc a[aria-current="page"]')
+    expect(current.text()).toBe("Mentions légales")
+    const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+    expect(anchors.map((a) => a.attributes("href"))).toEqual([
+      "#editeur",
+      "#hebergement",
+      "#propriete-intellectuelle",
+      "#code-source"
+    ])
+    for (const a of anchors) {
+      const target = wrapper.find(a.attributes("href"))
+      expect(target.exists()).toBe(true)
+      expect(target.text()).toBe(a.text())
+    }
+    expect(wrapper.findAll(".mentions-quote").length).toBe(2)
+  })
+
+  it("chaque page légale expose un sommaire dont les ancres existent", async () => {
+    for (const path of ["/confidentialite", "/cgu", "/cookies", "/signalement"]) {
+      const wrapper = await mountPage(path)
+      const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+      expect(anchors.length).toBeGreaterThan(1)
+      expect(wrapper.findAll("h2").length).toBe(anchors.length)
+      for (const a of anchors) expect(wrapper.find(a.attributes("href")).exists()).toBe(true)
+      expect(wrapper.get('.mentions-toc a[aria-current="page"]').attributes("href")).toBe(path)
+    }
+  })
+
+  it("sans ancre à l'arrivée, aucune entrée du sommaire n'est courante", async () => {
+    const wrapper = await mountPage("/cgu")
+    expect(wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')).toHaveLength(0)
+  })
+
+  it("arrivée avec #droit : l'entrée correspondante est courante", async () => {
+    const wrapper = await mountPage("/cgu#droit")
+    const current = wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')
+    expect(current).toHaveLength(1)
+    expect(current[0].attributes("href")).toBe("#droit")
+    expect(current[0].attributes("aria-current")).toBe("location")
+  })
+
+  it("le clic sur une entrée la rend courante", async () => {
+    const wrapper = await mountPage("/confidentialite")
+    const links = wrapper.findAll('.mentions-toc a[href^="#"]')
+    await links[2].trigger("click")
+    const current = wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')
+    expect(current).toHaveLength(1)
+    expect(current[0].attributes("href")).toBe(links[2].attributes("href"))
+    await links[4].trigger("click")
+    expect(wrapper.findAll('.mentions-toc a[href^="#"][aria-current]')[0].attributes("href")).toBe(
+      links[4].attributes("href")
+    )
+  })
+
+  it("sur toutes les pages légales, le libellé du sommaire est égal au texte du h2", async () => {
+    for (const item of LEGAL_NAV) {
+      const wrapper = await mountPage(item.path)
+      const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+      expect(anchors.length).toBeGreaterThan(0)
+      for (const a of anchors) {
+        expect(wrapper.get(a.attributes("href")).text()).toBe(a.text())
+      }
+      wrapper.unmount()
+    }
   })
 })

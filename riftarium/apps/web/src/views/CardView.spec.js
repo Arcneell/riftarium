@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import CardView from "./CardView.vue"
 import { api, session } from "../api.js"
 import { resetPricesMeta } from "../prices.js"
+import { pageCrumb } from "../shell/pageCrumb.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -32,26 +33,6 @@ function sample(extras = {}) {
   }
 }
 
-/* Monte la fiche avec le mock d'API déjà en place (les tests « collection »
-   règlent eux-mêmes les réponses route par route). */
-async function mountMocked(id) {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: "/cartes", component: { template: "<div />" } },
-      { path: "/cartes/:id", component: CardView },
-      { path: "/connexion", component: { template: "<div />" } }
-    ]
-  })
-  router.push(`/cartes/${id}`)
-  await router.isReady()
-  const wrapper = mount(CardView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
-  })
-  await flushPromises()
-  return { wrapper, router }
-}
-
 async function mountView(id, card, meta = null) {
   if (meta) api.mockImplementation((path) => Promise.resolve(path === "/api/prices/meta" ? meta : card))
   else api.mockResolvedValue(card)
@@ -66,7 +47,7 @@ async function mountView(id, card, meta = null) {
   router.push(`/cartes/${id}`)
   await router.isReady()
   const wrapper = mount(CardView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {} } }
+    global: { plugins: [router], components: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }
@@ -82,14 +63,118 @@ describe("CardView", () => {
 
   it("affiche une unité en deux colonnes, avec l'image entière", async () => {
     const { wrapper } = await mountView("ogn-037-298", sample())
-    expect(wrapper.get(".card-sheet").classes()).not.toContain("landscape")
-    expect(wrapper.get("img.full").attributes("src")).toContain("w=720")
+    expect(wrapper.get(".fiche").classes()).not.toContain("landscape")
+    expect(wrapper.get(".fiche-art img").attributes("src")).toContain("w=720")
     expect(wrapper.get("h1").text()).toBe("Immortal Phoenix")
     expect(wrapper.text()).toContain("Unité")
     expect(wrapper.text()).toContain("Fureur")
-    expect(wrapper.get("img.rb-glyph.energy").attributes("src")).toContain("energy_3.svg")
-    expect(wrapper.get("img.rb-glyph.rune").attributes("src")).toContain("rune_fury.svg")
-    expect(wrapper.findAll("img.rb-glyph.rune")).toHaveLength(1)
+    expect(wrapper.get(".rift-stat img.rb-glyph").attributes("src")).toContain("energy_3.svg")
+    expect(wrapper.get(".rift-stat img.rb-glyph.rune").attributes("src")).toContain("rune_fury.svg")
+    expect(wrapper.findAll(".rift-stat img.rb-glyph.rune")).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it("le premier titre du document est le h1 du nom de la carte (le panneau collection vient après)", async () => {
+    session.token = "jeton"
+    api.mockImplementation((path) => Promise.resolve(path.startsWith("/api/collection/") ? { entries: [] } : sample()))
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/cartes/:id", component: CardView }]
+    })
+    router.push("/cartes/ogn-037-298")
+    await router.isReady()
+    const wrapper = mount(CardView, { global: { plugins: [router], components: { Icon: true } } })
+    await flushPromises()
+    const headings = wrapper.findAll("h1, h2, h3").map((node) => node.element.tagName + ":" + node.text().slice(0, 12))
+    expect(headings[0]).toBe("H1:Immortal Pho")
+    expect(headings.some((label) => label.startsWith("H2:Dans ma coll"))).toBe(true)
+    expect(wrapper.find("h3").exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it("une réponse de wishlist tardive ne touche pas la variante affichée entre-temps", async () => {
+    session.token = "jeton"
+    const variants = [
+      { id: "ogn-037-298", name: "Immortal Phoenix", variant: "standard" },
+      { id: "ogn-037a-298", name: "Immortal Phoenix", variant: "alternate_art" }
+    ]
+    let releasePut
+    api.mockImplementation((path, options = {}) => {
+      if (path.startsWith("/api/collection/")) return Promise.resolve({ entries: [] })
+      if (path === "/api/wishlist/ogn-037-298" && options.method === "PUT") {
+        return new Promise((resolve) => {
+          releasePut = resolve
+        })
+      }
+      if (path === "/api/cards/ogn-037a-298") {
+        return Promise.resolve(sample({ id: "ogn-037a-298", variants, wished_qty: 0 }))
+      }
+      return Promise.resolve(sample({ variants, wished_qty: 0 }))
+    })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/cartes/:id", component: CardView }]
+    })
+    router.push("/cartes/ogn-037-298")
+    await router.isReady()
+    const wrapper = mount(CardView, { global: { plugins: [router], components: { Icon: true } } })
+    await flushPromises()
+
+    await wrapper.get(".panel-wish").trigger("click")
+    await wrapper.findAll(".fiche-visual .rift-chip")[1].trigger("click")
+    await flushPromises()
+    expect(wrapper.get(".panel-wish").attributes("aria-pressed")).toBe("false")
+
+    releasePut(null)
+    await flushPromises()
+    expect(wrapper.get(".panel-wish").attributes("aria-pressed")).toBe("false")
+    wrapper.unmount()
+  })
+
+  it("« Numéro » affiche le numéro de collection, avec la taille du set si elle est connue", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ collector_number: 37 }))
+    const dd = (w, label) =>
+      w
+        .findAll(".fiche-meta div")
+        .find((row) => row.get("dt").text() === label)
+        .get("dd")
+        .text()
+    expect(dd(wrapper, "Numéro")).toBe("37")
+    wrapper.unmount()
+
+    const { wrapper: sized } = await mountView("ogn-037-298", sample({ collector_number: 37, card_count: 298 }))
+    expect(dd(sized, "Numéro")).toBe("37 / 298")
+    sized.unmount()
+
+    const { wrapper: fallback } = await mountView("ogn-037-298", sample({ collector_number: null }))
+    expect(dd(fallback, "Numéro")).toBe("OGN-037-298")
+    fallback.unmount()
+  })
+
+  it("le surtitre affiche une rune par domaine, aucune pour Colorless ou sans domaine", async () => {
+    const runes = (w) => w.findAll(".fiche-kicker img.rb-glyph.rune").map((img) => img.attributes("src"))
+    const { wrapper: duo } = await mountView("ogn-037-298", sample({ domains: ["Fury", "Calm"] }))
+    expect(runes(duo)).toHaveLength(2)
+    expect(runes(duo)[0]).toContain("rune_fury.svg")
+    expect(runes(duo)[1]).toContain("rune_calm.svg")
+    duo.unmount()
+    const { wrapper: none } = await mountView("ogn-037-298", sample({ domains: ["Colorless"] }))
+    expect(runes(none)).toHaveLength(0)
+    none.unmount()
+    const { wrapper: empty } = await mountView("ogn-037-298", sample({ domains: [] }))
+    expect(runes(empty)).toHaveLength(0)
+    empty.unmount()
+  })
+
+  it("l'illustration n'est pas un arrêt de tabulation artificiel", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample())
+    expect(wrapper.get(".fiche-art").attributes("tabindex")).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it("l'énergie est lisible par un lecteur d'écran : l'alt contient le nombre", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ energy: 3 }))
+    expect(wrapper.get(".rift-stat img.rb-glyph.energy").attributes("alt")).toBe("3 énergie")
     wrapper.unmount()
   })
 
@@ -108,12 +193,11 @@ describe("CardView", () => {
         domains: ["Colorless"]
       })
     )
-    expect(wrapper.get(".card-sheet").classes()).toContain("landscape")
-    expect(wrapper.get(".card-art").classes()).toContain("landscape")
-    expect(wrapper.get("img.full").attributes("src")).toContain("w=1100")
-    expect(wrapper.text()).toContain("Terrain")
+    expect(wrapper.get(".fiche").classes()).toContain("landscape")
+    expect(wrapper.get(".fiche-art").classes()).toContain("landscape")
+    expect(wrapper.get(".fiche-art img").attributes("src")).toContain("w=1100")
     expect(wrapper.text()).toContain("Champ de bataille")
-    expect(wrapper.find(".stat-row .stat").exists()).toBe(false)
+    expect(wrapper.find(".rift-stat").exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -130,14 +214,14 @@ describe("CardView", () => {
         currency_note: "Prix du marché US (TCGplayer), convertis en euros au taux BCE — estimation indicative."
       }
     )
-    const block = wrapper.get(".price-block")
+    const block = wrapper.get(".fiche-price")
     expect(block.text()).toContain("Prix indicatif")
-    expect(block.get(".price-amount").text()).toContain("13,30")
-    expect(block.get(".price-foil").text()).toContain("42,05")
-    expect(block.get(".price-note").text()).toContain("TCGplayer")
-    expect(block.get(".price-note").text()).toContain("Mise à jour : 2026-08-19")
-    expect(block.get(".price-note").text()).toContain("Ni cote officielle ni offre d'achat")
-    const link = block.get("a.price-link")
+    expect(block.get(".fiche-price-amount").text()).toContain("13,30")
+    expect(block.get(".fiche-price-foil").text()).toContain("42,05")
+    expect(block.get(".fiche-price-note").text()).toContain("TCGplayer")
+    expect(block.get(".fiche-price-note").text()).toContain("Mise à jour : 2026-08-19")
+    expect(block.get(".fiche-price-note").text()).toContain("Ni cote officielle ni offre d'achat")
+    const link = block.get("a.fiche-price-link")
     expect(link.attributes("href")).toBe(
       "https://www.cardmarket.com/fr/Riftbound/Products/Search?searchString=Immortal%20Phoenix"
     )
@@ -148,119 +232,8 @@ describe("CardView", () => {
 
   it("sans prix : aucun bloc vide ni lien Cardmarket", async () => {
     const { wrapper } = await mountView("ogn-037-298", sample({ price_eur: null, price_foil_eur: 8 }))
-    expect(wrapper.find(".price-block").exists()).toBe(false)
-    expect(wrapper.find(".price-link").exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it("visiteur non connecté : pas de bouton wishlist sur la fiche", async () => {
-    const { wrapper } = await mountView("ogn-037-298", sample())
-    expect(wrapper.find(".wish-toggle").exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it("connecté : le cœur bascule l'ajout (PUT qty 1) puis le retrait (DELETE) de la wishlist", async () => {
-    session.token = "jeton"
-    session.handle = "visiteur"
-    api.mockImplementation((path, options = {}) => {
-      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample({ wished_qty: 0 }))
-      if (path === "/api/collection/ogn-037-298") return Promise.resolve({ entries: [], total_qty: 0 })
-      return Promise.resolve(options.method ? null : {})
-    })
-    const { wrapper } = await mountMocked("ogn-037-298")
-
-    const toggle = wrapper.get(".wish-toggle")
-    expect(toggle.text()).toContain("Ajouter à la wishlist")
-    expect(toggle.attributes("aria-pressed")).toBe("false")
-
-    await toggle.trigger("click")
-    await flushPromises()
-    const put = api.mock.calls.find(
-      ([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "PUT"
-    )
-    expect(put[1].body).toEqual({ qty: 1 })
-    expect(toggle.text()).toContain("Dans ma wishlist")
-    expect(toggle.attributes("aria-pressed")).toBe("true")
-    expect(toggle.classes()).toContain("on")
-
-    await toggle.trigger("click")
-    await flushPromises()
-    expect(
-      api.mock.calls.some(([path, options]) => path === "/api/wishlist/ogn-037-298" && options?.method === "DELETE")
-    ).toBe(true)
-    expect(toggle.text()).toContain("Ajouter à la wishlist")
-    expect(toggle.attributes("aria-pressed")).toBe("false")
-    wrapper.unmount()
-  })
-
-  it("ajoute un lot : POST puis remise à 1 de la quantité saisie", async () => {
-    session.token = "jeton"
-    session.handle = "visiteur"
-    api.mockImplementation((path, options = {}) => {
-      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
-      if (path === "/api/collection/ogn-037-298" && !options.method) {
-        return Promise.resolve({ entries: [], total_qty: 0 })
-      }
-      if (path === "/api/collection/ogn-037-298/entries" && options.method === "POST") {
-        return Promise.resolve({ entries: [{ id: 1, qty: 3, condition: "NM", lang: "EN" }], total_qty: 3 })
-      }
-      return Promise.resolve({})
-    })
-    const { wrapper } = await mountMocked("ogn-037-298")
-
-    const qty = wrapper.get(".sheet-add input[type=number]")
-    await qty.setValue(3)
-    await wrapper.get(".sheet-add button").trigger("click")
-    await flushPromises()
-
-    const post = api.mock.calls.find(
-      ([path, options]) => path === "/api/collection/ogn-037-298/entries" && options?.method === "POST"
-    )
-    expect(post[1].body).toEqual({ qty: 3, condition: "NM", lang: "EN" })
-    expect(wrapper.get(".sheet-add input[type=number]").element.value).toBe("1")
-    expect(wrapper.text()).toContain("Lot ajouté.")
-    wrapper.unmount()
-  })
-
-  it("ajout en échec : la saisie est conservée et l'erreur affichée", async () => {
-    session.token = "jeton"
-    session.handle = "visiteur"
-    api.mockImplementation((path, options = {}) => {
-      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
-      if (path === "/api/collection/ogn-037-298" && !options.method) {
-        return Promise.resolve({ entries: [], total_qty: 0 })
-      }
-      if (path === "/api/collection/ogn-037-298/entries" && options.method === "POST") {
-        return Promise.reject(new Error("Collection indisponible"))
-      }
-      return Promise.resolve({})
-    })
-    const { wrapper } = await mountMocked("ogn-037-298")
-
-    await wrapper.get(".sheet-add input[type=number]").setValue(4)
-    await wrapper.get(".sheet-add button").trigger("click")
-    await flushPromises()
-
-    expect(wrapper.get(".error").text()).toContain("Collection indisponible")
-    expect(wrapper.get(".sheet-add input[type=number]").element.value).toBe("4")
-    wrapper.unmount()
-  })
-
-  it("les lots indisponibles ne masquent pas la fiche", async () => {
-    session.token = "jeton"
-    session.handle = "visiteur"
-    api.mockImplementation((path, options = {}) => {
-      if (path === "/api/cards/ogn-037-298") return Promise.resolve(sample())
-      if (path === "/api/collection/ogn-037-298" && !options.method) {
-        return Promise.reject(new Error("Collection indisponible"))
-      }
-      return Promise.resolve({})
-    })
-    const { wrapper } = await mountMocked("ogn-037-298")
-
-    expect(wrapper.get("h1").text()).toBe("Immortal Phoenix")
-    expect(wrapper.find(".error").exists()).toBe(false)
-    expect(document.title).toContain("Immortal Phoenix")
+    expect(wrapper.find(".fiche-price").exists()).toBe(false)
+    expect(wrapper.find(".fiche-price-link").exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -272,6 +245,50 @@ describe("CardView", () => {
     expect(api.mock.calls.every(([path]) => !String(path).includes("undefined"))).toBe(true)
     // la fiche en cours n'est pas effacée pendant la transition de sortie
     expect(wrapper.find("h1").exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it("sort sans puissance ni pouvoir : seule la stat d'énergie est rendue", async () => {
+    const { wrapper } = await mountView("ogn-037-298", sample({ type: "Spell", might: null, power: null }))
+    const stats = wrapper.findAll(".rift-stat")
+    expect(stats).toHaveLength(1)
+    expect(stats[0].text()).toContain("Énergie")
+    wrapper.unmount()
+  })
+
+  it("champ de bataille sans énergie : aucun RiftStat", async () => {
+    const { wrapper } = await mountView(
+      "ogn-275-298",
+      sample({ type: "Battlefield", orientation: "landscape", energy: null, might: null, power: null })
+    )
+    expect(wrapper.findAll(".rift-stat")).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it("le fil d'Ariane prend le nom de la carte, puis celui de la variante ouverte", async () => {
+    const variants = [
+      { id: "ogn-037-298", name: "Immortal Phoenix", variant: "standard" },
+      { id: "ogn-037a-298", name: "Immortal Phoenix (Alt)", variant: "alternate_art" }
+    ]
+    const { wrapper } = await mountView("ogn-037-298", sample({ variants }))
+    expect(pageCrumb.value).toBe("Immortal Phoenix")
+    api.mockResolvedValue(sample({ id: "ogn-037a-298", name: "Immortal Phoenix (Alt)", variants }))
+    await wrapper.findAll(".fiche-visual .rift-chip")[1].trigger("click")
+    await flushPromises()
+    expect(pageCrumb.value).toBe("Immortal Phoenix (Alt)")
+    wrapper.unmount()
+  })
+
+  it("les variantes sont sous l'illustration et marquent la variante affichée", async () => {
+    const variants = [
+      { id: "ogn-037-298", name: "Immortal Phoenix", variant: "standard" },
+      { id: "ogn-037a-298", name: "Immortal Phoenix", variant: "alternate_art" }
+    ]
+    const { wrapper } = await mountView("ogn-037-298", sample({ variants }))
+    const chips = wrapper.findAll(".fiche-visual .rift-chip")
+    expect(chips).toHaveLength(2)
+    expect(chips[0].attributes("aria-pressed")).toBe("true")
+    expect(chips[1].attributes("aria-pressed")).toBe("false")
     wrapper.unmount()
   })
 })

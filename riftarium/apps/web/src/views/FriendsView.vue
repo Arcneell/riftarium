@@ -1,10 +1,13 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
 import { createRoom, formatPlayedAt } from "../play.js"
 import { pageUrl } from "../seo.js"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftField from "../ui/RiftField.vue"
+import RiftPanel from "../ui/RiftPanel.vue"
+import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import { followUser, getFollows, profilePath, searchUsers, unfollowUser } from "../social.js"
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -152,122 +155,285 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.community" title="Mes amis" />
+  <div class="wrap cards-wrap amis">
+    <h1 class="amis-titre">Mes amis</h1>
 
-  <section>
-    <div class="wrap friends-page">
-      <div class="panel friends-search">
-        <h2>Trouver un joueur</h2>
-        <label class="search filter-search" for="friends-q">
-          <Icon name="search" :size="18" />
-          <input
-            id="friends-q"
-            v-model="query"
-            type="search"
-            inputmode="search"
-            enterkeyhint="search"
-            autocapitalize="none"
-            autocorrect="off"
-            spellcheck="false"
-            :placeholder="`Pseudo (${MIN_QUERY} caractères minimum)…`"
-            aria-label="Rechercher un joueur par pseudo"
-          />
-        </label>
-        <p v-if="searching" class="muted mono">Recherche…</p>
-        <ul v-else-if="results.length" class="friend-list">
-          <li v-for="user in results" :key="user.id || user.handle" class="friend-row">
-            <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
-            <RouterLink class="friend-name" :to="profilePath(user.handle)">{{ user.handle }}</RouterLink>
-            <button
+    <RiftPanel class="amis-recherche" title="Trouver un joueur">
+      <RiftField
+        v-model="query"
+        search
+        label="Rechercher un joueur par pseudo"
+        hide-label
+        inputmode="search"
+        enterkeyhint="search"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        :placeholder="`Pseudo (${MIN_QUERY} caractères minimum)…`"
+      />
+      <p v-if="searching" class="amis-etat" role="status">Recherche…</p>
+      <ul v-else-if="results.length" class="amis-liste">
+        <li v-for="user in results" :key="user.id || user.handle" class="amis-row">
+          <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
+          <span class="amis-ident">
+            <RouterLink class="amis-nom" :to="profilePath(user.handle)" :title="user.handle">
+              {{ user.handle }}
+            </RouterLink>
+          </span>
+          <span class="amis-actions">
+            <RiftButton
               v-if="followedHandles.has(user.handle)"
-              type="button"
-              class="btn btn-ghost btn-sm"
+              variant="ghost"
+              size="sm"
+              class="amis-suivi"
+              :aria-label="`Suivi, ne plus suivre ${user.handle}`"
+              :title="`Ne plus suivre ${user.handle}`"
               :disabled="Boolean(busy)"
               @click="unfollow(user)"
             >
-              Ne plus suivre
-            </button>
-            <button v-else type="button" class="btn btn-gold btn-sm" :disabled="Boolean(busy)" @click="follow(user)">
-              Suivre
-            </button>
+              <span class="amis-suivi-repos" aria-hidden="true">Suivi</span>
+              <span class="amis-suivi-survol" aria-hidden="true">Ne plus suivre</span>
+            </RiftButton>
+            <RiftButton
+              v-else
+              size="sm"
+              :aria-label="`Suivre ${user.handle}`"
+              :disabled="Boolean(busy)"
+              @click="follow(user)"
+              >Suivre</RiftButton
+            >
+          </span>
+        </li>
+      </ul>
+      <p v-else-if="query.trim().length >= MIN_QUERY" class="amis-etat">Aucun joueur à ce pseudo.</p>
+    </RiftPanel>
+
+    <p v-if="error" class="amis-erreur" role="alert">{{ error }}</p>
+
+    <div v-else-if="loading" class="amis-squelette" role="status">
+      <span class="sr-only">Chargement de vos amis…</span>
+      <RiftSkeleton block />
+      <RiftSkeleton :lines="3" />
+    </div>
+
+    <template v-else>
+      <RiftPanel class="amis-panel">
+        <template #title>
+          Je suis <span class="amis-compte">({{ following.length }})</span>
+        </template>
+        <ul v-if="following.length" class="amis-liste">
+          <li v-for="user in following" :key="user.id || user.handle" class="amis-row">
+            <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
+            <span class="amis-ident">
+              <RouterLink class="amis-nom" :to="profilePath(user.handle)" :title="user.handle">
+                {{ user.handle }}
+              </RouterLink>
+              <span v-if="formatPlayedAt(user.last_match_at)" class="amis-quand">
+                Dernière partie : {{ formatPlayedAt(user.last_match_at) }}
+              </span>
+            </span>
+            <span class="amis-actions">
+              <RiftButton size="sm" :disabled="inviting" @click="inviteToRoom(user)">Inviter dans un salon</RiftButton>
+              <RiftButton variant="ghost" size="sm" :disabled="Boolean(busy)" @click="unfollow(user)">
+                Ne plus suivre
+              </RiftButton>
+            </span>
           </li>
         </ul>
-        <p v-else-if="query.trim().length >= MIN_QUERY" class="muted mono">Aucun joueur à ce pseudo.</p>
-      </div>
+        <RiftEmpty
+          v-else
+          title="Personne pour l'instant"
+          text="Cherchez un pseudo ci-dessus, ou suivez un adversaire depuis votre historique."
+        >
+          <RiftButton variant="secondary" size="sm" to="/historique">Ouvrir l'historique</RiftButton>
+        </RiftEmpty>
+      </RiftPanel>
 
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-else-if="loading" class="muted">Chargement de vos amis…</p>
+      <RiftPanel v-if="invite.handle" class="amis-invite" :title="`Salon pour ${invite.handle}`" accent="var(--bronze)">
+        <p v-if="invite.error" class="amis-erreur" role="alert">{{ invite.error }}</p>
+        <template v-else-if="invite.code">
+          <p class="amis-invite-code">{{ invite.code }}</p>
+          <p class="amis-texte">Transmettez ce code (ou le lien) à {{ invite.handle }}.</p>
+          <div class="amis-actions">
+            <RiftButton size="sm" :to="`/salon/${invite.code}`">Ouvrir le salon</RiftButton>
+            <RiftButton variant="secondary" size="sm" @click="copyInvite">Copier le lien</RiftButton>
+            <span v-if="invite.copied" class="amis-quand" role="status">Lien copié</span>
+          </div>
+          <p class="amis-quand amis-invite-link">{{ invite.link }}</p>
+        </template>
+        <p v-else class="amis-texte" role="status">Création du salon…</p>
+      </RiftPanel>
 
-      <template v-else>
-        <div class="panel friends-panel">
-          <h2>
-            Suivis <span class="mono muted">({{ following.length }})</span>
-          </h2>
-          <ul v-if="following.length" class="friend-list">
-            <li v-for="user in following" :key="user.id || user.handle" class="friend-row">
-              <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
-              <span class="friend-ident">
-                <RouterLink class="friend-name" :to="profilePath(user.handle)">{{ user.handle }}</RouterLink>
-                <span v-if="formatPlayedAt(user.last_match_at)" class="mono muted friend-when">
-                  Dernière partie : {{ formatPlayedAt(user.last_match_at) }}
-                </span>
-              </span>
-              <button type="button" class="btn btn-gold btn-sm" :disabled="inviting" @click="inviteToRoom(user)">
-                Inviter dans un salon
-              </button>
-              <button type="button" class="btn btn-ghost btn-sm" :disabled="Boolean(busy)" @click="unfollow(user)">
-                Ne plus suivre
-              </button>
-            </li>
-          </ul>
-          <p v-else class="muted">
-            Personne pour l'instant. Cherchez un pseudo ci-dessus, ou suivez un adversaire depuis votre
-            <RouterLink to="/historique">historique</RouterLink>.
-          </p>
-        </div>
-
-        <div v-if="invite.handle" class="panel friends-invite">
-          <h2>Salon pour {{ invite.handle }}</h2>
-          <p v-if="invite.error" class="error">{{ invite.error }}</p>
-          <template v-else-if="invite.code">
-            <p class="mono friends-invite-code">{{ invite.code }}</p>
-            <p class="muted">Transmettez ce code (ou le lien) à {{ invite.handle }}.</p>
-            <div class="friends-invite-actions">
-              <RouterLink class="btn btn-gold btn-sm" :to="`/salon/${invite.code}`">Ouvrir le salon</RouterLink>
-              <button type="button" class="btn btn-ghost btn-sm" @click="copyInvite">Copier le lien</button>
-              <span v-if="invite.copied" class="mono muted" role="status">Lien copié</span>
-            </div>
-            <p class="mono muted friends-invite-link">{{ invite.link }}</p>
-          </template>
-          <p v-else class="muted">Création du salon…</p>
-        </div>
-
-        <div class="panel friends-panel">
-          <h2>
-            Abonnés <span class="mono muted">({{ followers.length }})</span>
-          </h2>
-          <ul v-if="followers.length" class="friend-list">
-            <li v-for="user in followers" :key="user.id || user.handle" class="friend-row">
-              <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
-              <RouterLink class="friend-name" :to="profilePath(user.handle)">{{ user.handle }}</RouterLink>
-              <button
+      <RiftPanel class="amis-panel">
+        <template #title>
+          Ils me suivent <span class="amis-compte">({{ followers.length }})</span>
+        </template>
+        <ul v-if="followers.length" class="amis-liste">
+          <li v-for="user in followers" :key="user.id || user.handle" class="amis-row">
+            <UserAvatar :src="user.avatar_url" :handle="user.handle" :size="36" />
+            <span class="amis-ident">
+              <RouterLink class="amis-nom" :to="profilePath(user.handle)" :title="user.handle">
+                {{ user.handle }}
+              </RouterLink>
+            </span>
+            <span class="amis-actions">
+              <RiftButton
                 v-if="!followedHandles.has(user.handle)"
-                type="button"
-                class="btn btn-ghost btn-sm"
+                variant="secondary"
+                size="sm"
                 :disabled="Boolean(busy)"
                 @click="follow(user)"
               >
                 Suivre en retour
-              </button>
-            </li>
-          </ul>
-          <p v-else class="muted">Personne ne vous suit encore.</p>
-        </div>
+              </RiftButton>
+            </span>
+          </li>
+        </ul>
+        <RiftEmpty v-else title="Personne ne vous suit encore" />
+      </RiftPanel>
 
-        <p v-if="empty" class="muted friends-note">
-          Suivre un joueur reste privé : rien n'est publié, rien n'est notifié.
-        </p>
-      </template>
-    </div>
-  </section>
+      <p v-if="empty" class="amis-note">Suivre un joueur reste privé : rien n'est publié, rien n'est notifié.</p>
+    </template>
+  </div>
 </template>
+
+<style scoped>
+.amis {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+.amis p {
+  margin: 0;
+}
+/* Titre de page : neutralise le style de base des h1. */
+.amis-titre {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+}
+.amis-erreur {
+  color: var(--blood-text);
+}
+.amis-note,
+.amis-etat,
+.amis-texte,
+.amis-quand {
+  color: var(--ink-muted);
+}
+.amis-etat {
+  margin-top: var(--space-3);
+}
+.amis-note {
+  text-align: center;
+}
+.amis-squelette {
+  display: grid;
+  gap: var(--space-3);
+}
+.amis-squelette :deep(.rift-skeleton-block) {
+  height: 84px;
+}
+.amis-compte {
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+.amis-panel {
+  min-width: 0;
+}
+.amis-recherche :deep(.rift-field) {
+  margin-bottom: var(--space-3);
+}
+.amis-nom {
+  color: var(--bronze-light);
+}
+.amis-nom:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+
+/* Bouton « Suivi » : au survol et au focus, l'étiquette annonce l'action réelle. */
+.amis-suivi-survol {
+  display: none;
+}
+.amis-suivi:hover .amis-suivi-repos,
+.amis-suivi:focus-visible .amis-suivi-repos {
+  display: none;
+}
+.amis-suivi:hover .amis-suivi-survol,
+.amis-suivi:focus-visible .amis-suivi-survol {
+  display: inline;
+}
+
+/* ---------- Lignes ---------- */
+.amis-liste {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.amis-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.amis-ident {
+  display: grid;
+  min-width: 0;
+}
+.amis-nom {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.amis-quand {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.amis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* ---------- Invitation ---------- */
+.amis-invite-code {
+  font-family: var(--font-label);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--bronze-light);
+}
+.amis-invite .amis-actions {
+  justify-content: flex-start;
+  margin: var(--space-3) 0;
+}
+.amis-invite-link {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .amis-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .amis-row .amis-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+</style>

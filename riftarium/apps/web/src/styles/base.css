@@ -1,0 +1,250 @@
+/* ============================================================
+   Riftarium — base globale « Forge noxienne »
+   Reset, typographie de base et vocabulaire de jeu partagé
+   (glyphes Riot, pastilles de mots-clés). Rien d'autre n'est
+   global : chaque composant porte ses styles (scoped).
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Barre haute collante : une ancre ne doit pas finir dessous. */
+  scroll-padding-top: calc(var(--topbar-h) + 16px);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  /* dvh : 100vh inclut la barre d'adresse rétractable sur mobile. */
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Lueur de forge, sur un calque fixe composité : aucun repaint au défilement. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(900px 480px at 85% -10%, rgba(179, 38, 43, 0.14) 0%, transparent 65%);
+}
+
+/* Défilement bloqué : posé par toute modale, feuille ou palette ouverte. */
+body.nav-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Titres : valeurs reprises de l'ancienne feuille globale, qui les imposait jusqu'ici
+   à toutes les pages (graisse, interlettrage, tailles). Les pages refaites ne posent
+   souvent que ce qui change : ces valeurs restent donc celles qu'elles affichent. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.16;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+h1 {
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+}
+h2 {
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  margin-bottom: 18px;
+}
+h3 {
+  font-size: 1.15rem;
+  color: var(--bronze-light);
+}
+
+::selection {
+  background: rgba(179, 38, 43, 0.45);
+  color: #fff;
+}
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-sunken);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bronze);
+  border: 3px solid var(--bg-sunken);
+  border-radius: 999px;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+a {
+  color: var(--bronze-light);
+  text-decoration: none;
+  transition: color var(--t-fast);
+}
+a:hover {
+  color: var(--blood-text);
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 3px;
+}
+
+/* Champs de saisie : fond creusé, filet discret, focus bronze clair. Les composants
+   (RiftField…) et les pages les rhabillent ; ceci est le plancher commun. */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--bronze-light);
+}
+/* Focus clavier visible : l'anneau bronze revient, rentrant pour ne pas déborder.
+   Sélecteur plus spécifique que `outline: none` ci-dessus. */
+input:is([type="text"], [type="search"], [type="email"], [type="password"], [type="number"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-muted);
+}
+textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+/* Zoom iOS : tout champ sous 16 px fait grossir la page au premier tap, sans retour. */
+@media (max-width: 760px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Tableaux : cellules alignées à gauche, filets fusionnés ; l'habillage est local. */
+table {
+  border-collapse: collapse;
+}
+th,
+td {
+  text-align: left;
+  vertical-align: middle;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+}
+
+/* ---------- Vocabulaire de jeu : glyphes Riot et mots-clés ---------- */
+.rb-glyph {
+  display: inline-block;
+  width: 1.12em;
+  height: 1.12em;
+  vertical-align: -0.2em;
+  margin: 0 0.1em;
+}
+/* Les glyphes officiels sont blancs : on les teinte à l'encre via un masque. */
+.rb-glyph.ink {
+  background-color: currentColor;
+  -webkit-mask: var(--glyph) center / contain no-repeat;
+  mask: var(--glyph) center / contain no-repeat;
+}
+.rb-glyph.energy {
+  filter: invert(1) saturate(0) brightness(1.12);
+}
+.rb-kw {
+  display: inline-block;
+  margin: 0 0.14em;
+  padding: 0.05em 0.5em;
+  border-radius: 3px;
+  background: var(--kw, var(--kw-utility));
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.78em;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 0.06em;
+  white-space: nowrap;
+}
+.rb-kw.timing {
+  --kw: var(--kw-timing);
+}
+.rb-kw.combat {
+  --kw: var(--kw-combat);
+}
+.rb-kw.state {
+  --kw: var(--kw-state);
+}
+.rb-kw.utility {
+  --kw: var(--kw-utility);
+}
+.rb-kw.arrow {
+  padding-right: 0.85em;
+  clip-path: polygon(0 0, calc(100% - 0.45em) 0, 100% 50%, calc(100% - 0.45em) 100%, 0 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

@@ -141,7 +141,7 @@ export const DOMAINS = {
   Body: { label: "Corps", color: "var(--body)", text: "var(--body-text)" },
   Chaos: { label: "Chaos", color: "var(--chaos)", text: "var(--chaos-text)" },
   Order: { label: "Ordre", color: "var(--order)", text: "var(--order-text)" },
-  Colorless: { label: "Neutre", color: "var(--muted)", text: "var(--muted)" }
+  Colorless: { label: "Neutre", color: "var(--ink-muted)", text: "var(--ink-muted)" }
 }
 
 export const TYPES = {

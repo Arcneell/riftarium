@@ -7,8 +7,6 @@
      partie même sans réseau — y compris sans avoir jamais ouvert la page.
    - /assets/*   : cache-first — les bundles Vite sont fingerprintés, donc
      immuables ; une fois en cache, plus besoin du réseau.
-   - /ocr/*      : cache-first — moteur OCR du scanner (worker, wasm, modèle),
-     chargé à la demande depuis la page Scan, jamais précaché (plusieurs Mo).
    - /data/rules-fr.json : stale-while-revalidate — on sert le cache tout de
      suite (rapide, fonctionne hors ligne) et on rafraîchit derrière.
    - Navigations : network-first — la version fraîche si possible, sinon le
@@ -17,19 +15,16 @@
      au front qui les gère déjà.
 
    Incrémenter VERSION à chaque changement de stratégie ou de précache :
-   l'activation supprime les caches des versions précédentes. Aussi quand
-   tesseract.js change de version — moins critique depuis que /ocr/ porte la
-   version du moteur dans son chemin, mais un cache d'un ancien moteur reste
-   du poids mort dans le quota du navigateur. */
+   l'activation supprime les caches des versions précédentes. */
 
-const VERSION = 3
+const VERSION = 4
 const CACHE = `riftarium-v${VERSION}`
 
 /* Rempli au build par le plugin `inject-sw-precache` (vite.config.js) avec les
    bundles fingerprintés nécessaires hors ligne : le shell (chunk d'entrée + ses
    imports statiques + la feuille de style + les polices latines) et les routes
    des règles : une vingtaine de fichiers, ~560 Ko, là où tout /assets/ en
-   comptait 66 pour ~900 Ko — la cartothèque, les decks, le scan et les
+   comptait 66 pour ~900 Ko — la cartothèque, les decks et les
    statistiques n'ont aucun sens sans réseau. Sans ce précache, les chunks des
    routes jamais visitées (chargés à la demande par le routeur) manqueraient
    hors ligne. Liste vide en dev. */
@@ -150,9 +145,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  /* /ocr/* : moteur OCR du scanner (worker, wasm, modèle — plusieurs Mo, non
-     précachés) : cache-first dès le premier scan, comme les bundles. */
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/ocr/")) {
+  if (url.pathname.startsWith("/assets/")) {
     event.respondWith(cacheFirst(request))
     return
   }

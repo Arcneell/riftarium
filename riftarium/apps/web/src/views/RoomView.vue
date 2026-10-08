@@ -2,8 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb } from "../api.js"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
 import UserAvatar from "../components/UserAvatar.vue"
 import { legendOf } from "../deckDisplay.js"
 import { profilePath } from "../social.js"
@@ -21,6 +19,10 @@ import {
   roomStatusLabel,
   updateMe
 } from "../play.js"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftChip from "../ui/RiftChip.vue"
+import RiftField from "../ui/RiftField.vue"
+import RiftPanel from "../ui/RiftPanel.vue"
 
 /* Temps réel par sondage : 5 s côté web (2 s sur mobile, où vit le compteur).
    Le minuteur est réarmé après chaque réponse — jamais deux requêtes en vol — et
@@ -73,7 +75,9 @@ const canJoin = computed(() =>
   Boolean(room.value && !myPlayer.value && room.value.status === "open" && players.value.length < 2)
 )
 const bothReady = computed(() => players.value.length === 2 && players.value.every((player) => player.ready))
-const seatLabel = (player) => (room.value && player.user?.id === room.value.host_id ? "Hôte" : "Invité")
+const isHostPlayer = (player) => Boolean(room.value && player.user?.id === room.value.host_id)
+/* Deux sièges face à face : le second reste visible, libre, tant que personne ne l'occupe. */
+const seats = computed(() => [players.value[0] ?? null, players.value[1] ?? null])
 
 const myMatchPlayer = computed(() => (match.value?.players || []).find((p) => p.user?.id === me.value?.id) || null)
 const canConfirm = computed(() =>
@@ -325,208 +329,654 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.table" title="Salon de jeu" />
+  <div class="wrap cards-wrap salon">
+    <h1 class="salon-title">
+      Salon de jeu
+      <span v-if="code" class="salon-code">{{ room?.code || code }}</span>
+    </h1>
 
-  <section>
-    <div class="wrap play-page play-room">
-      <!-- Sans code : saisie manuelle, pour qui a reçu le code sans le lien. -->
-      <div v-if="!code" class="panel play-empty">
-        <h3>Rejoindre un salon</h3>
-        <p class="muted">
-          Saisissez le code à six caractères affiché sur le téléphone de l'hôte, ou ouvrez simplement le lien qu'il vous
-          a partagé.
-        </p>
-        <form class="play-code-form" @submit.prevent="openCode">
-          <label class="play-code-label" for="room-code">Code du salon</label>
-          <input
-            id="room-code"
+    <!-- Sans code : saisie manuelle, pour qui a reçu le code sans le lien. -->
+    <RiftPanel v-if="!code" class="salon-rejoindre" title="Rejoindre un salon">
+      <p class="salon-note">
+        Saisissez le code à six caractères affiché sur le téléphone de l'hôte, ou ouvrez simplement le lien qu'il vous a
+        partagé.
+      </p>
+      <form class="salon-code-form" @submit.prevent="openCode">
+        <div class="salon-code-field">
+          <RiftField
             v-model="codeDraft"
-            type="text"
-            class="play-code-input mono"
+            label="Code du salon"
             maxlength="6"
+            autocomplete="off"
             autocapitalize="characters"
             autocorrect="off"
             spellcheck="false"
             placeholder="ABC234"
           />
-          <button class="btn btn-gold" type="submit" :disabled="!codeDraft.trim()">Ouvrir le salon</button>
-        </form>
-        <p v-if="current?.room" class="muted">
-          Vous avez déjà un salon en cours :
-          <RouterLink :to="`/salon/${current.room.code}`">{{ current.room.code }}</RouterLink>
-        </p>
-      </div>
+        </div>
+        <RiftButton type="submit" variant="primary" :disabled="!codeDraft.trim()">Rejoindre</RiftButton>
+      </form>
+      <p v-if="current?.room" class="salon-note">
+        Vous avez déjà un salon en cours :
+        <RouterLink class="salon-link" :to="`/salon/${current.room.code}`">{{ current.room.code }}</RouterLink>
+      </p>
+    </RiftPanel>
 
-      <template v-else>
-        <p v-if="loading" class="muted">Chargement du salon…</p>
-        <p v-else-if="error && !room" class="error">{{ error }}</p>
+    <template v-else>
+      <p v-if="loading" class="salon-note" role="status">Chargement du salon…</p>
+      <p v-else-if="error && !room" class="salon-error" role="alert">{{ error }}</p>
 
-        <template v-else-if="room">
-          <div class="panel play-room-head">
-            <p class="mono play-room-code">Salon {{ room.code }}</p>
-            <span class="chip play-mode">{{ modeLabel(room.mode) }}</span>
-            <span class="chip play-status">{{ roomStatusLabel(room.status) }}</span>
-            <span class="mono muted play-room-rules">
+      <template v-else-if="room">
+        <RiftPanel class="salon-head" tag="div">
+          <div class="salon-meta">
+            <RiftChip class="salon-statut" static selected :label="roomStatusLabel(room.status)" />
+            <RiftChip class="salon-format" static :label="modeLabel(room.mode)" />
+            <span class="salon-regles">
               {{ room.victory_score }} points · {{ room.rounds_to_win }} manche(s) gagnante(s)
             </span>
           </div>
 
-          <p v-if="error" class="error">{{ error }}</p>
-          <p v-if="pollError" class="muted mono" role="status">{{ pollError }}</p>
-
-          <ul class="play-seats">
-            <li v-for="player in players" :key="player.seat" class="panel play-seat" :class="{ ready: player.ready }">
-              <p class="play-seat-who">
-                <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="32" />
-                <!-- Le pseudo mène au profil public : de quoi jauger un adversaire inconnu. -->
-                <RouterLink v-if="player.user?.handle" :to="profilePath(player.user.handle)">
-                  {{ player.user.handle }}
-                </RouterLink>
-                <span v-else>Compte supprimé</span>
-                <span class="chip play-seat-role">{{ seatLabel(player) }}</span>
-              </p>
-              <div class="play-side-legend">
-                <img
-                  v-if="player.legend?.image_url"
-                  class="play-legend-thumb"
-                  :src="cardThumb(player.legend.image_url, 72)"
-                  :alt="`Légende : ${player.legend.name}`"
-                  width="72"
-                  height="72"
-                  loading="lazy"
-                  decoding="async"
+          <div class="salon-duel">
+            <template v-for="(player, index) in seats" :key="index">
+              <p v-if="index === 1" class="salon-contre">contre</p>
+              <div v-if="player" class="salon-seat" :class="{ 'salon-seat-ready': player.ready }">
+                <p class="salon-who">
+                  <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="40" />
+                  <!-- Le pseudo mène au profil public : de quoi jauger un adversaire inconnu. -->
+                  <RouterLink
+                    v-if="player.user?.handle"
+                    class="salon-pseudo salon-ellipse"
+                    :to="profilePath(player.user.handle)"
+                    :title="player.user.handle"
+                  >
+                    {{ player.user.handle }}
+                  </RouterLink>
+                  <span v-else class="salon-pseudo salon-ellipse salon-faint">Compte supprimé</span>
+                  <span v-if="isHostPlayer(player)" class="salon-hote">hôte</span>
+                </p>
+                <p class="salon-legend">
+                  <img
+                    v-if="player.legend?.image_url"
+                    class="salon-thumb"
+                    :src="cardThumb(player.legend.image_url, 72)"
+                    :alt="`Légende : ${player.legend.name}`"
+                    width="36"
+                    height="36"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span v-else class="salon-thumb salon-thumb-empty" aria-hidden="true"></span>
+                  <span class="salon-ellipse" :class="{ 'salon-faint': !player.legend }">
+                    {{ player.legend?.name || "Légende à choisir" }}
+                  </span>
+                </p>
+                <p class="salon-deck salon-ellipse" :class="{ 'salon-faint': !player.deck }">
+                  {{ player.deck?.name || "Deck à choisir" }}
+                </p>
+                <RiftChip
+                  class="salon-pret"
+                  static
+                  :selected="player.ready"
+                  :label="player.ready ? 'Prêt' : 'Pas encore prêt'"
                 />
-                <span v-else class="play-legend-thumb empty" aria-hidden="true"></span>
-                <span class="mono">{{ player.legend?.name || "Légende à choisir" }}</span>
               </div>
-              <p class="mono play-seat-deck">{{ player.deck?.name || "Deck à choisir" }}</p>
-              <p class="mono play-seat-ready" :class="player.ready ? 'is-ready' : 'muted'">
-                {{ player.ready ? "Prêt ✓" : "Pas encore prêt" }}
-              </p>
-            </li>
-            <li v-if="players.length < 2" class="panel play-seat empty">
-              <p class="muted">Place libre — en attente d'un adversaire.</p>
-            </li>
-          </ul>
-
-          <div v-if="canJoin" class="panel play-actions">
-            <p class="muted">Ce salon vous attend : rejoignez-le, puis choisissez votre légende et votre deck.</p>
-            <button class="btn btn-gold" type="button" :disabled="busy" @click="join">Rejoindre</button>
+              <div v-else class="salon-seat salon-seat-libre">
+                <p class="salon-note">Place libre — en attente d'un adversaire.</p>
+              </div>
+            </template>
           </div>
+        </RiftPanel>
 
-          <p v-else-if="!myPlayer && room.status === 'open'" class="muted">
-            Ce salon est complet : les deux places sont prises.
-          </p>
-          <p v-else-if="!myPlayer" class="muted">Vous ne participez pas à ce salon.</p>
+        <p v-if="error" class="salon-error" role="alert">{{ error }}</p>
+        <p v-if="pollError" class="salon-note" role="status">{{ pollError }}</p>
 
-          <!-- Choix perso : uniquement tant que la partie n'est pas lancée. -->
-          <div v-if="myPlayer && room.status === 'open'" class="panel play-picker">
-            <h3>Mes choix</h3>
+        <RiftPanel v-if="canJoin" class="salon-join" tag="div">
+          <p class="salon-note">Ce salon vous attend : rejoignez-le, puis choisissez votre légende et votre deck.</p>
+          <RiftButton variant="primary" :disabled="busy" @click="join">Rejoindre</RiftButton>
+        </RiftPanel>
 
-            <div class="field">
-              <label for="room-legend">Légende</label>
-              <input
-                id="room-legend"
+        <p v-else-if="!myPlayer && room.status === 'open'" class="salon-note">
+          Ce salon est complet : les deux places sont prises.
+        </p>
+        <p v-else-if="!myPlayer" class="salon-note">Vous ne participez pas à ce salon.</p>
+
+        <!-- Choix perso : uniquement tant que la partie n'est pas lancée. -->
+        <RiftPanel v-if="myPlayer && room.status === 'open'" class="salon-choix" title="Mes choix">
+          <div class="salon-choix-grid">
+            <div class="salon-legend-search">
+              <RiftField
                 v-model="legendQuery"
-                type="search"
+                label="Légende"
+                search
                 inputmode="search"
+                autocomplete="off"
                 autocapitalize="off"
                 autocorrect="off"
                 spellcheck="false"
                 placeholder="Rechercher une légende…"
               />
-              <p v-if="legendSearching" class="muted mono">Recherche…</p>
-              <ul v-if="legendResults.length" class="play-legend-results">
+              <p v-if="legendSearching" class="salon-note" role="status">Recherche…</p>
+              <ul v-if="legendResults.length" class="salon-legend-results">
                 <li v-for="card in legendResults" :key="card.id">
-                  <button type="button" :disabled="busy" @click="pickLegend(card)">
+                  <button type="button" class="salon-legend-option" :disabled="busy" @click="pickLegend(card)">
                     <img
                       v-if="card.image_url"
-                      class="play-legend-thumb"
+                      class="salon-thumb"
                       :src="cardThumb(card.image_url, 72)"
                       alt=""
-                      width="72"
-                      height="72"
+                      width="32"
+                      height="32"
                       loading="lazy"
                       decoding="async"
                     />
-                    <span>{{ card.name }}</span>
+                    <span v-else class="salon-thumb salon-thumb-empty" aria-hidden="true"></span>
+                    <span class="salon-ellipse">{{ card.name }}</span>
                   </button>
                 </li>
               </ul>
-              <p v-else-if="legendQuery.trim() && !legendSearching" class="muted mono">Aucune légende trouvée.</p>
+              <p v-else-if="legendQuery.trim() && !legendSearching" class="salon-note">Aucune légende trouvée.</p>
             </div>
 
-            <div class="field">
-              <label for="room-deck">Deck</label>
-              <select id="room-deck" :value="myPlayer.deck?.id ?? ''" :disabled="busy" @change="pickDeck">
-                <option value="">Sans deck</option>
-                <option v-for="deck in decks" :key="deck.id" :value="deck.id">{{ deck.name }}</option>
-              </select>
+            <div class="salon-deck-field">
+              <label class="salon-label" for="room-deck">Deck</label>
+              <span class="salon-select-box">
+                <select
+                  id="room-deck"
+                  class="salon-select"
+                  :value="myPlayer.deck?.id ?? ''"
+                  :disabled="busy"
+                  @change="pickDeck"
+                >
+                  <option value="">Sans deck</option>
+                  <option v-for="deck in decks" :key="deck.id" :value="deck.id">{{ deck.name }}</option>
+                </select>
+              </span>
             </div>
-
-            <button
-              class="btn"
-              :class="myPlayer.ready ? 'btn-ghost' : 'btn-gold'"
-              type="button"
-              :aria-pressed="myPlayer.ready"
-              :disabled="busy"
-              @click="toggleReady"
-            >
-              {{ myPlayer.ready ? "Je ne suis plus prêt" : "Je suis prêt" }}
-            </button>
           </div>
 
-          <!-- Le lancement vit sur le téléphone de l'hôte : le compteur y est tenu. -->
-          <p v-if="myPlayer && room.status === 'open' && bothReady" class="panel play-notice">
+          <RiftButton
+            class="salon-ready"
+            :variant="myPlayer.ready ? 'ghost' : 'primary'"
+            :aria-pressed="myPlayer.ready ? 'true' : 'false'"
+            :disabled="busy"
+            @click="toggleReady"
+          >
+            {{ myPlayer.ready ? "Je ne suis plus prêt" : "Je suis prêt" }}
+          </RiftButton>
+        </RiftPanel>
+
+        <!-- Le lancement vit sur le téléphone de l'hôte : le compteur y est tenu. -->
+        <RiftPanel
+          v-if="myPlayer && room.status === 'open' && bothReady"
+          class="salon-notice"
+          tag="div"
+          accent="var(--bronze)"
+        >
+          <p class="salon-notice-text">
             <template v-if="isHost">Lancez la partie depuis l'application Riftarium sur votre téléphone.</template>
             <template v-else>Tout le monde est prêt : l'hôte lance la partie depuis son téléphone.</template>
           </p>
+        </RiftPanel>
 
-          <div v-if="myPlayer && room.status === 'open'" class="play-actions-row">
-            <button v-if="isHost" class="btn btn-danger" type="button" :disabled="busy" @click="cancel">
-              Annuler le salon
-            </button>
-            <button v-else class="btn btn-ghost" type="button" :disabled="busy" @click="leave">Quitter le salon</button>
-          </div>
+        <div v-if="myPlayer && room.status === 'open'" class="salon-actions">
+          <RiftButton v-if="isHost" class="salon-danger" variant="secondary" :disabled="busy" @click="cancel">
+            Annuler le salon
+          </RiftButton>
+          <RiftButton v-else variant="ghost" :disabled="busy" @click="leave">Quitter le salon</RiftButton>
+        </div>
 
-          <div v-if="match" class="panel play-match">
-            <h3>Partie</h3>
-            <p class="mono play-match-status">
-              {{ matchStatusLabel(match.status) }}
-              <span v-if="match.state?.round"> · manche {{ match.state.round }}</span>
-              <span v-if="match.state?.turn"> · tour {{ match.state.turn }}</span>
-            </p>
-            <ul class="play-match-scores">
-              <li v-for="player in match.players" :key="player.seat">
-                <span class="play-match-name">
-                  <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="24" />
-                  <RouterLink v-if="player.user?.handle" :to="profilePath(player.user.handle)">
-                    {{ player.user.handle }}
-                  </RouterLink>
-                  <span v-else>Compte supprimé</span>
-                </span>
-                <b class="play-match-score">{{ player.score }}</b>
-                <span v-if="match.mode === 'match'" class="mono muted">{{ player.rounds_won }} manche(s)</span>
-                <span v-if="player.confirmed" class="chip play-outcome calm">Confirmé</span>
-              </li>
-            </ul>
-            <p class="muted">Cette page suit le score en lecture seule.</p>
-            <div v-if="canConfirm" class="play-actions-row">
-              <button class="btn btn-gold" type="button" :disabled="busy" @click="confirmResult">
-                Confirmer le résultat
-              </button>
-              <button class="btn btn-ghost" type="button" :disabled="busy" @click="disputeResult">Contester</button>
+        <RiftPanel v-if="match" class="salon-partie" title="Partie">
+          <p class="salon-partie-status">
+            {{ matchStatusLabel(match.status) }}
+            <span v-if="match.state?.round"> · manche {{ match.state.round }}</span>
+            <span v-if="match.state?.turn"> · tour {{ match.state.turn }}</span>
+          </p>
+          <ul class="salon-scores" aria-live="polite">
+            <li v-for="player in match.players" :key="player.seat" class="salon-score-side" aria-atomic="true">
+              <span class="sr-only">{{ player.user?.handle || "Compte supprimé" }} : {{ player.score }}</span>
+              <span class="salon-score-who">
+                <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="28" />
+                <RouterLink
+                  v-if="player.user?.handle"
+                  class="salon-pseudo salon-ellipse"
+                  :to="profilePath(player.user.handle)"
+                  :title="player.user.handle"
+                >
+                  {{ player.user.handle }}
+                </RouterLink>
+                <span v-else class="salon-pseudo salon-ellipse salon-faint">Compte supprimé</span>
+              </span>
+              <b class="salon-score" aria-hidden="true">{{ player.score }}</b>
+              <span v-if="match.mode === 'match'" class="salon-manches">{{ player.rounds_won }} manche(s)</span>
+              <RiftChip v-if="player.confirmed" class="salon-confirme" static selected label="Confirmé" />
+            </li>
+          </ul>
+          <p class="salon-note">Cette page suit le score en lecture seule.</p>
+          <div class="salon-issue" aria-live="polite">
+            <div v-if="canConfirm" class="salon-actions">
+              <RiftButton variant="primary" :disabled="busy" @click="confirmResult">Confirmer le résultat</RiftButton>
+              <RiftButton variant="ghost" :disabled="busy" @click="disputeResult">Contester</RiftButton>
             </div>
-            <p v-else-if="match.status === 'disputed'" class="muted">
+            <p v-else-if="match.status === 'disputed'" class="salon-note">
               Résultat contesté : cette partie est exclue des
-              <RouterLink to="/statistiques">statistiques</RouterLink>.
+              <RouterLink class="salon-link" to="/statistiques">statistiques</RouterLink>.
             </p>
-            <p v-else-if="match.status === 'confirmed' || match.status === 'abandoned'" class="muted">
-              Partie close — elle apparaît dans votre <RouterLink to="/historique">historique</RouterLink>.
+            <p v-else-if="match.status === 'confirmed' || match.status === 'abandoned'" class="salon-note">
+              Partie close — elle apparaît dans votre
+              <RouterLink class="salon-link" to="/historique">historique</RouterLink>.
             </p>
           </div>
-        </template>
+        </RiftPanel>
       </template>
-    </div>
-  </section>
+    </template>
+  </div>
 </template>
+
+<style scoped>
+.salon {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+.salon p {
+  margin: 0;
+}
+/* Titre de page : neutralise le style de base des h1. */
+.salon-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+}
+.salon-code {
+  font-family: var(--font-label);
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--bronze-light);
+}
+.salon-note {
+  color: var(--ink-muted);
+}
+.salon-error {
+  color: var(--blood-text);
+}
+.salon-faint {
+  color: var(--ink-muted);
+}
+.salon-link {
+  color: var(--bronze-light);
+}
+.salon-link:focus-visible,
+.salon-pseudo:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+}
+/* Les pseudos et noms longs sont tronqués par une ellipse, jamais renvoyés à la ligne. */
+.salon-ellipse {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Sans code ---------- */
+.salon-rejoindre {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 640px;
+}
+.salon-code-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.salon-code-field {
+  flex: 1 1 200px;
+}
+/* Le code circule en majuscules : la saisie s'affiche déjà ainsi. */
+.salon-code-field :deep(.rift-field-input) {
+  font-family: var(--font-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ---------- En-tête : deux joueurs face à face ---------- */
+.salon-head {
+  display: grid;
+  gap: var(--space-4);
+}
+.salon-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.salon-statut,
+.salon-format {
+  flex: none;
+}
+.salon-regles {
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+.salon-duel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--space-4);
+}
+.salon-contre {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+.salon-seat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+}
+.salon-seat-ready {
+  border-left-color: var(--bronze-light);
+}
+.salon-seat-libre {
+  justify-content: center;
+  border-style: dashed;
+}
+.salon-who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+.salon-pseudo {
+  font-family: var(--font-label);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+a.salon-pseudo:hover {
+  color: var(--bronze-light);
+}
+.salon-hote {
+  flex: none;
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bronze-light);
+}
+.salon-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+.salon-deck {
+  width: 100%;
+  font-size: 14px;
+  color: var(--ink);
+}
+/* La pastille « Prêt » se cale en bas du siège, alignée d'une colonne à l'autre. */
+.salon-pret {
+  margin-top: auto;
+}
+.salon-thumb {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-raised);
+  border: 1px solid var(--bronze);
+}
+.salon-thumb-empty {
+  display: inline-block;
+  border-style: dashed;
+}
+
+/* ---------- Rejoindre ---------- */
+.salon-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ---------- Mes choix ---------- */
+.salon-choix {
+  display: grid;
+  gap: var(--space-4);
+}
+.salon-choix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+.salon-legend-search {
+  display: grid;
+  gap: var(--space-2);
+}
+.salon-legend-results {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+/* Bouton de résultat entièrement redéfini : rien ne vient du style de base. */
+.salon-legend-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+.salon-legend-option:hover {
+  border-color: var(--bronze);
+}
+.salon-legend-option:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+}
+.salon-legend-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.salon-legend-option .salon-thumb {
+  width: 32px;
+  height: 32px;
+}
+.salon-deck-field {
+  display: grid;
+  gap: var(--space-1);
+}
+.salon-label {
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.salon-select-box {
+  position: relative;
+  display: block;
+}
+/* Chevron dessiné au filet : le select natif perd le sien (appearance: none). */
+.salon-select-box::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--bronze-light);
+  border-bottom: 2px solid var(--bronze-light);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+/* Select : fond, arrondi et halo au focus repris ici. */
+.salon-select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 calc(var(--space-6) + var(--space-2)) 0 var(--space-3);
+  appearance: none;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+.salon-select:focus {
+  border-color: var(--bronze-light);
+  box-shadow: none;
+}
+.salon-select:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+}
+.salon-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.salon-ready {
+  justify-self: start;
+}
+
+/* ---------- Notice et actions ---------- */
+.salon-notice-text {
+  color: var(--ink);
+}
+.salon-notice {
+  padding-block: var(--space-4);
+}
+.salon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* Action destructrice : filet et encre rouges, survol distinct d'un bouton principal. */
+.salon-actions .salon-danger {
+  border-color: var(--blood);
+  color: var(--blood-text);
+}
+.salon-actions .salon-danger:hover {
+  border-color: var(--blood-bright);
+  background: color-mix(in srgb, var(--blood) 18%, transparent);
+  color: var(--ink);
+}
+
+/* ---------- Partie ---------- */
+.salon-partie {
+  display: grid;
+  gap: var(--space-3);
+}
+.salon-partie-status {
+  font-family: var(--font-label);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+.salon-scores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.salon-score-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.salon-score-who {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+}
+.salon-score {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.salon-manches {
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.salon-confirme {
+  margin-top: var(--space-1);
+}
+.salon-issue {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  /* Les deux sièges s'empilent, le « contre » entre eux. */
+  .salon-duel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  .salon-contre {
+    justify-self: center;
+  }
+}
+</style>
