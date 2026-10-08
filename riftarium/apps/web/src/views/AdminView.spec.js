@@ -173,43 +173,43 @@ describe("AdminView", () => {
 
   it("trace les graphiques : fréquentation zéro-remplie, séries 30 j, rubriques et modération", async () => {
     const { wrapper } = await mountView()
-    const figures = wrapper.findAll("figure.chart-figure")
+    const figures = wrapper.findAll("figure.graphe-figure")
 
     /* Fréquentation : 30 colonnes malgré 2 jours de données (zéro-remplissage client), 2 séries → légende. */
     const frequentation = figures.find((figure) => figure.text().includes("Fréquentation (30 jours)"))
     expect(frequentation).toBeTruthy()
-    expect(frequentation.findAll(".chart-band")).toHaveLength(30)
+    expect(frequentation.findAll(".graphe-band")).toHaveLength(30)
     expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--chart-teal)")
-    expect(frequentation.findAll(".chart-legend .chart-key").map((key) => key.text())).toEqual([
+    expect(frequentation.findAll(".graphe-legend .graphe-key").map((key) => key.text())).toEqual([
       "Visites",
       "Visiteurs uniques"
     ])
 
     /* Séries serveur : inscriptions (sarcelle) et decks créés (violet), 30 colonnes chacune. */
     const inscriptions = figures.find((figure) => figure.text().includes("Inscriptions (30 jours)"))
-    expect(inscriptions.findAll(".chart-band")).toHaveLength(30)
+    expect(inscriptions.findAll(".graphe-band")).toHaveLength(30)
     const decksCrees = figures.find((figure) => figure.text().includes("Decks créés (30 jours)"))
-    expect(decksCrees.findAll(".chart-band")).toHaveLength(30)
+    expect(decksCrees.findAll(".graphe-band")).toHaveLength(30)
 
     /* Rubriques : barres horizontales avec libellés traduits et valeurs directes. */
     const rubriques = figures.find((figure) => figure.text().includes("Rubriques les plus visitées"))
-    expect(rubriques.findAll(".chart-bar")).toHaveLength(2)
-    expect(rubriques.findAll(".chart-row-label").map((node) => node.text())).toEqual(["Cartothèque", "Accueil"])
-    expect(rubriques.findAll(".chart-value-text").map((node) => node.text())).toEqual(["120", "60"])
+    expect(rubriques.findAll(".graphe-bar")).toHaveLength(2)
+    expect(rubriques.findAll(".graphe-row-label").map((node) => node.text())).toEqual(["Cartothèque", "Accueil"])
+    expect(rubriques.findAll(".graphe-value-text").map((node) => node.text())).toEqual(["120", "60"])
 
     /* Modération : barre empilée avec légende comptée. */
     const moderation = figures.find((figure) => figure.text().includes("Statuts de modération"))
-    expect(moderation.findAll(".chart-segment")).toHaveLength(3)
-    expect(moderation.findAll(".chart-legend .chart-key").map((key) => key.text())).toEqual([
+    expect(moderation.findAll(".graphe-segment")).toHaveLength(3)
+    expect(moderation.findAll(".graphe-legend .graphe-key").map((key) => key.text())).toEqual([
       "Publiés 12",
       "En attente 2",
       "Rejetés 4"
     ])
 
     /* Chaque graphique offre son alternative texte. */
-    const toggle = frequentation.get(".chart-toggle")
+    const toggle = frequentation.get(".graphe-toggle")
     await toggle.trigger("click")
-    expect(frequentation.findAll(".chart-table tbody tr")).toHaveLength(30)
+    expect(frequentation.findAll(".graphe-table tbody tr")).toHaveLength(30)
     wrapper.unmount()
   })
 

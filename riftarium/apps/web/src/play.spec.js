@@ -6,6 +6,7 @@ import {
   createRoom,
   disputeMatch,
   formatPlayedAt,
+  formatRelativePlayedAt,
   formatWinRate,
   getCurrent,
   getHistory,
@@ -17,7 +18,6 @@ import {
   matchStatusLabel,
   modeLabel,
   outcomeLabel,
-  outcomeTone,
   roomStatusLabel,
   startRoom,
   updateMe,
@@ -130,13 +130,10 @@ describe("play — mise en forme", () => {
     expect(modeLabel("libre")).toBe("—")
   })
 
-  it("nomme les issues et leur donne un ton", () => {
+  it("nomme les issues", () => {
     expect(outcomeLabel("win")).toBe("Victoire")
     expect(outcomeLabel("loss")).toBe("Défaite")
     expect(outcomeLabel("disputed")).toBe("Contesté")
-    expect(outcomeTone("win")).toBe("calm")
-    expect(outcomeTone("loss")).toBe("fury")
-    expect(outcomeTone("disputed")).toBe("neutral")
   })
 
   it("nomme les statuts de salon et de match", () => {
@@ -164,5 +161,15 @@ describe("play — mise en forme", () => {
     expect(formatPlayedAt(null)).toBe("")
     expect(formatPlayedAt("pas une date")).toBe("")
     expect(formatPlayedAt("2026-08-12T19:30:00Z")).toContain("2026")
+  })
+
+  it("formatRelativePlayedAt : relatif jusqu'à 30 jours, puis la date complète", () => {
+    const now = Date.parse("2026-08-12T20:00:00Z")
+    expect(formatRelativePlayedAt("2026-08-12T19:59:40Z", now)).toBe("à l'instant")
+    expect(formatRelativePlayedAt("2026-08-12T17:00:00Z", now)).toBe("il y a 3 heures")
+    expect(formatRelativePlayedAt("2026-08-11T20:00:00Z", now)).toBe("hier")
+    expect(formatRelativePlayedAt("2026-06-01T20:00:00Z", now)).toBe(formatPlayedAt("2026-06-01T20:00:00Z"))
+    expect(formatRelativePlayedAt("", now)).toBe("")
+    expect(formatRelativePlayedAt("pas une date", now)).toBe("")
   })
 })

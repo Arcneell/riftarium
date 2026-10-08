@@ -61,6 +61,12 @@ const bindings = computed(() => {
   padding: 0 var(--space-4);
   font-size: 12px;
 }
+/* Écran tactile : la taille compacte reste une cible de 44 px. */
+@media (hover: none) {
+  .rift-btn--sm {
+    min-height: 44px;
+  }
+}
 .rift-btn--primary {
   padding-inline: calc(var(--space-5) + var(--cut));
   background: var(--blood);
