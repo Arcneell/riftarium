@@ -45,14 +45,9 @@ import RiftButton from "../ui/RiftButton.vue"
   line-height: 1;
   letter-spacing: 0.04em;
 }
-/* neutralise le h1 dégradé hérité de main.css (retiré à la tâche 5) */
 .perdu-page .perdu-titre {
   margin: 0;
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
-  animation: none;
-  color: var(--ink-strong);
+  color: var(--ink);
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   font-weight: 700;

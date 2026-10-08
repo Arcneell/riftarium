@@ -399,14 +399,9 @@ function pick(id) {
 .mentions-head {
   margin-bottom: var(--space-5);
 }
-/* neutralise le h1 dégradé hérité de main.css (retiré à la tâche 5) */
 .mentions-page .mentions-titre {
   margin: 0 0 var(--space-2);
-  background: none;
-  -webkit-background-clip: border-box;
-  background-clip: border-box;
-  animation: none;
-  color: var(--ink-strong);
+  color: var(--ink);
   font-family: var(--font-display);
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   font-weight: 700;

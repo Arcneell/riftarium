@@ -3,8 +3,6 @@ import "./styles/fonts.css"
 import "./styles/tokens.css"
 import "./styles/base.css"
 import "./styles/layout.css"
-/* Ancienne feuille globale : rétrécit à chaque PR de la refonte, puis disparaît. */
-import "./assets/main.css"
 import { createApp } from "vue"
 import App from "./App.vue"
 import Icon from "./components/Icon.vue"

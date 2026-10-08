@@ -1,37 +1,34 @@
 // Garde-fou : toute classe statique d'un gabarit .vue doit avoir une règle CSS quelque part
-// (main.css, une feuille .css de src/ ou un bloc <style> de .vue). Né d'une régression : le nettoyage
-// de main.css (67f7a46) avait supprimé des styles encore utilisés par les pages deck et profil.
-// Variable d'environnement CSS_COVERAGE_MAIN_CSS : chemin d'un autre main.css (démonstration).
+// (src/styles/*.css, une autre feuille .css de src/ ou un bloc <style> de .vue). Né d'une
+// régression : le nettoyage de l'ancienne feuille globale (67f7a46) avait supprimé des styles
+// encore utilisés par les pages deck et profil. Cette feuille, src/assets/main.css, a disparu
+// avec la refonte « Forge noxienne » : le second bloc vérifie qu'elle ne revient pas.
 import { describe, it, expect } from "vitest"
 import fs from "node:fs"
 import path from "node:path"
 
-// Chemin relatif à la racine vitest (import.meta.url est une URL http sous jsdom).
+// Chemins relatifs à la racine vitest (import.meta.url est une URL http sous jsdom).
 const SRC = path.resolve("src")
-// eslint-disable-next-line no-undef
-const MAIN_CSS = process.env.CSS_COVERAGE_MAIN_CSS || path.join(SRC, "assets", "main.css")
+const INDEX_HTML = path.resolve("index.html")
 
-// Classes volontairement sans règle : crochets de test, états portés par un sélecteur
-// composé ou un parent, marqueurs sémantiques. Une classe qui reçoit un jour une règle
-// peut (et doit) sortir de cette liste ; le test ci-dessous le rappelle.
-const UNSTYLED_ALLOWLIST = new Set([
-  // Crochets de test : sélecteurs utilisés par les specs, sans style propre.
-  "shell",
-  "bandeau-ok",
-  "bandeau-verif",
-  "bandeau-verif-renvoi",
-  "bandeau-horsligne",
-  "rail-label",
-  "topbar-account",
-  "rift-text",
-  "souhait-remove",
-  "console-row",
-  "console-deck-name",
-  // Marqueurs de structure ou de page, sans règle à ce jour (et sans spec qui les vise).
-  "classeur-tab-name",
-  "footer-contact",
-  // Marqueur de glyphe de rune (CardView, specs des filtres) : sa seule règle visait FilterSelect.
-  "rune"
+// Classes volontairement sans règle. Une classe qui reçoit un jour une règle, ou qui
+// disparaît des gabarits, doit sortir de cette liste ; le second test le rappelle.
+const UNSTYLED_ALLOWLIST = new Map([
+  // Crochets de test : sélecteurs visés par une spec, sans style propre.
+  ["shell", "App.vue : racine de la coquille, visée par App.spec et sw.spec"],
+  ["bandeau-ok", "TraceursNotice : bouton d'acquittement visé par sa spec"],
+  ["bandeau-verif", "EmailVerifyNotice : racine du bandeau visée par sa spec"],
+  ["bandeau-verif-renvoi", "EmailVerifyNotice : bouton de renvoi visé par sa spec"],
+  ["bandeau-horsligne", "App.vue : bandeau hors ligne visé par App.spec"],
+  ["rail-label", "AppRail : libellés du rail visés par sa spec"],
+  ["topbar-account", "AppTopbar : zone de compte visée par sa spec"],
+  ["rift-text", "RiftText : racine visée par ses specs et celles de CardHoverPreview"],
+  ["souhait-remove", "WishlistView : bouton de retrait visé par sa spec"],
+  ["console-row", "Administration : lignes visées par AdminView.spec"],
+  ["console-deck-name", "Administration : nom du deck visé par AdminView.spec"],
+  // Modificateur de glyphe : `rb-glyph rune` (CardView) distingue une rune d'un glyphe
+  // d'énergie, comme glyphKind dans RiftChip ; les specs ciblent `img.rb-glyph.rune`.
+  ["rune", "marqueur de glyphe de rune, visé par les specs des filtres et de RiftText"]
 ])
 
 const walk = (dir) =>
@@ -47,9 +44,9 @@ const CLASS_SEL_RE = /\.(-?[_a-zA-Z][\w-]*)/g
 
 function definedClasses(vueFiles) {
   const defined = new Set()
-  const cssTexts = [fs.readFileSync(MAIN_CSS, "utf8")]
-  for (const f of walk(SRC))
-    if (f.endsWith(".css") && f !== path.join(SRC, "assets", "main.css")) cssTexts.push(fs.readFileSync(f, "utf8"))
+  const cssTexts = walk(SRC)
+    .filter((f) => f.endsWith(".css"))
+    .map((f) => fs.readFileSync(f, "utf8"))
   for (const [, text] of vueFiles) for (const m of text.matchAll(STYLE_RE)) cssTexts.push(m[1])
   for (const css of cssTexts) for (const m of stripComments(css).matchAll(CLASS_SEL_RE)) defined.add(m[1])
   return defined
@@ -83,7 +80,19 @@ describe("couverture CSS des classes de gabarit", () => {
 
   it("la liste d'exceptions ne contient que des classes encore sans règle et encore utilisées", () => {
     const used = new Set(vueFiles.flatMap(([, text]) => [...templateClasses(text)]))
-    const stale = [...UNSTYLED_ALLOWLIST].filter((c) => defined.has(c) || !used.has(c))
+    const stale = [...UNSTYLED_ALLOWLIST.keys()].filter((c) => defined.has(c) || !used.has(c))
     expect(stale).toEqual([])
+  })
+})
+
+describe("ancienne feuille globale", () => {
+  it("main.css n'existe plus et n'est importé nulle part", () => {
+    expect(fs.existsSync(path.join(SRC, "assets", "main.css"))).toBe(false)
+    // Import JS ou CSS (`import "…/main.css"`, `@import`) et lien HTML : les commentaires
+    // qui citent encore l'ancien nom ne comptent pas.
+    const IMPORT_RE = /(?:import\s*(?:\(\s*)?|@import\s+(?:url\()?\s*|href=)["'][^"']*main\.css["']/
+    const sources = [...walk(SRC).filter((f) => /\.(js|vue|css)$/.test(f) && !f.endsWith(".spec.js")), INDEX_HTML]
+    const importers = sources.filter((f) => IMPORT_RE.test(fs.readFileSync(f, "utf8")))
+    expect(importers.map((f) => path.relative(SRC, f))).toEqual([])
   })
 })
