@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { cardThumb } from "../api.js"
 import { DECK_ZONES, championOf, groupDeck } from "../deckDisplay.js"
-import CardHoverPreview from "../components/CardHoverPreview.vue"
+import CardHoverPreview from "../ui/CardHoverPreview.vue"
 
 const props = defineProps({
   deck: { type: Object, required: true }

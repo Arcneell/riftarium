@@ -32,14 +32,7 @@
   --font-mono: var(--font-label);
 }
 
-.wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 28px;
-}
-.cards-wrap {
-  max-width: min(1680px, calc(100% - 16px));
-}
+/* .wrap, .cards-wrap : déplacés dans src/styles/layout.css. */
 
 /* ---------- Typographie ---------- */
 h1,
@@ -119,10 +112,6 @@ h3 {
 .mono {
   font-family: var(--font-mono);
 }
-.icon {
-  display: block;
-  flex: none;
-}
 .search .icon {
   color: var(--muted);
 }
@@ -136,50 +125,6 @@ section {
   padding: 88px 0;
 }
 
-/* ---------- Apparition au scroll ---------- */
-.reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.4s ease,
-    transform 0.4s cubic-bezier(0.22, 0.8, 0.32, 1);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: none;
-}
-
-.page {
-  min-height: 40vh;
-}
-
-/* ---------- Tilt 3D (cartes) ---------- */
-.tilt {
-  transform: perspective(950px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  transition: transform 0.16s ease-out;
-  position: relative;
-  will-change: transform;
-}
-.tilt::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    300px circle at var(--gx, 50%) var(--gy, 50%),
-    rgba(255, 255, 255, 0.28),
-    transparent 62%
-  );
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-}
-.tilt:hover::after {
-  opacity: 1;
-}
-
-/* Titre réservé aux lecteurs d'écran et au référencement : présent dans le DOM,
-   absent de la mise en page (les pages de navigation répètent l'entrée de menu). */
 /* ---------- Boutons ---------- */
 /* Tailles unifiées : .btn = 44px, .btn-sm = 34px. */
 .btn {
@@ -447,158 +392,6 @@ textarea {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tile-min, 168px)), 1fr));
   align-items: start;
 }
-.card-hover {
-  min-width: 0;
-}
-.card-hover.landscape {
-  grid-column: span 2;
-}
-.card-tile {
-  display: block;
-  border-radius: var(--r);
-  min-width: 0;
-}
-.card-tile img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 744 / 1039;
-  object-fit: contain;
-  display: block;
-  border-radius: var(--r);
-  background: var(--paper-2);
-  box-shadow: 0 10px 26px rgba(2, 6, 16, 0.5);
-  transition: box-shadow 0.25s;
-}
-/* Lumière de vitrine : au survol, la carte émet un halo de la couleur de son
-   domaine (--halo posé par CardTile), en plus de l'ombre portée. */
-.card-tile:hover img {
-  box-shadow:
-    0 20px 44px rgba(2, 6, 16, 0.65),
-    0 0 44px color-mix(in srgb, var(--halo, var(--gold)) 34%, transparent);
-}
-.card-tile.landscape img {
-  aspect-ratio: 1038 / 744;
-}
-.card-tile .t-name {
-  font-family: var(--font-display);
-  margin-top: clamp(7px, 1vw, 14px);
-  font-size: clamp(0.82rem, 1vw, 0.95rem);
-  line-height: 1.3;
-  color: var(--ink-strong);
-}
-.card-tile .t-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: clamp(0.6rem, 0.75vw, 0.68rem);
-  color: var(--muted);
-  margin-top: 3px;
-}
-.card-tile .t-meta span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-art {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--r);
-}
-.card-art .card-foil {
-  position: absolute;
-  inset: 0 -40%;
-  pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 38%,
-    rgba(255, 255, 255, 0.38) 47%,
-    rgba(215, 242, 239, 0.26) 53%,
-    transparent 62%
-  );
-  mix-blend-mode: screen;
-  animation: foil 7s ease-in-out infinite;
-}
-.card-qty,
-.card-badge {
-  position: absolute;
-  z-index: 2;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  padding: 3px 8px;
-  border-radius: var(--r-full);
-  background: rgba(10, 20, 40, 0.78);
-  color: #fdf8ec;
-}
-.card-qty {
-  top: 8px;
-  left: 8px;
-}
-.card-badge {
-  top: 8px;
-  right: 8px;
-}
-
-.card-text {
-  line-height: 1.75;
-}
-
-.card-preview {
-  position: fixed;
-  z-index: 40;
-  right: 4vw;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(360px, 86vw);
-  padding: 16px;
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6);
-  animation: preview-in 0.32s cubic-bezier(0.22, 0.8, 0.32, 1);
-  pointer-events: none;
-}
-.card-preview.instant {
-  animation: none;
-}
-.card-preview .card-art img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 744 / 1039;
-  object-fit: contain;
-  display: block;
-  border-radius: var(--r);
-}
-.card-preview.landscape {
-  width: min(520px, 92vw);
-}
-.card-preview.landscape .card-art img {
-  aspect-ratio: 1038 / 744;
-}
-.card-preview .preview-copy {
-  margin-top: 14px;
-}
-.card-preview h3 {
-  margin-bottom: 8px;
-}
-@keyframes preview-in {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
-}
-
-/* ---------- Fiche carte ---------- */
-.card-art.landscape img.full {
-  aspect-ratio: 1038 / 744;
-}
-
 .stat-row {
   display: flex;
   gap: 16px;
@@ -658,15 +451,6 @@ td.num {
   font-family: var(--font-mono);
   font-size: 0.84rem;
   color: var(--muted);
-}
-@keyframes foil {
-  0%,
-  100% {
-    transform: translateX(-34%);
-  }
-  50% {
-    transform: translateX(34%);
-  }
 }
 
 .splash-credit {
@@ -769,85 +553,6 @@ td.num {
   padding-top: 0;
 }
 
-.traceurs-notice {
-  position: fixed;
-  z-index: 80;
-  left: 16px;
-  right: 16px;
-  bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
-  max-width: 640px;
-  margin: 0 auto;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r);
-}
-.traceurs-notice p {
-  margin: 0;
-  font-size: 0.86rem;
-  color: var(--ink);
-  line-height: 1.45;
-}
-/* Lien noyé dans le texte : le soulignement le distingue sans dépendre de la couleur. */
-.traceurs-notice p a {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.traceurs-notice .btn {
-  flex-shrink: 0;
-}
-.traceurs-copy {
-  min-width: 0;
-}
-.traceurs-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-/* Phrase courte et bouton de dépliage : n'existent que sur téléphone (≤560),
-   où le bandeau complet mangeait le bas de chaque écran. Ailleurs, texte entier. */
-.traceurs-short,
-.traceurs-more {
-  display: none;
-}
-.traceurs-more {
-  padding: 0;
-  color: var(--gold-deep);
-  font-size: 0.8rem;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  white-space: nowrap;
-}
-
-/* Bandeau discret : adresse e-mail du compte non vérifiée. */
-.verify-notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-3) var(--space-5) 0;
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-raised);
-  border-left: 3px solid var(--blood);
-  font-size: 14px;
-}
-.verify-notice p {
-  margin: 0;
-  font-size: 0.86rem;
-  color: var(--ink);
-  line-height: 1.45;
-}
-.verify-notice .error {
-  margin: 0 0 0 6px;
-}
-.verify-notice .btn {
-  flex-shrink: 0;
-}
 /* Rappel de vérification dans la section Email du profil. */
 .verify-line {
   display: flex;
@@ -959,9 +664,6 @@ td.num {
   .cols-2 {
     grid-template-columns: minmax(0, 1fr);
   }
-  .card-preview {
-    display: none;
-  }
   .legal-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -987,11 +689,6 @@ td.num {
   .panel {
     padding: 24px;
     border-radius: var(--r);
-  }
-  .traceurs-notice {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: left;
   }
 }
 
@@ -1019,15 +716,6 @@ td.num {
   margin-top: 8px;
 }
 
-/* Pendant un glisser-déposer du deck : curseur de saisie partout. */
-body.drag-active {
-  cursor: grabbing;
-  user-select: none;
-}
-body.drag-active * {
-  cursor: grabbing !important;
-}
-
 /* ============================================================
    Ajustements mobile & tactile (audit responsive)
    Le rendu desktop (pointeur précis, >760 px) reste inchangé :
@@ -1036,10 +724,7 @@ body.drag-active * {
 
 /* ---------- Téléphone (≤560) : densité et lisibilité ---------- */
 @media (max-width: 560px) {
-  /* Densité globale : marges et sections plus compactes. */
-  .wrap {
-    padding: 0 16px;
-  }
+  /* Densité globale : sections plus compactes (gouttières de .wrap : src/styles/layout.css). */
   section {
     padding: 48px 0;
   }
@@ -1296,19 +981,6 @@ body.drag-active * {
 }
 
 /* ============================================================
-   Prix indicatifs des cartes (source TCGplayer → € taux BCE)
-   Ton volontairement sobre : encre et muted, jamais criard.
-   ============================================================ */
-
-/* Badge € dans la zone méta des tuiles (CardTile : cartothèque, collection) :
-   discret, jamais sur l'illustration. */
-.price-tag {
-  flex: 0 0 auto;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ============================================================
    Audit mobile (août 2026) — seconde salve
    Placé en fin de feuille : ces règles corrigent des valeurs
    déclarées plus haut (petits corps de texte, cibles tactiles,
@@ -1356,36 +1028,6 @@ body.drag-active * {
 
 /* ---------- Téléphone (≤560) ---------- */
 @media (max-width: 560px) {
-  /* Bandeau traceurs : une phrase et deux boutons sur une rangée (~90 px de
-     haut au lieu de 164). Le texte complet se déplie sur demande. */
-  .traceurs-notice {
-    left: 8px;
-    right: 8px;
-    bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--shell-bottom)));
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: var(--r-sm);
-  }
-  .traceurs-notice p {
-    font-size: 0.78rem;
-    line-height: 1.4;
-  }
-  .traceurs-short {
-    display: block;
-  }
-  .traceurs-more {
-    display: inline-block;
-  }
-  .traceurs-notice:not(.expanded) .traceurs-full {
-    display: none;
-  }
-  .traceurs-notice.expanded .traceurs-short {
-    display: none;
-  }
-  .traceurs-actions {
-    justify-content: space-between;
-  }
-
   /* Bandeau de page : le crédit chevauchait le surtitre et se perdait sur les
      illustrations claires. Il sort de la superposition et passe sous le titre. */
   .page-banner .splash-credit {
@@ -1396,15 +1038,6 @@ body.drag-active * {
     text-align: right;
     white-space: normal;
     font-size: 0.72rem;
-  }
-
-  /* Tuiles de carte : 9,6 px tronqués à l'ellipse ; le set passe à la ligne. */
-  .card-tile .t-meta {
-    font-size: 0.75rem;
-    flex-wrap: wrap;
-  }
-  .card-tile .t-meta span {
-    white-space: normal;
   }
 
   /* Profil : une zone défilante de 280 px imbriquée dans le défilement de page. */
@@ -1426,10 +1059,5 @@ body.drag-active * {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-  }
-  /* Reflet foil : 7 s d'animation en boucle avec mix-blend-mode sur 8 à 40
-     tuiles à la fois — hachures au défilement et batterie qui fond. */
-  .card-art .card-foil {
-    animation: none;
   }
 }

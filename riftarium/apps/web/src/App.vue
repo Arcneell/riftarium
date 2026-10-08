@@ -2,8 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { api, session, setSession } from "./api.js"
-import EmailVerifyNotice from "./components/EmailVerifyNotice.vue"
-import TraceursNotice from "./components/TraceursNotice.vue"
+import EmailVerifyNotice from "./shell/EmailVerifyNotice.vue"
+import TraceursNotice from "./shell/TraceursNotice.vue"
 import { useBreakpoint } from "./composables/useBreakpoint.js"
 import { useOnline } from "./composables/useOnline.js"
 import AccountSheet from "./shell/AccountSheet.vue"
@@ -14,6 +14,7 @@ import AppTopbar from "./shell/AppTopbar.vue"
 import { activeSection } from "./shell/navigation.js"
 import { clearPageCrumb } from "./shell/pageCrumb.js"
 import SearchPalette from "./shell/SearchPalette.vue"
+import ShellBandeau from "./shell/ShellBandeau.vue"
 import RiftTabs from "./ui/RiftTabs.vue"
 
 const router = useRouter()
@@ -140,13 +141,15 @@ onBeforeUnmount(() => {
         :items="section.children"
         :label="section.label"
       />
+      <!-- Bandeaux globaux : en haut du contenu, au-dessus de la page. -->
       <EmailVerifyNotice />
-      <div v-if="offlinePage" class="verify-notice" role="status">
+      <ShellBandeau v-if="offlinePage" class="bandeau-horsligne" role="status">
         <p>Hors ligne : cette page n'est pas disponible sans connexion. Les règles restent consultables.</p>
-      </div>
+      </ShellBandeau>
+      <TraceursNotice />
       <main id="contenu" class="shell-content">
         <RouterView v-slot="{ Component, route: viewRoute }">
-          <div class="page" :key="viewRoute.path">
+          <div class="shell-page" :key="viewRoute.path">
             <component :is="Component" />
           </div>
         </RouterView>
@@ -157,7 +160,6 @@ onBeforeUnmount(() => {
   </div>
   <SearchPalette v-if="searchOpen" @close="searchOpen = false" />
   <AccountSheet v-if="accountOpen" @close="accountOpen = false" />
-  <TraceursNotice />
 </template>
 
 <style scoped>
@@ -189,5 +191,9 @@ onBeforeUnmount(() => {
 }
 .shell-content {
   flex: 1;
+}
+/* Page courte (chargement, erreur) : le pied de page ne remonte pas sous la barre haute. */
+.shell-page {
+  min-height: 40vh;
 }
 </style>

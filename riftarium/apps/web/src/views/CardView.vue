@@ -151,7 +151,7 @@ function openVariant(id) {
           </div>
 
           <RiftPanel v-if="card.text" title="Capacité">
-            <RiftText tag="p" class="card-text" :text="card.text" />
+            <RiftText tag="p" class="fiche-texte" :text="card.text" />
           </RiftPanel>
 
           <p v-if="card.flavour" class="fiche-flavour">« {{ card.flavour }} »</p>
@@ -387,6 +387,10 @@ function openVariant(id) {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+/* Texte de jeu : interligne aéré, les glyphes et pastilles débordent de la ligne. */
+.fiche-texte {
+  line-height: 1.75;
 }
 .fiche-flavour {
   margin: 0;

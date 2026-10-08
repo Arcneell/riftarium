@@ -85,7 +85,7 @@ const stats = computed(() => [
 
     <CollectionStats :items="stats" />
 
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <p v-if="error" class="souhait-erreur" role="alert">{{ error }}</p>
 
     <div v-if="loading" class="souhait-grid">
       <RiftSkeleton v-for="n in 6" :key="n" block />
@@ -152,6 +152,11 @@ const stats = computed(() => [
   gap: var(--space-4);
   padding-top: var(--space-5);
   padding-bottom: var(--space-6);
+}
+.souhait-erreur {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--blood-text);
 }
 /* main.css colore et anime les h1 : on neutralise pour la page. */
 .souhait-title {

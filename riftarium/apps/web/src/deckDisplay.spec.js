@@ -160,7 +160,7 @@ describe("deckIdentity", () => {
   it("sans illustration : aucune variable --cover, mais l'or par défaut", () => {
     const style = deckIdentity({ legend: card({ id: "l", type: "Legend" }) })
     expect(style["--cover"]).toBeUndefined()
-    expect(style["--d1"]).toBe("var(--gold)")
-    expect(style["--d2"]).toBe("var(--gold)")
+    expect(style["--d1"]).toBe("var(--bronze)")
+    expect(style["--d2"]).toBe("var(--bronze)")
   })
 })

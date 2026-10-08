@@ -43,7 +43,7 @@ describe("DeckCard", () => {
 
     // Sans légende : repli sur l'or du site, jamais de variable vide.
     const plain = mountCard(fakeDeck())
-    expect(plain.get(".deck-card").attributes("style")).toContain("--d1: var(--gold)")
+    expect(plain.get(".deck-card").attributes("style")).toContain("--d1: var(--bronze)")
     plain.unmount()
   })
 

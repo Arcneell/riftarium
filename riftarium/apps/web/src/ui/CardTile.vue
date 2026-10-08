@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { cardThumb, DOMAINS } from "../api.js"
 import { isFoil, variantLabel } from "../cardText.js"
-import CardHoverPreview from "../components/CardHoverPreview.vue"
+import CardHoverPreview from "./CardHoverPreview.vue"
 import { formatEur, PRICE_NOTE } from "../prices.js"
 
 /* Vignette Forgée : l'illustration d'abord, le reflet foil au survol des cartes

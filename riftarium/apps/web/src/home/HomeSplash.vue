@@ -125,6 +125,7 @@ const format = (n) => n.toLocaleString("fr-FR")
   z-index: 1;
   font-family: var(--font-body);
   font-size: 11px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   color: var(--ink-muted);
 }

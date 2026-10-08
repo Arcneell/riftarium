@@ -244,10 +244,8 @@ onMounted(async () => {
   height: auto;
   aspect-ratio: 0.716;
 }
-/* Un terrain (paysage) occupe deux colonnes de la grille. */
-.cards-grid :deep(.card-hover.landscape) {
-  grid-column: span 2;
-}
+/* Un terrain (paysage) occupe deux colonnes de la grille : porté par l'hôte de
+   CardHoverPreview (.apercu-hote.apercu-paysage). */
 .cards-grid.reloading {
   opacity: 0.55;
 }
