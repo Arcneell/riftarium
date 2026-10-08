@@ -80,6 +80,7 @@ async function submit() {
     if (mode.value === "register") {
       /* Compte tout juste créé : l'adresse n'est pas encore vérifiée, on le signale avant de continuer. */
       session.emailVerified = result.email_verified ?? false
+      password.value = ""
       registered.value = true
     } else {
       proceed()

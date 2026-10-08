@@ -117,4 +117,14 @@ describe("ResetPasswordView", () => {
     expect(wrapper.get("input[name=password]").attributes("autocomplete")).toBe("new-password")
     expect(wrapper.get("input[name=confirm]").attributes("autocomplete")).toBe("new-password")
   })
+
+  it("vide les deux champs après la réinitialisation", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.get("input[name=password]").setValue("nouveausecret")
+    await wrapper.get("input[name=confirm]").setValue("nouveausecret")
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(wrapper.vm.password).toBe("")
+    expect(wrapper.vm.confirm).toBe("")
+  })
 })

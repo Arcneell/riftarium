@@ -40,6 +40,8 @@ async function submit() {
       method: "POST",
       body: { token: token.value, new_password: password.value }
     })
+    password.value = ""
+    confirm.value = ""
     done.value = true
   } catch (e) {
     /* 400 : jeton invalide ou expiré — on propose d'en redemander un. */

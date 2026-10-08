@@ -28,4 +28,10 @@ describe("AccessLayout", () => {
     expect(art.attributes("alt")).toBe("")
     expect(art.attributes("src")).toBeTruthy()
   })
+
+  it("crédite l'illustration officielle et la charge en priorité", () => {
+    const wrapper = mount(AccessLayout, { props: { title: "Connexion" } })
+    expect(wrapper.get(".acces-credit").text()).toBe("Visuel officiel Riftbound — © Riot Games")
+    expect(wrapper.get("img.acces-art").attributes("fetchpriority")).toBe("high")
+  })
 })

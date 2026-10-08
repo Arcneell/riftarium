@@ -175,4 +175,18 @@ describe("AuthView", () => {
     await wrapper.get("[role=tab]:last-child").trigger("click")
     expect(wrapper.get("h1").text()).toBe("Créer un compte")
   })
+
+  it("vide le mot de passe après la création du compte", async () => {
+    const { wrapper } = await mountView()
+    await wrapper.get("[role=tab]:last-child").trigger("click")
+    await wrapper.get("input[name=handle]").setValue("nyra")
+    await wrapper.get("input[name=email]").setValue("nyra@example.org")
+    await wrapper.get("input[name=password]").setValue("motdepasse123")
+    const checks = wrapper.findAll(".acces-check input")
+    await checks[0].setValue(true)
+    await checks[1].setValue(true)
+    await wrapper.get("form").trigger("submit")
+    await flushPromises()
+    expect(wrapper.vm.password).toBe("")
+  })
 })

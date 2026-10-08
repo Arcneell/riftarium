@@ -15,7 +15,8 @@ const art = pickSplash()
 
 <template>
   <div class="acces-page">
-    <img class="acces-art" :src="art" alt="" decoding="async" />
+    <img class="acces-art" :src="art" alt="" fetchpriority="high" decoding="async" />
+    <span class="acces-credit">Visuel officiel Riftbound — © Riot Games</span>
     <RiftPanel tag="div" class="acces-panel">
       <p v-if="kicker" class="acces-kicker">{{ kicker }}</p>
       <h1 class="acces-titre">{{ title }}</h1>
@@ -69,6 +70,7 @@ const art = pickSplash()
 }
 /* neutralise la règle globale h1 de main.css (dégradé doré animé) */
 .acces-titre {
+  letter-spacing: normal;
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(26px, 5vw, 34px);
@@ -124,6 +126,25 @@ const art = pickSplash()
   line-height: 1.45;
   color: var(--ink);
   cursor: pointer;
+}
+.acces-page :deep(.acces-check input:focus-visible) {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.acces-page :deep(.rift-segments) {
+  position: static;
+}
+.acces-credit {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-2);
+  z-index: 1;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ink-muted);
 }
 .acces-page :deep(.acces-check input) {
   flex: none;
