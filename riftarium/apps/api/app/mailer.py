@@ -147,7 +147,7 @@ def _html(copy: MailCopy, link: str) -> str:
   <tr>
     <td align="center" style="padding:28px 12px;">
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" bgcolor="{_RAISED}" style="width:600px;max-width:100%;background:{_RAISED};border:1px solid {_LINE};">
-        <tr><td style="height:4px;background:{_BLOOD};font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td bgcolor="{_BLOOD}" style="height:4px;background:{_BLOOD};font-size:0;line-height:0;">&nbsp;</td></tr>
         <tr>
           <td align="center" style="padding:28px 32px 18px;">
             <img src="{logo}" width="64" height="64" alt="Riftarium" style="display:block;border:0;width:64px;height:64px;">

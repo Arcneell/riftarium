@@ -106,3 +106,13 @@ def test_og_image_survives_a_missing_illustration(client, auth, monkeypatch):
 
     assert response.status_code == 200
     assert Image.open(BytesIO(response.content)).size == (1200, 630)
+
+
+def test_og_image_uses_forge_charter():
+    """Image de partage aux couleurs de la Forge noxienne : fond de forge, plus de bleu nuit."""
+    png = og.deck_og_png(
+        name="Deck de test", owner="nova", legal=True, card_count=40, legend=None, price=None, art_url=None
+    )
+    image = Image.open(BytesIO(png)).convert("RGB")
+    assert image.getpixel((6, 6)) == (13, 13, 15)  # #0d0d0f, hors du cadre
+    assert (10, 20, 40) not in {image.getpixel((x, 6)) for x in range(0, 1200, 50)}
