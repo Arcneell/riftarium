@@ -62,7 +62,11 @@ def put_offer(
         db.add(existing)
     else:
         existing.qty = payload.qty
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:  # deux créations simultanées sur le même lot (double clic)
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Offre modifiée en même temps : réessayez") from None
     db.refresh(existing)
     return trades.offer_out(existing)
 
@@ -133,8 +137,12 @@ def create_request(
     req = trades.create_request(db, user, payload.offer_id, payload.message)
     try:
         db.commit()
-    except IntegrityError:  # double clic : l'index unique partiel a tranché
+    except IntegrityError:
         db.rollback()
+        # Offre retirée entre la lecture et l'écriture (clé étrangère), sinon double
+        # clic : l'index unique partiel a tranché.
+        if db.get(TradeOffer, payload.offer_id) is None:
+            raise HTTPException(status_code=404, detail="Offre introuvable") from None
         raise HTTPException(status_code=409, detail="Vous avez déjà une demande en cours sur cette offre") from None
     db.refresh(req)
     owner = trades.request_mail_recipient(db, req)

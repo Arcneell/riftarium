@@ -506,3 +506,25 @@ def test_mail_copy_hides_contact():
     assert "bob" in text and "Immortal Phoenix" in text and "Discord" not in text
     request = mailer._trade_request_copy("alice", "Immortal Phoenix", "Je te propose <b>Lee</b>")
     assert "alice" in request.subject and any("Je te propose" in line for line in request.paragraphs)
+
+
+def test_reclassified_lot_cancels_pending(client, register_user):
+    """Lot corrigé (état, langue) sans fusion : l'offre suit le lot, la demande en cours ne vise plus ce lot."""
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    entry = client.get("/api/trades/offers", headers=bob).json()[0]["entry_id"]
+    patch = client.patch(f"/api/collection/entries/{entry}", json={"condition": "LP", "lang": "FR"}, headers=bob)
+    assert patch.status_code == 200
+    assert client.get(f"/api/trades/requests/{request_id}", headers=alice).json()["status"] == "cancelled"
+    offers = client.get("/api/trades/offers", headers=bob).json()
+    assert [(item["condition"], item["lang"]) for item in offers] == [("LP", "FR")]
+    # Une nouvelle demande sur le lot corrigé reste possible.
+    assert ask(client, alice, offer_id).status_code == 201
+
+
+def test_offer_put_twice_is_idempotent(client, register_user):
+    headers = account(client, register_user, "alice")
+    entry = add_lot(client, headers, PHOENIX, qty=2)
+    offer(client, headers, entry, qty=1)
+    offer(client, headers, entry, qty=2)
+    assert [item["qty"] for item in my_offers(client, headers)] == [2]

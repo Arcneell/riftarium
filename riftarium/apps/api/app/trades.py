@@ -121,8 +121,22 @@ def sync_offers(db: Session, user_id: int) -> None:
         entry = db.get(CollectionItem, item.collection_item_id)
         if entry is None or entry.user_id != user_id:
             gone.append(item.id)
-        elif item.qty > entry.qty:
+            continue
+        if item.qty > entry.qty:
             item.qty = entry.qty
+        # Lot reclassé (état ou langue corrigés) : l'offre le suit, mais une demande
+        # en attente portait sur l'ancien état ou l'ancienne langue. On l'annule
+        # plutôt que de laisser accepter autre chose que ce qui a été demandé.
+        db.execute(
+            update(TradeRequest)
+            .where(
+                TradeRequest.trade_offer_id == item.id,
+                TradeRequest.status == "pending",
+                or_(TradeRequest.condition != entry.condition, TradeRequest.lang != entry.lang),
+            )
+            .values(status="cancelled", responded_at=utcnow())
+            .execution_options(synchronize_session=False)
+        )
     _drop_offers(db, gone)
     db.execute(
         update(TradeRequest)

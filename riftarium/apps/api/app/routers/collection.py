@@ -273,7 +273,9 @@ def bulk_update(
 ):
     """Opérations de masse. qty/qty_delta s'appliquent à chaque lot des cartes visées."""
     items = db.scalars(
-        select(CollectionItem).where(CollectionItem.user_id == user.id, CollectionItem.card_id.in_(payload.card_ids))
+        select(CollectionItem)
+        .where(CollectionItem.user_id == user.id, CollectionItem.card_id.in_(payload.card_ids))
+        .order_by(CollectionItem.id)  # fusion déterministe : le lot le plus ancien survit
     ).all()
 
     updated = 0
