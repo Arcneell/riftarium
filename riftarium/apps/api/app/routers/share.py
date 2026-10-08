@@ -26,7 +26,7 @@ PREVIEW_CACHE = "public, max-age=600"
 SITE_NAME = "Riftarium"
 DEFAULT_TITLE = "Riftarium — Cartes, decks et règles Riftbound"
 DEFAULT_DESCRIPTION = (
-    "Bêta fermée. Cartothèque, deck builder, règles officielles et collection pour Riftbound. "
+    "Bêta fermée. Base de cartes, création de decks, règles officielles et collection pour Riftbound. "
     "Site fan-made gratuit, en français, non affilié à Riot Games."
 )
 

@@ -40,7 +40,7 @@ COUNTED_MATCH_STATUSES = ("confirmed", "abandoned")
 HISTORY_STATUSES = ("confirmed", "disputed", "abandoned")
 RECENT_DAYS = 30
 
-ROOM_BUSY = "Vous avez déjà un salon en cours — terminez-le ou annulez-le"
+ROOM_BUSY = "Vous avez déjà un salon en cours : terminez-le ou annulez-le."
 
 
 # --------------------------------------------------------------------------- outils
@@ -352,7 +352,9 @@ def leave_room(code: str, user: User = Depends(current_user), db: Session = Depe
     """L'invité quitte : le salon redevient ouvert avec l'hôte seul."""
     room = load_room(db, code)
     if room.host_id == user.id:
-        raise HTTPException(status_code=403, detail="L'hôte ne quitte pas son salon : il l'annule")
+        raise HTTPException(
+            status_code=403, detail="En tant qu'hôte, vous ne pouvez pas quitter le salon : annulez-le."
+        )
     seat = my_seat(db, room, user)
     if room_status(room) != "open":
         raise HTTPException(status_code=409, detail="Ce salon n'est plus ouvert")
@@ -452,7 +454,7 @@ def update_state(
         raise HTTPException(status_code=409, detail="Ce match n'est plus en cours")
     check_state(payload.state, seats)
     if payload.version != match.version:
-        raise HTTPException(status_code=409, detail="Instantané dépassé, recharge le match")
+        raise HTTPException(status_code=409, detail="Le match a changé entre-temps : rechargez-le.")
     match.state = payload.state.model_dump()
     match.version += 1
     db.commit()

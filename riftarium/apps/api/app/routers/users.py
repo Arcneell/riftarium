@@ -35,7 +35,7 @@ UNKNOWN_USER = "Joueur introuvable"
 def limit_search(request: Request) -> None:
     """Rate limit de la recherche de joueurs : même mécanique que limit_play, compteur dédié."""
     if not allow_rate(f"search:{client_ip(request)}", SEARCH_RATE_LIMIT):
-        raise HTTPException(status_code=429, detail="Trop de recherches — réessayez dans une minute")
+        raise HTTPException(status_code=429, detail="Trop de recherches : réessayez dans une minute.")
 
 
 def _suspended(user: User) -> bool:

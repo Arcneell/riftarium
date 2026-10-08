@@ -217,7 +217,7 @@ def reset_password(
     """Choisit un nouveau mot de passe via le jeton reçu par e-mail (usage unique)."""
     user = consume_auth_token(db, payload.token, "reset")
     if user is None:
-        raise HTTPException(status_code=400, detail="Lien invalide ou expiré — refaites une demande")
+        raise HTTPException(status_code=400, detail="Lien invalide ou expiré : refaites une demande.")
     user.password_hash = hash_password(payload.new_password)
     user.token_version += 1  # révoque toutes les sessions existantes
     db.commit()
