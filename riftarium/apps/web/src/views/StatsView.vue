@@ -1,18 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
-import { cardThumb } from "../api.js"
 import ColumnChart from "../components/charts/ColumnChart.vue"
 import { lastDays, zeroFillDays } from "../components/charts/chartUtils.js"
 import { formatLabel } from "../deckDisplay.js"
+import LegendRateRow from "../play/LegendRateRow.vue"
 import { formatWinRate, getStats, modeLabel, winRatePercent } from "../play.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftPanel from "../ui/RiftPanel.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import RiftStat from "../ui/RiftStat.vue"
-
-/* Libellé quand la légende a été supprimée du catalogue (nom absent). */
-const LEGEND_FALLBACK = "Légende supprimée"
 
 const stats = ref(null)
 const loading = ref(true)
@@ -78,7 +75,7 @@ onMounted(load)
     <p v-if="error" class="stats-error" role="alert">{{ error }}</p>
 
     <div v-else-if="loading" class="stats-squelette" role="status">
-      <span class="stats-sr">Chargement des statistiques…</span>
+      <span class="sr-only">Chargement des statistiques…</span>
       <RiftSkeleton block />
       <RiftSkeleton :lines="4" />
     </div>
@@ -164,29 +161,12 @@ onMounted(load)
       <div v-if="legendLists.length" class="stats-grid">
         <RiftPanel v-for="list in legendLists" :key="list.key" class="stats-panel" :title="list.title">
           <ul class="stats-legends">
-            <li v-for="(row, index) in list.rows" :key="row.card_id ?? `x${index}`" class="stats-legend">
-              <img
-                v-if="row.image_url"
-                class="stats-thumb"
-                :src="cardThumb(row.image_url, 72)"
-                :alt="`${list.altPrefix} : ${row.name || LEGEND_FALLBACK}`"
-                width="36"
-                height="36"
-                loading="lazy"
-                decoding="async"
-              />
-              <span v-else class="stats-thumb" aria-hidden="true"></span>
-              <span class="stats-legend-nom" :class="{ 'stats-faint': !row.name }">
-                {{ row.name || LEGEND_FALLBACK }}
-              </span>
-              <span class="stats-legend-bilan">{{ row.won }} V / {{ row.lost }} D</span>
-              <span class="stats-taux stats-legend-taux">
-                <span class="stats-jauge" aria-hidden="true">
-                  <span class="stats-jauge-fill" :style="{ width: `${winRatePercent(rateOf(row))}%` }"></span>
-                </span>
-                <span class="stats-taux-valeur">{{ formatWinRate(rateOf(row)) }}</span>
-              </span>
-            </li>
+            <LegendRateRow
+              v-for="(row, index) in list.rows"
+              :key="row.card_id ?? `x${index}`"
+              :row="row"
+              :alt-prefix="list.altPrefix"
+            />
           </ul>
         </RiftPanel>
       </div>
@@ -256,8 +236,7 @@ onMounted(load)
 .stats-error {
   color: var(--blood-text);
 }
-.stats-note,
-.stats-faint {
+.stats-note {
   color: var(--ink-muted);
 }
 .stats-link {
@@ -381,53 +360,10 @@ onMounted(load)
   padding: 0;
   list-style: none;
 }
-.stats-legend {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) minmax(120px, 40%);
-  grid-template-areas:
-    "thumb nom taux"
-    "thumb bilan taux";
-  align-items: center;
-  column-gap: var(--space-3);
-}
-.stats-thumb {
-  grid-area: thumb;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.stats-legend-nom {
-  grid-area: nom;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.stats-legend-bilan {
-  grid-area: bilan;
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-.stats-legend-taux {
-  grid-area: taux;
-}
 
 @media (max-width: 1023px) {
   .stats-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-@media (max-width: 559px) {
-  .stats-legend {
-    grid-template-columns: 36px minmax(0, 1fr);
-    grid-template-areas:
-      "thumb nom"
-      "thumb bilan"
-      "taux taux";
-    row-gap: var(--space-1);
   }
 }
 </style>

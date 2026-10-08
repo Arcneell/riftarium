@@ -7,7 +7,8 @@ import { achievementIconPaths } from "../achievementIcons.js"
    (bronze, argent, or, puis prisme irisé). L'icône est un tracé unique par haut
    fait (achievementIcons.js). Une médaille verrouillée est atténuée ; l'état et
    le palier sont dits au lecteur d'écran par l'aria-label (le sens ne repose
-   pas sur la couleur). */
+   pas sur la couleur). Une médaille débloquée est décorative : son rang est
+   déjà écrit à côté (aria-hidden). */
 const props = defineProps({
   achievementKey: { type: String, default: "" },
   icon: { type: String, default: "" },
@@ -26,8 +27,9 @@ const label = computed(() => `Médaille ${TIER_LABELS[tierName.value]}${props.lo
   <span
     class="trophee-medaille"
     :class="[`trophee-${tierName}`, { 'trophee-verrouille': locked }]"
-    role="img"
-    :aria-label="label"
+    :role="locked ? 'img' : undefined"
+    :aria-label="locked ? label : undefined"
+    :aria-hidden="locked ? undefined : 'true'"
   >
     <i class="trophee-face"></i>
     <i class="trophee-foil"></i>

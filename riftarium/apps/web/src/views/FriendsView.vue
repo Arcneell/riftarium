@@ -186,7 +186,6 @@ onBeforeUnmount(() => {
               variant="ghost"
               size="sm"
               class="amis-suivi"
-              aria-pressed="true"
               :aria-label="`Ne plus suivre ${user.handle}`"
               :title="`Ne plus suivre ${user.handle}`"
               :disabled="Boolean(busy)"
@@ -195,7 +194,14 @@ onBeforeUnmount(() => {
               <span class="amis-suivi-repos" aria-hidden="true">Suivi</span>
               <span class="amis-suivi-survol" aria-hidden="true">Ne plus suivre</span>
             </RiftButton>
-            <RiftButton v-else size="sm" :disabled="Boolean(busy)" @click="follow(user)">Suivre</RiftButton>
+            <RiftButton
+              v-else
+              size="sm"
+              :aria-label="`Suivre ${user.handle}`"
+              :disabled="Boolean(busy)"
+              @click="follow(user)"
+              >Suivre</RiftButton
+            >
           </span>
         </li>
       </ul>

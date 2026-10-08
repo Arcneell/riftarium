@@ -136,6 +136,7 @@ describe("PublicProfileView", () => {
 
     /* Hauts faits débloqués, en médaillons. */
     expect(wrapper.get(".profil-medaille").text()).toContain("Premier sang")
+    expect(wrapper.get(".profil-medaille-meta").text()).toContain("Bronze")
 
     /* Duels : totaux (RiftStat) puis historique du point de vue du profil. */
     const duels = wrapper.get("[data-section='duels']")
@@ -148,7 +149,7 @@ describe("PublicProfileView", () => {
     expect(row.text()).not.toContain("Moi")
 
     /* Légendes jouées. */
-    expect(duels.get(".profil-legende-nom").text()).toBe("Jinx")
+    expect(duels.get(".duel-legende-nom").text()).toBe("Jinx")
 
     /* Collection : totaux puis progression par set. */
     const collection = wrapper.get("[data-section='collection']")
@@ -279,8 +280,13 @@ describe("PublicProfileView", () => {
 
   it("suit puis cesse de suivre le joueur, compteur mis à jour sans attendre", async () => {
     const { wrapper } = await mountView()
-    await buttonWith(wrapper, "Suivre").trigger("click")
+    const toggle = buttonWith(wrapper, "Suivre")
+    expect(toggle.attributes("aria-pressed")).toBeUndefined()
+    expect(toggle.attributes("aria-label")).toBe("Suivre nova")
+    await toggle.trigger("click")
     expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonné(s)")
+    expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-label")).toBe("Ne plus suivre nova")
+    expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-pressed")).toBeUndefined()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/users/nova/follow", { method: "PUT" })
 
@@ -337,6 +343,23 @@ describe("PublicProfileView", () => {
     const { wrapper } = await mountView()
     expect(buttonWith(wrapper, "Suivre")).toBeUndefined()
     expect(wrapper.get(".profil-hero-actions a").attributes("href")).toBe("/connexion")
+    wrapper.unmount()
+  })
+
+  it("légende supprimée : libellé de repli au nom comme à l'alt", async () => {
+    setupApi(
+      makeProfile({
+        stats: {
+          totals: { played: 4, won: 1, lost: 3 },
+          by_legend: [{ card_id: null, name: null, image_url: LEGEND.image_url, played: 4, won: 1, lost: 3 }]
+        }
+      })
+    )
+    const { wrapper } = await mountView()
+    const row = wrapper.get("[data-section='duels'] .duel-legende")
+    expect(row.get(".duel-legende-nom").text()).toBe("Légende supprimée")
+    expect(row.get("img").attributes("alt")).toBe("Légende : Légende supprimée")
+    expect(row.text()).toContain("1 V / 3 D")
     wrapper.unmount()
   })
 

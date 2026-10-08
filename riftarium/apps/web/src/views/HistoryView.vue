@@ -51,7 +51,7 @@ onMounted(load)
     <p v-if="error" class="histo-error" role="alert">{{ error }}</p>
 
     <div v-else-if="loading && !items.length" class="histo-squelette" role="status">
-      <span class="histo-sr">Chargement de l'historique…</span>
+      <span class="sr-only">Chargement de l'historique…</span>
       <RiftSkeleton v-for="n in 4" :key="n" block />
     </div>
 

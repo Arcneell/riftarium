@@ -185,6 +185,13 @@ async function downloadExport() {
   }
 }
 
+function closeDanger() {
+  danger.open = false
+  danger.password = ""
+  danger.handle = ""
+  danger.error = ""
+}
+
 function openDanger() {
   danger.open = true
   danger.password = ""
@@ -293,7 +300,7 @@ onMounted(() => {
     </template>
   </div>
 
-  <RiftModal v-if="danger.open" title="Supprimer le compte" @close="danger.open = false">
+  <RiftModal v-if="danger.open" title="Supprimer le compte" @close="closeDanger">
     <form class="compte-modal" @submit.prevent="deleteAccount">
       <p class="profil-texte">
         Cette action est irréversible. Saisissez votre mot de passe et votre pseudo
@@ -319,7 +326,7 @@ onMounted(() => {
       />
       <p v-if="danger.error" class="profil-erreur" role="alert">{{ danger.error }}</p>
       <div class="compte-modal-actions">
-        <RiftButton variant="ghost" :disabled="danger.deleting" @click="danger.open = false">Annuler</RiftButton>
+        <RiftButton variant="ghost" :disabled="danger.deleting" @click="closeDanger">Annuler</RiftButton>
         <RiftButton type="submit" :disabled="danger.deleting">
           {{ danger.deleting ? "Suppression…" : "Supprimer définitivement" }}
         </RiftButton>

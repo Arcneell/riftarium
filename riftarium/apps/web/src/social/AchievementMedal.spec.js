@@ -7,8 +7,10 @@ describe("AchievementMedal", () => {
     const wrapper = mount(AchievementMedal, { props: { achievementKey: "first_blood", tier: "silver" } })
     expect(wrapper.classes()).toContain("trophee-silver")
     expect(wrapper.classes()).not.toContain("trophee-verrouille")
-    expect(wrapper.attributes("role")).toBe("img")
-    expect(wrapper.attributes("aria-label")).toBe("Médaille argent")
+    /* Débloquée : décorative, le rang est écrit à côté. */
+    expect(wrapper.attributes("aria-hidden")).toBe("true")
+    expect(wrapper.attributes("role")).toBeUndefined()
+    expect(wrapper.attributes("aria-label")).toBeUndefined()
     expect(wrapper.findAll("svg path").length).toBeGreaterThan(0)
   })
 
@@ -21,6 +23,8 @@ describe("AchievementMedal", () => {
     const wrapper = mount(AchievementMedal, { props: { achievementKey: "first_blood", tier: "gold", locked: true } })
     expect(wrapper.classes()).toContain("trophee-verrouille")
     expect(wrapper.classes()).toContain("trophee-gold")
+    expect(wrapper.attributes("role")).toBe("img")
+    expect(wrapper.attributes("aria-hidden")).toBeUndefined()
     expect(wrapper.attributes("aria-label")).toBe("Médaille or, verrouillée")
   })
 })

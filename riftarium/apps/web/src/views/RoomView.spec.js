@@ -520,12 +520,25 @@ describe("RoomView", () => {
     expect(live.attributes("aria-live")).toBe("polite")
     expect(live.findAll(".salon-score").map((node) => node.text())).toEqual(["3", "2"])
     expect(live.text()).toContain("1 manche(s)")
+    const first = live.findAll("li")[0]
+    expect(first.attributes("aria-atomic")).toBe("true")
+    expect(first.get(".sr-only").text()).toBe(`${HOST.handle} : 3`)
 
     /* Le point marqué arrive par le sondage, dans la même région annoncée. */
     setupApi({ room, match: match(4) })
     pollTick(timeoutSpy)()
     await flushPromises()
     expect(wrapper.get('.salon-scores[aria-live="polite"]').findAll(".salon-score")[0].text()).toBe("4")
+    wrapper.unmount()
+  })
+
+  it("sans code : « Rejoindre » reste désactivé tant que le code est vide", async () => {
+    setupApi()
+    const { wrapper } = await mountView("/salon")
+    const join = buttonWith(wrapper, "Rejoindre")
+    expect(join.attributes("disabled")).toBeDefined()
+    await wrapper.get("input").setValue("abc234")
+    expect(buttonWith(wrapper, "Rejoindre").attributes("disabled")).toBeUndefined()
     wrapper.unmount()
   })
 

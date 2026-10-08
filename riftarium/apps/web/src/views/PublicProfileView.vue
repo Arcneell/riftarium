@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
-import { cardThumb, session } from "../api.js"
+import { session } from "../api.js"
 import DeckCard from "../decks/DeckCard.vue"
+import LegendRateRow from "../play/LegendRateRow.vue"
 import MatchRow from "../play/MatchRow.vue"
 import ProfileAchievements from "../social/ProfileAchievements.vue"
 import ProfileHero from "../social/ProfileHero.vue"
@@ -12,7 +13,7 @@ import RiftPanel from "../ui/RiftPanel.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import RiftStat from "../ui/RiftStat.vue"
 import CardTile from "../ui/CardTile.vue"
-import { formatWinRate, winRatePercent } from "../play.js"
+import { formatWinRate } from "../play.js"
 import { applySeo } from "../seo.js"
 import {
   followUser,
@@ -212,7 +213,7 @@ onMounted(load)
             v-else-if="canFollow"
             :variant="profile.is_followed ? 'ghost' : 'primary'"
             size="sm"
-            :aria-pressed="Boolean(profile.is_followed)"
+            :aria-label="profile.is_followed ? `Ne plus suivre ${profile.handle}` : `Suivre ${profile.handle}`"
             :disabled="followBusy"
             @click="toggleFollow"
           >
@@ -248,26 +249,7 @@ onMounted(load)
         <p v-else class="profil-texte">Aucune partie suivie pour l'instant.</p>
 
         <ul v-if="byLegend.length" class="profil-legendes">
-          <li v-for="row in byLegend" :key="row.card_id" class="profil-legende">
-            <img
-              v-if="row.image_url"
-              class="profil-legende-vignette"
-              :src="cardThumb(row.image_url, 72)"
-              :alt="`Légende : ${row.name}`"
-              width="36"
-              height="36"
-              loading="lazy"
-              decoding="async"
-            />
-            <span v-else class="profil-legende-vignette" aria-hidden="true"></span>
-            <span class="profil-legende-nom">{{ row.name }}</span>
-            <span class="profil-set-barre" aria-hidden="true">
-              <span class="profil-set-fill" :style="{ width: `${winRatePercent(rateOf(row))}%` }"></span>
-            </span>
-            <span class="profil-legende-bilan">
-              {{ row.won }} V / {{ row.lost }} D · {{ formatWinRate(rateOf(row)) }}
-            </span>
-          </li>
+          <LegendRateRow v-for="row in byLegend" :key="row.card_id ?? row.name" :row="row" />
         </ul>
 
         <p v-if="history.error" class="profil-erreur" role="alert">{{ history.error }}</p>
@@ -452,30 +434,6 @@ onMounted(load)
   margin: var(--space-4) 0 0;
   padding: 0;
   list-style: none;
-}
-.profil-legende {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) minmax(80px, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-}
-.profil-legende-vignette {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--bg-sunken);
-}
-.profil-legende-nom {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.profil-legende-bilan {
-  font-size: 13px;
-  color: var(--ink-muted);
 }
 .profil-cartes {
   display: grid;

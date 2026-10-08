@@ -86,7 +86,7 @@ describe("StatsView", () => {
     expect(deckPanel.get(".stats-jauge-fill").attributes("style")).toContain("width: 67%")
 
     const legendPanel = panels.find((panel) => panel.text().includes("Par légende adverse"))
-    expect(legendPanel.get("img.stats-thumb").attributes("src")).toContain("w=72")
+    expect(legendPanel.get("img.duel-legende-vignette").attributes("src")).toContain("w=72")
     expect(legendPanel.text()).toContain("Viktor")
     expect(legendPanel.text()).toContain("2 V / 3 D")
 
@@ -121,10 +121,10 @@ describe("StatsView", () => {
       by_legend: [{ card_id: null, name: null, image_url: null, played: 4, won: 1, lost: 3 }]
     })
     const { wrapper } = await mountView()
-    const row = wrapper.get(".stats-legend")
+    const row = wrapper.get(".duel-legende")
     expect(row.text()).toContain("Légende supprimée")
     expect(row.text()).toContain("1 V / 3 D")
-    expect(plain(row.get(".stats-taux-valeur").text())).toBe("25 %")
+    expect(plain(row.get(".duel-legende-valeur").text())).toBe("25 %")
     wrapper.unmount()
   })
 

@@ -324,6 +324,21 @@ describe("ProfileView", () => {
     wrapper.unmount()
   })
 
+  it("annuler la suppression vide le mot de passe saisi", async () => {
+    const { wrapper } = await mountView()
+    let modal = await openDeleteModal(wrapper)
+    expect(modal.querySelector("input[type=password]").value).toBe("motdepasse123")
+    const cancel = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Annuler")
+    cancel.click()
+    await flushPromises()
+    expect(document.body.querySelector(".rift-modal")).toBeNull()
+
+    await wrapper.get(".profil-danger .rift-btn").trigger("click")
+    modal = document.body.querySelector(".rift-modal")
+    expect(modal.querySelector("input[type=password]").value).toBe("")
+    wrapper.unmount()
+  })
+
   it("suppression : modale de confirmation, double clic → une seule requête", async () => {
     const pending = deferred()
     setupApi((path, options) => (path === "/api/auth/me" && options.method === "DELETE" ? pending.promise : undefined))
@@ -379,6 +394,10 @@ describe("ProfileView", () => {
     /* Verrouillé : grisé, avec la progression vers le seuil. */
     expect(medals[1].classes()).toContain("profil-medaille--verrouille")
     expect(medals[1].text()).toContain("4 / 10")
+    /* Le rang reste lu : écrit à côté de la médaille débloquée, étiqueté sur la verrouillée. */
+    expect(medals[0].get(".profil-medaille-meta").text()).toContain("Bronze")
+    expect(medals[0].get(".trophee-medaille").attributes("aria-hidden")).toBe("true")
+    expect(medals[1].get(".trophee-medaille").attributes("aria-label")).toBe("Médaille argent, verrouillée")
     wrapper.unmount()
   })
 

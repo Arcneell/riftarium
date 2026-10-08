@@ -519,7 +519,7 @@ onBeforeUnmount(() => {
         </RiftPanel>
 
         <div v-if="myPlayer && room.status === 'open'" class="salon-actions">
-          <RiftButton v-if="isHost" class="salon-danger" variant="primary" :disabled="busy" @click="cancel">
+          <RiftButton v-if="isHost" class="salon-danger" variant="secondary" :disabled="busy" @click="cancel">
             Annuler le salon
           </RiftButton>
           <RiftButton v-else variant="ghost" :disabled="busy" @click="leave">Quitter le salon</RiftButton>
@@ -532,7 +532,8 @@ onBeforeUnmount(() => {
             <span v-if="match.state?.turn"> · tour {{ match.state.turn }}</span>
           </p>
           <ul class="salon-scores" aria-live="polite">
-            <li v-for="player in match.players" :key="player.seat" class="salon-score-side">
+            <li v-for="player in match.players" :key="player.seat" class="salon-score-side" aria-atomic="true">
+              <span class="sr-only">{{ player.user?.handle || "Compte supprimé" }} : {{ player.score }}</span>
               <span class="salon-score-who">
                 <UserAvatar :src="player.user?.avatar_url" :handle="player.user?.handle" :size="28" />
                 <RouterLink
@@ -545,7 +546,7 @@ onBeforeUnmount(() => {
                 </RouterLink>
                 <span v-else class="salon-pseudo salon-ellipse salon-faint">Compte supprimé</span>
               </span>
-              <b class="salon-score">{{ player.score }}</b>
+              <b class="salon-score" aria-hidden="true">{{ player.score }}</b>
               <span v-if="match.mode === 'match'" class="salon-manches">{{ player.rounds_won }} manche(s)</span>
               <RiftChip v-if="player.confirmed" class="salon-confirme" static selected label="Confirmé" />
             </li>
@@ -899,18 +900,15 @@ a.salon-pseudo:hover {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* RiftButton n'a pas de variante danger : primaire maintenu sur fond sang. */
+/* Action destructrice : filet et encre rouges, survol distinct d'un bouton principal. */
 .salon-actions .salon-danger {
-  background: var(--blood);
-  color: #fff;
+  border-color: var(--blood);
+  color: var(--blood-text);
 }
 .salon-actions .salon-danger:hover {
-  background: var(--blood-bright);
-}
-/* Le biseau (clip-path) rogne tout contour extérieur : outline rentrant. */
-.salon-actions .salon-danger:focus-visible {
-  outline: 2px solid var(--bronze-light);
-  outline-offset: -6px;
+  border-color: var(--blood-bright);
+  background: color-mix(in srgb, var(--blood) 18%, transparent);
+  color: var(--ink);
 }
 
 /* ---------- Partie ---------- */

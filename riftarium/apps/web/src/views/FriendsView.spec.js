@@ -94,12 +94,14 @@ describe("FriendsView", () => {
     expect(result.get(".amis-nom").attributes("href")).toBe("/u/novak")
 
     /* Un joueur déjà suivi ne se propose pas deux fois. */
-    await buttonWith(result, "Suivre").trigger("click")
+    const suivre = buttonWith(result, "Suivre")
+    expect(suivre.attributes("aria-label")).toBe("Suivre novak")
+    await suivre.trigger("click")
     await flushPromises()
     expect(lastCall("/api/users/novak/follow")[1]).toEqual({ method: "PUT" })
     const suivi = buttonWith(result, "Suivi")
     expect(suivi).toBeTruthy()
-    expect(suivi.attributes("aria-pressed")).toBe("true")
+    expect(suivi.attributes("aria-pressed")).toBeUndefined()
     expect(suivi.attributes("aria-label")).toBe("Ne plus suivre novak")
     expect(suivi.attributes("title")).toBe("Ne plus suivre novak")
 
