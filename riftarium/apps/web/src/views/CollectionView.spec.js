@@ -57,7 +57,7 @@ async function mountView(path = "/collection") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(CollectionView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()

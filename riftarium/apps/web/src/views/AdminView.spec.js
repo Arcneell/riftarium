@@ -114,7 +114,7 @@ async function mountView() {
   router.push("/admin")
   await router.isReady()
   const wrapper = mount(AdminView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()

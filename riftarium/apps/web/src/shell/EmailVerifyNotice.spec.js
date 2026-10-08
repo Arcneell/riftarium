@@ -69,6 +69,7 @@ describe("EmailVerifyNotice", () => {
     await wrapper.get(".bandeau-verif-renvoi").trigger("click")
     await flushPromises()
     expect(wrapper.get(".bandeau-erreur").text()).toBe("Trop de demandes. Réessayez dans quelques minutes.")
+    expect(wrapper.get(".bandeau-erreur").attributes("role")).toBe("alert")
   })
 
   it("autre erreur : message de l'API", async () => {

@@ -22,7 +22,7 @@ async function mountView(path = "/reinitialisation?token=jeton-mail") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(ResetPasswordView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }

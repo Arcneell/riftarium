@@ -161,7 +161,7 @@ async function mountView() {
   router.push("/decks/1")
   await router.isReady()
   const wrapper = mount(DeckEditView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } },
+    global: { plugins: [router], stubs: { Icon: true } },
     attachTo: document.body
   })
   await flushPromises()

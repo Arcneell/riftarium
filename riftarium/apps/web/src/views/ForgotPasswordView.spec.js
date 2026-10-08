@@ -23,7 +23,7 @@ async function mountView() {
   router.push("/mot-de-passe-oublie")
   await router.isReady()
   const wrapper = mount(ForgotPasswordView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }

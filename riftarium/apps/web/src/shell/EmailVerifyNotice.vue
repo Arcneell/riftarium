@@ -51,7 +51,7 @@ async function resend() {
     <p>
       <strong class="bandeau-verif-titre">Adresse e-mail non vérifiée.</strong>
       <template v-if="info">{{ info }}</template>
-      <span v-if="error" class="bandeau-erreur">{{ error }}</span>
+      <span v-if="error" class="bandeau-erreur" role="alert">{{ error }}</span>
     </p>
     <template #actions>
       <RiftButton variant="secondary" size="sm" class="bandeau-verif-renvoi" :disabled="sending" @click="resend">

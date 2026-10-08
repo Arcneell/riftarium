@@ -24,7 +24,7 @@ async function mountView(path = "/connexion") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(AuthView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }

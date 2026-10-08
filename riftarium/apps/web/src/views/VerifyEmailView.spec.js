@@ -22,7 +22,7 @@ async function mountView(path = "/verification-email?token=jeton-mail") {
   router.push(path)
   await router.isReady()
   const wrapper = mount(VerifyEmailView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   await flushPromises()
   return { wrapper, router }

@@ -22,7 +22,7 @@ async function mountGate() {
   router.push("/admin")
   await router.isReady()
   const wrapper = mount(AdminGateView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
   /* Laisse l'import dynamique de la console se résoudre le cas échéant. */
   await vi.dynamicImportSettled()

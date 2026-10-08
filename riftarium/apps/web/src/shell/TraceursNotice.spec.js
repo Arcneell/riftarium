@@ -62,7 +62,7 @@ describe("TraceursNotice", () => {
     expect(localStorage.getItem(TRACEURS_ACK_KEY)).toBe("1")
   })
 
-  it("bandeau traceurs : focus dans le bandeau, choix mémorisé, bandeau fermé", async () => {
+  it("bandeau traceurs : « J'ai compris » est un bouton focalisable dans la région, il mémorise le choix et ferme le bandeau", async () => {
     const wrapper = await mountNotice({ attachTo: document.body })
     const ack = wrapper.get(".bandeau-ok")
     /* Vrai bouton, joignable au clavier, dans la région du bandeau. */

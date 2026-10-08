@@ -135,6 +135,14 @@ textarea:focus,
 select:focus {
   border-color: var(--bronze-light);
 }
+/* Focus clavier visible : l'anneau bronze revient, rentrant pour ne pas déborder.
+   Sélecteur plus spécifique que `outline: none` ci-dessus (et que celui de main.css). */
+input:is([type="text"], [type="search"], [type="email"], [type="password"], [type="number"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -2px;
+}
 input::placeholder,
 textarea::placeholder {
   color: var(--ink-muted);

@@ -18,7 +18,7 @@ async function mountPage(path) {
   router.push(path)
   await router.isReady()
   return mount(LegalView, {
-    global: { plugins: [router], stubs: { Icon: true }, directives: { tilt: {}, reveal: {} } }
+    global: { plugins: [router], stubs: { Icon: true } }
   })
 }
 
