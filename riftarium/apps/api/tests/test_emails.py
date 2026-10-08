@@ -273,7 +273,9 @@ def test_mailer_sends_over_ssl_on_port_465(smtp_settings):
     html = message.get_body(preferencelist=("html",)).get_content()
     assert "https://riftarium.re/reinitialisation?token=jeton" in plain
     assert "Choisir un nouveau mot de passe" in html
-    assert "https://riftarium.re/favicon.svg" in html
+    # Logo en PNG : Gmail et Outlook bloquent les images SVG.
+    assert "https://riftarium.re/icon-192.png" in html
+    assert "favicon.svg" not in html
     assert 'href="https://riftarium.re/reinitialisation?token=jeton"' in html
 
 
@@ -300,3 +302,13 @@ def test_mailer_failure_is_logged_never_raised(smtp_settings, caplog):
     with caplog.at_level(logging.ERROR, logger="riftarium.mailer"):
         mailer.send_email("joueur@example.org", "Sujet", "Corps")  # ne doit pas lever
     assert "échec d'envoi SMTP" in caplog.text
+
+
+def test_mail_html_uses_forge_charter():
+    """Charte « Forge noxienne » : fond de forge, bouton sang, texte crème, plus de parchemin."""
+    html = mailer._html(mailer._VERIFY, "https://riftarium.re/verification-email?token=jeton")
+    for color in ("#0d0d0f", "#17120f", "#b3262b", "#e9e2d8", "#d6b98c"):
+        assert color in html, color
+    for parchment in ("#fdfaf2", "#ede4cf", "#16283a", "#0b8f84"):
+        assert parchment not in html, parchment
+    assert '<meta name="color-scheme" content="dark">' in html
