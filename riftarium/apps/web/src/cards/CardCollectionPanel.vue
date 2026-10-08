@@ -167,7 +167,7 @@ async function toggleWish() {
 
       <div class="panel-pref">
         <p class="panel-pref-line">
-          Ajouté en {{ preference }} ·
+          Ajouts en {{ preference }} ·
           <button
             type="button"
             class="panel-pref-change"
@@ -203,7 +203,8 @@ async function toggleWish() {
             <RiftStepper
               :value="entry.qty"
               :busy="busy"
-              :label="`ce lot ${lotName(entry)}`"
+              :increment-label="`Ajouter un exemplaire au lot ${lotName(entry)}`"
+              :decrement-label="`Retirer un exemplaire du lot ${lotName(entry)}`"
               @increment="setLotQty(entry, entry.qty + 1)"
               @decrement="setLotQty(entry, entry.qty - 1)"
             />
@@ -214,7 +215,8 @@ async function toggleWish() {
                 :value="Math.min(tradeQty[entry.id] ?? 0, entry.qty)"
                 :max="entry.qty"
                 :busy="tradeBusy"
-                :label="`à échanger du lot ${lotName(entry)}`"
+                :increment-label="`Ajouter un exemplaire à l'échange (lot ${lotName(entry)})`"
+                :decrement-label="`Retirer un exemplaire de l'échange (lot ${lotName(entry)})`"
                 @increment="setTradeQty(entry, (tradeQty[entry.id] ?? 0) + 1)"
                 @decrement="setTradeQty(entry, (tradeQty[entry.id] ?? 0) - 1)"
               />
@@ -227,7 +229,8 @@ async function toggleWish() {
             :value="draft.qty"
             :min="1"
             :max="999"
-            label="ce lot"
+            increment-label="Ajouter un exemplaire au lot à créer"
+            decrement-label="Retirer un exemplaire du lot à créer"
             @increment="draft.qty += 1"
             @decrement="draft.qty -= 1"
           />

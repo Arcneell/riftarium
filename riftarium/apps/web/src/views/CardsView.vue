@@ -68,7 +68,7 @@ const sets = ref([])
 const setOptions = computed(() => sets.value.map((item) => ({ value: item.set_id, label: item.name })))
 /* Libellé du bouton de la feuille, accordé au nombre de résultats. */
 const sheetLabel = computed(() => {
-  if (!result.value.total) return "Aucune carte"
+  if (!result.value.total) return "Fermer · aucune carte"
   return result.value.total === 1 ? "Voir la carte" : `Voir les ${result.value.total} cartes`
 })
 const panelOpen = ref(true)

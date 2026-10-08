@@ -130,7 +130,7 @@ const stats = computed(() => [
             variant="ghost"
             size="sm"
             class="souhait-remove"
-            :aria-label="`Retirer ${item.card.name} de ma liste de souhaits`"
+            :aria-label="`Retirer ${item.card.name} de ma wishlist`"
             :disabled="Boolean(busyId)"
             @click="removeItem(item)"
           >
@@ -140,7 +140,11 @@ const stats = computed(() => [
       </div>
     </div>
 
-    <RiftEmpty v-else-if="!error" title="Votre wishlist est vide" text="Le cœur sur la fiche d'une carte l'ajoute ici.">
+    <RiftEmpty
+      v-else-if="!error"
+      title="Votre wishlist est vide"
+      text="Ajoutez des cartes depuis leur fiche, bouton « Ajouter à la wishlist »."
+    >
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
     </RiftEmpty>
   </div>

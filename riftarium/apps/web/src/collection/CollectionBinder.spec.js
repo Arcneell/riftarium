@@ -63,7 +63,7 @@ describe("CollectionBinder", () => {
 
     expect(wrapper.get("h2").text()).toBe("Origins")
     expect(wrapper.get(".classeur-sub").text()).toContain("149/298")
-    expect(wrapper.get(".classeur-sub").text()).toContain("il manque 149 carte(s) (~42,50")
+    expect(wrapper.get(".classeur-sub").text()).toContain("149 cartes manquantes (~42,50")
 
     expect(
       api.mock.calls.some(([path]) => String(path).includes("set_id=OGN") && String(path).includes("size=18"))
@@ -86,7 +86,7 @@ describe("CollectionBinder", () => {
       sets: [{ set_id: "OGN", name: "Origins", total: 298, owned: 0, missing: 298, missing_cost_eur: 99 }],
       overall: { total: 298, owned: 0, missing: 298, missing_cost_eur: 99 }
     })
-    expect(wrapper.get(".rift-empty").text()).toContain("Votre classeur attend ses premières cartes")
+    expect(wrapper.get(".rift-empty").text()).toContain("Votre classeur est vide")
     expect(wrapper.get(".rift-empty a").attributes("href")).toBe("/cartes")
     expect(wrapper.find(".classeur-pocket").exists()).toBe(false)
     expect(wrapper.find(".classeur-spread").exists()).toBe(false)
@@ -323,7 +323,7 @@ describe("CollectionBinder", () => {
         expect(api).not.toHaveBeenCalled()
         await toggle(wrapper).trigger("click")
         await flushPromises()
-        expect(wrapper.text()).not.toContain("attend ses premières cartes")
+        expect(wrapper.text()).not.toContain("Votre classeur est vide")
         expect(wrapper.findAll(".classeur-pocket.ghost")).toHaveLength(2)
         expect(wrapper.findAll(".quick-count")).toHaveLength(2)
         /* la progression repasse à 0 (dernière carte retirée) : le classeur ne disparaît pas */
@@ -337,14 +337,14 @@ describe("CollectionBinder", () => {
         const wrapper = await mountBinder(empty)
         expect(wrapper.findAll(".quick-count").length).toBeGreaterThan(0)
         await toggle(wrapper).trigger("click")
-        expect(wrapper.text()).toContain("attend ses premières cartes")
+        expect(wrapper.text()).toContain("Votre classeur est vide")
         wrapper.unmount()
       })
 
       it("pas de puce de saisie rapide pour un visiteur", async () => {
         session.token = null
         const wrapper = await mountBinder(empty)
-        expect(wrapper.text()).toContain("attend ses premières cartes")
+        expect(wrapper.text()).toContain("Votre classeur est vide")
         expect(toggle(wrapper)).toBeUndefined()
         wrapper.unmount()
       })

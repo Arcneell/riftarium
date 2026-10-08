@@ -66,7 +66,7 @@ describe("CardHoverPreview", () => {
     expect(preview.textContent).toContain("Immortal Phoenix")
     expect(preview.querySelector(".apercu-foil")).not.toBeNull()
     /* Variante, nom et texte de jeu rendu par RiftText (glyphes, mots-clés). */
-    expect(preview.querySelector(".apercu-variante").textContent).toBe("Alt")
+    expect(preview.querySelector(".apercu-variante").textContent).toBe("Alt-art")
     expect(preview.querySelector(".apercu-nom").textContent).toBe("Immortal Phoenix")
     expect(preview.querySelector(".apercu-texte.rift-text")).not.toBeNull()
     expect(preview.querySelector(".apercu-illus img").getAttribute("alt")).toBe("Aperçu : Immortal Phoenix")

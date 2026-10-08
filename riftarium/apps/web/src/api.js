@@ -63,15 +63,30 @@ export function setSession(token, handle, avatarUrl = null) {
   }
 }
 
-/* FastAPI renvoie parfois `detail` sous forme de liste (erreurs 422) : on en tire un message lisible. */
+const INVALID = "Certaines informations envoyées ne sont pas valides"
+
+/* Erreur 422 de FastAPI : `detail` est une liste d'erreurs Pydantic dont `msg` est en anglais
+   (« Field required »…). On ne l'affiche jamais tel quel. Seule exception : les validateurs de
+   schemas.py lèvent des ValueError rédigées en français, que Pydantic préfixe de « Value error, ». */
+const VALUE_ERROR_PREFIX = "Value error, "
+
+function validationMessage(errors) {
+  const msg = errors[0]?.msg
+  if (typeof msg === "string" && msg.startsWith(VALUE_ERROR_PREFIX)) {
+    return msg.slice(VALUE_ERROR_PREFIX.length) || INVALID
+  }
+  return INVALID
+}
+
+/* `detail` chaîne ou objet {msg|message} : messages rédigés en français par l'API, affichés tels quels. */
 function readableDetail(detail, status) {
   if (typeof detail === "string" && detail) return detail
-  if (Array.isArray(detail)) return detail[0]?.msg || "Requête invalide"
-  if (detail && typeof detail === "object") return detail.msg || detail.message || "Requête invalide"
-  if (detail) return "Requête invalide"
+  if (Array.isArray(detail)) return validationMessage(detail)
+  if (detail && typeof detail === "object") return detail.msg || detail.message || INVALID
+  if (detail) return INVALID
   if (status === 405) return "Action bloquée par le pare-feu du site"
   if (status === 429) return "Trop de requêtes, réessayez dans une minute"
-  if (status >= 500) return "Le serveur a rencontré une erreur"
+  if (status >= 500) return "Erreur du serveur, réessayez dans un instant"
   return "Erreur inattendue"
 }
 
@@ -175,7 +190,7 @@ export const LANGS = {
   ZH: "Chinois"
 }
 
-/* Ordre officiel Riot : Commune → Peu commune → Rare → Épique, puis impressions spéciales. */
+/* Ordre officiel Riot : Common → Uncommon → Rare → Epic, puis impressions spéciales. */
 export const RARITIES = {
   Common: "Commun",
   Uncommon: "Peu commun",

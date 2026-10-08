@@ -10,11 +10,29 @@ describe("RiftStepper", () => {
     const buttons = wrapper.findAll("button")
     expect(buttons).toHaveLength(2)
     expect(buttons[0].attributes("type")).toBe("button")
-    expect(buttons[0].attributes("aria-label")).toBe("Retirer un exemplaire de Annie")
-    expect(buttons[1].attributes("aria-label")).toBe("Ajouter un exemplaire de Annie")
+    expect(buttons[0].attributes("aria-label")).toBe("Retirer un exemplaire d'Annie")
+    expect(buttons[1].attributes("aria-label")).toBe("Ajouter un exemplaire d'Annie")
     const value = wrapper.get(".rift-stepper-value")
     expect(value.text()).toBe("2")
     expect(value.attributes("aria-live")).toBe("polite")
+  })
+
+  it("garde « de » devant une consonne", () => {
+    const wrapper = mountStepper({ label: "Jinx" })
+    expect(wrapper.get(".rift-stepper-plus").attributes("aria-label")).toBe("Ajouter un exemplaire de Jinx")
+  })
+
+  it("prend les libellés complets passés par l'appelant", () => {
+    const wrapper = mountStepper({
+      incrementLabel: "Ajouter un exemplaire à l'échange (lot NM · Français)",
+      decrementLabel: "Retirer un exemplaire de l'échange (lot NM · Français)"
+    })
+    expect(wrapper.get(".rift-stepper-plus").attributes("aria-label")).toBe(
+      "Ajouter un exemplaire à l'échange (lot NM · Français)"
+    )
+    expect(wrapper.get(".rift-stepper-minus").attributes("aria-label")).toBe(
+      "Retirer un exemplaire de l'échange (lot NM · Français)"
+    )
   })
 
   it("émet increment et decrement", async () => {

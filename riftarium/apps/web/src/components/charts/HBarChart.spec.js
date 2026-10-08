@@ -25,7 +25,7 @@ describe("HBarChart", () => {
     const wrapper = mount(HBarChart, { props: baseProps })
     await wrapper.findAll(".graphe-band")[1].trigger("mouseenter")
     const tooltip = wrapper.get(".graphe-tooltip").text()
-    expect(tooltip).toContain("Accueil — Visites")
+    expect(tooltip).toContain("Accueil : Visites")
     expect(tooltip).toContain("60")
   })
 

@@ -138,10 +138,10 @@ describe("CollectionView", () => {
     expect(stats[0].text()).toContain("6")
     expect(stats[2].text()).toContain("Valeur estimée")
     expect(stats[2].text()).toContain("15,00")
-    expect(stats[2].attributes("title")).toContain("marché US")
+    expect(stats[2].attributes("title")).toContain("marché américain")
     expect(stats[3].text()).toContain("Complétion")
     expect(stats[3].text()).toContain("63 %")
-    expect(stats[3].attributes("title")).toContain("il manque 149")
+    expect(stats[3].attributes("title")).toContain("149 cartes manquantes")
     wrapper.unmount()
   })
 

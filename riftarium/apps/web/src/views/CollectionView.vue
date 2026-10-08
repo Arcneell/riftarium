@@ -7,7 +7,7 @@ import CollectionInventory from "../collection/CollectionInventory.vue"
 import CollectionStats from "../collection/CollectionStats.vue"
 import { useQuerySyncedFilters } from "../composables/useQuerySyncedFilters.js"
 import { useScrollMemory } from "../composables/useScrollMemory.js"
-import { PRICE_NOTE, formatEur } from "../prices.js"
+import { PRICE_NOTE, formatEur, missingCardsText as missingText } from "../prices.js"
 import RiftChip from "../ui/RiftChip.vue"
 
 /* Page « Ma collection » : statistiques, commutateur Classeur / Inventaire, puis
@@ -110,12 +110,6 @@ async function loadProgress() {
     /* la stat de complétion reste masquée ; le classeur affiche l'erreur s'il n'a rien. */
     if (mine === progressSeq) progressError.value = e.message
   }
-}
-
-function missingText(row) {
-  if (!row.missing) return "set complet"
-  const cost = formatEur(row.missing_cost_eur)
-  return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
 }
 
 const stats = computed(() => {

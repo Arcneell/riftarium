@@ -8,7 +8,7 @@ describe("CollectionStats", () => {
       props: {
         items: [
           { label: "Cartes", value: 6 },
-          { label: "Complétion", value: "63 %", title: "il manque 149 carte(s)" }
+          { label: "Complétion", value: "63 %", title: "149 cartes manquantes" }
         ]
       }
     })
@@ -17,7 +17,7 @@ describe("CollectionStats", () => {
     expect(stats[0].text()).toContain("Cartes")
     expect(stats[0].text()).toContain("6")
     expect(stats[1].text()).toContain("63 %")
-    expect(stats[1].attributes("title")).toBe("il manque 149 carte(s)")
+    expect(stats[1].attributes("title")).toBe("149 cartes manquantes")
   })
 
   it("affiche un tiret quand la valeur est nulle", () => {

@@ -234,12 +234,12 @@ describe("CardCollectionPanel", () => {
       return Promise.resolve({})
     })
     const { wrapper } = await mountPanel()
-    expect(wrapper.get(".panel-pref").text()).toContain("Ajouté en NM · Français")
+    expect(wrapper.get(".panel-pref").text()).toContain("Ajouts en NM · Français")
 
     await wrapper.get(".panel-pref-change").trigger("click")
     await wrapper.get(".panel-pref-edit [title='Excellent']").trigger("click")
     await wrapper.get(".panel-pref-edit [title='Anglais']").trigger("click")
-    expect(wrapper.get(".panel-pref").text()).toContain("Ajouté en EX · Anglais")
+    expect(wrapper.get(".panel-pref").text()).toContain("Ajouts en EX · Anglais")
     expect(JSON.parse(localStorage.getItem("riftarium_collection_defaults"))).toEqual({ condition: "EX", lang: "EN" })
 
     await wrapper.get(".panel-count .rift-stepper-plus").trigger("click")
@@ -276,7 +276,7 @@ describe("CardCollectionPanel", () => {
       }
       return Promise.resolve({})
     })
-    await lot().get("[aria-label='Retirer un exemplaire de ce lot NM · Français']").trigger("click")
+    await lot().get("[aria-label='Retirer un exemplaire du lot NM · Français']").trigger("click")
     await flushPromises()
     expect(patchCalls()[0][1].body).toEqual({ qty: 1 })
     expect(lot().get(".rift-stepper-value").text()).toBe("1")
