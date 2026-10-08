@@ -1,57 +1,63 @@
 <script setup>
 import { useId } from "vue"
 
-/* Le logo est rendu deux fois par page (en-tête et pied) : des identifiants de
-   dégradé figés se dupliquaient dans le document, et le second SVG reprenait les
-   `defs` du premier. Un suffixe par instance rend chaque dégradé unique. */
+/* Sceau de forge (charte « Forge noxienne ») : octogone aux angles coupés cerclé de
+   bronze, carte fendue par la faille rouge du Rift. Mêmes tracés que public/favicon.svg
+   et assets/logo.svg (racine du dépôt) : les garder alignés.
+   Le logo est rendu deux fois par page (rail et pied) : un suffixe par instance rend
+   chaque dégradé unique, sinon le second SVG reprendrait les `defs` du premier. */
 const uid = useId()
-const prism = `lg-prism-${uid}`
-const gold = `lg-gold-${uid}`
-const glow = `lg-glow-${uid}`
+const bronze = `lg-bronze-${uid}`
+const blood = `lg-sang-${uid}`
+const glow = `lg-lueur-${uid}`
 </script>
 
 <template>
-  <svg viewBox="0 0 240 240" class="logo" aria-hidden="true">
+  <svg viewBox="0 0 120 120" class="logo" aria-hidden="true">
     <defs>
-      <linearGradient :id="prism" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#cf4437" />
-        <stop offset=".2" stop-color="#ab7c1a" />
-        <stop offset=".4" stop-color="#3f8f50" />
-        <stop offset=".6" stop-color="#178f7f" />
-        <stop offset=".8" stop-color="#7355cf" />
-        <stop offset="1" stop-color="#c2439b" />
+      <linearGradient :id="bronze" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e6cfa6" />
+        <stop offset=".55" stop-color="#b08d5f" />
+        <stop offset="1" stop-color="#6e5536" />
       </linearGradient>
-      <linearGradient :id="gold" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#d9bd82" />
-        <stop offset=".5" stop-color="#b08a3e" />
-        <stop offset="1" stop-color="#8a6a2f" />
+      <linearGradient :id="blood" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ff7a5c" />
+        <stop offset=".5" stop-color="#d23a33" />
+        <stop offset="1" stop-color="#8e1b20" />
       </linearGradient>
-      <radialGradient :id="glow" cx=".5" cy=".5" r=".5">
-        <stop offset="0" stop-color="#35e0d0" stop-opacity=".2" />
-        <stop offset="1" stop-color="#35e0d0" stop-opacity="0" />
-      </radialGradient>
+      <filter :id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="flou" />
+        <feMerge>
+          <feMergeNode in="flou" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
     </defs>
-    <circle cx="120" cy="120" r="112" fill="#0e1c34" />
-    <circle cx="120" cy="120" r="112" fill="none" :stroke="`url(#${gold})`" stroke-width="5" />
-    <circle cx="120" cy="120" r="100" fill="none" stroke="#d9bd82" stroke-width="1" opacity=".35" />
-    <path
-      d="M 120 34 A 86 86 0 1 1 119.9 34"
-      fill="none"
-      :stroke="`url(#${prism})`"
-      stroke-width="7"
-      stroke-linecap="round"
-      stroke-dasharray="460 80"
-      stroke-dashoffset="-30"
-      transform="rotate(118 120 120)"
+    <polygon
+      data-part="sceau"
+      points="34,4 86,4 116,34 116,86 86,116 34,116 4,86 4,34"
+      fill="#0d0d0f"
+      :stroke="`url(#${bronze})`"
+      stroke-width="5"
     />
-    <circle cx="120" cy="120" r="62" :fill="`url(#${glow})`" />
-    <g transform="rotate(-12 120 120)">
-      <rect x="92" y="76" width="56" height="82" rx="9" fill="#ffffff" :stroke="`url(#${gold})`" stroke-width="3.5" />
-      <rect x="99" y="83" width="42" height="42" rx="6" fill="none" stroke="#b08a3e" stroke-width="1.4" opacity=".45" />
-      <circle cx="120" cy="104" r="10" fill="#0da496" />
-      <circle cx="120" cy="104" r="15" fill="none" stroke="#0da496" stroke-width="1.2" opacity=".45" />
-      <rect x="100" y="134" width="40" height="4" rx="2" fill="#b08a3e" opacity=".6" />
-      <rect x="100" y="143" width="28" height="4" rx="2" fill="#b08a3e" opacity=".35" />
+    <polygon
+      points="37,13 83,13 107,37 107,83 83,107 37,107 13,83 13,37"
+      fill="none"
+      stroke="#d6b98c"
+      stroke-width="1"
+      opacity=".35"
+    />
+    <g transform="rotate(-8 60 60)">
+      <path data-part="carte" d="M40 30 H80 V90 H40 Z" fill="#17120f" :stroke="`url(#${bronze})`" stroke-width="3.5" />
+      <path
+        data-part="faille"
+        d="M63 26 L54 50 L64 58 L52 94"
+        fill="none"
+        :stroke="`url(#${blood})`"
+        stroke-width="6"
+        stroke-linejoin="miter"
+        :filter="`url(#${glow})`"
+      />
     </g>
   </svg>
 </template>
