@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from "vue"
 import { api } from "../api.js"
-import { BANNERS } from "../banners.js"
-import PageBanner from "../components/PageBanner.vue"
+import AccessLayout from "../account/AccessLayout.vue"
+import RiftButton from "../ui/RiftButton.vue"
+import RiftField from "../ui/RiftField.vue"
 
 /* Réponse volontairement identique que le compte existe ou non (anti-énumération d'adresses). */
 const NEUTRAL_MESSAGE = "Si un compte existe avec cette adresse, un e-mail de réinitialisation a été envoyé."
@@ -37,29 +38,24 @@ async function submit() {
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.auth" title="Mot de passe oublié" show-title />
-
-  <section>
-    <div class="wrap" style="max-width: 480px">
-      <div v-if="sent" class="panel">
-        <p class="success" style="margin-top: 0">{{ NEUTRAL_MESSAGE }}</p>
-        <p class="muted" style="margin-bottom: 20px">Pensez à vérifier vos indésirables.</p>
-        <RouterLink class="btn btn-gold" to="/connexion">Retour à la connexion</RouterLink>
+  <AccessLayout title="Mot de passe oublié">
+    <template v-if="sent">
+      <p class="acces-succes" role="status">{{ NEUTRAL_MESSAGE }}</p>
+      <p class="acces-note">Pensez à vérifier vos indésirables.</p>
+      <div class="acces-actions">
+        <RiftButton to="/connexion">Retour à la connexion</RiftButton>
       </div>
+    </template>
 
-      <form v-else class="panel" @submit.prevent="submit">
-        <div class="field">
-          <label for="forgot-email">Email</label>
-          <input id="forgot-email" type="email" v-model="email" autocomplete="email" required />
-        </div>
-        <button class="btn btn-gold" type="submit" style="width: 100%" :disabled="submitting">
-          {{ submitting ? "Un instant…" : "Envoyer le lien" }}
-        </button>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p class="muted" style="margin-top: 16px">
-          <RouterLink to="/connexion">Retour à la connexion</RouterLink>
-        </p>
-      </form>
-    </div>
-  </section>
+    <form v-else class="acces-form" @submit.prevent="submit">
+      <RiftField v-model="email" label="Email" type="email" name="email" autocomplete="email" required />
+      <RiftButton type="submit" block :disabled="submitting">
+        {{ submitting ? "Un instant…" : "Envoyer le lien" }}
+      </RiftButton>
+      <p v-if="error" class="acces-erreur" role="alert">{{ error }}</p>
+      <p class="acces-note">
+        <RouterLink class="acces-lien" to="/connexion">Retour à la connexion</RouterLink>
+      </p>
+    </form>
+  </AccessLayout>
 </template>

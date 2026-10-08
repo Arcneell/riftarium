@@ -43,7 +43,7 @@ describe("ForgotPasswordView", () => {
 
   it("affiche le champ e-mail et un lien de retour à la connexion", async () => {
     const { wrapper } = await mountView()
-    expect(wrapper.find("#forgot-email").exists()).toBe(true)
+    expect(wrapper.find("input[name=email]").exists()).toBe(true)
     const back = wrapper.findAll("a").find((a) => a.attributes("href") === "/connexion")
     expect(back).toBeTruthy()
     expect(back.text()).toContain("Retour à la connexion")
@@ -51,7 +51,7 @@ describe("ForgotPasswordView", () => {
 
   it("envoie l'adresse à l'API puis affiche le message neutre", async () => {
     const { wrapper } = await mountView()
-    await wrapper.get("#forgot-email").setValue("nyra@example.org")
+    await wrapper.get("input[name=email]").setValue("nyra@example.org")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/auth/forgot-password", {
@@ -65,7 +65,7 @@ describe("ForgotPasswordView", () => {
   it("affiche le même message neutre même quand l'API échoue (anti-énumération)", async () => {
     api.mockRejectedValue(new ApiError(400, "Adresse inconnue"))
     const { wrapper } = await mountView()
-    await wrapper.get("#forgot-email").setValue("inconnue@example.org")
+    await wrapper.get("input[name=email]").setValue("inconnue@example.org")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
     expect(wrapper.text()).toContain(NEUTRAL)
@@ -75,10 +75,10 @@ describe("ForgotPasswordView", () => {
   it("signale la limite de débit (429) sans dévoiler l'existence du compte", async () => {
     api.mockRejectedValue(new ApiError(429, "Too Many Requests"))
     const { wrapper } = await mountView()
-    await wrapper.get("#forgot-email").setValue("nyra@example.org")
+    await wrapper.get("input[name=email]").setValue("nyra@example.org")
     await wrapper.get("form").trigger("submit")
     await flushPromises()
-    expect(wrapper.get(".error").text()).toContain("Trop de demandes")
+    expect(wrapper.get("[role=alert]").text()).toContain("Trop de demandes")
     expect(wrapper.find("form").exists()).toBe(true)
   })
 
@@ -86,10 +86,10 @@ describe("ForgotPasswordView", () => {
     for (const failure of [new Error("Failed to fetch"), new ApiError(503, "Service Unavailable")]) {
       api.mockRejectedValue(failure)
       const { wrapper } = await mountView()
-      await wrapper.get("#forgot-email").setValue("nyra@example.org")
+      await wrapper.get("input[name=email]").setValue("nyra@example.org")
       await wrapper.get("form").trigger("submit")
       await flushPromises()
-      expect(wrapper.get(".error").text()).toContain("n'a pas pu être envoyée")
+      expect(wrapper.get("[role=alert]").text()).toContain("n'a pas pu être envoyée")
       expect(wrapper.text()).not.toContain(NEUTRAL)
       expect(wrapper.find("form").exists()).toBe(true)
       wrapper.unmount()
@@ -100,7 +100,7 @@ describe("ForgotPasswordView", () => {
     let resolveSend
     api.mockImplementation(() => new Promise((resolve) => (resolveSend = resolve)))
     const { wrapper } = await mountView()
-    await wrapper.get("#forgot-email").setValue("nyra@example.org")
+    await wrapper.get("input[name=email]").setValue("nyra@example.org")
 
     await wrapper.get("form").trigger("submit")
     expect(wrapper.get("button[type=submit]").attributes("disabled")).toBeDefined()
