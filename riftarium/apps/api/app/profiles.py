@@ -25,6 +25,7 @@ from .models import (
 )
 from .moderation import review
 from .security import sanitize_image_url
+from .trades import cancel_pending_for_user, delete_user_trades, export_trades
 
 
 def avatar_urls(db: Session, users: list[User]) -> dict[int, str | None]:
@@ -90,6 +91,11 @@ def user_out(db: Session, user: User, *, include_email: bool = False, include_st
         payload["email_verified"] = user.email_verified_at is not None
         payload["notify_moderation"] = user.notify_moderation
         payload["is_admin"] = user.is_admin
+        # Échanges : le contact n'est renvoyé qu'à son propriétaire (bloc include_email).
+        payload["trade_enabled"] = bool(user.trade_enabled)
+        payload["trade_zone"] = user.trade_zone
+        payload["trade_contact"] = user.trade_contact
+        payload["notify_trades"] = bool(user.notify_trades)
     if include_stats:
         payload["stats"] = user_stats(db, user)
     return payload
@@ -146,6 +152,7 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
     for setting in ("show_stats", "show_collection", "show_decks", "show_achievements"):
         if setting in data:
             setattr(user, setting, bool(data[setting]))
+    _apply_trade_settings(db, user, data)
     if "handle" in data and data["handle"] != user.handle:
         if review(data["handle"]) != "published":
             raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")
@@ -159,6 +166,28 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
             raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
         user.email = data["email"]
         user.email_verified_at = None  # la nouvelle adresse devra être vérifiée à son tour
+
+
+def _apply_trade_settings(db: Session, user: User, data: dict) -> None:
+    """Réglages d'échange : zone, contact, e-mails, puis l'opt-in.
+
+    Activé = zone ET contact renseignés, contrôlé sur l'état final (un PATCH
+    peut ne toucher que le contact d'un compte déjà inscrit). Se désinscrire
+    annule les demandes en attente des deux côtés.
+    """
+    if "trade_zone" in data:
+        user.trade_zone = data["trade_zone"]
+    if "trade_contact" in data:
+        user.trade_contact = (data["trade_contact"] or "").strip() or None
+    if "notify_trades" in data:
+        user.notify_trades = bool(data["notify_trades"])
+    was_enabled = bool(user.trade_enabled)
+    if "trade_enabled" in data:
+        user.trade_enabled = bool(data["trade_enabled"])
+    if user.trade_enabled and not (user.trade_zone and user.trade_contact):
+        raise HTTPException(status_code=422, detail="Choisissez une zone et un contact pour activer les échanges")
+    if was_enabled and not user.trade_enabled:
+        cancel_pending_for_user(db, user.id)
 
 
 def export_account(db: Session, user: User) -> dict:
@@ -226,6 +255,7 @@ def export_account(db: Session, user: User) -> dict:
             for badge in badges
         ],
         "follows": {"following": following, "followers": followers},
+        "trades": export_trades(db, user),
     }
 
 
@@ -262,6 +292,8 @@ def delete_user_account(db: Session, user: User) -> None:
         )
     db.execute(delete(DeckLike).where(DeckLike.user_id == user.id))
     db.execute(delete(AuthToken).where(AuthToken.user_id == user.id))
+    # Échanges avant la collection : les offres pointent sur les lots.
+    delete_user_trades(db, user.id)
     db.execute(delete(CollectionItem).where(CollectionItem.user_id == user.id))
     db.execute(delete(WishlistItem).where(WishlistItem.user_id == user.id))
     db.execute(delete(DeckView).where(DeckView.visitor_key == f"u:{user.id}"))
