@@ -33,7 +33,7 @@ const Map<String, String> kShortTokens = {
   'O': 'rune_body',
   'P': 'rune_chaos',
   'Y': 'rune_order',
-  'C': 'rune_rainbow',
+  'A': 'rune_rainbow',
   'E': 'exhaust',
   'M': 'might',
 };

@@ -8,7 +8,7 @@ import 'api_date.dart';
 const achievementFamilies = <String>['duels', 'collection', 'decks', 'social'];
 
 const _familyLabels = <String, String>{
-  'duels': 'Duels',
+  'duels': 'Parties suivies',
   'collection': 'Collection',
   'decks': 'Decks',
   'social': 'Social',

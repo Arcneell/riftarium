@@ -171,7 +171,9 @@ final RegExp _tokenPattern = RegExp(r':rb_([a-z0-9_]+):|\[([^\][]+)\]');
 final RegExp _arrowPattern = RegExp(r'^>+$');
 
 /// Abréviations du texte officiel : `[R]` (rune), `[1]` (énergie), `[E]`.
-final RegExp _shortTokenPattern = RegExp(r'\[([RGBOPYCEM]|\d{1,2})\]');
+/// `[A]` est la rune libre ; `[C]` (puissance du domaine de la carte, règle
+/// 135.2.e.6) n'a pas de glyphe et reste une pastille, comme sur le site.
+final RegExp _shortTokenPattern = RegExp(r'\[([RGBOPYAEM]|\d{1,2})\]');
 final RegExp _digit = RegExp(r'^\d');
 
 String _expandShortTokens(String text) =>
