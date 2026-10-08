@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { session } from "../api.js"
 import Icon from "../components/Icon.vue"
 import { makeRouter } from "../test/makeRouter.js"
+import { tradeBadge } from "../trades.js"
 import AppRail from "./AppRail.vue"
 
 async function mountRail(path, props = {}) {
@@ -46,5 +47,16 @@ describe("AppRail", () => {
     Object.assign(session, { token: "1", handle: "Kaelis" })
     wrapper = await mountRail("/")
     expect(wrapper.find(".account-btn").exists()).toBe(true)
+  })
+
+  it("affiche la pastille des demandes d'échange reçues sur la rubrique et le sous-onglet", async () => {
+    tradeBadge.incoming = 2
+    const wrapper = await mountRail("/echanges")
+    const badges = wrapper.findAll(".rail-badge")
+    expect(badges.map((badge) => badge.text())).toEqual(["2", "2"])
+    expect(wrapper.get(".rail-sub a[aria-current=page]").text()).toContain("Échanges")
+    tradeBadge.incoming = 0
+    const quiet = await mountRail("/echanges")
+    expect(quiet.find(".rail-badge").exists()).toBe(false)
   })
 })

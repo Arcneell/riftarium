@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from "vue"
+import { computed, watch } from "vue"
 import { useRoute } from "vue-router"
 import { session } from "../api.js"
 import Logo from "../components/Logo.vue"
 import { CLOSED_BETA } from "../legal.js"
 import RiftButton from "../ui/RiftButton.vue"
 import AccountMenu from "./AccountMenu.vue"
+import { refreshTradeBadge, tradeBadge } from "../trades.js"
 import { activeChild, activeSection, NAV } from "./navigation.js"
 
 /* Rail latéral de la Forge (bureau et tablette). Seules les sous-pages de la
@@ -23,6 +24,18 @@ function sectionCurrent(item) {
   if (item !== section.value) return undefined
   return item.children ? "true" : "page"
 }
+
+/* Pastille d'une entrée de navigation (`badge` dans navigation.js) : 0 = rien à afficher. */
+function badgeCount(entry) {
+  return entry.badge === "trades" ? tradeBadge.incoming : 0
+}
+
+/* Les demandes reçues se rafraîchissent à chaque changement de page. */
+watch(
+  () => [route.path, session.token],
+  () => refreshTradeBadge(),
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -45,6 +58,9 @@ function sectionCurrent(item) {
           >
             <Icon :name="item.icon" :size="18" />
             <span v-if="!collapsed" class="rail-label">{{ item.label }}</span>
+            <span v-if="badgeCount(item)" class="rail-badge" :aria-label="`${badgeCount(item)} demande(s) reçue(s)`">{{
+              badgeCount(item)
+            }}</span>
           </RouterLink>
           <ul v-if="!collapsed && item === section && item.children" class="rail-sub">
             <li v-for="sub in item.children" :key="sub.to">
@@ -52,7 +68,13 @@ function sectionCurrent(item) {
                 :to="sub.to"
                 :class="{ active: sub === child }"
                 :aria-current="sub === child ? 'page' : undefined"
-                >{{ sub.label }}</RouterLink
+                >{{ sub.label
+                }}<span
+                  v-if="badgeCount(sub)"
+                  class="rail-badge"
+                  :aria-label="`${badgeCount(sub)} demande(s) reçue(s)`"
+                  >{{ badgeCount(sub) }}</span
+                ></RouterLink
               >
             </li>
           </ul>
@@ -170,6 +192,28 @@ function sectionCurrent(item) {
 }
 .rail-sub a.active {
   color: var(--bronze-light);
+}
+/* Compteur des demandes d'échange reçues : pastille de sang, chiffre Cinzel. */
+.rail-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: var(--space-2);
+  padding: 0 5px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--blood);
+}
+.rail.collapsed .rail-badge {
+  position: absolute;
+  margin: -18px 0 0 18px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
 }
 .rail-foot {
   display: grid;
