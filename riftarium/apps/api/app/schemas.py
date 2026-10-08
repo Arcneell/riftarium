@@ -459,3 +459,10 @@ class TradeOfferPut(BaseModel):
     """Quantité proposée à l'échange sur un lot (0 retire l'offre)."""
 
     qty: int = Field(ge=0, le=999)
+
+
+class TradeRequestIn(BaseModel):
+    """Demande sur l'offre d'un autre joueur, avec un message optionnel."""
+
+    offer_id: int
+    message: str = Field(default="", max_length=280)

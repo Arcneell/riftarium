@@ -6,7 +6,7 @@ Contrat : docs/echanges.md.
 from datetime import UTC, datetime, timedelta
 
 import app.db as db_module
-from app.models import User
+from app.models import TradeOffer, TradeRequest, User
 from sqlalchemy import select
 
 from conftest import bearer_headers
@@ -282,3 +282,164 @@ def test_card_offers_counts_my_zone(client, register_user):
     assert body["total"] == 3 and body["in_my_zone"] == 2
     assert [item["owner"]["zone"] for item in body["offers"]] == ["sud", "sud", "nord"]
     assert client.get(f"/api/trades/cards/{PHOENIX}/offers?zone=nord", headers=alice).json()["total"] == 1
+
+
+# ---------- Demandes ----------
+
+
+def pair(client, register_user):
+    """bob propose un Phoenix (zone sud), alice le cherche (zone nord). Renvoie (alice, bob, offer_id)."""
+    bob = account(client, register_user, "bob", zone="sud")
+    offer_id = offer(client, bob, add_lot(client, bob, PHOENIX, qty=2))
+    alice = account(client, register_user, "alice", zone="nord")
+    return alice, bob, offer_id
+
+
+def act(client, headers, request_id, action):
+    return client.post(f"/api/trades/requests/{request_id}/{action}", headers=headers)
+
+
+def test_request_flow_reveals_contact(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    created = ask(client, alice, offer_id, "Je peux te proposer un Lee Sin")
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert body["status"] == "pending" and body["box"] == "out" and body["contact"] is None
+    assert body["card"]["id"] == PHOENIX and body["other"]["handle"] == "bob"
+    request_id = body["id"]
+
+    incoming = client.get("/api/trades/requests?box=in", headers=bob).json()
+    assert [item["id"] for item in incoming["items"]] == [request_id]
+    assert incoming["items"][0]["message"] == "Je peux te proposer un Lee Sin"
+    assert incoming["items"][0]["contact"] is None
+    assert client.get("/api/trades/requests/summary", headers=bob).json() == {"incoming_pending": 1}
+
+    # L'offre affiche la demande en cours côté demandeur.
+    card = client.get(f"/api/trades/cards/{PHOENIX}/offers", headers=alice).json()
+    assert card["offers"][0]["pending_request_id"] == request_id
+
+    accepted = act(client, bob, request_id, "accept")
+    assert accepted.status_code == 200
+    assert accepted.json()["contact"] == "Discord : alice"
+    mine = client.get(f"/api/trades/requests/{request_id}", headers=alice).json()
+    assert mine["status"] == "accepted" and mine["contact"] == "Discord : bob"
+    assert client.get("/api/trades/requests/summary", headers=bob).json() == {"incoming_pending": 0}
+
+    done = act(client, alice, request_id, "done")
+    assert done.status_code == 200
+    assert done.json()["status"] == "done" and done.json()["contact"] == "Discord : bob"
+
+
+def test_request_guards(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    # Sa propre offre.
+    assert ask(client, bob, offer_id).status_code == 409
+    # Offre inconnue.
+    assert ask(client, alice, 99999).status_code == 404
+    # Adresse non vérifiée.
+    carl = account(client, register_user, "carl", zone="sud", verified=False)
+    assert ask(client, carl, offer_id).status_code == 403
+    # Demandeur non inscrit aux échanges.
+    dave = account(client, register_user, "dave")
+    assert ask(client, dave, offer_id).status_code == 403
+    # Doublon en attente.
+    assert ask(client, alice, offer_id).status_code == 201
+    assert ask(client, alice, offer_id).status_code == 409
+    # Message trop long.
+    assert ask(client, alice, offer_id, "x" * 281).status_code == 422
+
+
+def test_request_owner_must_be_enabled(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    assert client.patch("/api/auth/me", json={"trade_enabled": False}, headers=bob).status_code == 200
+    assert ask(client, alice, offer_id).status_code == 404
+
+
+def test_pending_limit(client, register_user):
+    alice = account(client, register_user, "alice", zone="nord")
+    bob = account(client, register_user, "bob", zone="sud")
+    lots = [
+        add_lot(client, bob, PHOENIX, qty=1, condition=condition, lang=lang)
+        for condition in ("NM", "LP", "EX", "GD")
+        for lang in ("EN", "FR", "DE")
+    ]
+    offer_ids = [offer(client, bob, entry) for entry in lots[:11]]
+    for offer_id in offer_ids[:10]:
+        assert ask(client, alice, offer_id).status_code == 201
+    assert ask(client, alice, offer_ids[10]).status_code == 429
+
+
+def test_transitions_and_roles(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    assert act(client, alice, request_id, "accept").status_code == 403
+    assert act(client, bob, request_id, "cancel").status_code == 403
+    assert act(client, alice, request_id, "done").status_code == 409
+    assert act(client, bob, request_id, "decline").status_code == 200
+    assert act(client, bob, request_id, "accept").status_code == 409
+    # Un tiers ne voit pas la demande.
+    carl = account(client, register_user, "carl", zone="sud")
+    assert client.get(f"/api/trades/requests/{request_id}", headers=carl).status_code == 404
+    assert act(client, carl, request_id, "accept").status_code == 404
+    # Après un refus, une nouvelle demande est possible.
+    second = ask(client, alice, offer_id).json()["id"]
+    assert act(client, alice, second, "cancel").json()["status"] == "cancelled"
+
+
+def test_disable_cancels_pending_keeps_accepted(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    accepted = ask(client, alice, offer_id).json()["id"]
+    act(client, bob, accepted, "accept")
+    other = offer(client, bob, add_lot(client, bob, AHRI))
+    pending = ask(client, alice, other).json()["id"]
+    assert client.patch("/api/auth/me", json={"trade_enabled": False}, headers=bob).status_code == 200
+    out = {item["id"]: item for item in client.get("/api/trades/requests?box=out", headers=alice).json()["items"]}
+    assert out[pending]["status"] == "cancelled" and out[pending]["contact"] is None
+    assert out[accepted]["status"] == "accepted" and out[accepted]["contact"] == "Discord : bob"
+
+
+def test_offer_removed_cancels_pending(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    put = client.put(f"/api/collection/{PHOENIX}", json={"qty": 0, "condition": "NM", "lang": "EN"}, headers=bob)
+    assert put.status_code == 200
+    item = client.get(f"/api/trades/requests/{request_id}", headers=alice).json()
+    assert item["status"] == "cancelled" and item["card"]["id"] == PHOENIX
+
+
+def test_requests_status_filter(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    act(client, bob, request_id, "decline")
+    assert client.get("/api/trades/requests?box=in&status=pending", headers=bob).json()["total"] == 0
+    assert client.get("/api/trades/requests?box=in&status=declined", headers=bob).json()["total"] == 1
+
+
+def test_account_deletion_removes_trades(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id).json()["id"]
+    act(client, bob, request_id, "accept")
+    deletion = {"password": "motdepasse123", "handle": "bob"}
+    response = client.request("DELETE", "/api/auth/me", json=deletion, headers=bob)
+    assert response.status_code == 204, response.text
+    assert client.get("/api/trades/requests?box=out", headers=alice).json()["total"] == 0
+    with db_module.SessionLocal() as session:
+        assert session.scalars(select(TradeOffer)).all() == []
+        assert session.scalars(select(TradeRequest)).all() == []
+
+
+def test_export_includes_trades(client, register_user):
+    alice, bob, offer_id = pair(client, register_user)
+    request_id = ask(client, alice, offer_id, "salut").json()["id"]
+    act(client, bob, request_id, "accept")
+    exported = client.get("/api/auth/export", headers=alice).json()["trades"]
+    assert exported["enabled"] is True and exported["zone"] == "nord"
+    assert exported["contact"] == "Discord : alice"
+    assert exported["requests"][0]["box"] == "out" and exported["requests"][0]["message"] == "salut"
+    assert "Discord : bob" not in str(exported)
+    assert client.get("/api/auth/export", headers=bob).json()["trades"]["offers"][0]["card_id"] == PHOENIX
+
+
+def test_request_message_is_moderated(client, register_user):
+    alice, _, offer_id = pair(client, register_user)
+    assert ask(client, alice, offer_id, "espece de connard").status_code == 422

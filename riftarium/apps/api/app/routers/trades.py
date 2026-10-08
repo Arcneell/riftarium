@@ -7,14 +7,15 @@ fait que l'authentification, la validation et la sérialisation.
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import trades
 from ..auth import current_user
 from ..db import get_db
-from ..models import CollectionItem, TradeOffer, User
-from ..schemas import TradeOfferPut
+from ..models import CollectionItem, TradeOffer, TradeRequest, User
+from ..schemas import TradeOfferPut, TradeRequestIn
 from ..security import limit_trades
 
 router = APIRouter(prefix="/api/trades", tags=["trades"])
@@ -114,3 +115,72 @@ def card_offers(
 ):
     trades.require_enabled(user)
     return trades.card_offers(db, user, card_id, zone=zone)
+
+
+# ---------- Demandes ----------
+
+Status = Literal["pending", "accepted", "declined", "cancelled", "done"]
+Action = Literal["accept", "decline", "cancel", "done"]
+
+
+@router.post("/requests", status_code=201, dependencies=[Depends(limit_trades)])
+def create_request(
+    payload: TradeRequestIn,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    req = trades.create_request(db, user, payload.offer_id, payload.message)
+    try:
+        db.commit()
+    except IntegrityError:  # double clic : l'index unique partiel a tranché
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Vous avez déjà une demande en cours sur cette offre") from None
+    db.refresh(req)
+    return trades.request_out(db, user, req)
+
+
+@router.get("/requests/summary")
+def requests_summary(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    count = db.scalar(
+        select(func.count(TradeRequest.id)).where(TradeRequest.owner_id == user.id, TradeRequest.status == "pending")
+    )
+    return {"incoming_pending": count or 0}
+
+
+@router.get("/requests")
+def list_requests(
+    box: Literal["in", "out"] = "in",
+    status: Status | None = None,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=50),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    side = TradeRequest.owner_id if box == "in" else TradeRequest.requester_id
+    query = select(TradeRequest).where(side == user.id)
+    if status:
+        query = query.where(TradeRequest.status == status)
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
+    items = db.scalars(
+        query.order_by(TradeRequest.created_at.desc(), TradeRequest.id.desc()).offset((page - 1) * size).limit(size)
+    ).all()
+    return {"items": trades.requests_out(db, user, list(items)), "total": total, "page": page, "size": size}
+
+
+@router.get("/requests/{request_id}")
+def get_request(request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return trades.request_out(db, user, trades.find_request(db, user, request_id))
+
+
+@router.post("/requests/{request_id}/{action}", dependencies=[Depends(limit_trades)])
+def act_on_request(
+    request_id: int,
+    action: Action,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    req = trades.find_request(db, user, request_id)
+    trades.transition(req, user, action)
+    db.commit()
+    db.refresh(req)
+    return trades.request_out(db, user, req)

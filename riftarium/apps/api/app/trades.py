@@ -8,11 +8,14 @@ cascade est donc aussi faite par le code.
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from fastapi import HTTPException
 from sqlalchemy import and_, delete, or_, select, update
 from sqlalchemy.orm import Session
 
 from .models import CollectionItem, TradeOffer, TradeRequest, User, WishlistItem, utcnow
+from .moderation import review
 from .routers.cards import card_out
 
 
@@ -312,3 +315,116 @@ def card_offers(db: Session, viewer: User, card_id: str, *, zone: str | None) ->
     """Offres des autres sur une carte (bloc « À l'échange » de la fiche)."""
     offers = _offers_out(db, viewer, _visible_offers(db, viewer, [card_id], zone))
     return {"offers": offers, "total": len(offers), "in_my_zone": _in_my_zone(viewer, offers)}
+
+
+# ---------- Demandes ----------
+
+MAX_PENDING_OUT = 10
+CONTACT_VISIBLE = ("accepted", "done")
+# Action → (rôle autorisé, statut de départ, statut d'arrivée). Rôle "any" : l'une ou l'autre partie.
+TRANSITIONS = {
+    "accept": ("owner", "pending", "accepted"),
+    "decline": ("owner", "pending", "declined"),
+    "cancel": ("requester", "pending", "cancelled"),
+    "done": ("any", "accepted", "done"),
+}
+
+
+def _is_active(user: User | None) -> bool:
+    if user is None or not user.trade_enabled:
+        return False
+    until = user.suspended_until
+    if until is None:
+        return True
+    if until.tzinfo is None:  # SQLite rend des dates naïves (stockées en UTC)
+        until = until.replace(tzinfo=UTC)
+    return until <= utcnow()
+
+
+def requests_out(db: Session, viewer: User, items: list[TradeRequest]) -> list[dict]:
+    """RequestOut du point de vue de `viewer` ; le contact de l'autre seulement après accord."""
+    other_ids = {req.owner_id if req.requester_id == viewer.id else req.requester_id for req in items}
+    others = {user.id: user for user in db.scalars(select(User).where(User.id.in_(other_ids))).all()}
+    avatars = _avatars(db, others.values())
+    result = []
+    for req in items:
+        mine = req.requester_id == viewer.id
+        other = others.get(req.owner_id if mine else req.requester_id)
+        result.append(
+            {
+                "id": req.id,
+                "box": "out" if mine else "in",
+                "status": req.status,
+                "card": card_out(req.card),
+                "condition": req.condition,
+                "lang": req.lang,
+                "message": req.message,
+                "other": public_user(other, avatars) if other else None,
+                "contact": other.trade_contact if other and req.status in CONTACT_VISIBLE else None,
+                "created_at": _iso(req.created_at),
+                "responded_at": _iso(req.responded_at),
+                "done_at": _iso(req.done_at),
+            }
+        )
+    return result
+
+
+def request_out(db: Session, viewer: User, req: TradeRequest) -> dict:
+    return requests_out(db, viewer, [req])[0]
+
+
+def create_request(db: Session, viewer: User, offer_id: int, message: str) -> TradeRequest:
+    """Contrôles du contrat (docs/echanges.md), dans l'ordre : demandeur, offre, doublon, plafond."""
+    if viewer.email_verified_at is None:
+        raise HTTPException(status_code=403, detail="Vérifiez votre adresse e-mail pour envoyer une demande")
+    if not viewer.trade_enabled:
+        raise HTTPException(status_code=403, detail="Activez les échanges pour envoyer une demande")
+    item = db.get(TradeOffer, offer_id)
+    if item is None or not _is_active(db.get(User, item.user_id)):
+        raise HTTPException(status_code=404, detail="Offre introuvable")
+    if item.user_id == viewer.id:
+        raise HTTPException(status_code=409, detail="C'est votre propre offre")
+    text = message.strip()
+    if text and review(text) != "published":
+        raise HTTPException(status_code=422, detail="Ce message n'est pas autorisé")
+    pending = select(TradeRequest.id).where(TradeRequest.requester_id == viewer.id, TradeRequest.status == "pending")
+    if db.scalar(pending.where(TradeRequest.trade_offer_id == item.id)) is not None:
+        raise HTTPException(status_code=409, detail="Vous avez déjà une demande en cours sur cette offre")
+    if len(db.scalars(pending).all()) >= MAX_PENDING_OUT:
+        raise HTTPException(
+            status_code=429, detail=f"{MAX_PENDING_OUT} demandes en attente au plus : patientez ou annulez-en une"
+        )
+    req = TradeRequest(
+        requester_id=viewer.id,
+        owner_id=item.user_id,
+        trade_offer_id=item.id,
+        card_id=item.entry.card_id,
+        condition=item.entry.condition,
+        lang=item.entry.lang,
+        message=text,
+        status="pending",
+    )
+    db.add(req)
+    return req
+
+
+def find_request(db: Session, viewer: User, request_id: int) -> TradeRequest:
+    """Une demande dont `viewer` est partie (404 sinon : on ne révèle pas son existence)."""
+    req = db.get(TradeRequest, request_id)
+    if req is None or viewer.id not in (req.requester_id, req.owner_id):
+        raise HTTPException(status_code=404, detail="Demande introuvable")
+    return req
+
+
+def transition(req: TradeRequest, viewer: User, action: str) -> None:
+    role, source, target = TRANSITIONS[action]
+    allowed = role == "any" or (role == "owner") == (viewer.id == req.owner_id)
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Cette action ne vous revient pas")
+    if req.status != source:
+        raise HTTPException(status_code=409, detail="Cette demande a déjà changé d'état")
+    req.status = target
+    if target == "done":
+        req.done_at = utcnow()
+    else:
+        req.responded_at = utcnow()
