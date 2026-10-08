@@ -1,6 +1,6 @@
 <script setup>
 import "./console.css"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { api } from "../api.js"
 import ColumnChart from "../components/charts/ColumnChart.vue"
 import HBarChart from "../components/charts/HBarChart.vue"
@@ -32,8 +32,15 @@ const SECTION_LABELS = {
 }
 
 /* Couleurs des graphiques, toutes en tokens : volume en bronze, deuxième série
-   en sang, troisième en encre atténuée. */
-const SERIES = { volume: "var(--bronze)", second: "var(--blood)", third: "var(--ink-muted)" }
+   en bronze clair, troisième en encre atténuée ; le sang est réservé
+   aux visiteurs uniques et aux decks rejetés. */
+const SERIES = {
+  volume: "var(--bronze)",
+  /* Ligne fine des visiteurs uniques : sang vif pour le contraste sur le fond sombre. */
+  uniques: "var(--blood-bright)",
+  second: "var(--bronze-light)",
+  third: "var(--ink-muted)"
+}
 
 const stats = ref(null)
 const loading = ref(false)
@@ -132,8 +139,15 @@ async function load() {
   }
 }
 
-/* Chaque activation de l'onglet remonte le composant : les chiffres restent frais. */
+/* Premier affichage, puis chaque retour sur l'onglet : les chiffres sont rechargés. */
+const props = defineProps({ active: { type: Boolean, default: true } })
 onMounted(load)
+watch(
+  () => props.active,
+  (active) => {
+    if (active) load()
+  }
+)
 </script>
 
 <template>
@@ -173,7 +187,7 @@ onMounted(load)
           :color="SERIES.volume"
           :line-values="visitUniques"
           line-label="Visiteurs uniques"
-          :line-color="SERIES.second"
+          :line-color="SERIES.uniques"
         />
       </RiftPanel>
 

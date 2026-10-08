@@ -45,8 +45,16 @@ watch(
 )
 watch(() => decks.page, scheduleDecks)
 
-/* Chaque activation de l'onglet remonte le composant : la file de modération reste fraîche. */
+/* Premier affichage, puis chaque retour sur l'onglet : la file de modération est rechargée,
+   le filtre, la recherche et la page sont conservés (le panneau reste monté, masqué). */
+const props = defineProps({ active: { type: Boolean, default: true } })
 loadDecks()
+watch(
+  () => props.active,
+  (active) => {
+    if (active) loadDecks()
+  }
+)
 
 /* En échec, l'erreur s'affiche sur la ligne et la liste n'est pas rechargée : le statut reste. */
 function moderateDeck(deck, status) {

@@ -1,6 +1,6 @@
 <script setup>
 import "./console.css"
-import { computed, reactive, watch } from "vue"
+import { computed, nextTick, reactive, ref, watch } from "vue"
 import { api } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
@@ -37,8 +37,16 @@ watch(
 )
 watch(() => users.page, scheduleUsers)
 
-/* Chaque activation de l'onglet remonte le composant : la liste est rechargée. */
+/* Premier affichage, puis chaque retour sur l'onglet : la liste est rechargée, la
+   recherche et la page sont conservées (le panneau reste monté, masqué). */
+const props = defineProps({ active: { type: Boolean, default: true } })
 loadUsers()
+watch(
+  () => props.active,
+  (active) => {
+    if (active) loadUsers()
+  }
+)
 
 function liftSuspension(user) {
   run(`user:${user.id}`, () => api(`/api/admin/users/${user.id}/suspend`, { method: "DELETE" }), loadUsers)
@@ -63,14 +71,30 @@ function closeSuspend() {
   suspend.confirming = false
 }
 
-function requestSuspend() {
+const confirmBox = ref(null)
+const durationSelect = ref(null)
+
+/* Le formulaire disparaît au profit de l'avertissement : le focus y est posé (jamais sur
+   « Suspendre définitivement », pour qu'un Entrée réflexe n'envoie rien). */
+async function requestSuspend() {
   if (suspend.busy || !suspend.user) return
   if (Number(suspend.hours) === PERMANENT_HOURS && !suspend.confirming) {
     suspend.confirming = true
     suspend.error = ""
+    await nextTick()
+    confirmBox.value?.focus()
     return
   }
   submitSuspend()
+}
+
+/* Retour au formulaire : le motif et la durée saisis sont conservés. */
+async function backToForm() {
+  if (suspend.busy) return
+  suspend.confirming = false
+  suspend.error = ""
+  await nextTick()
+  durationSelect.value?.focus()
 }
 
 async function submitSuspend() {
@@ -236,7 +260,7 @@ async function submitRemoval() {
         </label>
         <label class="console-label">
           Durée
-          <select v-model.number="suspend.hours" class="console-input">
+          <select ref="durationSelect" v-model.number="suspend.hours" class="console-input">
             <option v-for="duration in SUSPEND_DURATIONS" :key="duration.hours" :value="duration.hours">
               {{ duration.label }}
             </option>
@@ -251,14 +275,17 @@ async function submitRemoval() {
         </div>
       </form>
       <div v-else class="console-form">
-        <p>
-          La suspension définitive de <strong>{{ suspend.user.handle }}</strong> l'empêchera de se reconnecter, sans
-          date de fin. Seul un administrateur pourra la lever.
-        </p>
-        <p class="console-muted">Motif : {{ suspend.reason.trim() }}</p>
+        <div ref="confirmBox" class="console-confirm" tabindex="-1">
+          <p>
+            La suspension définitive de <strong>{{ suspend.user.handle }}</strong> l'empêchera de se reconnecter, sans
+            date de fin. Seul un administrateur pourra la lever.
+          </p>
+          <p class="console-muted">Motif : {{ suspend.reason.trim() }}</p>
+        </div>
         <p v-if="suspend.error" class="console-error" role="alert">{{ suspend.error }}</p>
         <div class="console-modal-actions">
           <RiftButton variant="ghost" :disabled="suspend.busy" @click="closeSuspend">Annuler</RiftButton>
+          <RiftButton variant="secondary" :disabled="suspend.busy" @click="backToForm">Retour</RiftButton>
           <RiftButton :disabled="suspend.busy" @click="submitSuspend">
             {{ suspend.busy ? "Suspension…" : "Suspendre définitivement" }}
           </RiftButton>

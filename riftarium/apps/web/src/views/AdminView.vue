@@ -1,12 +1,14 @@
 <script setup>
-import { ref } from "vue"
+import { reactive, ref, watch } from "vue"
 import AdminDecks from "../admin/AdminDecks.vue"
 import AdminStats from "../admin/AdminStats.vue"
 import AdminUsers from "../admin/AdminUsers.vue"
 import RiftSegments from "../ui/RiftSegments.vue"
 
-/* Console d'administration : un composant par onglet. Seul l'onglet actif est monté,
-   et chaque activation recharge ses données (la file de modération reste fraîche). */
+/* Console d'administration : un composant par onglet. Un onglet n'est monté qu'à sa
+   première visite, puis reste monté (masqué) : sa recherche, son filtre et sa page
+   survivent aux changements d'onglet. Chaque activation recharge ses données (prop
+   `active`), pour que la file de modération reste fraîche. */
 const TABS = [
   { value: "stats", label: "Statistiques" },
   { value: "users", label: "Utilisateurs" },
@@ -15,6 +17,10 @@ const TABS = [
 const PANELS = { stats: AdminStats, users: AdminUsers, decks: AdminDecks }
 const ID_BASE = "console"
 const tab = ref("stats")
+const visited = reactive({ stats: true })
+watch(tab, (value) => {
+  visited[value] = true
+})
 </script>
 
 <template>
@@ -24,13 +30,16 @@ const tab = ref("stats")
     <RiftSegments v-model="tab" :items="TABS" label="Sections d'administration" :id-base="ID_BASE" />
 
     <div
-      :id="`${ID_BASE}-panel-${tab}`"
+      v-for="item in TABS"
+      v-show="tab === item.value"
+      :id="`${ID_BASE}-panel-${item.value}`"
+      :key="item.value"
       class="console-panel"
       role="tabpanel"
-      :aria-labelledby="`${ID_BASE}-tab-${tab}`"
+      :aria-labelledby="`${ID_BASE}-tab-${item.value}`"
       tabindex="0"
     >
-      <component :is="PANELS[tab]" />
+      <component :is="PANELS[item.value]" v-if="visited[item.value]" :active="tab === item.value" />
     </div>
   </div>
 </template>

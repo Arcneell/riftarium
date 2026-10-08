@@ -186,6 +186,15 @@
   border-color: var(--bronze-light);
   box-shadow: none;
 }
+/* Avertissement de la suspension définitive : reçoit le focus à l'affichage. */
+.console-confirm {
+  display: grid;
+  gap: var(--space-2);
+}
+.console-confirm:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 4px;
+}
 .console-modal-actions {
   display: flex;
   flex-wrap: wrap;

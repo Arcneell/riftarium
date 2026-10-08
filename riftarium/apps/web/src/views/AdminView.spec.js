@@ -129,6 +129,8 @@ async function openTab(wrapper, index) {
 /* Couleur d'une puce statique (RiftChip static selected color=…). */
 const chipColor = (chip) => chip.attributes("style") || ""
 const rowChips = (row) => row.findAll(".rift-chip")
+/* Panneau d'onglet visible : les onglets déjà visités restent montés, masqués par v-show. */
+const visiblePanel = (wrapper) => wrapper.findAll("[role=tabpanel]").find((panel) => panel.isVisible())
 
 const modalEl = () => document.body.querySelector(".rift-modal")
 
@@ -186,7 +188,7 @@ describe("AdminView", () => {
     const frequentation = figures.find((figure) => figure.text().includes("Fréquentation (30 jours)"))
     expect(frequentation).toBeTruthy()
     expect(frequentation.findAll(".graphe-band")).toHaveLength(30)
-    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood)")
+    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood-bright)")
     expect(frequentation.findAll(".graphe-legend .graphe-key").map((key) => key.text())).toEqual([
       "Visites",
       "Visiteurs uniques"
@@ -389,7 +391,7 @@ describe("AdminView", () => {
     const tabs = wrapper.findAll("[role=tab]")
     expect(tabs.map((tab) => tab.text())).toEqual(["Statistiques", "Utilisateurs", "Decks"])
     expect(tabs[0].attributes("aria-selected")).toBe("true")
-    expect(wrapper.get("[role=tabpanel]").attributes("aria-labelledby")).toBe(tabs[0].attributes("id"))
+    expect(visiblePanel(wrapper).attributes("aria-labelledby")).toBe(tabs[0].attributes("id"))
     wrapper.unmount()
   })
 
@@ -403,7 +405,7 @@ describe("AdminView", () => {
     expect(tabs()[1].attributes("aria-selected")).toBe("true")
     expect(document.activeElement).toBe(tabs()[1].element)
     expect(api.mock.calls.some(([path]) => path.startsWith("/api/admin/users?"))).toBe(true)
-    expect(wrapper.get("[role=tabpanel]").attributes("id")).toContain("users")
+    expect(visiblePanel(wrapper).attributes("id")).toContain("users")
 
     await tabs()[1].trigger("keydown", { key: "End" })
     await flushPromises()
@@ -423,11 +425,11 @@ describe("AdminView", () => {
     const figures = wrapper.findAll("figure.graphe-figure")
     const byTitle = (title) => figures.find((figure) => figure.text().includes(title))
 
-    /* Volume en bronze, deuxième série en sang, troisième en encre atténuée. */
+    /* Volume en bronze, uniques en sang vif, inscriptions en bronze clair, troisième série en encre atténuée. */
     const frequentation = byTitle("Fréquentation (30 jours)")
     expect(frequentation.get(".graphe-col").attributes("fill")).toBe("var(--bronze)")
-    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood)")
-    expect(byTitle("Inscriptions (30 jours)").get(".graphe-col").attributes("fill")).toBe("var(--blood)")
+    expect(frequentation.get("polyline").attributes("stroke")).toBe("var(--blood-bright)")
+    expect(byTitle("Inscriptions (30 jours)").get(".graphe-col").attributes("fill")).toBe("var(--bronze-light)")
     expect(byTitle("Decks créés (30 jours)").get(".graphe-col").attributes("fill")).toBe("var(--ink-muted)")
     expect(byTitle("Rubriques les plus visitées").get(".graphe-bar").attributes("fill")).toBe("var(--bronze)")
 
@@ -529,6 +531,9 @@ describe("AdminView", () => {
     expect(api).not.toHaveBeenCalled()
     expect(modal.textContent).toContain("définitive")
     expect(modal.querySelector("form")).toBeNull()
+    /* Le focus passe sur l'avertissement, jamais sur le bouton qui envoie la sanction. */
+    expect(document.activeElement).toBe(modal.querySelector(".console-confirm"))
+    expect(document.activeElement.textContent).not.toContain("Suspendre définitivement")
     const cancel = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Annuler")
     cancel.click()
     await flushPromises()
@@ -547,6 +552,125 @@ describe("AdminView", () => {
       body: { hours: 876000, reason: "Triche répétée" }
     })
     expect(modalEl()).toBeNull()
+    wrapper.unmount()
+  })
+
+  async function reachPermanentConfirmation(wrapper) {
+    await wrapper
+      .findAll(".console-row")[0]
+      .findAll("button")
+      .find((button) => button.text() === "Suspendre")
+      .trigger("click")
+    const modal = modalEl()
+    setNativeValue(modal.querySelector("textarea"), "Triche répétée", "input")
+    setNativeValue(modal.querySelector("select"), "876000", "change")
+    await flushPromises()
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    return modalEl()
+  }
+
+  it("sanction définitive : Échap pendant la confirmation ferme sans rien envoyer", async () => {
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 1)
+    api.mockClear()
+    const modal = await reachPermanentConfirmation(wrapper)
+    expect(modal.querySelector(".console-confirm")).not.toBeNull()
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+    await flushPromises()
+    expect(modalEl()).toBeNull()
+    expect(api).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("sanction définitive : « Retour » revient au formulaire en gardant motif et durée", async () => {
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 1)
+    api.mockClear()
+    let modal = await reachPermanentConfirmation(wrapper)
+    const back = [...modal.querySelectorAll("button")].find((b) => b.textContent.trim() === "Retour")
+    back.click()
+    await flushPromises()
+
+    modal = modalEl()
+    expect(modal).not.toBeNull()
+    expect(modal.querySelector(".console-confirm")).toBeNull()
+    expect(modal.querySelector("textarea").value).toBe("Triche répétée")
+    expect(modal.querySelector("select").value).toBe("876000")
+    expect(document.activeElement).toBe(modal.querySelector("select"))
+    expect(api).not.toHaveBeenCalled()
+
+    /* Une durée temporaire choisie au retour part sans étape de confirmation. */
+    setNativeValue(modal.querySelector("select"), "720", "change")
+    modal.querySelector("form").dispatchEvent(new Event("submit"))
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/admin/users/1/suspend", {
+      method: "POST",
+      body: { hours: 720, reason: "Triche répétée" }
+    })
+    wrapper.unmount()
+  })
+
+  it("onglets : recherche, filtre et page conservés, données rechargées à l'activation", async () => {
+    api.mockImplementation((path) => {
+      if (path === "/api/admin/stats") return Promise.resolve(structuredClone(statsFixture))
+      if (path.startsWith("/api/admin/users?")) return Promise.resolve({ ...structuredClone(usersFixture), total: 45 })
+      if (path.startsWith("/api/admin/decks?")) return Promise.resolve(structuredClone(decksFixture))
+      return Promise.resolve(null)
+    })
+    const { wrapper } = await mountView()
+    await openTab(wrapper, 1)
+    const usersPanel = () => wrapper.get("#console-panel-users")
+    const decksPanel = () => wrapper.get("#console-panel-decks")
+
+    vi.useFakeTimers()
+    await usersPanel().get("input[type=search]").setValue("nyra")
+    await vi.advanceTimersByTimeAsync(300)
+    await usersPanel()
+      .findAll("button")
+      .find((button) => button.text().includes("Suivant"))
+      .trigger("click")
+    await vi.advanceTimersByTimeAsync(300)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(usersPanel().text()).toContain("page 2 / 3")
+
+    await openTab(wrapper, 2)
+    vi.useFakeTimers()
+    await decksPanel()
+      .findAll(".rift-chip")
+      .find((chip) => chip.text() === "Publiés")
+      .trigger("click")
+    await vi.advanceTimersByTimeAsync(300)
+    vi.useRealTimers()
+    await flushPromises()
+
+    /* Retour sur Utilisateurs : même recherche, même page, liste rechargée. */
+    api.mockClear()
+    await openTab(wrapper, 1)
+    expect(usersPanel().get("input[type=search]").element.value).toBe("nyra")
+    expect(usersPanel().text()).toContain("page 2 / 3")
+    const usersCalls = api.mock.calls.filter(([path]) => path.startsWith("/api/admin/users?"))
+    expect(usersCalls).toHaveLength(1)
+    expect(usersCalls[0][0]).toContain("q=nyra")
+    expect(usersCalls[0][0]).toContain("page=2")
+
+    /* Retour sur Decks : même filtre, file rechargée. */
+    api.mockClear()
+    await openTab(wrapper, 2)
+    const published = decksPanel()
+      .findAll(".rift-chip")
+      .find((chip) => chip.text() === "Publiés")
+    expect(published.attributes("aria-pressed")).toBe("true")
+    const decksCalls = api.mock.calls.filter(([path]) => path.startsWith("/api/admin/decks?"))
+    expect(decksCalls).toHaveLength(1)
+    expect(decksCalls[0][0]).toContain("status=published")
+
+    /* Retour sur Statistiques : rechargées aussi. */
+    api.mockClear()
+    await openTab(wrapper, 0)
+    expect(api).toHaveBeenCalledWith("/api/admin/stats")
     wrapper.unmount()
   })
 })
