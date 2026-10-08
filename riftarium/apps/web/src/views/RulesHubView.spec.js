@@ -62,7 +62,7 @@ describe("RulesHubView", () => {
     const wrapper = mountHub(router)
     const note = wrapper.get(".regles-offline")
     expect(note.attributes("role")).toBe("status")
-    expect(note.text()).toContain("Hors ligne — règles servies depuis le cache")
+    expect(note.text()).toContain("Hors ligne : vous lisez les règles enregistrées sur cet appareil.")
   })
 
   it("en ligne : pas de statut hors ligne", async () => {

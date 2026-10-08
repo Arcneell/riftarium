@@ -93,7 +93,9 @@ function onTextClick(event) {
       </template>
     </RulesHeader>
 
-    <p v-if="!online" class="officiel-offline" role="status">Hors ligne — règles servies depuis le cache</p>
+    <p v-if="!online" class="officiel-offline" role="status">
+      Hors ligne : vous lisez les règles enregistrées sur cet appareil.
+    </p>
 
     <RiftEmpty v-if="error" title="Règles indisponibles" :text="error">
       <RiftButton variant="secondary" @click="load">Réessayer</RiftButton>
@@ -138,7 +140,7 @@ function onTextClick(event) {
           </button>
         </div>
         <p v-else-if="!searchHits.length && hitsOpen && searchQuery.trim().length >= 2" class="officiel-nohit">
-          Aucune règle trouvée — essayez un autre mot-clé, ou un numéro comme 002.
+          Aucune règle trouvée. Essayez un autre mot-clé, ou un numéro comme 002.
         </p>
       </div>
 

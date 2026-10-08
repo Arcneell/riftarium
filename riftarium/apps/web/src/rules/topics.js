@@ -9,7 +9,7 @@ const img = (hash) => `${CDN}/${hash}?auto=format&fit=max&w=560&accountingTag=RB
 export const CATEGORIES = [
   { key: "modes", label: "Modes de jeu" },
   { key: "tournoi", label: "Tournoi" },
-  { key: "tour", label: "Tour & timing" },
+  { key: "tour", label: "Tour de jeu" },
   { key: "combat", label: "Combat" },
   { key: "points", label: "Champs de bataille & points" },
   { key: "cartes", label: "Cartes & ressources" },
@@ -25,15 +25,15 @@ export const TOPICS = [
     summary: "Le format de référence : deux joueurs, une manche sèche, premier à 8 points.",
     details: [
       "Le **duel** oppose deux joueurs, chacun pour soi, en une seule manche. Deux champs de bataille en jeu, victoire à **8 points**. C'est le format des parties rapides ; en tournoi, on joue le plus souvent en deux manches gagnantes (voir **Le match en tournoi**).",
-      "**Ce que chacun apporte.** Un deck complet : une **légende de champion** (elle fixe l'identité de domaine — toutes vos cartes doivent y correspondre), un **deck principal d'au moins 40 cartes** dont votre **champion élu** (même tag de champion que la légende, maximum 3 exemplaires d'un même nom, maximum 3 cartes signature), un **deck de runes de 12 runes**, et **3 champs de bataille** de noms différents.",
-      "**Mise en place, pas à pas.** 1 — Chaque joueur pose sa légende dans sa zone de légende et son champion élu dans sa zone de champion. 2 — Chaque joueur tire **au hasard un** de ses trois champs de bataille ; les deux autres sont écartés pour la partie. Les deux champs retenus sont placés côte à côte au centre. 3 — Chacun mélange son deck principal et son deck de runes, séparément. 4 — Le **premier joueur est tiré au sort** (pile ou face, dé… n'importe quelle méthode acceptée). 5 — Tout le monde pioche **4 cartes**.",
+      "**Ce que chacun apporte.** Un deck complet : une **légende de champion** (elle fixe l'identité de domaine : toutes vos cartes doivent y correspondre), un **deck principal d'au moins 40 cartes** dont votre **champion élu** (même tag de champion que la légende, maximum 3 exemplaires d'un même nom, maximum 3 cartes signature), un **deck de runes de 12 runes**, et **3 champs de bataille** de noms différents.",
+      "**Mise en place, pas à pas.** 1. Chaque joueur pose sa légende dans sa zone de légende et son champion élu dans sa zone de champion. 2. Chaque joueur tire **au hasard un** de ses trois champs de bataille ; les deux autres sont écartés pour la partie. Les deux champs retenus sont placés côte à côte au centre. 3. Chacun mélange son deck principal et son deck de runes, séparément. 4. Le **premier joueur est tiré au sort** (pile ou face, dé… n'importe quelle méthode acceptée). 5. Tout le monde pioche **4 cartes**.",
       "**Le mulligan.** Dans l'ordre des tours, chaque joueur peut mettre de côté **jusqu'à 2 cartes** de sa main, piocher autant de nouvelles cartes, puis **recycler** les cartes mises de côté (elles retournent sous le deck, mélangées). Une seule fois par joueur.",
-      "**Ajustement du premier tour.** Le joueur qui joue en **second** canalise **une rune de plus** à sa première canalisation (3 au lieu de 2) — la compensation officielle de l'avantage de commencer.",
-      "**Le tour de jeu.** Chaque tour suit le même squelette. **Éveil** : vous préparez tout ce que vous contrôlez. **Phase de départ** : les effets de début de tour se déclenchent, puis l'**étape des scores** — +1 point par champ de bataille que vous contrôlez encore (l'occupation). **Canalisation** : 2 runes passent de votre deck de runes à votre zone de runes. **Pioche** : 1 carte. **Phase principale** : jouez des cartes, déplacez vos unités, contestez les champs de bataille — les combats et confrontations s'y insèrent librement. **Fin de tour** : toutes les unités sont soignées, les effets « ce tour » expirent, la main passe.",
+      "**Ajustement du premier tour.** Le joueur qui joue en **second** canalise **une rune de plus** à sa première canalisation (3 au lieu de 2), ce qui compense l'avantage de commencer.",
+      "**Le tour de jeu.** Chaque tour suit le même squelette. **Éveil** : vous préparez tout ce que vous contrôlez. **Phase de départ** : les effets de début de tour se déclenchent, puis vient l'**étape des scores** (+1 point par champ de bataille que vous contrôlez encore, l'occupation). **Canalisation** : 2 runes passent de votre deck de runes à votre zone de runes. **Pioche** : 1 carte. **Phase principale** : jouez des cartes, déplacez vos unités, contestez les champs de bataille ; les combats et confrontations s'y insèrent librement. **Fin de tour** : toutes les unités sont soignées, les effets « ce tour » expirent, la main passe.",
       "**Marquer des points.** Deux façons, liées aux champs de bataille. **Conquérir** : prendre le contrôle d'un champ qui ne vous a pas encore rapporté ce tour (+1 point). **Occuper** : le contrôler encore à l'étape des scores de votre phase de départ (+1). Un même champ ne rapporte qu'**un point par tour et par joueur**.",
       "**La règle du dernier point.** À **7 points**, la conquête ne suffit plus : pour gagner le dernier point en conquérant, il faut avoir marqué **sur chaque champ de bataille pendant ce tour** (ici, les deux). Sinon, à la place du point, vous **piochez une carte**. L'occupation, elle, n'est pas restreinte : tenir un champ jusqu'à votre phase de départ donne le 8ᵉ point normalement.",
       "**Victoire.** Dès qu'un nettoyage a lieu (le jeu vérifie l'état après chaque action), un joueur ayant **au moins 8 points et strictement plus que l'adversaire** gagne. Une égalité à 8 ne donne donc pas la victoire : il faut creuser l'écart.",
-      "**Deck vide : l'exténuation.** Si vous devez piocher et que le deck est vide, vous **mélangez votre défausse pour reformer votre deck**, votre **adversaire marque 1 point**, puis vous terminez la pioche. Défausse vide aussi ? L'exténuation se répète à chaque tentative — l'adversaire finit par gagner. Faire durer la partie a un prix."
+      "**Deck vide : l'exténuation.** Si vous devez piocher et que le deck est vide, vous **mélangez votre défausse pour reformer votre deck**, votre **adversaire marque 1 point**, puis vous terminez la pioche. Défausse vide aussi ? L'exténuation se répète à chaque tentative, jusqu'à ce que l'adversaire gagne."
     ],
     cases: [
       {
@@ -54,7 +54,7 @@ export const TOPICS = [
       },
       {
         q: "Puis-je reprendre un point à l'adversaire ?",
-        a: "Non : les points gagnés ne se perdent pas (sauf effet explicite). On ne « vole » pas de points, on court chacun vers 8."
+        a: "Non : les points gagnés ne se perdent pas, sauf effet qui le dit explicitement."
       },
       {
         q: "Qui choisit le champ de bataille joué ?",
@@ -69,15 +69,15 @@ export const TOPICS = [
     category: "modes",
     summary: "Le duel au meilleur des manches : champs de bataille choisis, premier à deux manches gagnées.",
     details: [
-      "Le **match** est un duel joué en **deux manches gagnantes** (trois en grand tournoi). Chaque manche se joue exactement comme un duel — mêmes decks, mêmes tours, même course à 8 points — c'est la structure de la rencontre qui change, et une liberté en plus : le **choix** du champ de bataille.",
+      "Le **match** est un duel joué en **deux manches gagnantes** (trois en grand tournoi). Chaque manche se joue exactement comme un duel (mêmes decks, mêmes tours, même course à 8 points). Ce qui change, c'est la structure de la rencontre et le **choix** du champ de bataille.",
       "**Ce que chacun apporte.** Comme en duel : légende de champion, deck principal d'au moins 40 cartes avec champion élu, deck de runes de 12, et 3 champs de bataille de noms différents.",
       "**Mise en place d'une manche.** Identique au duel, à une différence près : chaque joueur **choisit** le champ de bataille qu'il présente (au lieu de le tirer au hasard). Les deux champs présentés sont posés au centre, decks mélangés, premier joueur tiré au sort, 4 cartes piochées, mulligan (jusqu'à 2 cartes).",
-      "**Réutiliser un champ de bataille.** Tant qu'aucune manche n'a été gagnée, un champ déjà présenté peut resservir. En **trois manches gagnantes**, les manches 4 et 5 permettent de représenter un champ retiré — à condition d'avoir déjà présenté chacun de ses trois champs au moins une fois, et jamais plus de deux fois le même dans le match.",
+      "**Réutiliser un champ de bataille.** Quand une manche a un vainqueur, les champs de bataille utilisés par **les deux joueurs** sont écartés pour le reste du match : chacun en choisit un autre parmi ceux qu'il n'a pas encore joués (règle 486.5). Après une manche sans vainqueur, les champs présentés peuvent resservir. En **trois manches gagnantes**, les manches 4 et 5 permettent de représenter un champ écarté, à condition d'avoir déjà présenté chacun de ses trois champs au moins une fois, et jamais plus de deux fois le même dans le match (règle 486.6.a).",
       "**Ajustement du premier tour** de chaque manche : le joueur qui joue en second canalise une rune de plus à sa première canalisation.",
       "**Le tour de jeu** est celui du duel : éveil → phase de départ (effets, puis étape des scores : +1 par champ contrôlé) → canalisation (2 runes) → pioche (1 carte) → phase principale (cartes, déplacements, combats et confrontations) → fin de tour (tout le monde est soigné, la main passe).",
-      "**Marquer et gagner une manche.** Conquête (+1 en prenant un champ qui n'a pas encore rapporté ce tour) et occupation (+1 par champ tenu à votre étape des scores) ; un point maximum par champ et par tour. **Dernier point** : à 7, la conquête n'offre le point que si vous avez marqué sur chaque champ ce tour — sinon vous piochez une carte. La manche est gagnée à **8 points en étant strictement devant**.",
+      "**Marquer et gagner une manche.** Conquête (+1 en prenant un champ qui n'a pas encore rapporté ce tour) et occupation (+1 par champ tenu à votre étape des scores) ; un point maximum par champ et par tour. **Dernier point** : à 7, la conquête n'offre le point que si vous avez marqué sur chaque champ ce tour ; sinon, vous piochez une carte. La manche est gagnée à **8 points en étant strictement devant**.",
       "**Entre deux manches.** Tout l'état de jeu est remis à zéro : decks remélangés, nouvelles mains (et nouveau mulligan), nouveaux champs présentés, nouveau tirage du premier joueur. Seul le **compte des manches** est conservé. Premier à **2 manches** : match gagné.",
-      "**Deck vide** : exténuation, comme en duel — défausse mélangée dans le deck, 1 point à l'adversaire, puis la pioche s'achève."
+      "**Deck vide** : exténuation, comme en duel. La défausse est mélangée dans le deck, l'adversaire marque 1 point, puis la pioche s'achève."
     ],
     cases: [
       {
@@ -86,19 +86,19 @@ export const TOPICS = [
       },
       {
         q: "Puis-je présenter le même champ de bataille à chaque manche ?",
-        a: "Tant que vous n'avez pas encore gagné de manche avec lui, oui. En trois manches gagnantes, il faut avoir présenté chacun de ses trois champs avant d'en réutiliser un, et jamais plus de deux fois le même."
+        a: "Non, sauf après une manche sans vainqueur : dès qu'une manche est gagnée, par vous ou par l'adversaire, les deux champs qui y ont servi sont écartés pour le reste du match. En trois manches gagnantes, les manches 4 et 5 permettent de représenter un champ écarté, si vous avez déjà présenté chacun de vos trois champs, et jamais plus de deux fois le même."
       },
       {
         q: "Pourquoi choisir son champ de bataille change-t-il la stratégie ?",
-        a: "Le champ présenté devient un choix d'adaptation : après une manche perdue, présenter un autre champ (ou anticiper celui de l'adversaire) fait partie du jeu — c'est le côté « side » du format."
+        a: "Après chaque manche gagnée, chacun présente un nouveau champ. Choisir lequel, selon le deck adverse et les champs qui vous restent, permet de s'adapter d'une manche à l'autre."
       },
       {
         q: "Qui commence la deuxième manche ?",
-        a: "Le premier joueur est retiré au sort à chaque manche, comme au début d'un duel."
+        a: "Le premier joueur est de nouveau tiré au sort à chaque manche, comme au début d'un duel."
       },
       {
         q: "Puis-je modifier mon deck entre deux manches ?",
-        a: "Non : le deck reste identique pendant tout le match. Seul le champ de bataille présenté change."
+        a: "En partie libre, non : le deck reste identique pendant tout le match, seul le champ de bataille présenté change. En tournoi, une réserve peut le permettre (voir « Le match en tournoi »)."
       }
     ],
     sections: ["481", "486"]
@@ -109,21 +109,21 @@ export const TOPICS = [
     category: "modes",
     summary: "Chacun pour soi à trois : trois champs de bataille, alliances de circonstance, premier à 8 points.",
     details: [
-      "L'**escarmouche** oppose **trois joueurs, chacun pour soi** : deux adversaires chacun, pas d'équipe, une seule manche, victoire à **8 points**. Trois champs de bataille en jeu — un par joueur.",
+      "L'**escarmouche** oppose **trois joueurs, chacun pour soi** : deux adversaires chacun, pas d'équipe, une seule manche, victoire à **8 points**. Trois champs de bataille en jeu, un par joueur.",
       "**Ce que chacun apporte.** Un deck complet : légende de champion (identité de domaine), deck principal d'au moins 40 cartes avec champion élu, deck de runes de 12, et 3 champs de bataille de noms différents.",
-      "**Mise en place, pas à pas.** 1 — Légendes et champions élus posés dans leurs zones. 2 — Chaque joueur tire **au hasard un** de ses trois champs de bataille (les deux autres sont écartés) : **trois champs** forment le centre de la table. 3 — Decks mélangés séparément. 4 — **Premier joueur tiré au sort** ; l'ordre des tours suit ensuite la table dans le **sens horaire** à partir de lui, en boucle jusqu'à la fin. 5 — Tout le monde pioche 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes mises de côté, repiochées, recyclées).",
+      "**Mise en place, pas à pas.** 1. Légendes et champions élus posés dans leurs zones. 2. Chaque joueur tire **au hasard un** de ses trois champs de bataille (les deux autres sont écartés) : **trois champs** forment le centre de la table. 3. Decks mélangés séparément. 4. **Premier joueur tiré au sort** ; l'ordre des tours suit ensuite la table dans le **sens horaire** à partir de lui, en boucle jusqu'à la fin. 5. Tout le monde pioche 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes mises de côté, repiochées, recyclées).",
       "**Ajustements du premier tour.** Le **premier** joueur **ne pioche pas** à sa première phase de pioche. Le **dernier** joueur de l'ordre canalise **une rune de plus** à sa première canalisation. Entre les deux, rien ne change.",
-      "**Le tour de jeu.** Le squelette habituel : éveil → phase de départ (effets, puis étape des scores : +1 par champ que vous contrôlez) → canalisation (2 runes) → pioche (1 carte) → phase principale → fin de tour. Pendant la phase principale, vous pouvez contester **n'importe quel champ de bataille**, y compris celui d'un joueur qui ne vous a rien fait — la table est ouverte.",
+      "**Le tour de jeu.** Le squelette habituel : éveil → phase de départ (effets, puis étape des scores : +1 par champ que vous contrôlez) → canalisation (2 runes) → pioche (1 carte) → phase principale → fin de tour. Pendant la phase principale, vous pouvez contester **n'importe quel champ de bataille**, y compris celui d'un joueur qui ne vous a rien fait.",
       "**Marquer des points.** Conquérir un champ qui ne vous a pas rapporté ce tour : +1. L'occuper encore à votre étape des scores : +1. Un point maximum par champ et par tour. À trois, garder un champ un tour complet est difficile : les deux autres ont chacun leur tour pour vous déloger.",
-      "**La règle du dernier point.** À **7 points**, le dernier point par **conquête** exige d'avoir marqué **sur les trois champs pendant le même tour** — sinon, vous piochez une carte à la place. L'**occupation** n'est pas restreinte : tenir un champ jusqu'à votre phase de départ donne le 8ᵉ point normalement. Conséquence pratique : le joueur à 7 points devient la cible commune, et c'est voulu.",
+      "**La règle du dernier point.** À **7 points**, le dernier point par **conquête** exige d'avoir marqué **sur les trois champs pendant le même tour** ; sinon, vous piochez une carte à la place. L'**occupation** n'est pas restreinte : tenir un champ jusqu'à votre phase de départ donne le 8ᵉ point normalement. Le joueur à 7 points devient donc la cible des deux autres.",
       "**Victoire.** Au moins 8 points **et strictement plus que chacun des deux autres**. Deux joueurs à 8 ? Personne ne gagne encore : la partie continue jusqu'à ce que quelqu'un se détache.",
-      "**Deck vide : l'exténuation.** Vous mélangez votre défausse pour reformer le deck, puis **vous choisissez lequel de vos adversaires marque 1 point**, et la pioche s'achève. Ce choix est une arme politique : donner le point au joueur le moins menaçant fait partie du jeu — mais jamais à un joueur que cela ferait gagner sans y penser.",
-      "**La dimension diplomatique.** Rien dans les règles n'interdit de se concerter (« occupe-toi de lui, je te laisse tranquille ce tour »), mais rien ne rend ces promesses contraignantes. Les alliances de circonstance se font et se défont — seul le score compte."
+      "**Deck vide : l'exténuation.** Vous mélangez votre défausse pour reformer le deck, puis **vous choisissez lequel de vos adversaires marque 1 point**, et la pioche s'achève. Donner le point au joueur le moins menaçant fait partie du jeu. Vérifiez seulement que ce point ne le fait pas gagner.",
+      "**La dimension diplomatique.** Rien dans les règles n'interdit de se concerter (« occupe-toi de lui, je te laisse tranquille ce tour »), mais rien ne rend ces promesses contraignantes. Les alliances de circonstance se font et se défont."
     ],
     cases: [
       {
         q: "Je suis exténué : qui marque le point ?",
-        a: "Vous choisissez lequel de vos deux adversaires reçoit le point — à chaque exténuation. Attention en fin de partie : ce point peut faire gagner."
+        a: "Vous choisissez lequel de vos deux adversaires reçoit le point, à chaque exténuation. Attention en fin de partie : ce point peut faire gagner."
       },
       {
         q: "Deux joueurs sont à 8. Le troisième peut-il encore gagner ?",
@@ -131,7 +131,7 @@ export const TOPICS = [
       },
       {
         q: "Pourquoi le premier joueur ne pioche-t-il pas ?",
-        a: "C'est la compensation officielle du multijoueur : commencer donne un temps d'avance, la pioche sautée le rééquilibre — et le dernier joueur canalise une rune de plus."
+        a: "C'est la compensation prévue en multijoueur : commencer donne un temps d'avance, la pioche sautée le rééquilibre. De son côté, le dernier joueur canalise une rune de plus."
       },
       {
         q: "Puis-je attaquer le champ de bataille de n'importe qui ?",
@@ -160,14 +160,14 @@ export const TOPICS = [
     details: [
       "La **guerre** oppose **quatre joueurs, chacun pour soi** : trois adversaires chacun, pas d'équipe, une seule manche, victoire à **8 points**. Particularité : il n'y a que **trois champs de bataille** pour quatre joueurs.",
       "**Ce que chacun apporte.** Un deck complet : légende de champion (identité de domaine), deck principal d'au moins 40 cartes avec champion élu, deck de runes de 12, et 3 champs de bataille de noms différents.",
-      "**Mise en place, pas à pas.** 1 — Légendes et champions élus posés dans leurs zones. 2 — **Premier joueur tiré au sort** : il **retire ses champs de bataille**, qui ne serviront pas. 3 — Les trois autres joueurs tirent chacun **au hasard un** de leurs trois champs : ces trois champs forment le centre de la table. 4 — Decks mélangés séparément ; l'ordre des tours suit la table dans le **sens horaire** à partir du premier joueur. 5 — Tout le monde pioche 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes).",
-      "**Ajustements du premier tour.** Le **premier** joueur **ne pioche pas** à sa première phase de pioche (en plus d'avoir retiré ses champs). Le **dernier** joueur — le quatrième — canalise **une rune de plus** à sa première canalisation.",
+      "**Mise en place, pas à pas.** 1. Légendes et champions élus posés dans leurs zones. 2. **Premier joueur tiré au sort** : il **retire ses champs de bataille**, qui ne serviront pas. 3. Les trois autres joueurs tirent chacun **au hasard un** de leurs trois champs : ces trois champs forment le centre de la table. 4. Decks mélangés séparément ; l'ordre des tours suit la table dans le **sens horaire** à partir du premier joueur. 5. Tout le monde pioche 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes).",
+      "**Ajustements du premier tour.** Le **premier** joueur **ne pioche pas** à sa première phase de pioche (en plus d'avoir retiré ses champs). Le **dernier** joueur, le quatrième, canalise **une rune de plus** à sa première canalisation.",
       "**Le tour de jeu.** Squelette habituel : éveil → phase de départ (effets, puis étape des scores : +1 par champ que vous contrôlez) → canalisation (2 runes) → pioche (1 carte) → phase principale → fin de tour. Tous les champs sont contestables par tous, à tout moment de votre phase principale.",
-      "**Marquer des points.** Conquête (+1 en prenant un champ qui n'a pas rapporté ce tour) et occupation (+1 par champ tenu à votre étape des scores) ; un point maximum par champ et par tour. À quatre pour trois champs, il y a toujours au moins un joueur sans point d'ancrage : les rapports de force se déplacent tour après tour.",
-      "**La règle du dernier point.** À **7 points**, le dernier point par **conquête** exige d'avoir marqué **sur les trois champs pendant le même tour** — sinon, une carte piochée à la place. L'**occupation**, elle, donne le 8ᵉ point normalement. Un joueur à 7 est donc sous la surveillance des trois autres : le déloger avant sa phase de départ devient l'affaire commune.",
+      "**Marquer des points.** Conquête (+1 en prenant un champ qui n'a pas rapporté ce tour) et occupation (+1 par champ tenu à votre étape des scores) ; un point maximum par champ et par tour. À quatre pour trois champs, il y a toujours au moins un joueur qui ne contrôle aucun champ.",
+      "**La règle du dernier point.** À **7 points**, le dernier point par **conquête** exige d'avoir marqué **sur les trois champs pendant le même tour** ; sinon, il pioche une carte à la place. L'**occupation**, elle, donne le 8ᵉ point normalement. Les trois autres ont donc intérêt à déloger un joueur à 7 avant sa phase de départ.",
       "**Victoire.** Au moins 8 points **et strictement plus que chacun des trois autres**, vérifié à chaque nettoyage. Les égalités ne donnent rien : on continue.",
-      "**Deck vide : l'exténuation.** Défausse mélangée dans le deck, puis **vous choisissez lequel de vos trois adversaires marque 1 point**, et la pioche s'achève. Défausse vide aussi ? Exténuations en boucle — quelqu'un finira par gagner grâce à vous.",
-      "**Rythme et table.** C'est le format le plus long et le plus politique : quatre decks, des confrontations plus fréquentes, des négociations permanentes. Le compteur de l'application affiche les quatre panneaux en carré et l'ordre des tours fait le tour de la table."
+      "**Deck vide : l'exténuation.** Défausse mélangée dans le deck, puis **vous choisissez lequel de vos trois adversaires marque 1 point**, et la pioche s'achève. Défausse vide aussi ? L'exténuation se répète à chaque pioche et donne chaque fois un point à un adversaire.",
+      "**Rythme et table.** C'est le format le plus long, et celui où les accords entre joueurs pèsent le plus. Le compteur de l'application affiche les quatre panneaux en carré et l'ordre des tours fait le tour de la table."
     ],
     cases: [
       {
@@ -176,7 +176,7 @@ export const TOPICS = [
       },
       {
         q: "Le premier joueur est-il désavantagé ?",
-        a: "Il perd ses champs et sa première pioche, mais il joue avant tout le monde : conquêtes précoces, tempo, premières confrontations. Le mode équilibre, il ne punit pas."
+        a: "Il perd ses champs et sa première pioche, mais il joue avant tout le monde, ce qui lui permet de conquérir et d'engager les confrontations le premier."
       },
       {
         q: "Je suis à 7 points : comment gagner ?",
@@ -184,15 +184,15 @@ export const TOPICS = [
       },
       {
         q: "Je suis exténué : qui marque le point ?",
-        a: "Vous choisissez lequel de vos trois adversaires reçoit le point. Ne le donnez jamais à un joueur à 7 points sans le vouloir : ce point-là gagne immédiatement la partie."
+        a: "Vous choisissez lequel de vos trois adversaires reçoit le point. Attention avant de le donner à un joueur à 7 points : ce point peut lui donner la victoire."
       },
       {
         q: "Dans quel ordre joue-t-on ?",
-        a: "Sens horaire à partir du premier joueur tiré au sort, en boucle jusqu'à la fin — l'ordre que suit aussi le compteur de l'application."
+        a: "Sens horaire à partir du premier joueur tiré au sort, en boucle jusqu'à la fin. Le compteur de l'application suit le même ordre."
       },
       {
         q: "Peut-on s'allier ?",
-        a: "Se concerter, oui ; rien n'est contraignant. Les alliances durent le temps qu'elles servent — et le joueur en tête le sait."
+        a: "Se concerter, oui, mais aucun accord n'est contraignant."
       }
     ],
     sections: ["481", "488"]
@@ -203,16 +203,16 @@ export const TOPICS = [
     category: "modes",
     summary: "Deux équipes de deux : score commun à 11, tours alternés, entraide encadrée par des règles précises.",
     details: [
-      "La **chambre magmatique** oppose **deux équipes de deux joueurs**. Le score est **commun à l'équipe** — on gagne et on perd ensemble — et la victoire se joue à **11 points**. Tout le reste (main, decks, runes, XP) appartient à chaque joueur.",
+      "La **chambre magmatique** oppose **deux équipes de deux joueurs**. Le score est **commun à l'équipe** (on gagne et on perd ensemble) et la victoire se joue à **11 points**. Tout le reste (main, decks, runes, XP) appartient à chaque joueur.",
       "**Ce que chacun apporte.** Un deck complet par joueur : légende de champion, deck principal d'au moins 40 cartes avec champion élu, deck de runes de 12, 3 champs de bataille. Deux contraintes d'équipe : les coéquipiers **ne peuvent pas utiliser la même légende de champion**, ni **les mêmes champs de bataille**.",
-      "**Mise en place, pas à pas.** 1 — Légendes et champions élus posés dans leurs zones. 2 — **Premier joueur tiré au sort** : il **retire ses champs de bataille**. 3 — Les trois autres joueurs tirent chacun **au hasard un** de leurs trois champs : trois champs au centre. 4 — Decks mélangés séparément. 5 — Pioche de 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes).",
-      "**L'ordre des tours alterne entre les équipes**, toujours : le premier joueur, puis **un adversaire**, puis le **coéquipier du premier joueur**, puis le **coéquipier de cet adversaire** — et on recommence. Jamais deux tours de la même équipe d'affilée. (Coéquipiers face à face : l'ordre suit le sens horaire ; coéquipiers côte à côte : l'ordre traverse la table.)",
+      "**Mise en place, pas à pas.** 1. Légendes et champions élus posés dans leurs zones. 2. **Premier joueur tiré au sort** : il **retire ses champs de bataille**. 3. Les trois autres joueurs tirent chacun **au hasard un** de leurs trois champs : trois champs au centre. 4. Decks mélangés séparément. 5. Pioche de 4 cartes, puis mulligan dans l'ordre des tours (jusqu'à 2 cartes).",
+      "**L'ordre des tours alterne entre les équipes**, toujours : le premier joueur, puis **un adversaire**, puis le **coéquipier du premier joueur**, puis le **coéquipier de cet adversaire**, et on recommence. Jamais deux tours de la même équipe d'affilée. (Coéquipiers face à face : l'ordre suit le sens horaire ; coéquipiers côte à côte : l'ordre traverse la table.)",
       "**Ajustements du premier tour.** Le premier joueur **ne pioche pas** à sa première pioche ; le **dernier** joueur canalise **une rune de plus** à sa première canalisation.",
       "**Le tour de jeu** garde le squelette habituel : éveil → phase de départ (effets, puis étape des scores : +1 pour l'équipe par champ que **vous** contrôlez) → canalisation (2 runes) → pioche (1 carte) → phase principale → fin de tour.",
-      "**Jouer pendant le tour de son coéquipier.** C'est permis — sorts et compétences — mais uniquement **sur invitation** : le joueur du tour utilise sa priorité pour inviter son coéquipier à agir. Vos mains restent privées, mais rien n'interdit de se montrer ses cartes ou de tout se dire.",
+      "**Jouer pendant le tour de son coéquipier.** C'est permis (sorts et compétences), mais uniquement **sur invitation** : le joueur du tour utilise sa priorité pour inviter son coéquipier à agir. Vos mains restent privées, mais rien n'interdit de se montrer ses cartes ou de tout se dire.",
       "**Ce que l'équipe ne partage pas.** Le **contrôle** : vous ne pouvez pas cacher de carte sur un champ contrôlé par votre coéquipier, ni faire faire de déplacement standard à ses unités. Chacun joue ses cartes, ses runes, son XP. Le mot **allié** sur les cartes désigne vos éléments **et** ceux de votre coéquipier.",
-      "**Marquer des points (score commun).** Conquête : +1 pour l'équipe en prenant un champ qui n'a pas rapporté ce tour. Occupation : +1 par champ que vous contrôlez à votre étape des scores. Deux subtilités d'équipe : un champ contrôlé par votre **coéquipier** pendant **votre** phase de départ ne peut pas rapporter de point à votre équipe **ce tour-là** (ni par occupation ni en le « reconquérant ») — pas de points gratuits en se passant les champs.",
-      "**La règle du dernier point, version 2c2.** À **10 points**, le dernier point par **conquête** exige de marquer **sur tous les champs de bataille pendant le même tour**, à l'exception de ceux occupés par votre coéquipier pendant l'étape des scores — sinon, une carte piochée à la place. L'occupation donne le 11ᵉ point normalement.",
+      "**Marquer des points (score commun).** Conquête : +1 pour l'équipe en prenant un champ qui n'a pas rapporté ce tour. Occupation : +1 par champ que vous contrôlez à votre étape des scores. Une subtilité d'équipe : un champ contrôlé par votre **coéquipier** pendant **votre** phase de départ ne peut pas rapporter de point à votre équipe **ce tour-là** (ni par occupation ni en le « reconquérant ») : se passer un champ entre coéquipiers ne rapporte rien.",
+      "**La règle du dernier point, version 2c2.** À **10 points**, le dernier point par **conquête** exige de marquer **sur tous les champs de bataille pendant le même tour**, à l'exception de ceux occupés par votre coéquipier pendant l'étape des scores ; sinon, le conquérant pioche une carte à la place. L'occupation donne le 11ᵉ point normalement.",
       "**Victoire.** Au moins **11 points** pour l'équipe et strictement plus que l'équipe adverse, vérifié à chaque nettoyage. Si un joueur abandonne, **toute son équipe perd** ; si un joueur gagne, toute son équipe gagne.",
       "**Deck vide : l'exténuation.** Le joueur exténué mélange sa défausse dans son deck et **l'équipe adverse marque 1 point**, puis la pioche s'achève."
     ],
@@ -239,11 +239,11 @@ export const TOPICS = [
       },
       {
         q: "Nous sommes à 10 points : comment gagner le dernier ?",
-        a: "Par l'occupation, normalement. Par la conquête, seulement en marquant sur tous les champs le même tour (hors champs occupés par votre coéquipier à l'étape des scores) — sinon le conquérant pioche une carte à la place."
+        a: "Par l'occupation, normalement. Par la conquête, seulement en marquant sur tous les champs le même tour (hors champs occupés par votre coéquipier à l'étape des scores). Sinon, le conquérant pioche une carte à la place."
       },
       {
         q: "Pourquoi 11 points et pas 8 ?",
-        a: "Deux joueurs alimentent le même compte : à 8, la course serait trop courte. Le mode rallonge la distance."
+        a: "Deux joueurs alimentent le même compte : à 8, la course serait trop courte."
       },
       {
         q: "Pouvons-nous jouer la même légende ou les mêmes champs de bataille ?",
@@ -266,13 +266,13 @@ export const TOPICS = [
     summary:
       "Deux manches gagnantes, un joueur désigné qui choisit, une ronde de 60 minutes et une fin de match au temps : ce qui change en compétition.",
     details: [
-      "En tournoi, une **rencontre** oppose deux joueurs en **deux manches gagnantes** (RT 404.2). Chaque manche est un duel ordinaire — mêmes tours, même course à **8 points**, même règle du dernier point — mais tout ce qui l'entoure change : qui commence, la réserve, le temps, la fin du match. Le compteur de l'application Riftarium a un mode **Tournoi** qui applique ce qui suit.",
+      "En tournoi, une **rencontre** oppose deux joueurs en **deux manches gagnantes** (RT 404.2). Chaque manche est un duel ordinaire (mêmes tours, même course à **8 points**, même règle du dernier point), mais tout ce qui l'entoure change : qui commence, la réserve, le temps, la fin du match. Le compteur de l'application Riftarium a un mode **Tournoi** qui applique ce qui suit.",
       "**Ce que chacun apporte.** Un deck principal d'**exactement 40 cartes** (et non « au moins 40 » comme en partie libre), champion élu compris ; une légende ; **12 runes** ; **3 champs de bataille** de noms différents (RT 402.1). Aux événements de niveau élevé, la liste est **enregistrée** avant la première ronde et ne bouge plus (RT 401). Voir **Deck et formats de compétition**.",
       "**Qui commence.** Au début de la première manche, une méthode aléatoire acceptée par les deux joueurs (pile ou face, dé…) désigne un **joueur désigné** ; ce joueur **choisit** de jouer en premier ou en second (RT 407.1). Le tirage ne fait donc pas commencer : il donne le choix. Pour les manches suivantes, c'est le **perdant de la manche précédente** qui choisit (RT 407.4). Après une égalité, le premier joueur reste le même.",
       "**Mise en place.** Comme en duel (règle 110), avec deux ajouts : chaque joueur **présente** son deck principal, son deck de runes et sa réserve à l'adversaire, qui a le droit de les **mélanger** (RT 406.1.d et e). En première manche, la mise en place peut se faire avant le lancement du chronomètre, mais la partie elle-même ne commence qu'une fois la ronde lancée (RT 406.1.f).",
-      "**Entre deux manches.** Si la compétition autorise une **réserve**, les cartes s'échangent **une pour une** avec le deck principal, champion élu compris ; **jamais avant la première manche** (RT 403.4 et 403.5). Légende, runes et champs de bataille ne changent pas. Chaque joueur présente à nouveau le champ de bataille de son choix, comme en mode Match.",
+      "**Entre deux manches.** Si la compétition autorise une **réserve**, les cartes s'échangent **une pour une** avec le deck principal, champion élu compris ; **jamais avant la première manche** (RT 403.4 et 403.5). Légende, runes et champs de bataille ne changent pas. Pour les champs présentés, on suit le mode Match : après une manche gagnée, les champs utilisés par les deux joueurs sont écartés pour le reste du match et chacun en présente un autre (règle 486.5) ; après une égalité, on rejoue avec les mêmes champs (RT 406.1.b).",
       "**Le temps.** Une ronde suisse dure **60 minutes** recommandées (RT 604.1). Quand le temps est annoncé, **le joueur en cours termine son tour**, puis **trois tours supplémentaires** sont joués (RT 408.2.a) ; ils ne sont pas chronométrés. Si les joueurs sont entre deux manches à l'annonce, **aucune nouvelle manche** n'est lancée (RT 408.2.d).",
-      "**Fin de la manche au temps.** Après les trois tours supplémentaires, si personne n'a gagné : le joueur qui a **au moins deux points d'avance** remporte **le match** (RT 408.2.b) — pas seulement la manche. Sinon, la manche est une **égalité**, et une égalité ne compte pas comme manche gagnée (RT 404.3).",
+      "**Fin de la manche au temps.** Après les trois tours supplémentaires, si personne n'a gagné : le joueur qui a **au moins deux points d'avance** remporte **le match** (RT 408.2.b), et pas seulement la manche. Sinon, la manche est une **égalité**, et une égalité ne compte pas comme manche gagnée (RT 404.3).",
       "**Résultat du match.** Le premier à deux manches gagne (RT 408.3). Si le temps a tout arrêté avant, celui qui a **le plus de manches gagnées** l'emporte ; à égalité de manches, **match nul** (RT 404.4 et 404.5). Le match est clos quand le résultat est remis à l'organisateur (RT 408.1).",
       "**Élimination directe.** Les phases finales se jouent de préférence **sans limite de temps** (RT 604.2). Si l'organisateur chronomètre malgré tout, une procédure spéciale s'applique (RT 408.4) : le score de la manche en cours désigne son vainqueur, puis les manches gagnées ; si tout est à égalité, le **point suivant** décide. Dans l'application, choisissez « Sans limite » et laissez l'arbitre annoncer le temps.",
       "**Forfait et nul volontaire.** Un joueur peut déclarer forfait à tout moment ; les deux joueurs peuvent convenir d'un match nul (RT 410.1 et 410.2). Jamais en échange d'une contrepartie, et sans aller consulter les résultats des autres tables (RT 410.3 et 410.4)."
@@ -296,7 +296,7 @@ export const TOPICS = [
       },
       {
         q: "Le tirage m'a désigné. Dois-je commencer ?",
-        a: "Non : le tirage vous donne le choix. Jouer en second, c'est canaliser une rune de plus à la première canalisation ; jouer en premier, c'est le tempo. À vous de voir."
+        a: "Non : le tirage vous donne le choix. Jouer en second vous donne une rune de plus à la première canalisation ; jouer en premier vous permet d'agir avant l'adversaire."
       },
       {
         q: "Puis-je changer de champion élu entre deux manches ?",
@@ -322,7 +322,7 @@ export const TOPICS = [
       "**La réserve.** Quand la compétition l'autorise : **jusqu'à 10 cartes**, toutes valides pour le deck principal ; la limite de **3 exemplaires** d'un même nom compte deck et réserve ensemble (RT 601.1.c). Entre deux manches, on échange **une pour une** ; le champion élu peut changer ; légende, runes et champs de bataille sont figés (RT 403.4). Pas de réserve en première manche, ni après une manche nulle ou recommencée (RT 403.5, 403.10, 403.11). Le deck revient à sa forme enregistrée avant chaque nouveau match (RT 403.8).",
       "**Légalité des cartes.** Une carte est jouable si elle vient d'un set autorisé dans le format, ou porte le même nom qu'une carte d'un set autorisé (RT 601.2.a). Une réimpression hors numérotation normale (par exemple 300/250) ne rend pas la carte légale à elle seule (RT 601.2.c).",
       "**Standard.** Les 5 à 8 derniers sets : l'année en cours et la précédente (RT 601.3). Aujourd'hui : Origines (OGN) et son set supplémentaire de Premiers pas (OGS), Armes spirituelles (SFD), Déchaînement (UNL), Vendetta (VEN).",
-      "**Cartes bannies.** Une carte bannie dans un format ne peut pas être jouée (RT 601.2.d) — sauf, à petit niveau (Nexus Nights), si vous jouez un **deck préconstruit à l'identique** : ses cartes bannies restent autorisées tant que vous ne modifiez rien et n'ajoutez pas de réserve (RT 601.2.d.2).",
+      "**Cartes bannies.** Une carte bannie dans un format ne peut pas être jouée (RT 601.2.d). Exception à petit niveau (Nexus Nights) : si vous jouez un **deck préconstruit à l'identique**, ses cartes bannies restent autorisées tant que vous ne modifiez rien et n'ajoutez pas de réserve (RT 601.2.d.2).",
       "**Format limité.** Tout le matériel est fourni par la compétition : seules ces cartes entrent dans le deck, plus autant de **runes de base** que voulu et des **champs de bataille « vierges »** (sans texte de règles, RT 602.3.d). Construction sans appareil électronique ni aide extérieure aux niveaux élevés. À haut niveau, on enregistre une configuration de départ et le reste des cartes forme la réserve (RT 602.3.e).",
       "**2c2.** Une équipe s'inscrit ensemble, désigne un joueur A et un joueur B, et s'assoit dans cet ordre (RT 603). L'ordre des tours est fixe : A de la première équipe, A de la seconde, B de la première, B de la seconde (RT 603.7.a). Un tirage décide quelle équipe choisit qui commence ; ensuite, l'équipe perdante choisit (RT 603.7.c). Si un joueur abandonne ou est disqualifié, toute l'équipe l'est (RT 603.3 et 603.4)."
     ],
@@ -337,7 +337,7 @@ export const TOPICS = [
       },
       {
         q: "Puis-je changer de champ de bataille entre deux manches grâce à ma réserve ?",
-        a: "Non : la réserve ne contient que des cartes de deck principal. Légende, runes et champs de bataille sont fixés à l'enregistrement. En revanche, vous choisissez librement lequel de vos trois champs présenter à chaque manche."
+        a: "Non : la réserve ne contient que des cartes de deck principal. Légende, runes et champs de bataille sont fixés à l'enregistrement. En revanche, vous choisissez quel champ présenter à chaque manche, parmi ceux qui n'ont pas encore servi dans une manche gagnée (par vous ou par l'adversaire)."
       },
       {
         q: "Je joue le deck de champion de Jinx tel quel, avec une carte bannie dedans. C'est autorisé ?",
@@ -358,11 +358,11 @@ export const TOPICS = [
     summary:
       "Ce que la compétition impose autour du jeu : tenue des scores, prise de notes, appareils électroniques, mélange, appel à l'arbitre, sanctions.",
     details: [
-      "**Les scores.** Tous les joueurs sont responsables du suivi de **tous** les scores (RT 415.1). Chaque changement est **annoncé et approuvé** par les deux joueurs (RT 415.2). Les scores doivent être notés **par écrit, lisiblement** ; à petit niveau, un appareil électronique, des dés ou un compteur font l'affaire (RT 415.3.a) — c'est ce que permet le mode Tournoi de l'application. XP, énergie et essence runique se suivent visiblement (dés, compteurs), sans obligation d'écrit (RT 415.4). Un désaccord non résolu : appel à l'arbitre.",
+      "**Les scores.** Tous les joueurs sont responsables du suivi de **tous** les scores (RT 415.1). Chaque changement est **annoncé et approuvé** par les deux joueurs (RT 415.2). Les scores doivent être notés **par écrit, lisiblement** ; à petit niveau, un appareil électronique, des dés ou un compteur font l'affaire (RT 415.3.a) : c'est ce que permet le mode Tournoi de l'application. XP, énergie et essence runique se suivent visiblement (dés, compteurs), sans obligation d'écrit (RT 415.4). Un désaccord non résolu : appel à l'arbitre.",
       "**Les notes.** Autorisées pendant le match, consultables pendant les manches du même match (RT 416.1). Fiches vierges au début de chaque match, visibles par l'adversaire et les officiels (RT 416.2). Pas de notes extérieures à la partie en cours, y compris celles des matchs précédents (RT 416.4).",
       "**Appareils électroniques.** Autorisés pendant la compétition, **interdits pendant les matchs** (RT 417.1), sauf à petit niveau où ils peuvent remplacer les notes papier et servir de compteur (RT 417.2, 415.3.a). L'arbitre principal peut restreindre ou élargir (RT 417.3).",
       "**Mélange et présentation.** Chaque joueur mélange ses deux decks, puis les **présente** à l'adversaire, qui peut les mélanger à son tour (RT 406.1.c à e) ; au niveau professionnel, ce mélange par l'adversaire est obligatoire. On peut demander à un arbitre de mélanger à sa place.",
-      "**Communication.** Les joueurs communiquent honnêtement sur l'état de la partie et répondent avec honnêteté à toute question sur une information publique — scores, runes, tour en cours, chaîne d'effets (RT 501, 502) ; personne n'est tenu d'aider l'adversaire à déduire quoi que ce soit. Les **raccourcis** (sauter une étape technique d'un commun accord) sont permis s'ils sont annoncés ; chacun peut interrompre un raccourci pour agir (RT 503). Une **boucle** se déclare avec son nombre d'itérations ; sans personne pour la rompre ni la maintenir, la partie est nulle (RT 505).",
+      "**Communication.** Les joueurs communiquent honnêtement sur l'état de la partie et répondent avec honnêteté à toute question sur une information publique (scores, runes, tour en cours, chaîne d'effets ; RT 501, 502) ; personne n'est tenu d'aider l'adversaire à déduire quoi que ce soit. Les **raccourcis** (sauter une étape technique d'un commun accord) sont permis s'ils sont annoncés ; chacun peut interrompre un raccourci pour agir (RT 503). Une **boucle** se déclare avec son nombre d'itérations ; sans personne pour la rompre ni la maintenir, la partie est nulle (RT 505).",
       "**Arbitre et appels.** À tout moment pendant un match, un joueur peut mettre la partie en pause pour appeler un arbitre de salle ; au-delà d'une minute d'intervention, une prolongation est accordée (RT 412). Une décision peut être portée en **appel** auprès de l'arbitre principal, une fois la décision annoncée ; celle de l'arbitre principal est définitive (RT 413).",
       "**Sanctions.** Les erreurs sont présumées involontaires (RT 701.1.a). L'**avertissement** garde trace d'une erreur ; répété, il devient une **perte de partie** ; la **perte de match** et la **disqualification** répondent aux fautes qui compromettent le match ou l'intégrité de la compétition (RT 701.2). Un oubli de point ou de pioche se corrige sans sanction tant que le cycle de manche n'est pas fini (RT 702.3, 702.4). Le jeu lent est sanctionné même dans les manches sans limite de temps (RT 604.2.a).",
       "**Abandon et forfait.** On peut quitter la compétition à tout moment en prévenant le marqueur avant l'appariement suivant ; ne pas se présenter à un match vaut élimination (RT 414). Un joueur qui refuse de jouer est déclaré forfait (RT 410.5)."
@@ -392,17 +392,17 @@ export const TOPICS = [
     sections: ["412", "413", "415", "416", "417", "501", "503", "701"]
   },
 
-  /* ================= Tour & timing ================= */
+  /* ================= Tour de jeu ================= */
   {
     slug: "deroulement-du-tour",
     title: "Le déroulement du tour",
     category: "tour",
     summary: "Éveil, scores, canalisation, pioche, phase principale, fin de tour : l'ordre exact.",
     details: [
-      "Chaque tour commence par quatre phases automatiques, toujours dans le même ordre. **Phase d'éveil** : vous préparez (redressez) tous les éléments de jeu que vous contrôlez — unités, équipements, runes. **Phase de départ** : les effets « au début de votre phase de départ » se déclenchent, puis vient l'**étape des scores** où vous marquez 1 point par champ de bataille que vous contrôlez (l'occupation).",
+      "Chaque tour commence par quatre phases automatiques, toujours dans le même ordre. **Phase d'éveil** : vous préparez (redressez) tous les éléments de jeu que vous contrôlez : unités, équipements, runes. **Phase de départ** : les effets « au début de votre phase de départ » se déclenchent, puis vient l'**étape des scores** où vous marquez 1 point par champ de bataille que vous contrôlez (l'occupation).",
       "**Phase de canalisation** : 2 runes passent du dessus de votre deck de runes à votre zone de runes. Elles y restent de tour en tour tant qu'elles ne sont pas recyclées : votre total de ressources grandit de 2 chaque tour. **Phase de pioche** : vous piochez 1 carte (deck vide : voyez l'exténuation).",
-      "La **phase principale** n'a aucune structure imposée : jouez des cartes, activez des compétences, déplacez des unités, dans l'ordre que vous voulez, tant que vous pouvez payer. C'est un état « ouvert » : seul le joueur du tour peut jouer des sorts sans mot-clé de timing.",
-      "Des combats et des confrontations peuvent s'insérer dans la phase principale à chaque fois qu'un champ de bataille devient contesté — ils se résolvent entièrement avant que la phase principale ne reprenne.",
+      "La **phase principale** n'a aucune structure imposée : jouez des cartes, activez des compétences, déplacez des unités, dans l'ordre que vous voulez, tant que vous pouvez payer. C'est un état « ouvert » : seul le joueur du tour peut jouer des sorts sans [Action] ni [Réaction].",
+      "Des combats et des confrontations peuvent s'insérer dans la phase principale à chaque fois qu'un champ de bataille devient contesté. Ils se résolvent entièrement avant que la phase principale ne reprenne.",
       "Quand vous n'avez plus rien à faire, vous annoncez la **fin de votre tour** : les effets de fin de tour se déclenchent, toutes les unités sont soignées, les effets « pendant ce tour » expirent simultanément, la réserve runique se vide, puis le joueur suivant devient le joueur du tour."
     ],
     cases: [
@@ -412,7 +412,7 @@ export const TOPICS = [
       },
       {
         q: "Puis-je jouer une carte pendant la phase d'éveil ou la canalisation ?",
-        a: "Non. Les cartes se jouent en phase principale — ou pendant les confrontations pour les sorts [Action] et [Réaction]."
+        a: "Non. Les cartes se jouent en phase principale, ou pendant les confrontations pour les sorts [Action] et [Réaction]."
       },
       {
         q: "Mes unités blessées gardent-elles leurs dégâts d'un tour à l'autre ?",
@@ -435,8 +435,8 @@ export const TOPICS = [
     category: "tour",
     summary: "Les sorts et compétences s'empilent ; le dernier entré se résout en premier.",
     details: [
-      "La **chaîne** est la zone où vont les cartes et compétences en train d'être jouées. Rien ne se résout instantanément : tout passe par la chaîne, ce qui laisse une fenêtre de réponse.",
-      "Les réponses s'**empilent au-dessus** : si vous jouez un sort et que l'adversaire répond avec une [Réaction], sa Réaction se résout en premier, puis votre sort — dernier entré, premier résolu.",
+      "La **chaîne** est la zone où vont les cartes et compétences en train d'être jouées. Les cartes jouées et les compétences passent par la chaîne avant de se résoudre, ce qui laisse une fenêtre de réponse.",
+      "Les réponses s'**empilent au-dessus** : si vous jouez un sort et que l'adversaire répond avec une [Réaction], sa Réaction se résout en premier, puis votre sort. Dernier entré, premier résolu.",
       "Pendant qu'un objet de la chaîne se résout, **rien d'autre ne peut se résoudre** : on exécute toutes ses instructions du haut vers le bas, puis seulement on regarde ce qui a été déclenché entre-temps.",
       "Les compétences déclenchées pendant une résolution attendent la fin de cette résolution, puis sont ajoutées à la chaîne (par le joueur qui les contrôle) et résolues à leur tour.",
       "Payer les coûts n'utilise pas la chaîne : épuiser ou recycler une rune pour produire de l'énergie est immédiat et ne peut pas être « contré »."
@@ -444,7 +444,7 @@ export const TOPICS = [
     cases: [
       {
         q: "L'adversaire joue un sort qui élimine mon unité. Puis-je réagir ?",
-        a: "Oui, avec un sort ou une compétence [Réaction] : elle s'empile au-dessus et se résout avant. Un sort [Action] ne suffit pas — l'état est fermé pendant qu'un objet attend dans la chaîne."
+        a: "Oui, avec un sort ou une compétence [Réaction] : elle s'empile au-dessus et se résout avant. Un sort [Action] ne suffit pas, car l'état est fermé pendant qu'un objet attend dans la chaîne."
       },
       {
         q: "Mon sort déclenche une compétence en se résolvant. Quand se résout-elle ?",
@@ -456,7 +456,7 @@ export const TOPICS = [
       },
       {
         q: "Deux joueurs veulent réagir au même sort. Qui empile en premier ?",
-        a: "L'ordre des tours s'applique à partir du joueur du tour : chacun, dans l'ordre, peut ajouter sa réponse — le dernier objet empilé se résoudra en premier."
+        a: "L'ordre des tours s'applique à partir du joueur du tour : chacun, dans l'ordre, peut ajouter sa réponse. Le dernier objet empilé se résoudra en premier."
       }
     ],
     sections: ["327", "332"],
@@ -464,14 +464,14 @@ export const TOPICS = [
       title: "La chaîne : empiler puis dépiler",
       frames: [
         {
-          caption: "Vous jouez un sort : il entre dans la chaîne — il ne se résout pas tout de suite.",
+          caption: "Vous jouez un sort : il entre dans la chaîne et ne se résout pas tout de suite.",
           items: [
             { k: "z", type: "zone", x: 50, y: 50, label: "Chaîne" },
             { k: "a", type: "card", x: 50, y: 62, label: "Votre sort" }
           ]
         },
         {
-          caption: "L'adversaire répond avec une Réaction : elle s'empile AU-DESSUS.",
+          caption: "L'adversaire répond avec une Réaction : elle s'empile au-dessus.",
           items: [
             { k: "z", type: "zone", x: 50, y: 50, label: "Chaîne" },
             { k: "a", type: "card", x: 50, y: 62, label: "Votre sort" },
@@ -506,16 +506,16 @@ export const TOPICS = [
       "La **focalisation** désigne le joueur « à qui c'est de parler ». Le joueur qui a contesté le champ la reçoit en premier.",
       "Avec la focalisation, deux choix : **jouer** une carte ou une compétence (ce qui ouvre une chaîne, résolue normalement), ou **passer**. Après chaque chaîne résolue, la focalisation passe au joueur suivant.",
       "La confrontation se termine quand **tous les joueurs passent successivement** sans rien jouer. S'il y a des unités des deux camps : le combat continue vers l'étape des dégâts. Sinon : le joueur seul présent prend le contrôle.",
-      "Les confrontations existent aussi **sans combat** : contester un champ vide ouvre une confrontation ; si personne n'intervient, vous prenez le contrôle à la fin — et marquez la conquête."
+      "Les confrontations existent aussi **sans combat** : contester un champ vide ouvre une confrontation ; si personne n'intervient, vous prenez le contrôle à la fin et marquez la conquête."
     ],
     cases: [
       {
         q: "J'ai contesté un champ vide. Que se passe-t-il ?",
-        a: "Une confrontation sans combat s'ouvre. Si à sa fin vous êtes le seul à y avoir des unités, vous prenez le contrôle — conquête si ce champ ne vous a pas déjà rapporté de point ce tour."
+        a: "Une confrontation sans combat s'ouvre. Si à sa fin vous êtes le seul à y avoir des unités, vous prenez le contrôle, avec une conquête si ce champ ne vous a pas déjà rapporté de point ce tour."
       },
       {
         q: "L'adversaire déplace une unité sur le champ pendant la confrontation sans combat. Et alors ?",
-        a: "Impossible par déplacement standard (interdit pendant les confrontations) — mais possible via un effet ou une unité [Embuscade]. La confrontation devient alors une confrontation de combat au prochain nettoyage."
+        a: "Impossible par déplacement standard (interdit pendant les confrontations), mais possible via un effet ou une unité [Embuscade]. La confrontation devient alors une confrontation de combat au prochain nettoyage."
       },
       {
         q: "Je passe, l'adversaire joue un sort. Puis-je encore agir ?",
@@ -576,18 +576,18 @@ export const TOPICS = [
     details: [
       "L'**exténuation** se produit quand vous devez déplacer des cartes de votre deck principal (piocher, le plus souvent) alors qu'il n'en contient plus assez.",
       "Séquence exacte (règle 431.2) : faites l'action autant que possible, **mélangez votre défausse dans votre deck principal**, choisissez **un adversaire qui gagne 1 point**, puis terminez l'action qui a causé l'exténuation.",
-      "C'est **une seule exténuation** par deck vidé — pas une par carte manquante. Piocher 3 avec 1 carte restante : une carte piochée, une exténuation, puis les 2 dernières pioches.",
+      "C'est **une seule exténuation** par deck vidé, pas une par carte manquante. Piocher 3 avec 1 carte restante : une carte piochée, une exténuation, puis les 2 dernières pioches.",
       "**Regarder ou révéler** des cartes ne cause jamais d'exténuation : on regarde ce qu'on peut, les instructions irréalisables sont ignorées (règle 431.1.c).",
-      "Deck ET défausse vides : chaque tentative répète l'exténuation, un point offert à chaque fois — la partie peut se terminer ainsi."
+      "Deck **et** défausse vides : chaque tentative répète l'exténuation et offre un point à chaque fois, ce qui peut terminer la partie."
     ],
     cases: [
       {
         q: "Un effet me fait piocher 3 cartes et mon deck n'en a qu'une. Combien d'exténuations ?",
-        a: "Une seule : vous piochez la carte restante, exténuation (mélange + 1 point offert), puis vous piochez les 2 manquantes — sauf si le nouveau deck se vide encore."
+        a: "Une seule : vous piochez la carte restante, exténuation (mélange + 1 point offert), puis vous piochez les 2 manquantes, sauf si le nouveau deck se vide encore."
       },
       {
         q: "Je choisis quel adversaire gagne le point ?",
-        a: "Oui : « choisir un adversaire qui gagnera 1 point » — en duel, pas de choix ; à 3-4 joueurs, le choix est libre."
+        a: "Oui : la règle dit « choisir un adversaire qui gagnera 1 point ». En duel, il n'y a pas de choix ; à 3 ou 4 joueurs, le choix est libre."
       },
       {
         q: "Un effet me demande de révéler 5 cartes, il m'en reste 2. Exténuation ?",
@@ -595,7 +595,7 @@ export const TOPICS = [
       },
       {
         q: "L'adversaire peut-il refuser le point ?",
-        a: "Non — et les points d'exténuation en chaîne ne peuvent être ni remplacés ni empêchés (règle 431.3.b)."
+        a: "Non. Et lors d'exténuations répétées, les points marqués après la première ne peuvent être ni remplacés ni empêchés (règle 431.3.b)."
       }
     ],
     sections: ["431", "413"]
@@ -619,7 +619,7 @@ export const TOPICS = [
       },
       {
         q: "Un joueur atteint 8 points pendant le tour adverse. Quand gagne-t-il ?",
-        a: "Au nettoyage suivant : c'est lui qui vérifie la victoire, peu importe le joueur du tour — à condition d'avoir strictement plus de points que tout adversaire."
+        a: "Au nettoyage suivant, car c'est le nettoyage qui vérifie la victoire, quel que soit le joueur du tour. Il faut aussi avoir strictement plus de points que tout adversaire."
       },
       {
         q: "Une unité soignée par le nettoyage de combat peut-elle mourir du même combat ?",
@@ -634,12 +634,12 @@ export const TOPICS = [
     slug: "etapes-du-combat",
     title: "Les trois étapes du combat",
     category: "combat",
-    summary: "Confrontation, dégâts, résolution — un combat oppose exactement deux joueurs.",
+    summary: "Confrontation, dégâts, résolution : un combat oppose exactement deux joueurs.",
     details: [
       "Un combat se déclenche quand des unités de **deux joueurs adverses** occupent le même champ de bataille. Il se déroule en trois étapes rigides.",
-      "**Étape 1 — la confrontation de combat** : l'attaquant est le joueur qui a contesté le champ, le défenseur celui qui y était. L'attaquant reçoit la focalisation ; chacun joue ses [Action] et [Réaction] jusqu'à deux passes consécutives.",
-      "**Étape 2 — les dégâts** : chaque camp additionne la **puissance** de ses unités présentes ; chacun attribue ce total aux unités adverses (voir la page Attribution), puis tout est infligé **simultanément**.",
-      "**Étape 3 — la résolution** : nettoyage de combat (éliminations, soins, rappel des attaquants si des défenseurs restent), détermination du vainqueur, prise de contrôle par le camp resté seul — et conquête si ce champ n'a pas déjà rapporté de point ce tour.",
+      "**Étape 1 (la confrontation de combat)** : l'attaquant est le joueur qui a contesté le champ, le défenseur celui qui y était. L'attaquant reçoit la focalisation ; chacun joue ses [Action] et [Réaction] jusqu'à deux passes consécutives.",
+      "**Étape 2 (les dégâts)** : chaque camp additionne la **puissance** de ses unités présentes ; chacun attribue ce total aux unités adverses (voir la page Attribution), puis tout est infligé **simultanément**.",
+      "**Étape 3 (la résolution)** : nettoyage de combat (éliminations, soins, rappel des attaquants si des défenseurs restent), détermination du vainqueur, prise de contrôle par le camp resté seul, et conquête si ce champ n'a pas déjà rapporté de point ce tour.",
       "Les désignations « attaquant » et « défenseur » comptent pour les mots-clés : [Assaut] ne fonctionne qu'en attaque, [Bouclier] et [Tank] qu'avec la désignation correspondante."
     ],
     cases: [
@@ -649,7 +649,7 @@ export const TOPICS = [
       },
       {
         q: "Une unité arrive sur le champ en plein combat (Embuscade, effet). Attaquante ou défenseuse ?",
-        a: "Elle reçoit la désignation de son camp au nettoyage qui suit son arrivée — et participera aux dégâts si elle est là à l'étape 2."
+        a: "Elle reçoit la désignation de son camp au nettoyage qui suit son arrivée, et participera aux dégâts si elle est là à l'étape 2."
       },
       {
         q: "Puis-je fuir le combat avec un déplacement standard ?",
@@ -668,11 +668,11 @@ export const TOPICS = [
     category: "combat",
     summary: "Dégâts mortels unité par unité, jamais plus que nécessaire, Tank d'abord, Arrière-ligne en dernier.",
     details: [
-      "À l'étape des dégâts, chaque joueur attribue le **total de puissance** de son camp aux unités adverses — c'est le joueur qui inflige qui choisit la répartition, dans des limites strictes.",
+      "À l'étape des dégâts, chaque joueur attribue le **total de puissance** de son camp aux unités adverses. C'est le joueur qui inflige qui choisit la répartition, dans des limites strictes.",
       "Règle n° 1 : une unité doit recevoir des **dégâts mortels** avant qu'une autre puisse en recevoir. Mortel = un total marqué (dégâts déjà présents inclus) au moins égal à sa puissance actuelle.",
-      "Règle n° 2 : on n'attribue **jamais plus que le minimum mortel** à une unité — sauf s'il ne reste plus aucune autre cible, auquel cas le surplus lui est attribué.",
+      "Règle n° 2 : on n'attribue **jamais plus que le minimum mortel** à une unité, sauf s'il ne reste plus aucune autre cible, auquel cas le surplus lui est attribué.",
       "[Tank] impose de recevoir les dégâts mortels **en premier** ; [Arrière-ligne] **en dernier**. À priorité égale (deux Tanks), l'ordre est au choix du joueur qui attribue. Si une même unité cumule des exigences exclusives, le joueur qui attribue choisit laquelle appliquer.",
-      "L'attribution n'est pas l'infliction : on répartit tout d'abord, puis **tout est infligé simultanément** — aucune unité ne meurt « avant » les autres pendant cette étape."
+      "L'attribution n'est pas l'infliction : on répartit tout d'abord, puis **tout est infligé simultanément** : aucune unité ne meurt « avant » les autres pendant cette étape."
     ],
     cases: [
       {
@@ -685,11 +685,11 @@ export const TOPICS = [
       },
       {
         q: "Une unité déjà blessée de 2 (puissance 4) : combien pour la finir ?",
-        a: "2 suffisent — les dégâts mortels se calculent sur le total marqué, pas sur les seuls dégâts de combat."
+        a: "2 suffisent : les dégâts mortels se calculent sur le total marqué, pas sur les seuls dégâts de combat."
       },
       {
         q: "Il me reste 2 dégâts après avoir tué toutes les unités sauf une (puissance 6). Perdus ?",
-        a: "Non : quand il ne reste plus qu'elle, le surplus lui est attribué — 2 dégâts marqués, insuffisants pour la tuer, soignés au nettoyage."
+        a: "Non : quand il ne reste plus qu'elle, le surplus lui est attribué. Ces 2 dégâts ne suffisent pas à la tuer et sont soignés au nettoyage."
       },
       {
         q: "Une unité que rien ne peut blesser (immunité) bloque-t-elle mon attribution ?",
@@ -712,7 +712,7 @@ export const TOPICS = [
           ]
         },
         {
-          caption: "Le Tank d'abord : 4 dégâts, le minimum mortel — pas un de plus.",
+          caption: "Le Tank d'abord : 4 dégâts, juste le minimum mortel.",
           items: [
             { k: "total", type: "chip", x: 12, y: 30, n: "3 restants", ok: true },
             { k: "t", type: "unit", side: "foe", x: 38, y: 40, n: 4, dead: true },
@@ -747,21 +747,22 @@ export const TOPICS = [
     slug: "rappel-des-attaquants",
     title: "Le rappel des attaquants",
     category: "combat",
-    summary: "Si les deux camps survivent, les attaquants rentrent à la base : défendre a l'avantage.",
+    summary: "Si des défenseurs survivent au combat, les attaquants restants rentrent à leur base.",
     details: [
       "Au **nettoyage de combat**, après l'infliction des dégâts et les éliminations, une étape spéciale s'exécute : si des **défenseurs** sont encore présents, toutes les unités **attaquantes** restantes sont rappelées à la base de leur propriétaire.",
       "Le combat se termine alors sur « **aucun résultat** » : personne ne conquiert, le défenseur garde le contrôle du champ.",
-      "Conséquence stratégique : attaquer sans pouvoir éliminer toute la défense ne rapporte rien — les unités rappelées reviennent épuisées à la base et devront re-traverser au tour suivant.",
+      "Sans effet de jeu, cette situation est presque impossible. Chaque camp inflige un total égal à sa puissance, et une unité meurt dès que ses dégâts atteignent sa puissance : si l'attaque a moins de puissance que la défense, tous les attaquants meurent ; si elle en a plus, tous les défenseurs meurent ; à égalité, tout le monde meurt. Le rappel survient donc quand un effet s'en mêle : une unité qui ne peut pas subir de dégâts (règle 465.2.c.10), des dégâts réduits ou empêchés.",
+      "Un rappel ne change pas l'état des unités (règle 458) : venues par déplacement standard, elles reviennent épuisées à la base et devront retraverser à un tour suivant.",
       "Le rappel n'est pas une élimination ni un déplacement standard : il ne déclenche pas [Agonie], ne coûte rien et ignore les restrictions de déplacement."
     ],
     cases: [
       {
-        q: "J'attaque avec 3 de puissance contre un défenseur de 4 : que se passe-t-il si personne ne meurt ?",
-        a: "Vos unités survivantes sont rappelées à votre base, le défenseur garde son champ et sera soigné. L'attaque n'a rien rapporté."
+        q: "J'attaque avec 3 de puissance contre un défenseur de 4, et un effet empêche mon unité de subir des dégâts ce tour. Que se passe-t-il ?",
+        a: "Personne ne meurt : vos 3 dégâts ne suffisent pas contre 4, et ceux du défenseur ne blessent pas votre unité. Comme le défenseur reste, votre unité est rappelée à votre base ; le défenseur garde son champ et sera soigné. L'attaque n'a rien rapporté."
       },
       {
         q: "Tous les défenseurs meurent, mais moi aussi je perds des unités. Qui gagne ?",
-        a: "S'il ne reste que vos unités, vous prenez le contrôle (conquête). S'il ne reste personne, le champ devient non contrôlé — sans conquête pour personne."
+        a: "S'il ne reste que vos unités, vous prenez le contrôle (conquête). S'il ne reste personne, le champ devient non contrôlé, sans conquête pour personne."
       },
       {
         q: "Mon unité rappelée avait un équipement pris sur le champ. Il suit ?",
@@ -770,34 +771,34 @@ export const TOPICS = [
     ],
     sections: ["466", "454"],
     demo: {
-      title: "Attaque insuffisante : retour à la base",
+      title: "Défenseur intact : retour à la base",
       frames: [
         {
-          caption: "Vous attaquez le champ avec 2 + 1 de puissance ; le défenseur a 4.",
+          caption:
+            "Vous attaquez avec une unité de 3 ; le défenseur a 4. Pendant la confrontation, un effet empêche votre unité de subir des dégâts ce tour.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
-            { k: "a1", type: "unit", x: 42, y: 52, n: 2 },
-            { k: "a2", type: "unit", x: 58, y: 52, n: 1 },
+            { k: "a1", type: "unit", x: 50, y: 52, n: 3, glow: true },
             { k: "d", type: "unit", side: "foe", x: 50, y: 26, n: 4 },
             { k: "base", type: "zone", x: 50, y: 88, label: "Votre base" }
           ]
         },
         {
-          caption: "Dégâts : vos 3 ne tuent pas le défenseur (4). Ses 4 éliminent votre 2, votre 1 encaisse le reste.",
+          caption:
+            "Dégâts : vos 3 ne suffisent pas contre le défenseur (4), et ses 4 dégâts ne blessent pas votre unité.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
-            { k: "a1", type: "unit", x: 42, y: 52, n: 2, dead: true },
-            { k: "a2", type: "unit", x: 58, y: 52, n: 1 },
+            { k: "a1", type: "unit", x: 50, y: 52, n: 3 },
             { k: "d", type: "unit", side: "foe", x: 50, y: 26, n: 4 },
             { k: "dmg", type: "chip", x: 50, y: 12, n: "3 < 4" },
             { k: "base", type: "zone", x: 50, y: 88, label: "Votre base" }
           ]
         },
         {
-          caption: "Les deux camps ont des survivants : l'attaquant restant est RAPPELÉ à sa base.",
+          caption: "Les deux camps ont des survivants : votre unité est rappelée à sa base.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
-            { k: "a2", type: "unit", x: 58, y: 88, n: 1 },
+            { k: "a1", type: "unit", x: 50, y: 88, n: 3 },
             { k: "d", type: "unit", side: "foe", x: 50, y: 26, n: 4 },
             { k: "base", type: "zone", x: 50, y: 88, label: "Votre base" }
           ]
@@ -806,7 +807,7 @@ export const TOPICS = [
           caption: "Aucun résultat : le défenseur garde le contrôle, tout le monde est soigné.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
-            { k: "a2", type: "unit", x: 58, y: 88, n: 1 },
+            { k: "a1", type: "unit", x: 50, y: 88, n: 3 },
             { k: "d", type: "unit", side: "foe", x: 50, y: 26, n: 4, glow: true },
             { k: "keep", type: "label", x: 50, y: 56, label: "Contrôle conservé", glow: true },
             { k: "base", type: "zone", x: 50, y: 88, label: "Votre base" }
@@ -823,8 +824,8 @@ export const TOPICS = [
     details: [
       "Quel que soit le nombre de joueurs, un combat oppose toujours **exactement deux joueurs** : celui qui conteste et celui qui défendait.",
       "Un champ de bataille où un combat est **préparé ou en cours** entre deux autres joueurs est une **destination interdite** : ni déplacement standard, ni déplacement par effet, ni unité jouée dessus.",
-      "Si un effet forçait une unité tierce à y être jouée, elle est jouée dans la **base** de son contrôleur à la place — et les parties de l'effet devenues invalides sont ignorées.",
-      "Tous les choix qui aboutiraient à un combat à plus de deux joueurs sont tout simplement **invalides** : impossible de les prendre."
+      "Si un effet forçait une unité tierce à y être jouée, elle est jouée dans la **base** de son contrôleur à la place, et les parties de l'effet devenues invalides sont ignorées.",
+      "Tout choix qui aboutirait à un combat à plus de deux joueurs est **invalide**."
     ],
     cases: [
       {
@@ -833,7 +834,7 @@ export const TOPICS = [
       },
       {
         q: "Le combat est fini, les survivants du vainqueur restent. Puis-je attaquer maintenant ?",
-        a: "Oui : une fois le combat résolu, le champ redevient une destination valide — votre arrivée le contestera et déclenchera un nouveau combat contre le vainqueur."
+        a: "Oui : une fois le combat résolu, le champ redevient une destination valide. Votre arrivée le contestera et déclenchera un nouveau combat contre le vainqueur."
       },
       {
         q: "Un troisième joueur peut-il jouer des sorts pendant le combat des deux autres ?",
@@ -849,10 +850,10 @@ export const TOPICS = [
     category: "points",
     summary: "Conquérir = prendre le contrôle (+1 immédiat). Occuper = le garder au début de votre tour (+1).",
     details: [
-      "Les champs de bataille sont l'unique source régulière de points. Deux façons de marquer, aux timings très différents.",
-      "**Conquête** : au moment précis où vous prenez le contrôle d'un champ de bataille (fin de confrontation ou de combat), vous marquez **1 point immédiatement** — à condition que ce champ ne vous ait pas déjà rapporté de point pendant ce tour.",
+      "Les champs de bataille sont l'unique source régulière de points. Il y a deux façons de marquer, à des moments très différents.",
+      "**Conquête** : au moment précis où vous prenez le contrôle d'un champ de bataille (fin de confrontation ou de combat), vous marquez **1 point immédiatement**, à condition que ce champ ne vous ait pas déjà rapporté de point pendant ce tour.",
       "**Occupation** : au début de **votre** tour, à l'étape des scores, chaque champ de bataille encore sous votre contrôle vous rapporte **1 point**. Tenir ses positions rapporte donc un revenu passif.",
-      "Verrou universel : **un même champ de bataille ne peut vous rapporter qu'un point par tour**, toutes sources confondues — conquête, occupation ou effet.",
+      "Verrou universel : **un même champ de bataille ne peut vous rapporter qu'un point par tour**, toutes sources confondues (conquête, occupation ou effet).",
       "Les compétences imprimées sur les champs (« quand vous conquérez ici… », « quand vous occupez ici… ») se déclenchent uniquement quand le point correspondant est marqué : elles suivent la même limite d'une fois par tour et par joueur."
     ],
     cases: [
@@ -862,7 +863,7 @@ export const TOPICS = [
       },
       {
         q: "Je conquiers un champ pendant le tour de l'adversaire (grâce à Embuscade ou un effet). Point ?",
-        a: "Oui : la conquête marque à la prise de contrôle, peu importe le joueur du tour — toujours dans la limite d'un point par champ et par tour."
+        a: "Oui : la conquête marque à la prise de contrôle, quel que soit le joueur du tour, toujours dans la limite d'un point par champ et par tour."
       },
       {
         q: "L'adversaire me prend mon champ puis je le reconquiers le même tour : lui et moi marquons ?",
@@ -878,7 +879,7 @@ export const TOPICS = [
       title: "Conquête immédiate, occupation au tour suivant",
       frames: [
         {
-          caption: "Votre unité prend le contrôle du champ : CONQUÊTE, +1 point immédiatement.",
+          caption: "Votre unité prend le contrôle du champ : conquête, +1 point immédiatement.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
             { k: "u", type: "unit", x: 50, y: 40, n: 3 },
@@ -894,12 +895,12 @@ export const TOPICS = [
           ]
         },
         {
-          caption: "Début de VOTRE tour, étape des scores : OCCUPATION, +1 point.",
+          caption: "Début de votre tour, étape des scores : occupation, +1 point.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Champ de bataille" },
             { k: "u", type: "unit", x: 50, y: 40, n: 3, glow: true },
             { k: "pt2", type: "chip", x: 72, y: 20, n: "+1 occupation", ok: true },
-            { k: "t", type: "label", x: 50, y: 80, label: "Votre tour — étape des scores" }
+            { k: "t", type: "label", x: 50, y: 80, label: "Votre tour : étape des scores" }
           ]
         }
       ]
@@ -912,15 +913,15 @@ export const TOPICS = [
     summary: "Finir par conquête exige d'avoir marqué sur chaque champ ce tour-là ; l'occupation n'a pas cette limite.",
     details: [
       "Le dernier point est spécial : quand une **conquête** vous amènerait au score de la victoire (8 en duel), elle ne compte que si vous avez marqué un point sur **chaque champ de bataille** pendant ce tour.",
-      "Si la condition n'est pas remplie, le point de conquête est remplacé : vous **piochez une carte** à la place. Le champ est quand même conquis — seul le point est refusé.",
+      "Si la condition n'est pas remplie, le point de conquête est remplacé : vous **piochez une carte** à la place. Le champ est quand même conquis, seul le point est refusé.",
       "En duel : finir par conquête signifie marquer sur les **2 champs dans le même tour** (par exemple occuper l'un au début du tour, puis conquérir l'autre).",
       "Les points d'**occupation** et les points donnés par des **effets de cartes** ne subissent aucune restriction : ils peuvent vous faire gagner à tout moment de vérification.",
-      "La victoire elle-même se vérifie au nettoyage : il faut atteindre le score ET avoir strictement plus de points que chaque adversaire (une égalité à 8 prolonge la partie)."
+      "La victoire elle-même se vérifie au nettoyage : il faut atteindre le score **et** avoir strictement plus de points que chaque adversaire (une égalité à 8 prolonge la partie)."
     ],
     cases: [
       {
         q: "7 points, je conquiers un seul champ ce tour : victoire ?",
-        a: "Non — vous n'avez pas marqué sur chaque champ ce tour-là. Vous piochez une carte à la place, et restez à 7 (le champ est tout de même à vous)."
+        a: "Non : vous n'avez pas marqué sur chaque champ ce tour-là. Vous piochez une carte à la place, et restez à 7 (le champ est tout de même à vous)."
       },
       {
         q: "7 points, j'occupe mon champ au début de mon tour : victoire ?",
@@ -944,15 +945,15 @@ export const TOPICS = [
     summary: "Le contrôle s'établit à l'issue d'une confrontation ou d'un combat, pas dès qu'on arrive.",
     details: [
       "Arriver sur un champ de bataille qu'on ne contrôle pas ne le vole pas : cela le rend **contesté**. Le contrôle ne change qu'à l'**issue** de la confrontation ou du combat qui suit.",
-      "Vous **gardez** le contrôle tant que vous avez des unités sur le champ. Si votre dernière unité le quitte ou meurt (hors combat en cours), vous perdez le contrôle au **prochain nettoyage** — le champ devient non contrôlé.",
+      "Vous **gardez** le contrôle tant que vous avez des unités sur le champ. Si votre dernière unité le quitte ou meurt (hors combat en cours), vous perdez le contrôle au **prochain nettoyage** et le champ devient non contrôlé.",
       "Un champ contrôlé mais momentanément vide reste à vous jusqu'à ce nettoyage : ses compétences fonctionnent encore, mais l'adversaire peut venir le conquérir sans combat.",
       "Pendant qu'une confrontation ou un combat est en cours sur un champ, son contrôle est **gelé** : il ne change que selon les étapes du combat.",
-      "Le statut « contesté » sert au moteur du jeu (déclencher les confrontations) : aucun effet de carte n'y fait référence directement."
+      "Le statut « contesté » sert surtout au moteur du jeu : c'est lui qui déclenche les confrontations."
     ],
     cases: [
       {
         q: "Ma dernière unité du champ meurt pendant mon tour. Je perds le contrôle tout de suite ?",
-        a: "Au prochain nettoyage (hors combat/confrontation en cours). D'ici là, les compétences du champ répondent encore à vous."
+        a: "Au prochain nettoyage (hors combat/confrontation en cours). D'ici là, vous contrôlez encore les compétences du champ."
       },
       {
         q: "L'adversaire arrive sur mon champ contrôlé : je perds le contrôle ?",
@@ -973,7 +974,7 @@ export const TOPICS = [
     details: [
       "Chaque champ de bataille imprime des compétences (passives, déclenchées ou activées). Le joueur qui **contrôle le champ** contrôle aussi ses compétences : il les met dans la chaîne et prend toutes les décisions associées.",
       "Dans le texte d'un champ, « **vous** » désigne son contrôleur actuel. Champ **non contrôlé** : « vous » ne désigne personne et ces instructions sont ignorées ; les autres compétences sont gérées par le joueur du tour.",
-      "Les compétences « **quand vous conquérez ici** » et « **quand vous occupez ici** » ne se déclenchent qu'au moment où un **point** y est marqué : au plus une fois par tour et par joueur — pas de double déclenchement en reprenant le champ.",
+      "Les compétences « **quand vous conquérez ici** » et « **quand vous occupez ici** » ne se déclenchent qu'au moment où un **point** y est marqué : au plus une fois par tour et par joueur. Reprendre le champ ne les déclenche pas une seconde fois.",
       "Les champs de bataille ne sont ni des permanents ni des cartes du deck : ils ne peuvent être ni éliminés ni déplacés, et restent en place toute la partie."
     ],
     cases: [
@@ -1001,16 +1002,16 @@ export const TOPICS = [
     summary: "40 cartes minimum, 12 runes, 1 légende, 3 champs de bataille ; les domaines de la légende font loi.",
     details: [
       "Un deck complet comprend quatre blocs : le **deck principal**, le **deck de runes**, une **légende de champion** et des **champs de bataille**.",
-      "**Deck principal** : 40 cartes minimum (pas de maximum), dont votre **champion élu** — une unité champion portant le même tag que votre légende. Maximum **3 exemplaires** d'un même nom, champion élu inclus.",
+      "**Deck principal** : 40 cartes minimum (pas de maximum), dont votre **champion élu** (une unité champion portant le même tag que votre légende). Maximum **3 exemplaires** d'un même nom, champion élu inclus.",
       "**Cartes signatures** : maximum 3 dans le deck, toutes du tag de champion de votre légende.",
-      "**Identité de domaine** : votre légende définit les domaines autorisés. Chaque carte du deck principal et chaque rune doit y entrer ; une carte multi-domaines exige que TOUS ses domaines soient couverts.",
+      "**Identité de domaine** : votre légende définit les domaines autorisés. Chaque carte du deck principal et chaque rune doit y entrer ; une carte multi-domaines exige que **tous** ses domaines soient couverts.",
       "**Deck de runes** : exactement **12 runes**. **Champs de bataille** : 3 en construction (1 seul sera présenté en duel), sans doublon de nom, soumis à l'identité de domaine le cas échéant.",
       "Le mot-clé [Unique] réduit la limite d'une carte à 1 exemplaire."
     ],
     cases: [
       {
         q: "Ma légende est Fureur/Chaos. Puis-je jouer une carte Fureur/Calme ?",
-        a: "Non : une carte multi-domaines exige que TOUS ses domaines figurent dans l'identité de votre légende — Calme n'y est pas."
+        a: "Non : une carte multi-domaines exige que tous ses domaines figurent dans l'identité de votre légende, et Calme n'y est pas."
       },
       {
         q: "Puis-je mettre 3 champs de bataille identiques ?",
@@ -1022,7 +1023,7 @@ export const TOPICS = [
       },
       {
         q: "Puis-je jouer plus de 40 cartes ?",
-        a: "Oui, 40 est un minimum — mais plus le deck est gros, moins vous piochez vos meilleures cartes."
+        a: "Oui, 40 est un minimum. Mais plus le deck est gros, moins vous piochez vos meilleures cartes."
       }
     ],
     sections: ["101"]
@@ -1033,9 +1034,9 @@ export const TOPICS = [
     category: "cartes",
     summary: "Épuiser une rune : +1 énergie. La recycler : +1 essence, elle passe sous le deck de runes.",
     details: [
-      "Le coût d'une carte se lit en haut à gauche : un **chiffre** à payer en énergie, et parfois des **symboles de domaine** à payer en essence runique — [R] [G] [B] [O] [P] [Y].",
-      "Une rune de base offre deux compétences, toutes deux [Réaction] : **l'épuiser** ([E]) pour ajouter +[1], ou **la recycler** — la placer sous votre deck de runes (règle 416) — pour ajouter 1 essence de son domaine.",
-      "[Réaction] signifie : utilisables à l'instant précis où un coût doit être payé — pendant votre tour, pendant une confrontation, même pendant le tour adverse.",
+      "Le coût d'une carte se lit en haut à gauche : un **chiffre** à payer en énergie, et parfois des **symboles de domaine** à payer en essence runique : [R] [G] [B] [O] [P] [Y].",
+      "Une rune de base offre deux compétences, toutes deux [Réaction] : **l'épuiser** ([E]) pour ajouter +[1], ou **la recycler** (la placer sous votre deck de runes, règle 416) pour ajouter 1 essence de son domaine.",
+      "[Réaction] signifie que ces compétences sont utilisables à l'instant précis où un coût doit être payé : pendant votre tour, pendant une confrontation, même pendant le tour adverse.",
       "Tout ce que produisent vos runes va dans votre **réserve runique**… qui se **vide** au début de chaque phase principale et à la fin de chaque tour : impossible de stocker, on produit ce qu'on dépense à l'instant.",
       "Les runes canalisées **restent en zone de runes** de tour en tour et se redressent à votre éveil : le moteur grandit de 2 runes par tour. Recycler est donc un vrai coût : la rune quitte la table temporairement.",
       "Certaines essences sont **universelles** ([A]) et paient n'importe quel symbole de domaine."
@@ -1043,7 +1044,7 @@ export const TOPICS = [
     cases: [
       {
         q: "Puis-je recycler une rune épuisée ?",
-        a: "Oui : recycler n'exige pas que la rune soit préparée — le coût est « recyclez ceci », indépendant de l'état épuisé/préparé."
+        a: "Oui : recycler n'exige pas que la rune soit préparée. Le coût est « recyclez ceci », indépendant de l'état épuisé/préparé."
       },
       {
         q: "Il me reste 2 énergies non dépensées en fin de phase. Je les garde ?",
@@ -1055,7 +1056,7 @@ export const TOPICS = [
       },
       {
         q: "L'essence universelle, ça existe ?",
-        a: "Oui : certaines essences sont universelles et paient n'importe quel symbole de domaine (règle 163.2.b) — l'icône [A]."
+        a: "Oui : certaines essences sont universelles et paient n'importe quel symbole de domaine (règle 163.2.b). Leur icône est [A]."
       },
       {
         q: "Une rune recyclée est-elle perdue pour la partie ?",
@@ -1070,10 +1071,10 @@ export const TOPICS = [
     category: "cartes",
     summary: "Une unité entre épuisée dans votre base ; elle meurt si ses dégâts atteignent sa puissance.",
     details: [
-      "Une unité se joue dans votre **base** et arrive **épuisée** — elle ne peut ni se déplacer ni payer de coût d'épuisement avant votre prochain éveil. Deux exceptions imprimées : [Accélération] (payer pour arriver préparée) et [Embuscade] (arriver directement sur un champ de bataille).",
-      "Le **déplacement standard** est la compétence innée de toute unité : **épuisez-la** pour aller de la base vers un champ de bataille, ou en revenir. Jamais de champ à champ — sauf [Gank].",
+      "Une unité se joue dans votre **base** et arrive **épuisée** : elle ne peut ni se déplacer ni payer de coût d'épuisement avant votre prochain éveil. Deux exceptions imprimées : [Accélération] (payer pour arriver préparée) et [Embuscade] (arriver directement sur un champ de bataille).",
+      "Le **déplacement standard** est la compétence innée de toute unité : **épuisez-la** pour aller de la base vers un champ de bataille, ou en revenir. Jamais de champ à champ, sauf avec [Gank].",
       "Plusieurs unités peuvent se déplacer **ensemble** en une seule action, à condition d'avoir la même destination (pas forcément le même point de départ).",
-      "Timing du déplacement : uniquement pendant votre phase principale, dans un état ouvert — jamais pendant une confrontation ou un combat.",
+      "Moment du déplacement : uniquement pendant votre phase principale, dans un état ouvert, jamais pendant une confrontation ou un combat.",
       "Les **dégâts** se marquent sur l'unité et y restent jusqu'au prochain soin (fin de tour ou nettoyage de combat). Dès qu'un nettoyage constate des dégâts marqués ≥ puissance actuelle, l'unité est éliminée et va à la défausse de son propriétaire."
     ],
     cases: [
@@ -1087,7 +1088,7 @@ export const TOPICS = [
       },
       {
         q: "Mon unité a 2 dégâts et une puissance de 3 ; un malus la passe à 2 de puissance. Elle meurt ?",
-        a: "Oui, au prochain nettoyage : ses dégâts marqués (2) atteignent sa puissance actuelle (2) — dégâts mortels."
+        a: "Oui, au prochain nettoyage : ses dégâts marqués (2) atteignent sa puissance actuelle (2), ce sont des dégâts mortels."
       },
       {
         q: "Une unité peut-elle attaquer le tour où elle arrive ?",
@@ -1104,8 +1105,8 @@ export const TOPICS = [
     details: [
       "Un **équipement** se joue dans votre base et, contrairement aux unités, arrive **préparé** : ses compétences activées sont utilisables immédiatement.",
       "Les équipements portant le tag **Objet** s'attachent aux unités : la carte du dessus (l'unité) gagne le texte d'effet et le **bonus de puissance** de l'objet ; la description imprimée de l'objet devient inactive tant qu'il est porté.",
-      "[Équiper] est une compétence activée « [Coût] : équipez à une unité que vous contrôlez » — phase principale, état ouvert. [Dégainer] équipe immédiatement l'objet quand il est joué, avec les permissions d'une [Réaction].",
-      "Équiper un objet déjà porté à une **nouvelle** unité le déséquipe automatiquement de l'ancienne (règle 434.1.f) : re-payer le coût d'Équiper suffit pour le faire circuler.",
+      "[Équiper] est une compétence activée « [Coût] : équipez à une unité que vous contrôlez », en phase principale et en état ouvert. [Dégainer] équipe immédiatement l'objet quand il est joué, avec les permissions d'une [Réaction].",
+      "Équiper un objet déjà porté à une **nouvelle** unité le déséquipe automatiquement de l'ancienne (règle 434.1.f) : repayer le coût d'Équiper suffit pour le faire circuler.",
       "Un équipement non porté ne peut pas rester sur un champ de bataille : au nettoyage, il est rappelé dans la base de son contrôleur. Porté, il suit son unité partout."
     ],
     cases: [
@@ -1115,15 +1116,15 @@ export const TOPICS = [
       },
       {
         q: "Puis-je équiper un objet à une unité adverse ?",
-        a: "Non : [Équiper] cible une unité que VOUS contrôlez."
+        a: "Non : [Équiper] cible une unité que vous contrôlez."
       },
       {
         q: "Le bonus de puissance de l'objet compte-t-il dans les dégâts de combat ?",
-        a: "Oui : la puissance de l'unité équipée est modulée par le bonus — il compte dans le total du camp et dans son seuil de dégâts mortels."
+        a: "Oui : la puissance de l'unité équipée est modulée par le bonus, qui compte dans le total du camp et dans son seuil de dégâts mortels."
       },
       {
         q: "Puis-je équiper en pleine confrontation ?",
-        a: "Pas via [Équiper] (compétence de phase principale) — mais [Dégainer] le permet : jouer l'objet en Réaction l'attache immédiatement."
+        a: "Pas via [Équiper] (compétence de phase principale), mais [Dégainer] le permet : jouer l'objet en Réaction l'attache immédiatement."
       }
     ],
     sections: ["147", "434", "435"],
@@ -1137,11 +1138,11 @@ export const TOPICS = [
     category: "cartes",
     summary: "La légende reste en jeu toute la partie ; le champion élu attend dans sa zone d'être joué.",
     details: [
-      "La **légende de champion** n'est jamais mélangée au deck : posée dans sa zone dès la mise en place, elle y reste toute la partie — impossible de l'éliminer, de la déplacer ou de la cibler hors des cas prévus par les effets.",
+      "La **légende de champion** n'est jamais mélangée au deck : posée dans sa zone dès la mise en place, elle y reste toute la partie. Impossible de l'éliminer, de la déplacer ou de la cibler hors des cas prévus par les effets.",
       "Ses compétences fonctionnent en continu : passives (toujours actives), déclenchées (elles partent seules) ou activées (« [Coût] : effet », à payer comme un sort).",
-      "Le **champion élu** est une carte du deck principal mise à part au début : visible dans sa zone dédiée, il se joue exactement comme s'il était dans votre main — mêmes coûts, mêmes fenêtres de timing.",
+      "Le **champion élu** est une carte du deck principal mise à part au début : visible dans sa zone dédiée, il se joue exactement comme s'il était dans votre main, avec les mêmes coûts et aux mêmes moments.",
       "Une fois qu'il a quitté sa zone (joué, puis éventuellement éliminé ou défaussé), il suit les règles des cartes normales : direction la défausse, pas de retour en zone de champion.",
-      "La légende définit aussi l'**identité de domaine** de tout votre deck — voyez « Construire un deck légal »."
+      "La légende définit aussi l'**identité de domaine** de tout votre deck (voir « Construire un deck légal »)."
     ],
     cases: [
       {
@@ -1150,7 +1151,7 @@ export const TOPICS = [
       },
       {
         q: "La compétence de ma légende coûte « [E] : effet ». Quand puis-je l'activer ?",
-        a: "Comme une compétence activée : pendant votre phase principale, état ouvert, hors confrontation — sauf si elle porte [Action] ou [Réaction]."
+        a: "Comme une compétence activée : pendant votre phase principale, état ouvert, hors confrontation, sauf si elle porte [Action] ou [Réaction]."
       },
       {
         q: "Un sort adverse peut-il éliminer ma légende ?",
@@ -1158,7 +1159,7 @@ export const TOPICS = [
       },
       {
         q: "Si j'ai 3 exemplaires de mon champion en deck plus le champion élu ?",
-        a: "Illégal : la limite de 3 par nom inclut le champion élu — 2 en deck + l'élu au maximum."
+        a: "Illégal : la limite de 3 par nom inclut le champion élu, soit 2 en deck plus l'élu au maximum."
       }
     ],
     sections: ["108", "376"]
@@ -1170,7 +1171,7 @@ export const TOPICS = [
     summary: "La carte bat le livre de règles ; les interdictions battent les autorisations.",
     details: [
       "**Règle d'or** : ce qui est inscrit sur une carte a priorité sur les règles du jeu. Si une carte contredit le livre, la carte gagne.",
-      "**Règle d'argent** : la terminologie des cartes n'est pas celle du livre. Dans un texte de carte, « **carte** » = carte du deck principal — les runes, légendes et champs de bataille n'en sont pas.",
+      "**Règle d'argent** : la terminologie des cartes n'est pas celle du livre. Dans un texte de carte, « **carte** » désigne une carte du deck principal : les runes, légendes et champs de bataille n'en sont pas.",
       "Les cartes parlent d'elles-mêmes à la première personne : les unités disent « je », les sorts et équipements « ceci », les champs de bataille « ici ».",
       "Les **interdictions** l'emportent sur les autorisations : « ne peut pas » bat « peut ». Et « ne … que » exclut toutes les autres circonstances.",
       "Lors de l'exécution d'une carte : faites tout ce qui est possible, ignorez l'impossible. Si rien n'est réalisable, la carte est quand même considérée comme jouée et résolue."
@@ -1186,7 +1187,7 @@ export const TOPICS = [
       },
       {
         q: "Une instruction de ma carte est irréalisable. La carte échoue ?",
-        a: "Non : exécutez le réalisable, ignorez le reste. Même tout irréalisable, la carte est considérée jouée et résolue — les coûts restent payés."
+        a: "Non : exécutez le réalisable, ignorez le reste. Même tout irréalisable, la carte est considérée jouée et résolue, et les coûts restent payés."
       }
     ],
     sections: ["001", "050"]
@@ -1215,7 +1216,7 @@ export const TOPICS = [
       },
       {
         q: "Mon unité Fureur/Chaos : quelle essence pour l'Accélération ?",
-        a: "Fureur OU Chaos (un de ses domaines), ou une essence universelle."
+        a: "Fureur ou Chaos (un de ses domaines), ou une essence universelle."
       },
       {
         q: "L'adversaire peut-il savoir si j'ai payé l'Accélération ?",
@@ -1231,12 +1232,12 @@ export const TOPICS = [
     slug: "action",
     title: "Action",
     category: "mots-cles",
-    summary: "Jouable pendant votre tour ET pendant les états ouverts des confrontations.",
+    summary: "Jouable pendant votre tour et pendant les états ouverts des confrontations.",
     details: [
       "Par défaut, un sort sans mot-clé ne se joue que pendant votre phase principale, hors confrontation, chaîne vide. [Action] élargit cette fenêtre.",
-      "Un sort [Action] se joue aussi dans les **états ouverts des confrontations** — y compris les confrontations qui se déroulent pendant le tour adverse.",
-      "C'est le cœur du jeu de combat : pendant une confrontation, seuls les sorts [Action] et [Réaction] peuvent intervenir.",
-      "[Action] apparaît sur des sorts, mais aussi sur des compétences de runes, de légendes et de permanents — mêmes permissions."
+      "Un sort [Action] se joue aussi dans les **états ouverts des confrontations**, y compris les confrontations qui se déroulent pendant le tour adverse.",
+      "Pendant une confrontation, seuls les sorts [Action] et [Réaction] peuvent être joués.",
+      "[Action] apparaît sur des sorts, mais aussi sur des compétences de runes, de légendes et de permanents, avec les mêmes permissions."
     ],
     cases: [
       {
@@ -1245,7 +1246,7 @@ export const TOPICS = [
       },
       {
         q: "Puis-je jouer une Action en réponse au sort de l'adversaire ?",
-        a: "Non : répondre à un objet dans la chaîne exige [Réaction] — l'état est fermé tant que la chaîne n'est pas vide."
+        a: "Non : répondre à un objet dans la chaîne exige [Réaction], car l'état est fermé tant que la chaîne n'est pas vide."
       },
       {
         q: "Action se joue-t-il pendant le tour adverse hors confrontation ?",
@@ -1293,8 +1294,8 @@ export const TOPICS = [
     details: [
       "Texte complet : « Tant que j'attaque, j'ai +X [M]. »",
       "La désignation **attaquant** s'obtient en combat, quand votre camp a contesté le champ : le bonus s'active à ce moment-là et disparaît à la fin du combat.",
-      "Le bonus compte dans le **total de puissance** du camp à l'étape des dégâts ET dans le seuil de dégâts mortels de l'unité pendant le combat.",
-      "Assaut ne fait rien en défense, ni hors combat — une unité Assaut posée en garnison est une unité ordinaire."
+      "Le bonus compte dans le **total de puissance** du camp à l'étape des dégâts **et** dans le seuil de dégâts mortels de l'unité pendant le combat.",
+      "Assaut ne fait rien en défense ni hors combat : une unité Assaut posée en garnison est une unité ordinaire."
     ],
     cases: [
       {
@@ -1327,8 +1328,8 @@ export const TOPICS = [
     details: [
       "Texte complet : « Tant que je défends, j'ai +X [M]. »",
       "La désignation **défenseur** s'obtient quand votre champ contrôlé est contesté par l'adversaire : vos unités présentes deviennent défenseuses.",
-      "Le bonus augmente le total de puissance du camp ET le **seuil de dégâts mortels** de l'unité — un Bouclier 1 sur une puissance 3 exige 4 dégâts en combat.",
-      "Miroir exact d'[Assaut] : nul en attaque et hors combat, précieux en garnison."
+      "Le bonus augmente le total de puissance du camp **et** le **seuil de dégâts mortels** de l'unité. Exemple : avec Bouclier 1 et une puissance de 3, il faut 4 dégâts pour l'éliminer en combat.",
+      "C'est l'inverse d'[Assaut] : aucun effet en attaque ni hors combat, mais utile pour défendre un champ."
     ],
     cases: [
       {
@@ -1337,11 +1338,11 @@ export const TOPICS = [
       },
       {
         q: "Un sort inflige 3 dégâts à mon unité Bouclier 1 (puissance 3) hors combat. Elle survit ?",
-        a: "Non : hors combat elle n'est pas défenseuse, sa puissance reste 3 — les 3 dégâts sont mortels."
+        a: "Non : hors combat elle n'est pas défenseuse, sa puissance reste 3, donc les 3 dégâts sont mortels."
       },
       {
         q: "Bouclier aide-t-il pendant une confrontation sans combat ?",
-        a: "Non : sans combat, pas de désignation de défenseur — le bonus reste inactif."
+        a: "Non : sans combat, pas de désignation de défenseur, donc le bonus reste inactif."
       }
     ],
     sections: ["814"],
@@ -1359,7 +1360,7 @@ export const TOPICS = [
       "C'est une contrainte imposée à **l'adversaire qui attribue** : il ne peut pas contourner votre Tank pour exécuter vos unités fragiles.",
       "Ne s'applique **qu'aux dégâts de combat** : un sort ou une compétence vise librement n'importe quelle unité.",
       "Plusieurs Tanks dans le même camp : l'ordre entre eux est libre, mais tous doivent recevoir des dégâts mortels avant les non-Tanks.",
-      "Combiné à [Bouclier], le Tank devient un mur : il force les dégâts sur lui ET les encaisse mieux."
+      "Combiné à [Bouclier], le Tank attire les dégâts mortels et il en faut davantage pour l'éliminer en défense."
     ],
     cases: [
       {
@@ -1372,7 +1373,7 @@ export const TOPICS = [
       },
       {
         q: "Tank et Arrière-ligne sur la même unité ?",
-        a: "Exigences exclusives : le joueur qui attribue choisit UNE des deux à appliquer (règle 465.2.c.8)."
+        a: "Exigences exclusives : le joueur qui attribue choisit **une** des deux à appliquer (règle 465.2.c.8)."
       },
       {
         q: "Le Tank est déjà blessé : dois-je quand même l'achever en premier ?",
@@ -1391,22 +1392,22 @@ export const TOPICS = [
     summary: "Les dégâts de combat mortels lui sont attribués en dernier.",
     details: [
       "L'inverse exact de [Tank] : cette unité ne peut recevoir de dégâts de combat mortels qu'après **toutes** les autres unités du même camp sans [Arrière-ligne].",
-      "Parfait pour protéger une unité à effet (déclencheurs, compétences activées) derrière des corps plus sacrifiables.",
+      "Utile pour protéger une unité à effet (déclencheurs, compétences activées) derrière des unités moins précieuses.",
       "À priorité égale (plusieurs Arrière-lignes), l'ordre entre elles est au choix du joueur qui attribue.",
-      "Comme Tank : aucune protection contre les sorts et compétences — seulement contre l'attribution en combat."
+      "Comme Tank : aucune protection contre les sorts et compétences, seulement contre l'attribution en combat."
     ],
     cases: [
       {
         q: "Arrière-ligne + Tank sur la même unité : que se passe-t-il ?",
-        a: "Exigences exclusives : le joueur qui attribue choisit UNE des deux compétences à appliquer (règle 465.2.c.8)."
+        a: "Exigences exclusives : le joueur qui attribue choisit **une** des deux compétences à appliquer (règle 465.2.c.8)."
       },
       {
         q: "L'adversaire a assez de dégâts pour tout tuer. Mon Arrière-ligne survit ?",
-        a: "Non : si son total couvre toutes vos unités, l'Arrière-ligne reçoit ses dégâts mortels en dernier — mais les reçoit."
+        a: "Non : si son total couvre toutes vos unités, l'Arrière-ligne reçoit ses dégâts mortels en dernier, mais elle les reçoit."
       },
       {
         q: "Une seule unité en défense, avec Arrière-ligne. Protégée ?",
-        a: "Non : « en dernier » ne veut rien dire quand elle est seule — elle reçoit les dégâts normalement."
+        a: "Non : « en dernier » ne veut rien dire quand elle est seule : elle reçoit les dégâts normalement."
       }
     ],
     sections: ["826", "465"],
@@ -1424,10 +1425,10 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "Le déplacement standard peut aller d'un champ de bataille à un autre.",
     details: [
-      "Normalement, le déplacement standard relie la base et les champs de bataille — jamais deux champs entre eux. [Gank] lève cette limite.",
+      "Normalement, le déplacement standard relie la base et les champs de bataille, jamais deux champs entre eux. [Gank] lève cette limite.",
       "Une unité [Gank] peut, avec son déplacement standard habituel (s'épuiser), passer **directement d'un champ de bataille à un autre**.",
       "Toutes les autres restrictions demeurent : phase principale seulement, état ouvert, pas pendant une confrontation ou un combat, destination valide (pas de combat de deux autres joueurs en cours).",
-      "Stratégiquement : le Gank menace les deux champs à la fois — l'adversaire doit défendre partout."
+      "Depuis un champ de bataille, une unité Gank peut donc rejoindre n'importe quel autre champ sans repasser par la base."
     ],
     cases: [
       {
@@ -1436,11 +1437,11 @@ export const TOPICS = [
       },
       {
         q: "Gank permet-il de traverser sans s'épuiser ?",
-        a: "Non : c'est toujours le déplacement standard — épuiser l'unité reste le coût."
+        a: "Non : c'est toujours le déplacement standard, dont le coût reste d'épuiser l'unité."
       },
       {
         q: "Puis-je faire base → champ A → champ B le même tour ?",
-        a: "Non : chaque déplacement épuise l'unité. Un seul déplacement standard par éveil, sauf effet qui la re-prépare."
+        a: "Non : chaque déplacement épuise l'unité. Un seul déplacement standard par éveil, sauf effet qui la prépare de nouveau."
       }
     ],
     sections: ["810", "140"],
@@ -1454,9 +1455,9 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "Jouable directement sur un champ de bataille où vous avez des unités, avec Réaction.",
     details: [
-      "Double permission : « Je peux être joué sur un champ de bataille où vous contrôlez des unités » — au lieu de la base — et, jouée ainsi, l'unité bénéficie des permissions d'une [Réaction].",
-      "Concrètement : en pleine confrontation, même pendant le tour adverse, vous pouvez faire surgir l'unité sur le champ pour renforcer votre camp.",
-      "L'unité arrive **épuisée** (sauf [Accélération] payée en plus) — mais l'état épuisé n'empêche pas de compter dans les dégâts de combat.",
+      "Double permission : « Je peux être joué sur un champ de bataille où vous contrôlez des unités » (au lieu de la base) et, jouée ainsi, l'unité bénéficie des permissions d'une [Réaction].",
+      "Vous pouvez donc jouer l'unité en pleine confrontation, même pendant le tour adverse, pour renforcer votre camp.",
+      "L'unité arrive **épuisée** (sauf [Accélération] payée en plus), mais l'état épuisé n'empêche pas de compter dans les dégâts de combat.",
       "Elle reçoit sa désignation (attaquant/défenseur) au nettoyage suivant son arrivée et participera à l'étape des dégâts si elle est présente."
     ],
     cases: [
@@ -1466,7 +1467,7 @@ export const TOPICS = [
       },
       {
         q: "Embuscade sur un champ vide que je contrôle ?",
-        a: "Non : il faut y contrôler des UNITÉS, pas seulement le champ."
+        a: "Non : il faut y contrôler des **unités**, pas seulement le champ."
       },
       {
         q: "Embuscade dans la base ?",
@@ -1484,9 +1485,9 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "Posez la carte face cachée sur un champ que vous contrôlez ; jouable en Réaction dès le tour suivant.",
     details: [
-      "Payez le coût de [Caché] pour placer la carte **face cachée** dans la zone dédiée d'un champ de bataille que vous contrôlez — une seule carte par zone de face cachée.",
-      "À partir de votre **tour suivant**, la carte gagne [Réaction] : jouez-la au meilleur moment en payant son coût normal — l'adversaire sait qu'une carte est là, pas laquelle.",
-      "Si vous **perdez le contrôle** du champ, la carte cachée est retirée au prochain nettoyage — le piège saute.",
+      "Payez le coût de [Caché] pour placer la carte **face cachée** dans la zone dédiée d'un champ de bataille que vous contrôlez, avec une seule carte par zone de face cachée.",
+      "À partir de votre **tour suivant**, la carte gagne [Réaction] : jouez-la quand vous le voulez en payant son coût normal. L'adversaire sait qu'une carte est là, pas laquelle.",
+      "Si vous **perdez le contrôle** du champ, la carte cachée est retirée au prochain nettoyage.",
       "La zone de face cachée est publique (tout le monde voit qu'il y a une carte), le contenu est privé (vous seul le connaissez)."
     ],
     cases: [
@@ -1519,7 +1520,7 @@ export const TOPICS = [
       title: "Caché : poser, attendre, surgir",
       frames: [
         {
-          caption: "Votre tour : vous payez le coût de Caché et posez la carte FACE CACHÉE sur votre champ.",
+          caption: "Votre tour : vous payez le coût de Caché et posez la carte face cachée sur votre champ.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ de bataille" },
             { k: "u", type: "unit", x: 38, y: 40, n: 2 },
@@ -1527,7 +1528,7 @@ export const TOPICS = [
           ]
         },
         {
-          caption: "L'adversaire voit qu'une carte est là — sans savoir laquelle.",
+          caption: "L'adversaire voit qu'une carte est là, sans savoir laquelle.",
           items: [
             { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ de bataille" },
             { k: "u", type: "unit", x: 38, y: 40, n: 2 },
@@ -1538,16 +1539,16 @@ export const TOPICS = [
         {
           caption: "Tour suivant : la carte gagne Réaction. L'adversaire attaque…",
           items: [
-            { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ — contesté", hot: true },
+            { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ (contesté)", hot: true },
             { k: "u", type: "unit", x: 38, y: 40, n: 2 },
             { k: "c", type: "card", x: 62, y: 40, label: "?" },
             { k: "foe", type: "unit", side: "foe", x: 50, y: 32, n: 4 }
           ]
         },
         {
-          caption: "…vous la retournez en pleine confrontation, au moment parfait.",
+          caption: "…vous la jouez en pleine confrontation.",
           items: [
-            { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ — contesté", hot: true },
+            { k: "bf", type: "zone", x: 50, y: 42, label: "Votre champ (contesté)", hot: true },
             { k: "u", type: "unit", x: 38, y: 40, n: 2 },
             { k: "c", type: "card", x: 62, y: 40, label: "Surprise !", glow: true },
             { k: "foe", type: "unit", side: "foe", x: 50, y: 32, n: 4 }
@@ -1563,14 +1564,14 @@ export const TOPICS = [
     summary: "« Lorsque je suis éliminé, [effet]. »",
     details: [
       "Compétence déclenchée à l'**élimination** du permanent, quelle que soit la cause : dégâts de combat, sort, coût payé, effet.",
-      "L'effet s'ajoute à la chaîne après le nettoyage qui a constaté l'élimination, puis se résout normalement — l'adversaire peut y réagir.",
+      "L'effet s'ajoute à la chaîne après le nettoyage qui a constaté l'élimination, puis se résout normalement : l'adversaire peut y réagir.",
       "L'unité est déjà dans la défausse quand l'effet se résout : l'effet fonctionne quand même (il vient de la compétence, pas de l'unité en jeu).",
       "Sacrifier volontairement une unité Agonie (via un coût) déclenche bien l'effet : « éliminé » couvre toutes les éliminations."
     ],
     cases: [
       {
         q: "Mon unité Agonie meurt pendant l'étape des dégâts de combat. L'effet part quand ?",
-        a: "Après le nettoyage de combat qui l'élimine — l'effet entre dans la chaîne et se résout avant la suite de la résolution du combat."
+        a: "Après le nettoyage de combat qui l'élimine : l'effet entre dans la chaîne et se résout avant la suite de la résolution du combat."
       },
       {
         q: "Deux unités Agonie meurent ensemble. Ordre des effets ?",
@@ -1578,7 +1579,7 @@ export const TOPICS = [
       },
       {
         q: "Une unité Agonie bannie déclenche-t-elle son effet ?",
-        a: "Non : bannir n'est pas éliminer — ce sont deux actions différentes."
+        a: "Non : bannir n'est pas éliminer, ce sont deux actions différentes."
       }
     ],
     sections: ["808"],
@@ -1593,18 +1594,18 @@ export const TOPICS = [
     summary: "Éliminé au début de la phase de départ de son contrôleur, avant les points.",
     details: [
       "Texte : « Au début de la phase de départ du joueur qui contrôle ce permanent, avant d'octroyer les points, éliminez cet élément. »",
-      "Le timing est chirurgical : l'élimination arrive **avant l'étape des scores** — une unité Temporaire seule sur un champ ne vous fera PAS marquer l'occupation.",
-      "Le permanent vit donc au mieux un tour complet : le vôtre (où il apparaît) plus le tour adverse.",
+      "L'élimination a lieu **avant l'étape des scores** : une unité Temporaire seule sur un champ ne vous fera **pas** marquer l'occupation.",
+      "Le permanent reste donc en jeu au plus jusqu'au début de votre prochaine phase de départ : le reste de votre tour, puis les tours de vos adversaires.",
       "C'est une élimination : elle déclenche [Agonie] et les effets « quand une unité est éliminée »."
     ],
     cases: [
       {
         q: "Ma création Temporaire tient un champ de bataille. Vais-je marquer l'occupation ?",
-        a: "Non : elle est éliminée avant l'octroi des points. Le champ reste peut-être à vous, mais vide — et prenable."
+        a: "Non : elle est éliminée avant l'octroi des points. Le champ peut rester à vous, mais il est vide et l'adversaire peut le prendre sans combat."
       },
       {
         q: "Une unité Temporaire volée à l'adversaire disparaît quand ?",
-        a: "Au début de la phase de départ de son CONTRÔLEUR actuel — le timing suit le contrôle."
+        a: "Au début de la phase de départ de son contrôleur actuel : le moment suit le contrôle."
       },
       {
         q: "Temporaire + Agonie : l'effet d'Agonie se déclenche ?",
@@ -1623,14 +1624,14 @@ export const TOPICS = [
     summary: "« Lorsque ceci est joué, prédisez. »",
     details: [
       "**Prédire** : regardez la carte du dessus de votre deck principal ; laissez-la en place, ou recyclez-la (placée sous le deck).",
-      "La condition de déclenchement est **l'entrée du permanent sur le plateau** (règle 817.1.c) — pas le simple fait d'être mis dans la chaîne.",
-      "Plusieurs instances de Vision se déclenchent **séparément** : vous choisissez pour chacune de recycler ou non — sans recyclage entre-temps, elles verront la même carte.",
+      "La condition de déclenchement est **l'entrée du permanent sur le plateau** (règle 817.1.c), pas le simple fait d'être mis dans la chaîne.",
+      "Plusieurs instances de Vision se déclenchent **séparément** : vous choisissez pour chacune de recycler ou non. Sans recyclage entre-temps, elles verront la même carte.",
       "Vision lisse votre pioche : gardez la bonne carte pour la phase de pioche, envoyez la mauvaise au fond."
     ],
     cases: [
       {
         q: "Vision se déclenche-t-il si la carte est contrée ?",
-        a: "Non : une carte contrée ne fait rien et n'entre pas sur le plateau (règle 425.1) — pas d'entrée, pas de prédiction."
+        a: "Non : une carte contrée ne fait rien et n'entre pas sur le plateau (règle 425.1), donc pas de prédiction."
       },
       {
         q: "Deux unités Vision jouées coup sur coup : je vois deux cartes ?",
@@ -1638,7 +1639,7 @@ export const TOPICS = [
       },
       {
         q: "Dois-je montrer la carte regardée à l'adversaire ?",
-        a: "Non : prédire est privé — l'adversaire sait seulement que vous avez regardé."
+        a: "Non : prédire est privé : l'adversaire sait seulement que vous avez regardé."
       }
     ],
     sections: ["817", "436"],
@@ -1655,7 +1656,7 @@ export const TOPICS = [
       "Formulation : « [Légion] — [Texte] » : la carte gagne le texte si vous avez joué une **autre carte** pendant ce tour.",
       "« Jouer » au sens strict : cartes du deck principal (et champion élu). **Canaliser** des runes, activer des compétences ou déplacer des unités ne compte pas.",
       "La condition s'évalue au moment où la carte Légion se joue/résout : jouez d'abord la petite carte, puis la carte Légion.",
-      "Le compte est remis à zéro à chaque tour — y compris pendant le tour adverse (une carte jouée en Réaction pendant son tour peut activer une Légion jouée dans la même fenêtre)."
+      "La condition porte sur le tour en cours, quel que soit le joueur du tour : pendant le tour adverse, une carte que vous jouez en Réaction peut activer une carte Légion jouée ensuite dans la même fenêtre."
     ],
     cases: [
       {
@@ -1664,7 +1665,7 @@ export const TOPICS = [
       },
       {
         q: "L'ordre compte-t-il ? Légion d'abord, autre carte ensuite ?",
-        a: "Oui, l'ordre compte : la condition se vérifie quand la carte Légion est jouée. Jouez l'autre carte AVANT."
+        a: "Oui, l'ordre compte : la condition se vérifie quand la carte Légion est jouée. Jouez l'autre carte **avant**."
       },
       {
         q: "Une carte contrée compte-t-elle pour Légion ?",
@@ -1684,9 +1685,9 @@ export const TOPICS = [
     summary: "« Tant que vous avez N XP ou plus, cette carte a [Texte]. »",
     details: [
       "L'**XP** est un compteur propre à chaque joueur : il se gagne via des effets (dont [Chasse]) et ne se dépense que si un coût le demande.",
-      "**Niveau N** : tant que votre total d'XP atteint N, la carte gagne le texte associé — c'est une compétence continue, elle s'allume et s'éteint avec votre total.",
-      "Les effets Niveau s'appliquent partout où la carte se trouve si le texte le permet — la plupart concernent la carte en jeu.",
-      "Construire autour : quelques sources d'XP fiables transforment toutes vos cartes à Niveau en versions améliorées."
+      "**Niveau N** : tant que votre total d'XP atteint N, la carte gagne le texte associé. C'est une compétence continue, elle s'allume et s'éteint avec votre total.",
+      "Les effets Niveau s'appliquent partout où la carte se trouve si le texte le permet ; la plupart concernent la carte en jeu.",
+      "Quelques sources d'XP fiables suffisent à activer les compétences Niveau de tout votre deck."
     ],
     cases: [
       {
@@ -1699,7 +1700,7 @@ export const TOPICS = [
       },
       {
         q: "L'XP disparaît-elle en fin de tour ?",
-        a: "Non : l'XP est un compteur durable — il ne se vide pas comme la réserve runique."
+        a: "Non : l'XP est un compteur durable, qui ne se vide pas comme la réserve runique."
       }
     ],
     sections: ["824", "728"],
@@ -1716,7 +1717,7 @@ export const TOPICS = [
       "Texte : « Lorsque je conquiers ou que j'occupe, le joueur qui me contrôle gagne X XP. »",
       "« Je conquiers / j'occupe » : l'unité doit être sur le champ de bataille au moment où le point de conquête ou d'occupation y est marqué.",
       "Chaque unité Chasse présente déclenche sa propre instance : deux Chasse sur le champ = deux gains d'XP.",
-      "Moteur naturel des decks à [Niveau] : tenir les champs nourrit l'XP, l'XP améliore les cartes."
+      "Chasse alimente les decks à [Niveau] : tenir les champs rapporte de l'XP, qui active les compétences Niveau."
     ],
     cases: [
       {
@@ -1725,7 +1726,7 @@ export const TOPICS = [
       },
       {
         q: "Mon unité Chasse est en base quand j'occupe le champ. XP ?",
-        a: "Non : c'est l'unité qui doit conquérir/occuper — elle doit être sur le champ concerné."
+        a: "Non : c'est l'unité qui doit conquérir ou occuper, elle doit donc être sur le champ concerné."
       },
       {
         q: "Le point de conquête est remplacé par une pioche (dernier point). Chasse se déclenche ?",
@@ -1744,8 +1745,8 @@ export const TOPICS = [
     chips: ["Amplification", "Amplifié"],
     summary: "Payez une fois pour amplifier le permanent ; tant qu'il l'est, il gagne le texte Amplifié.",
     details: [
-      "[Amplification] est une compétence activée : « [Coût] : amplifiez ceci » — utilisable seulement si le permanent n'est **pas déjà amplifié**.",
-      "[Amplifié] est l'état résultant : « tant que je suis amplifié, cette carte gagne [Texte] » — un état **durable**, pas un effet de tour.",
+      "[Amplification] est une compétence activée : « [Coût] : amplifiez ceci », utilisable seulement si le permanent n'est **pas déjà amplifié**.",
+      "[Amplifié] est l'état résultant : « tant que je suis amplifié, cette carte gagne [Texte] ». C'est un état **durable**, pas un effet de tour.",
       "L'amplification survit à la fin du tour et aux combats : elle ne disparaît que si le permanent quitte le plateau (ou qu'un effet la retire).",
       "Un seul passage : impossible d'amplifier deux fois le même permanent pour cumuler."
     ],
@@ -1756,11 +1757,11 @@ export const TOPICS = [
       },
       {
         q: "Mon unité amplifiée meurt et revient en jeu. Encore amplifiée ?",
-        a: "Non : revenir en jeu est un nouvel objet — l'état amplifié est perdu, il faudra re-payer."
+        a: "Non : une unité qui revient en jeu est un nouvel objet. Elle perd l'état amplifié et il faut payer de nouveau."
       },
       {
         q: "Quand puis-je activer l'Amplification ?",
-        a: "Comme toute compétence activée : votre phase principale, état ouvert, hors confrontation — sauf mention Action/Réaction."
+        a: "Comme toute compétence activée : votre phase principale, état ouvert, hors confrontation, sauf mention Action ou Réaction."
       }
     ],
     sections: ["827", "828", "441"],
@@ -1779,7 +1780,7 @@ export const TOPICS = [
     summary: "Les sorts et compétences adverses qui ciblent cette carte coûtent X essence de plus.",
     details: [
       "Texte : chaque fois qu'un sort ou une compétence contrôlé par un **adversaire** choisit cette carte, son coût augmente de X **essence runique**.",
-      "La taxe se paie en essence — la ressource chère : l'adversaire devra recycler des runes ou mobiliser ses producteurs d'essence.",
+      "La taxe se paie en essence, la ressource la plus coûteuse : l'adversaire devra recycler des runes ou mobiliser ses producteurs d'essence.",
       "Vos propres sorts ne sont pas taxés : Protection ne gêne jamais son propriétaire.",
       "Les effets **sans ciblage** (« toutes les unités », dégâts de combat, auras globales) ignorent complètement la Protection."
     ],
@@ -1793,7 +1794,7 @@ export const TOPICS = [
         a: "1 + 2 = 3 essences (plus le coût en énergie du sort) : les surcoûts s'additionnent au coût imprimé."
       },
       {
-        q: "Un sort qui cible DEUX de mes cartes Protection 1 chacune ?",
+        q: "Un sort qui cible deux de mes cartes Protection 1 chacune ?",
         a: "Chaque choix taxe : +1 par carte Protection choisie, soit +2 essences au total."
       }
     ],
@@ -1809,9 +1810,9 @@ export const TOPICS = [
     summary: "Payez le coût supplémentaire : les instructions s'exécutent une seconde fois.",
     details: [
       "Texte : « Quand vous jouez ceci, vous pouvez payer un coût supplémentaire de [Coût]. Si vous le faites, exécutez les instructions de cet objet une fois de plus lors de la résolution. »",
-      "Le choix et le paiement se font **au moment de jouer** la carte — comme l'Accélération, jamais après coup.",
+      "Le choix et le paiement se font **au moment de jouer** la carte, comme pour l'Accélération, jamais après coup.",
       "À la résolution, les instructions s'exécutent deux fois de suite, intégralement : première passe complète, puis seconde passe.",
-      "Les nouveaux choix ouverts par la seconde exécution sont refaits (cibles comprises, si la formulation de la carte le permet — voir règle 750 sur les nouveaux choix)."
+      "Les nouveaux choix ouverts par la seconde exécution sont refaits (cibles comprises, si la formulation de la carte le permet ; voir la règle 750 sur les nouveaux choix)."
     ],
     cases: [
       {
@@ -1824,7 +1825,7 @@ export const TOPICS = [
       },
       {
         q: "Répétition double-t-elle aussi les mots-clés du sort ?",
-        a: "Non : seules les INSTRUCTIONS sont ré-exécutées — les propriétés du sort ne changent pas."
+        a: "Non : seules les **instructions** sont réexécutées, les propriétés du sort ne changent pas."
       }
     ],
     sections: ["820", "750"],
@@ -1839,22 +1840,22 @@ export const TOPICS = [
     summary: "Jouable depuis votre défausse pour son coût de flux, puis banni.",
     details: [
       "Texte : « Vous pouvez jouer ceci de votre défausse pour son coût de flux. Puis bannissez-le. »",
-      "Le **coût de flux** est un coût alternatif imprimé, souvent différent du coût normal — il ne s'applique que depuis la défausse.",
-      "Après la résolution depuis la défausse, la carte est **bannie** : direction la zone de bannissement, pas de boucle infinie.",
-      "Défausser une carte Flux n'est donc pas la perdre : votre défausse devient une seconde main."
+      "Le **coût de flux** est un coût alternatif imprimé, souvent différent du coût normal. Il ne s'applique que depuis la défausse.",
+      "Après la résolution depuis la défausse, la carte est **bannie** : direction la zone de bannissement. Elle ne peut donc pas être rejouée en boucle.",
+      "Une carte Flux défaussée reste donc jouable une fois, depuis la défausse."
     ],
     cases: [
       {
-        q: "Puis-je jouer la carte depuis la main ET depuis la défausse ?",
+        q: "Puis-je jouer la carte depuis la main et depuis la défausse ?",
         a: "Oui : depuis la main au coût normal (elle va en défausse après), puis depuis la défausse au coût de flux (elle est bannie après)."
       },
       {
-        q: "Le timing change-t-il depuis la défausse ?",
-        a: "Non : mêmes fenêtres que d'habitude — et les mots-clés Action/Réaction de la carte s'appliquent aussi depuis la défausse."
+        q: "Les fenêtres de jeu changent-elles depuis la défausse ?",
+        a: "Non : mêmes fenêtres que d'habitude, et les mots-clés Action/Réaction de la carte s'appliquent aussi depuis la défausse."
       },
       {
         q: "Une carte Flux contrée depuis la défausse est-elle bannie ?",
-        a: "Elle est retirée de la chaîne vers la défausse (règle 425.1.a.1) — le bannissement de Flux suit la résolution, qui n'a pas eu lieu."
+        a: "Elle est retirée de la chaîne vers la défausse (règle 425.1.a.1) : le bannissement de Flux suit la résolution, qui n'a pas eu lieu."
       }
     ],
     sections: ["829"],
@@ -1869,14 +1870,14 @@ export const TOPICS = [
     chips: ["Équiper", "Dégainer"],
     summary: "Équiper : compétence activée d'attache. Dégainer : équipe immédiatement, en Réaction.",
     details: [
-      "[Équiper] est une compétence activée des Objets : « [Coût] : équipez cet équipement à une unité que vous contrôlez » — phase principale, état ouvert.",
-      "[Dégainer] combine deux choses : la carte se joue avec les permissions d'une [Réaction], ET s'équipe immédiatement à une unité que vous contrôlez en entrant en jeu.",
+      "[Équiper] est une compétence activée des Objets : « [Coût] : équipez cet équipement à une unité que vous contrôlez », en phase principale et en état ouvert.",
+      "[Dégainer] combine deux choses : la carte se joue avec les permissions d'une [Réaction], et elle s'équipe immédiatement à une unité que vous contrôlez en entrant en jeu.",
       "L'unité équipée (carte du dessus) gagne le texte d'effet et le bonus de puissance de l'objet ; la description imprimée de l'objet est inactive tant qu'il est porté.",
-      "Ré-équiper : payer à nouveau le coût d'Équiper vers une autre unité déséquipe automatiquement l'objet de l'ancienne (règle 434.1.f)."
+      "Rééquiper : payer à nouveau le coût d'Équiper vers une autre unité déséquipe automatiquement l'objet de l'ancienne (règle 434.1.f)."
     ],
     cases: [
       {
-        q: "Puis-je ré-équiper un objet d'une unité à une autre ?",
+        q: "Puis-je rééquiper un objet d'une unité à une autre ?",
         a: "Oui, en payant à nouveau son coût d'Équiper : l'objet se détache et s'attache à la nouvelle unité."
       },
       {
@@ -1907,15 +1908,15 @@ export const TOPICS = [
     cases: [
       {
         q: "L'Objet est déjà porté par une autre unité : Expert en armes peut-il le récupérer ?",
-        a: "Oui : il choisit une carte Objet que vous contrôlez — la ré-équiper sur la nouvelle unité la déséquipe de l'ancienne."
+        a: "Oui : il choisit une carte Objet que vous contrôlez ; la rééquiper sur la nouvelle unité la déséquipe de l'ancienne."
       },
       {
         q: "La réduction peut-elle rendre l'équipement gratuit ?",
-        a: "Oui, si la réduction couvre tout le coût — un coût ne descend jamais sous zéro."
+        a: "Oui, si la réduction couvre tout le coût. Un coût ne descend jamais sous zéro."
       },
       {
         q: "Puis-je refuser ?",
-        a: "Oui : « vous pouvez » — la compétence est optionnelle."
+        a: "Oui : « vous pouvez » indique que la compétence est optionnelle."
       }
     ],
     sections: ["821"],
@@ -1929,7 +1930,7 @@ export const TOPICS = [
     category: "mots-cles",
     summary: "Contrainte de construction : un seul exemplaire dans le deck.",
     details: [
-      "[Unique] n'est pas un effet en jeu : c'est une **restriction de construction de deck** — un seul exemplaire de cette carte au lieu des 3 habituels.",
+      "[Unique] n'est pas un effet en jeu : c'est une **restriction de construction de deck** : un seul exemplaire de cette carte au lieu des 3 habituels.",
       "En partie, la carte se comporte normalement : aucun effet spécial lié au mot-clé.",
       "La limite s'applique par **nom de carte** : plusieurs cartes Uniques différentes cohabitent sans problème."
     ],

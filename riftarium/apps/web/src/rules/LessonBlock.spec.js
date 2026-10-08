@@ -38,6 +38,14 @@ describe("LessonBlock", () => {
     expect(types.findAll(".lecon-type")).toHaveLength(2)
   })
 
+  it("abcd : le sigle anglais est expliqué avant les phases", () => {
+    const abcd = mountBlock({ type: "abcd" })
+    const note = abcd.get(".lecon-abcd-note").text()
+    expect(note).toContain("Awaken, Beginning, Channel, Draw")
+    expect(note).toContain("Éveil, Départ, Canalisation, Pioche")
+    expect(abcd.findAll(".lecon-abcd-letter").map((b) => b.text())).toEqual(["A", "B", "C", "D", "→"])
+  })
+
   it("types : la sélection est interne, le bouton Agrandir émet zoom", async () => {
     const card = { name: "B", img: "https://cdn.example/b.png" }
     const wrapper = mountBlock({

@@ -144,7 +144,9 @@ describe("RulesView : hors ligne", () => {
   it("hors ligne : statut affiché, retiré au retour du réseau", async () => {
     setOnLine(false)
     const { wrapper } = await mountView()
-    expect(wrapper.get(".officiel-offline").text()).toBe("Hors ligne — règles servies depuis le cache")
+    expect(wrapper.get(".officiel-offline").text()).toBe(
+      "Hors ligne : vous lisez les règles enregistrées sur cet appareil."
+    )
 
     setOnLine(true)
     window.dispatchEvent(new Event("online"))

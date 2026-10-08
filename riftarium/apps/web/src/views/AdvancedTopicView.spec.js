@@ -82,11 +82,11 @@ describe("AdvancedTopicView", () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
-  it("règles indisponibles : le sujet s'affiche avec un renvoi vers le lecteur", async () => {
+  it("règles indisponibles : le sujet s'affiche avec un message d'échec de chargement", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({}) }))
     const { wrapper } = await mountTopic("tank")
     expect(wrapper.text()).toContain("L'essentiel")
-    expect(wrapper.text()).toContain("Texte officiel indisponible")
+    expect(wrapper.text()).toContain("Impossible de charger le texte officiel")
     expect(wrapper.text()).not.toContain("Le texte officiel, en intégralité")
   })
 
