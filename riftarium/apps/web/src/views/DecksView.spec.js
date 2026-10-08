@@ -161,7 +161,7 @@ describe("DecksView", () => {
     const { wrapper } = await mountView()
     const badge = wrapper.get(".deck-card-record")
     expect(badge.text()).toBe("3 V · 1 D")
-    expect(badge.attributes("title")).toContain("3 victoire(s), 1 défaite(s)")
+    expect(badge.attributes("title")).toContain("3 victoires, 1 défaite")
     wrapper.unmount()
   })
 
@@ -375,7 +375,7 @@ describe("DecksView", () => {
     const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
     expect(modal.textContent).toContain("Jinx — prêt à jouer")
-    expect(modal.textContent).toContain("impossible de le récupérer")
+    expect(modal.textContent).toContain("sera supprimé définitivement")
 
     const confirmButton = [...modal.querySelectorAll("button")].find(
       (button) => button.textContent.trim() === "Supprimer"

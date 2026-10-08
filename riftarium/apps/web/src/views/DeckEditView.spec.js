@@ -243,7 +243,7 @@ describe("DeckEditView", () => {
     await vi.waitFor(() => {
       expect(api.mock.calls.some(([path]) => path.startsWith("/api/cards") && path.includes("type=Legend"))).toBe(true)
     })
-    expect(wrapper.find(".decklist-hero--empty").text()).toContain("Choisissez votre légende")
+    expect(wrapper.find(".decklist-hero--empty").text()).toContain("Choisissez d'abord votre légende")
 
     await tile(wrapper, "Phénix").trigger("click")
     expect(wrapper.find(".decklist-message").text()).toContain("Choisissez d'abord votre légende")
@@ -288,7 +288,7 @@ describe("DeckEditView", () => {
     expect(wrapper.findAll(".decklist-meter")[1].text()).toContain("3")
 
     await unitTile.trigger("click")
-    expect(wrapper.find(".decklist-message").text()).toContain("Maximum 3 exemplaires")
+    expect(wrapper.find(".decklist-message").text()).toContain("3 exemplaires maximum")
     expect(wrapper.find(".decklist-row .decklist-qty").text()).toBe("×3")
     wrapper.unmount()
   })
@@ -303,7 +303,7 @@ describe("DeckEditView", () => {
 
     const reprint = tile(wrapper, "Overnumbered")
     await reprint.trigger("click")
-    expect(wrapper.find(".decklist-message").text()).toContain("Maximum 3 exemplaires")
+    expect(wrapper.find(".decklist-message").text()).toContain("3 exemplaires maximum")
     expect(wrapper.findAll(".decklist-row")).toHaveLength(1)
     wrapper.unmount()
   })

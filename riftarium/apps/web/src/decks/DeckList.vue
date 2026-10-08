@@ -2,6 +2,7 @@
 import { computed, ref } from "vue"
 import { cardThumb } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
+import { de, pluralWord } from "../ui/french.js"
 
 /* Liste du deck de l'éditeur : vitrine de la légende, compteurs par zone et lignes
    compactes. Sa racine sert de zone de dépôt au glisser-déposer (useDeckDrag). Composant
@@ -29,7 +30,11 @@ const panel = ref(null)
 const messageText = computed(
   () =>
     props.limitMessage ||
-    (props.missingInDeck ? `${props.missingInDeck} carte(s) du deck manquent à votre collection.` : "")
+    (props.missingInDeck
+      ? props.missingInDeck > 1
+        ? `${props.missingInDeck} cartes du deck manquent à votre collection.`
+        : "1 carte du deck manque à votre collection."
+      : "")
 )
 defineExpose({ panel })
 
@@ -85,7 +90,7 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
       </button>
     </div>
     <div v-else class="decklist-hero decklist-hero--empty">
-      <p v-if="canEdit"><b>1.</b> Choisissez votre légende : elle fixe les deux domaines du deck.</p>
+      <p v-if="canEdit">Choisissez d'abord votre légende : elle fixe les deux domaines du deck.</p>
       <p v-else>Ce deck n'a pas encore de légende.</p>
       <RiftButton v-if="canEdit" variant="ghost" size="sm" @click="emit('show-legends')">Voir les légendes</RiftButton>
     </div>
@@ -142,21 +147,21 @@ const lackCount = (entry) => entry.qty - (entry.card.owned_qty ?? 0)
             <span
               v-if="isLacking(entry, signedIn)"
               class="decklist-lack"
-              :title="`${lackCount(entry)} exemplaire(s) manquant(s) dans votre collection`"
+              :title="`${lackCount(entry)} ${pluralWord(lackCount(entry), 'exemplaire manquant', 'exemplaires manquants')} dans votre collection`"
               >manque {{ lackCount(entry) }}</span
             >
             <span class="decklist-qty">×{{ entry.qty }}</span>
             <span v-if="canEdit" class="decklist-actions">
               <button
                 type="button"
-                :aria-label="`Retirer un exemplaire de ${entry.card.name}`"
+                :aria-label="`Retirer un exemplaire ${de(entry.card.name)}`"
                 @click.stop="emit('set-qty', entry, -1)"
               >
                 −
               </button>
               <button
                 type="button"
-                :aria-label="`Ajouter un exemplaire de ${entry.card.name}`"
+                :aria-label="`Ajouter un exemplaire ${de(entry.card.name)}`"
                 @click.stop="emit('set-qty', entry, 1)"
               >
                 +

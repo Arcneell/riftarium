@@ -46,12 +46,12 @@ describe("CommunityFilters", () => {
   it("tri au radiogroup émet update('sort', …)", async () => {
     const wrapper = mountFilters()
     const radios = wrapper.get('[role="radiogroup"]').findAll('[role="radio"]')
-    expect(radios.map((r) => r.text())).toEqual(["Tendance", "Plus vus", "Récents"])
+    expect(radios.map((r) => r.text())).toEqual(["Plus aimés", "Plus vus", "Récents"])
     await radios[1].trigger("click")
     expect(wrapper.emitted("update").at(-1)).toEqual(["sort", "views"])
   })
 
-  it("bascule d'une légende et du format, puce Aimés émet liked", async () => {
+  it("bascule d'une légende et du format, puce Decks aimés émet liked", async () => {
     const wrapper = mountFilters({ state: baseState({ legend: ["ogn-1"] }) })
     await facet(wrapper, "Légendes").get("input").trigger("focus")
     const legends = facet(wrapper, "Légendes").findAll('[role="option"]')
@@ -62,7 +62,7 @@ describe("CommunityFilters", () => {
     expect(wrapper.emitted("update").at(-1)).toEqual(["legend", ["ogn-1", "ogn-2"]])
     await facet(wrapper, "Format").findAll("button.rift-chip")[1].trigger("click")
     expect(wrapper.emitted("update").at(-1)).toEqual(["format", ["free"]])
-    await facet(wrapper, "Mes decks aimés").get("button.rift-chip").trigger("click")
+    await facet(wrapper, "Mes favoris").get("button.rift-chip").trigger("click")
     expect(wrapper.emitted("liked")).toHaveLength(1)
   })
 })

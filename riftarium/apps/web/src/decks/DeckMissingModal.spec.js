@@ -61,7 +61,7 @@ describe("DeckMissingModal", () => {
     expect(items).toHaveLength(2)
     expect(items[0].querySelector(".atelier-missing-thumb")).not.toBeNull()
     expect(items[0].querySelector(".atelier-missing-name").textContent).toBe("Carte 1")
-    expect(items[0].querySelector(".atelier-missing-qty").textContent).toBe("×2 manquante(s)")
+    expect(items[0].querySelector(".atelier-missing-qty").textContent).toBe("×2 manquantes")
 
     const cells = [...modal().querySelectorAll(".atelier-missing-price")]
     expect(cells).toHaveLength(2)
@@ -92,7 +92,7 @@ describe("DeckMissingModal", () => {
     wish.click()
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/wishlist/from-deck/7", { method: "POST" })
-    expect(wishButton().textContent).toContain("2 ajoutée(s)")
+    expect(wishButton().textContent).toContain("2 ajoutées")
     wrapper.unmount()
   })
 

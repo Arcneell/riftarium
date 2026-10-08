@@ -9,6 +9,7 @@ import RiftChoice from "../ui/RiftChoice.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftField from "../ui/RiftField.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
+import { pluralWord } from "../ui/french.js"
 
 /* Galerie de l'éditeur de deck : toutes les cartes du jeu, possédées en couleur,
    manquantes grisées mais ajoutables. Composant de présentation : l'état des filtres
@@ -105,7 +106,8 @@ defineExpose({ grid })
     </div>
 
     <p class="galerie-count" aria-live="polite">
-      {{ result.total }} carte(s)<template v-if="loading"> — chargement…</template>
+      {{ result.total }} {{ pluralWord(result.total, "carte", "cartes")
+      }}<template v-if="loading"> · chargement…</template>
     </p>
 
     <div ref="grid" class="galerie-grid">

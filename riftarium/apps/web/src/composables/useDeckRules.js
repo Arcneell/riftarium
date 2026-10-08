@@ -96,13 +96,13 @@ export function useDeckRules(
       }
       if (zone !== "Legend" && inDeckQty(card) >= cap) {
         onLimit(
-          zone === "main" ? `Maximum 3 exemplaires de ${card.name}.` : `Maximum ${cap} exemplaire(s) de ${card.name}.`,
+          cap === 1 ? `Un seul exemplaire de ${card.name} par deck.` : `${cap} exemplaires maximum de ${card.name}.`,
           card.id
         )
         return false
       }
     } else if (inDeckQty(card) >= FREE_CAP) {
-      onLimit(`${FREE_CAP} exemplaires maximum.`, card.id)
+      onLimit(`${FREE_CAP} exemplaires maximum de ${card.name}.`, card.id)
       return false
     }
     const existing = deck.value.cards.find((entry) => entry.card.id === card.id)

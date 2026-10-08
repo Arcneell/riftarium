@@ -173,7 +173,7 @@ describe("DeckGallery", () => {
       loading: true,
       activeCount: 1
     })
-    expect(wrapper.get(".galerie-count").text()).toBe("0 carte(s) — chargement…")
+    expect(wrapper.get(".galerie-count").text()).toBe("0 carte · chargement…")
     expect(wrapper.text()).not.toContain("Aucune carte ne correspond")
     await wrapper.setProps({ loading: false })
     expect(wrapper.text()).toContain("Aucune carte ne correspond aux filtres")

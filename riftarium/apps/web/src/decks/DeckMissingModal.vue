@@ -6,6 +6,7 @@ import { PRICE_NOTE, formatEur } from "../prices.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftModal from "../ui/RiftModal.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
+import { pluralWord } from "../ui/french.js"
 
 /* Modale « cartes manquantes » : la comparaison deck/collection calculée par l'API.
    L'aperçu au survol reste géré par l'éditeur (événements preview / hide-preview). */
@@ -56,7 +57,7 @@ async function addMissingToWishlist() {
   wishBusy.value = true
   try {
     const payload = await api(`/api/wishlist/from-deck/${props.deckId}`, { method: "POST" })
-    flashWish(`${payload.added} ajoutée(s)`)
+    flashWish(`${payload.added} ${pluralWord(payload.added, "ajoutée", "ajoutées")}`)
   } catch (e) {
     flashWish(e.message)
   } finally {
@@ -88,8 +89,8 @@ async function copyMissing() {
     </template>
     <template v-else-if="missing.items.length">
       <p class="atelier-missing-intro">
-        Il vous manque <b>{{ missing.missing_total }}</b> carte(s) sur les {{ missing.deck_total }} du deck. Les
-        variantes (art alternatif, signature) comptent comme la carte de base.
+        Il vous manque <b>{{ missing.missing_total }}</b> {{ pluralWord(missing.missing_total, "carte", "cartes") }} sur
+        les {{ missing.deck_total }} du deck. Les variantes (art alternatif, signature) comptent comme la carte de base.
       </p>
       <ul class="atelier-missing-list">
         <!-- focusin/focusout : sans eux, l'aperçu de la carte n'existait qu'au survol
@@ -117,7 +118,9 @@ async function copyMissing() {
             <RouterLink class="atelier-missing-name" :to="`/cartes/${item.card.id}`">{{ item.card.name }}</RouterLink>
             <span class="atelier-missing-id">{{ (item.card.riftbound_id || "").toUpperCase() }}</span>
           </div>
-          <span class="atelier-missing-qty">×{{ item.missing }} manquante(s)</span>
+          <span class="atelier-missing-qty"
+            >×{{ item.missing }} {{ pluralWord(item.missing, "manquante", "manquantes") }}</span
+          >
           <span class="atelier-missing-price" :title="PRICE_NOTE">{{ formatEur(item.card.price_eur) || "—" }}</span>
         </li>
       </ul>

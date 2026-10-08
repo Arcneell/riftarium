@@ -11,6 +11,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
+import { pluralWord } from "../ui/french.js"
 
 const SORT_VALUES = ["likes", "views", "recent"]
 
@@ -132,7 +133,9 @@ onMounted(async () => {
     <div class="communaute-main">
       <div class="communaute-bar">
         <p class="communaute-count" aria-live="polite">
-          <template v-if="!(loading && !result.items.length)">{{ result.total }} deck(s)</template>
+          <template v-if="!(loading && !result.items.length)"
+            >{{ result.total }} {{ pluralWord(result.total, "deck", "decks") }}</template
+          >
         </p>
         <div class="communaute-bar-actions">
           <RiftButton v-if="activeCount" variant="ghost" size="sm" @click="reset">Réinitialiser</RiftButton>
