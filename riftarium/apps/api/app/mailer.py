@@ -8,8 +8,8 @@ tâche de fond (BackgroundTasks, ou thread dédié hors contexte requête) : un
 échec SMTP est loggé mais ne fait jamais échouer la requête HTTP (robustesse +
 anti-énumération des comptes).
 
-Chaque envoi est multipart (texte + HTML) : le HTML reprend le thème parchemin
-du site ; le texte brut reste lisible si le client masque les images.
+Chaque envoi est multipart (texte + HTML) : le HTML reprend la charte « Forge
+noxienne » du site ; le texte brut reste lisible si le client masque les images.
 """
 
 from __future__ import annotations
@@ -30,15 +30,19 @@ log = logging.getLogger("riftarium.mailer")
 SUBJECT_VERIFY = "Confirmez votre adresse — Riftarium"
 SUBJECT_RESET = "Réinitialisez votre mot de passe — Riftarium"
 
-# Couleurs alignées sur main.css (parchemin / encre / or).
-_INK = "#16283a"
-_INK_STRONG = "#0a1428"
-_MUTED = "#6b6450"
-_GOLD = "#b08a3e"
-_GOLD_DEEP = "#7a5d28"
-_PAPER = "#fdfaf2"
-_PAPER_OUTER = "#ede4cf"
-_HEX = "#0b8f84"
+# Couleurs de la charte « Forge noxienne » (apps/web/src/styles/tokens.css).
+_BG = "#0d0d0f"  # noir de forge : fond autour du message
+_RAISED = "#17120f"  # panneau du message
+_LINE = "#2f2721"
+_BLOOD = "#b3262b"  # liseré et bouton d'action
+_BLOOD_TEXT = "#e0605a"  # liens dans le texte
+_BRONZE = "#8a6e4b"
+_BRONZE_LIGHT = "#d6b98c"  # intertitres, marque
+_INK = "#e9e2d8"
+_MUTED = "#9a8f80"
+# Les clients mail ne chargent pas Cinzel / Barlow : repli sur des polices système proches.
+_DISPLAY = "Georgia,'Times New Roman',serif"
+_BODY = "'Segoe UI',Helvetica,Arial,sans-serif"
 
 
 @dataclass(frozen=True)
@@ -93,7 +97,8 @@ def _from_domain() -> str:
 
 
 def _logo_url() -> str:
-    return f"{settings.base_url}/favicon.svg"
+    # PNG et non SVG : Gmail et Outlook bloquent les images SVG.
+    return f"{settings.base_url}/icon-192.png"
 
 
 def _footer_note(copy: MailCopy) -> str:
@@ -118,57 +123,63 @@ def _html(copy: MailCopy, link: str) -> str:
     href = escape(link, quote=True)
     logo = escape(_logo_url(), quote=True)
     paragraphs = "".join(
-        f'<p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:{_INK};">{escape(paragraph)}</p>'
+        f'<p style="margin:0 0 14px;font-family:{_BODY};font-size:16px;line-height:1.6;color:{_INK};">'
+        f"{escape(paragraph)}</p>"
         for paragraph in copy.paragraphs
     )
+    site = escape(settings.base_url, quote=True)
+    domain = escape(settings.base_url.replace("https://", "").replace("http://", ""))
+    # Charte Forge : fond noir, panneau brun très sombre, liseré rouge sang en tête,
+    # filets de bronze, bouton rouge aux angles vifs (pas d'arrondi), titres en capitales.
     return f"""\
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>{escape(copy.subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:{_PAPER_OUTER};">
+<body style="margin:0;padding:0;background:{_BG};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{escape(copy.preheader)}</div>
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:{_PAPER_OUTER};">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="{_BG}" style="background:{_BG};">
   <tr>
     <td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:600px;max-width:100%;background:{_PAPER};border:1px solid rgba(138,106,47,0.28);">
-        <tr><td style="height:5px;background:{_GOLD};font-size:0;line-height:0;">&nbsp;</td></tr>
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" bgcolor="{_RAISED}" style="width:600px;max-width:100%;background:{_RAISED};border:1px solid {_LINE};">
+        <tr><td bgcolor="{_BLOOD}" style="height:4px;background:{_BLOOD};font-size:0;line-height:0;">&nbsp;</td></tr>
         <tr>
-          <td align="center" style="padding:28px 32px 12px;">
-            <img src="{logo}" width="72" height="72" alt="Riftarium" style="display:block;border:0;width:72px;height:72px;">
-            <p style="margin:12px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:0.12em;color:{_GOLD_DEEP};">RIFTARIUM</p>
-            <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:13px;color:{_MUTED};">Le compagnon Riftbound</p>
+          <td align="center" style="padding:28px 32px 18px;">
+            <img src="{logo}" width="64" height="64" alt="Riftarium" style="display:block;border:0;width:64px;height:64px;">
+            <p style="margin:14px 0 0;font-family:{_DISPLAY};font-size:22px;font-weight:bold;letter-spacing:0.16em;color:{_INK};">RIFTARIUM</p>
+            <p style="margin:6px 0 0;font-family:{_BODY};font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:{_BRONZE_LIGHT};">Le compagnon Riftbound</p>
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 32px 0;">
-            <hr style="border:0;border-top:1px solid rgba(138,106,47,0.28);margin:0;">
+          <td style="padding:0 32px;">
+            <hr style="border:0;border-top:1px solid {_BRONZE};margin:0;opacity:0.6;">
           </td>
         </tr>
         <tr>
-          <td style="padding:28px 32px 8px;font-family:Georgia,'Times New Roman',serif;">
-            <h1 style="margin:0 0 18px;font-size:26px;line-height:1.25;font-weight:normal;color:{_INK_STRONG};">{escape(copy.title)}</h1>
+          <td style="padding:28px 32px 8px;">
+            <h1 style="margin:0 0 18px;font-family:{_DISPLAY};font-size:24px;line-height:1.25;font-weight:bold;letter-spacing:0.04em;text-transform:uppercase;color:{_BRONZE_LIGHT};">{escape(copy.title)}</h1>
             {paragraphs}
             <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 8px;">
               <tr>
-                <td align="center" bgcolor="{_GOLD}" style="border-radius:6px;">
-                  <a href="{href}" style="display:inline-block;padding:14px 28px;font-family:Georgia,serif;font-size:16px;color:{_PAPER};text-decoration:none;font-weight:bold;">{escape(copy.cta)}</a>
+                <td align="center" bgcolor="{_BLOOD}" style="background:{_BLOOD};">
+                  <a href="{href}" style="display:inline-block;padding:14px 28px;font-family:{_BODY};font-size:15px;font-weight:bold;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;text-decoration:none;">{escape(copy.cta)}</a>
                 </td>
               </tr>
             </table>
-            <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:{_MUTED};">{escape(_footer_note(copy))}</p>
-            <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:{_MUTED};word-break:break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="{href}" style="color:{_HEX};">{escape(link)}</a></p>
+            <p style="margin:18px 0 0;font-family:{_BODY};font-size:13px;line-height:1.5;color:{_MUTED};">{escape(_footer_note(copy))}</p>
+            <p style="margin:16px 0 0;font-family:{_BODY};font-size:12px;line-height:1.5;color:{_MUTED};word-break:break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="{href}" style="color:{_BLOOD_TEXT};">{escape(link)}</a></p>
           </td>
         </tr>
         <tr>
-          <td style="padding:20px 32px 28px;font-family:Georgia,serif;font-size:12px;line-height:1.5;color:{_MUTED};">
-            <hr style="border:0;border-top:1px solid rgba(138,106,47,0.28);margin:0 0 16px;">
+          <td style="padding:20px 32px 28px;font-family:{_BODY};font-size:12px;line-height:1.5;color:{_MUTED};">
+            <hr style="border:0;border-top:1px solid {_LINE};margin:0 0 16px;">
             Projet fan-made à but non lucratif, non affilié à Riot Games.<br>
-            <a href="{escape(settings.base_url, quote=True)}" style="color:{_GOLD_DEEP};text-decoration:none;">{escape(settings.base_url.replace("https://", "").replace("http://", ""))}</a>
+            <a href="{site}" style="color:{_BRONZE_LIGHT};text-decoration:none;">{domain}</a>
           </td>
         </tr>
       </table>

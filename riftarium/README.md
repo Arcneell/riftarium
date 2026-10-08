@@ -1,8 +1,9 @@
 # Riftarium
 
-Compagnon communautaire tout-en-un pour **Riftbound**, le TCG de Riot Games :
-cartothèque, collection personnelle, deck builder avec validation des règles officielles,
-et partage de decks avec likes et modération automatique.
+Documentation technique de l'application : architecture, déploiement, e-mails,
+migrations, sauvegardes. Présentation du projet : [README racine](../README.md) ;
+organisation du dépôt, règles web / API / mobile et vérifications avant de pousser :
+[WORKFLOW.md](../WORKFLOW.md).
 
 **Projet fan-made à but non lucratif, non affilié à Riot Games. Bêta fermée, non indexée.**
 
@@ -18,23 +19,31 @@ Voir [LICENSE](../LICENSE). Les issues et pull requests sont les bienvenues.
 
 | Fonction | État |
 | --- | --- |
-| Cartothèque (recherche, filtres set/domaine/type, fiche carte) | ✅ |
-| Comptes (inscription, connexion, JWT) | ✅ |
-| Collection (quantités, état, langue) | ✅ |
-| Deck builder + validation des règles (deck légal / illégal) | ✅ |
-| Decks publics, likes, vues, filtres communauté | ✅ |
-| Modération automatique (filtre lexical V1, statut `pending`) | ✅ |
+| Cartothèque (recherche, filtres, fiche carte, variantes, prix indicatifs) | ✅ |
+| Comptes (cookie HttpOnly pour le site, Bearer pour le mobile, vérification d'e-mail, RGPD) | ✅ |
+| Collection par lot, wishlist, complétion par set, export CSV | ✅ |
+| Deck builder + validation des règles, codes de deck, communauté, likes | ✅ |
+| Modération automatique (filtre lexical, statut `pending`, notification e-mail) | ✅ |
+| Règles : guide d'apprentissage, aide avancée, texte officiel | ✅ |
+| Suivi des matchs, statistiques, profils publics, hauts faits, amis | ✅ |
+| Échanges entre joueurs (offres, correspondances, demandes, e-mails) | ✅ |
 | Aperçu de partage (image Open Graph générée par deck) | ✅ |
-| Scan mobile, textes FR, fil social (sans stats de méta) | 🔜 |
+| Application mobile Flutter (scan par la caméra) : publication en store | 🔜 |
 
 ## Architecture
 
 ```
-apps/web   Vue 3 + Vite, servi par nginx (proxy /api vers l'API, port 8080 non-root)
-apps/api   FastAPI (Python 3.12) : cartes, auth JWT (cookie HTTP-only), collection, decks
-db         PostgreSQL 16
-redis      Cache des lectures publiques + rate limit, mot de passe obligatoire
+apps/web     Vue 3 + Vite, servi par nginx (proxy /api vers l'API, port 8080 non-root)
+apps/api     FastAPI (Python 3.14) : cartes, auth JWT, collection, decks, jeu, échanges, e-mails
+apps/mobile  Flutter (iOS + Android), consomme la même API ; jamais dans une image Docker
+db           PostgreSQL 18
+redis        Redis 8 : cache des lectures publiques + rate limit, mot de passe obligatoire
 ```
+
+Contrats d'API partagés par le site et le mobile (source de vérité, à modifier en
+premier) : [`docs/suivi-des-matchs.md`](docs/suivi-des-matchs.md),
+[`docs/profils-et-hauts-faits.md`](docs/profils-et-hauts-faits.md) et
+[`docs/echanges.md`](docs/echanges.md).
 
 ## Déploiement
 
@@ -68,8 +77,18 @@ docker compose up -d --build
 
 ### E-mails (SMTP OVH)
 
-Les e-mails transactionnels (vérification d'adresse, réinitialisation de mot de
-passe) partent de la boîte OVH `contact@riftarium.re`. Variables dans `.env` :
+Les e-mails partent de la boîte OVH `contact@riftarium.re` :
+
+- transactionnels : vérification d'adresse, réinitialisation de mot de passe ;
+- notifications (désactivables depuis le profil, envoyées seulement à une adresse
+  vérifiée) : décision de modération d'un deck, nouvelle demande d'échange (une par
+  joueur et par 24 h), demande d'échange acceptée.
+
+Tous reprennent la charte « Forge noxienne » (`app/mailer.py`, styles en ligne et
+mise en page en tableaux pour Outlook). Le logo est servi en PNG
+(`/icon-192.png`) : Gmail et Outlook bloquent les images SVG.
+
+Variables dans `.env` :
 
 | Variable | Valeur OVH |
 | --- | --- |
@@ -203,10 +222,11 @@ fichiers suivis.
 
 ## Scan mobile
 
-La reconnaissance de cartes repose sur des empreintes perceptuelles (dHash) des
-visuels, calculées automatiquement en arrière-plan (au démarrage de l'API et après
-chaque sync). Rien à lancer ; `POST /api/admin/cards/hashes` (`X-Admin-Token`)
-reste disponible en secours manuel.
+Le scan est réservé à l'application mobile : elle lit le code collector avec ML Kit
+et le résout grâce à l'index `GET /api/cards/hashes`. Les empreintes perceptuelles
+(dHash) des visuels y sont aussi servies, calculées en arrière-plan au démarrage de
+l'API et après chaque sync ; `POST /api/admin/cards/hashes` (`X-Admin-Token`) reste
+disponible en secours manuel. Le scanner web a été retiré avec la refonte.
 
 ## Application mobile
 

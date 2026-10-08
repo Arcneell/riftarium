@@ -1,25 +1,121 @@
 <p align="center">
-  <img src="assets/logo.svg" width="170" alt="Logo Riftarium" />
+  <img src="assets/logo.svg" width="150" alt="Logo Riftarium : sceau de forge" />
 </p>
 
 <h1 align="center">Riftarium</h1>
 
 <p align="center">
-  <strong>Le compagnon tout-en-un pour Riftbound, le TCG de Riot Games.</strong><br />
-  Cartothèque · Collection · Deck builder · Règles officielles · Communauté
+  <strong>Le compagnon francophone de Riftbound, le TCG de Riot Games.</strong><br />
+  Cartothèque · Collection · Deck builder · Règles · Parties suivies · Échanges entre joueurs
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-source%20accessible-e5b455?style=flat-square" alt="Licence source accessible" /></a>
-  <img src="https://img.shields.io/badge/python-3.12-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.12" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-source%20accessible-8a6e4b?style=flat-square" alt="Licence source accessible" /></a>
+  <img src="https://img.shields.io/badge/python-3.14-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.14" />
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue 3" />
-  <img src="https://img.shields.io/badge/postgresql-16-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
-  <img src="https://img.shields.io/badge/tests-CI-55b368?style=flat-square" alt="Tests CI" />
+  <img src="https://img.shields.io/badge/flutter-3.41-02569b?style=flat-square&logo=flutter&logoColor=white" alt="Flutter 3.41" />
+  <img src="https://img.shields.io/badge/postgresql-18-4169e1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 18" />
+  <img src="https://img.shields.io/badge/CI-GitHub%20Actions-b3262b?style=flat-square&logo=githubactions&logoColor=white" alt="CI GitHub Actions" />
 </p>
 
-<p align="center"><em>Projet fan-made à but non lucratif — non affilié à Riot Games. Bêta fermée, non indexée.</em></p>
+<p align="center"><em>Projet fan-made gratuit et non commercial, non affilié à Riot Games. Bêta fermée, non indexée.</em></p>
 
 ---
+
+Riftarium réunit au même endroit tout ce dont un joueur de Riftbound a besoin : chercher une
+carte, suivre sa collection, construire un deck légal, apprendre les règles, noter ses parties
+et trouver près de chez lui les cartes qui lui manquent. Le site est en français, sur ordinateur
+comme sur téléphone, avec une application native iOS et Android en préparation.
+
+## Fonctionnalités
+
+| Rubrique | Ce qu'on y fait |
+| --- | --- |
+| **Cartes** | Les 1 315 cartes des six sets (Origins → Vendetta), variantes alt-art, overnumbered et signatures incluses. Recherche plein texte, filtres (set, type, domaine, rareté, énergie), fiche détaillée avec prix indicatif et variantes |
+| **Collection** | Inventaire par lot (quantité, état, langue), complétion par set, export CSV, wishlist avec valeur estimée |
+| **Échanges** | Liste « À échanger », correspondances avec la wishlist des autres joueurs de La Réunion (par zone), demandes avec contact dévoilé une fois l'échange accepté, notifications e-mail |
+| **Decks** | Deck builder avec validation des règles de tournoi en direct, import et export de codes de deck, cartes manquantes d'après sa collection |
+| **Communauté** | Decks publics, likes, vues, filtres par légende, domaine et format ; modération automatique avant publication |
+| **Règles** | Guide d'apprentissage en chapitres courts, plateau animé, aide avancée par thème, texte officiel intégral en français (règles du jeu et de tournoi) avec recherche |
+| **Jouer** | Salons à deux, compteur partagé, historique des matchs confirmés par les deux joueurs, statistiques par légende |
+| **Profil** | Profil public réglable, hauts faits, amis, export RGPD et suppression du compte |
+
+## Charte « Forge noxienne »
+
+Le site a été entièrement refondu en octobre 2026 : noir de forge, rouge sang pour l'action,
+bronze pour la matière, angles coupés, titres en Cinzel et texte en Barlow. Les visuels de jeu
+(énergie, puissance, runes, mots-clés) reprennent les glyphes officiels de Riot. Charte et
+composants : [riftarium/apps/web/README.md](riftarium/apps/web/README.md).
+
+## Architecture
+
+```
+            ┌──────────────────────┐
+ Internet ──│  BunkerWeb (WAF/TLS) │   réseau Docker `bunkerweb`
+  HTTPS     └──────────┬───────────┘
+                       ▼
+ ┌─────────────────────┐      ┌──────────────────────┐      ┌───────────────────┐
+ │ web  (Vue 3 + Vite) │─────▶│ api  (FastAPI)       │─────▶│ db (PostgreSQL 18)│
+ │ nginx, SPA          │ /api │ auth · decks · jeu   │      └───────────────────┘
+ │ proxy /api          │      │ échanges · e-mails   │      ┌───────────────────┐
+ └─────────────────────┘      └───┬────────┬─────────┘─────▶│ redis 8           │
+                                  │        │                │ cache + limites   │
+ ┌─────────────────────┐          │        ▼                └───────────────────┘
+ │ app mobile (Flutter)│──────────┘   api.riftcodex.com (données de cartes)
+ │ iOS + Android       │   Bearer     cmsassets.rgpub.io (visuels, CDN Riot)
+ └─────────────────────┘
+```
+
+## Structure du dépôt
+
+```
+riftarium/
+├── apps/web/       Site Vue 3 + Vite, servi par nginx
+├── apps/api/       API FastAPI (Python 3.14), migrations Alembic, tests pytest
+├── apps/mobile/    Application Flutter (iOS + Android), jamais dans Docker
+├── data/           Règles officielles en français (JSON)
+├── docs/           Contrats d'API partagés par le site et le mobile
+└── compose.yaml    Production : web + api + db + redis
+assets/             Identité visuelle (logo)
+docs/superpowers/   Specs de conception et plans d'implémentation
+WORKFLOW.md         Organisation du dépôt, règles web / API / mobile, feuille de route
+```
+
+Documentation technique (déploiement, e-mails, migrations, sauvegardes) :
+[riftarium/README.md](riftarium/README.md).
+
+## Qualité
+
+Chaque pull request est bloquée tant que la CI n'est pas verte : lint et formatage (ruff,
+ESLint, Prettier), tests API (pytest) et site (Vitest), audit des dépendances, build des
+images Docker et contrôle de sécurité de la configuration Compose. L'application mobile a sa
+propre CI (format, analyse, tests Flutter).
+
+- **Déploiement** : un merge dans `main` relance la CI puis déploie sur le VPS, avec
+  sauvegarde de la base avant la mise à jour et retour automatique à la version précédente
+  si le contrôle de santé échoue.
+- **Schéma de base** : versionné par migrations Alembic, appliquées au démarrage de l'API.
+- **Dépendances** : Dependabot chaque semaine ; les mises à jour mineures pip et npm sont
+  fusionnées automatiquement quand la CI passe, les autres sont revues à la main.
+
+## Feuille de route
+
+- [x] Cartothèque, comptes, collection, wishlist, deck builder, communauté, modération
+- [x] Règles en français : guide d'apprentissage, aide avancée, texte officiel
+- [x] Parties suivies, statistiques, profils publics, hauts faits, amis
+- [x] Refonte « Forge noxienne » du site
+- [x] Échanges entre joueurs de La Réunion
+- [ ] Publication de l'application mobile (App Store et Google Play), scan des cartes par la caméra
+- [ ] Textes officiels via l'API Riot (demande d'accès en cours)
+
+## Contribuer
+
+Les issues et pull requests sont bienvenues. Avant de proposer une fonctionnalité qui touche
+aux données Riot (visuels, textes de cartes), vérifiez qu'elle respecte la
+[politique développeur Riftbound](https://developer.riotgames.com/policies/riftbound) et la
+politique « Jargon juridique » de Riot Games. Organisation du dépôt et vérifications à lancer
+avant de pousser : [WORKFLOW.md](WORKFLOW.md). En soumettant une contribution, vous acceptez
+qu'elle soit intégrée au projet sous les termes de la [licence](LICENSE).
 
 ## Licence
 
@@ -28,84 +124,6 @@ open source** : il est publié à des fins de transparence et de consultation un
 Toute copie, reproduction, modification, redistribution, déploiement ou réutilisation du
 code, en tout ou partie, est interdite sans autorisation écrite préalable de l'auteur.
 Voir [LICENSE](LICENSE).
-
-## Fonctionnalités
-
-| Fonction | Description |
-| --- | --- |
-| **Cartothèque** | Les 1 315 cartes des 6 sets (Origins → Vendetta), variantes alt-art incluses. Recherche plein texte, filtres par domaine, type, rareté et set |
-| **Règles** | Texte officiel intégral en français : 2 137 règles du jeu + 812 règles de tournoi, avec recherche |
-| **Deck builder** | Validation des règles de tournoi (légende unique, 3 champs de bataille, 12 runes, 40 cartes minimum, 3 exemplaires max, conformité des domaines) ou mode libre |
-| **Collection** | Inventaire personnel : quantités, état, langue — compte requis |
-| **Communauté** | Decks publics en boîtes, likes, vues uniques, filtres (légende, domaine, format, popularité) |
-| **Comptes** | Sessions par cookie HttpOnly, vérification d'adresse e-mail, réinitialisation de mot de passe, export RGPD |
-| **Modération** | Chaque contenu publié passe par un filtre automatique avant mise en ligne ; le reste part en file de revue |
-| **Mobile** | Interface entièrement utilisable sur téléphone (règles lisibles, deck builder tactile) |
-
-## Architecture
-
-```
-          ┌─────────────────────┐
-Internet ─│  BunkerWeb (WAF/TLS) │  réseau Docker `bunkerweb`
- HTTPS    └──────────┬──────────┘
-                     ▼
-┌────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
-│  web  (Vue 3/Vite) │────▶│  api  (FastAPI)      │────▶│  db (PostgreSQL) │
-│  nginx + SPA        │ /api│  auth JWT · decks    │     │  cartes · users  │
-│  proxy /api         │     │  validation · modo   │     │  decks · likes   │
-└────────────────────┘     └────┬─────┬──────────┘     └──────────────────┘
-                                │     │                ┌──────────────────┐
-                                │     └───────────────▶│  redis           │
-                                │ resync manuelle      │  cache + limites │
-                                ▼                      └──────────────────┘
-                           ┌─────────────────────┐
-                           │ api.riftcodex.com    │  (données de cartes)
-                           │ cmsassets.rgpub.io   │  (visuels — CDN Riot)
-                           └─────────────────────┘
-```
-
-## Structure du dépôt
-
-```
-riftarium/          Application (produit)
-├── apps/web/       Front Vue 3 + Vite, servi par nginx
-├── apps/api/       API FastAPI (Python 3.12) + tests pytest
-├── data/           Règles officielles en français (JSON)
-└── compose.yaml    Orchestration Docker (web + api + db + redis)
-assets/             Identité visuelle (logo SVG)
-```
-
-## Qualité
-
-Chaque pull request est bloquée tant que la CI GitHub n'est pas verte :
-lint et formatage (ruff, ESLint, Prettier), tests API (pytest, couverture > 95 %),
-tests front (Vitest), audit des dépendances (pip-audit, npm audit), build des
-images Docker et validation de la configuration Compose.
-
-- **Déploiement** : un merge dans `main` relance la CI puis déploie sur le VPS,
-  avec sauvegarde de la base avant chaque mise en production et retour automatique
-  à la version précédente si le contrôle de santé échoue.
-  Détail : [riftarium/README.md](riftarium/README.md#cd-depuis-main).
-- **Schéma de base** : versionné par migrations Alembic, appliquées au démarrage.
-- **Dépendances** : Dependabot hebdomadaire ; les mises à jour mineures sont
-  fusionnées automatiquement quand la CI passe, les majeures restent revues à la main.
-- **Accessibilité & SEO** : Lighthouse 100/100 sur les pages types (contrastes,
-  hiérarchie de titres, liens crawlables, sitemap).
-
-## Feuille de route
-
-- [x] Cartothèque, comptes, collection, deck builder, decks publics, modération V1
-- [ ] Scan mobile (PWA + caméra, reconnaissance par empreinte visuelle)
-- [ ] Textes officiels FR/EN via l'API Riot (demande d'accès en cours)
-- [ ] Fil communautaire (partage de decks, profils) — sans résultats de tournoi ni statistiques de méta
-
-## Contribuer
-
-Les issues et pull requests sont bienvenues. Avant de proposer une fonctionnalité qui
-touche aux données Riot (visuels, textes de cartes), vérifiez qu'elle respecte la
-[politique développeur Riftbound](https://developer.riotgames.com/policies/riftbound)
-et la politique « Jargon juridique » de Riot Games. En soumettant une contribution,
-vous acceptez qu'elle soit intégrée au projet sous les termes de la [licence](LICENSE).
 
 ## Mentions légales
 
@@ -124,6 +142,6 @@ Riftbound, League of Legends et l'ensemble des visuels de cartes, illustrations,
 de domaine et textes officiels sont la propriété de © Riot Games, Inc. Les visuels sont
 servis directement depuis le CDN officiel de Riot et ne sont ni copiés ni redistribués.
 En bêta, les textes de cartes sont synchronisés depuis l'API communautaire Riftcodex
-en attendant l'API officielle Riot. Le projet est et restera non commercial. La [licence](LICENSE) du code ne couvre ni le
-texte des règles officielles, ni les illustrations, ni aucun actif appartenant à
-Riot Games, Inc.
+en attendant l'API officielle Riot. Le projet est et restera non commercial. La
+[licence](LICENSE) du code ne couvre ni le texte des règles officielles, ni les
+illustrations, ni aucun actif appartenant à Riot Games, Inc.

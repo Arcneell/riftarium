@@ -132,8 +132,8 @@ export class ApiError extends Error {
   }
 }
 
-/* `color` sert aux pastilles et chips graphiques ; `text` est la variante assombrie,
-   réservée au texte sur fond parchemin (contraste ≥ 4.5:1). */
+/* `color` sert aux pastilles et chips graphiques ; `text` est la variante éclaircie,
+   réservée au texte sur le fond de forge (contraste ≥ 4,5:1). */
 export const DOMAINS = {
   Fury: { label: "Fureur", color: "var(--fury)", text: "var(--fury-text)" },
   Calm: { label: "Calme", color: "var(--calm)", text: "var(--calm-text)" },
