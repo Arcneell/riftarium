@@ -51,18 +51,24 @@ src/styles/
   tokens.css   couleurs, espacements, rayons, ombres, durées, z-index
   fonts.css    @font-face Cinzel, Barlow, Barlow Condensed (woff2 latin + latin-ext)
   base.css     reset, typographie de base, liens, focus, sélection, scrollbar,
-               prefers-reduced-motion
+               champs, tableaux, .sr-only, glyphes et mots-clés, prefers-reduced-motion
+  layout.css   conteneurs de page (.wrap, .cards-wrap), glisser-déposer, .icon
+               (ajouté en PR 8)
 src/ui/        composants de base, chacun avec <style scoped> et son .spec.js
 ```
 
-- Seuls ces trois fichiers sont globaux. Une vue ne contient que de la mise en
-  page (grilles, espacements) dans son propre `<style scoped>`, jamais le style
-  d'un bouton, d'un panneau ou d'une puce.
-- `main.css` est conservé pendant la transition. En PR 1, ses anciennes
-  variables (`--paper`, `--ink`, `--gold`…) sont **redirigées vers les nouveaux
-  tokens**, pour que les pages pas encore refaites prennent la palette Forge.
-  Chaque PR de page supprime la tranche de `main.css` qu'elle remplace. Après
-  la PR 8, `main.css` n'existe plus.
+- `src/styles/` porte toutes les fondations globales ; ces quatre fichiers sont
+  importés en tête de `src/main.js`. Une vue ne contient que de la mise en page
+  (grilles, espacements) dans son propre `<style scoped>`, jamais le style d'un
+  bouton, d'un panneau ou d'une puce. Seules deux feuilles communes non scopées
+  s'y ajoutent, sous un préfixe réservé : `src/components/charts/graphe.css`
+  (`graphe-`) et `src/admin/console.css` (`console-`).
+- `main.css` a servi pendant la transition : en PR 1, ses anciennes variables
+  (`--paper`, `--ink`, `--gold`…) ont été **redirigées vers les nouveaux
+  tokens**, et chaque PR de page a supprimé la tranche qu'elle remplaçait.
+  **`src/assets/main.css` n'existe plus depuis la PR 8** ;
+  `src/assets/cssCoverage.spec.js` vérifie qu'il ne revient pas et que chaque
+  classe d'un gabarit a une règle.
 - Polices auto-hébergées comme aujourd'hui (aucune requête vers Google).
   IBM Plex Mono et Marcellus sont retirées ; Cinzel est conservée.
 
@@ -85,7 +91,7 @@ Les noms sont neufs et décrivent leur rôle.
 | `--ink-muted` | `#9a8f80` | texte secondaire (contraste ≥ 4,5:1 sur `--bg` et `--bg-raised`, vérifié par test) |
 
 - Domaines : `--fury`, `--calm`, `--mind`, `--body`, `--chaos`, `--order` et
-  leurs variantes `*-text`, reprises de l'actuel `main.css`.
+  leurs variantes `*-text`, reprises de l'ancien `main.css`.
 - Mots-clés : familles timing `#24705f`, combat `#cc356e`, état `#94b42a`,
   utilitaire `#6c6d6c`, reprises telles quelles.
 - Rayons : petits (2 à 4 px). La forme vient des angles coupés, pas de
@@ -454,6 +460,33 @@ inchangés.
 - Administration : une version plus dense et utilitaire, avec les mêmes
   composants.
 - **Suppression finale de `main.css`.**
+- **Livré** (aucun changement d'API) :
+  - fondations transverses : `src/styles/layout.css` (`.wrap`, `.cards-wrap`,
+    glisser-déposer, `.icon`) et `base.css` complété (titres, champs, tableaux,
+    `.sr-only`) reprennent ce que `main.css` imposait encore à tout le site ;
+    bandeaux globaux dans `src/shell/` (`ShellBandeau`, `TraceursNotice`,
+    `EmailVerifyNotice`, bandeau hors ligne), aperçu de carte au survol déplacé
+    dans `src/ui/CardHoverPreview` (préfixes `bandeau-`, `apercu-`) ;
+  - pages de compte : `src/account/AccessLayout` (illustration du splash, voile,
+    crédit, `RiftPanel`) porte connexion / inscription (`RiftSegments`),
+    mot de passe oublié, réinitialisation et vérification d'e-mail, avec
+    `RiftField` et `RiftButton` ; bêta fermée, CGU, `suite=`, limites de débit
+    et jetons inchangés (préfixe `acces-`) ;
+  - pages légales : `h1` dans la page, sommaire collant (replié en `details`
+    sous 1 024 px), intertitres en `h2` avec ancres ; 404 avec un grand « 404 »
+    en Cinzel et deux sorties (préfixes `mentions-`, `perdu-`) ;
+  - administration dense : `AdminView` ne garde que le titre et les onglets ;
+    `src/admin/` découpe statistiques, utilisateurs et decks (`useAdmin.js`,
+    tableaux de 40 px, cartes empilées sous 768 px, statuts en `RiftChip`,
+    graphiques en tokens, confirmation de la suspension définitive) sur la
+    feuille commune `console.css` (préfixe `console-`) ; la porte admin rend
+    toujours la 404 ;
+  - `PageBanner` est supprimé (`BANNERS` reste pour le splash et le SEO) ;
+  - `src/assets/main.css` est supprimé, avec ses variables héritées
+    (`--gold`, `--hex`, `--ink-strong`, `--chart-*`…) : plus aucune classe ni
+    variable n'en dépendait. `cssCoverage.spec.js` vérifie désormais les
+    classes contre `src/styles/`, les feuilles `.css` de `src/` et les styles
+    des composants, justifie chaque exception et échoue si `main.css` revient.
 
 ## 6. API
 

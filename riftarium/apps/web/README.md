@@ -13,10 +13,15 @@ Cette charte est aussi la référence du futur réalignement de l'app Flutter.
 - **Pas de style de composant dans une vue.** Une vue ne contient que sa mise en
   page (grilles, espacements) dans son `<style scoped>`. Boutons, champs, onglets,
   modales, feuilles et texte de jeu viennent de `src/ui/`.
-- **Seuls trois fichiers sont globaux** : `src/styles/tokens.css` (toutes les
-  couleurs, polices, espacements et dimensions), `fonts.css` et `base.css` (reset,
-  liens, focus, glyphes `.rb-glyph` et pastilles `.rb-kw`). `src/assets/main.css`
-  est l'ancienne feuille, en cours de démantèlement : n'y ajoutez rien.
+- **Les fondations globales sont dans `src/styles/`**, importées en tête de
+  `src/main.js` : `tokens.css` (toutes les couleurs, polices, espacements et
+  dimensions), `fonts.css`, `base.css` (reset, titres, liens, focus, champs,
+  `.sr-only`, glyphes `.rb-glyph` et pastilles `.rb-kw`) et `layout.css`
+  (conteneurs `.wrap` / `.cards-wrap`, pictogramme `.icon`). Il n'y a pas d'autre
+  feuille globale : deux feuilles communes non scopées existent, chacune sous un
+  préfixe réservé (`src/components/charts/graphe.css`, `graphe-` ;
+  `src/admin/console.css`, `console-`). `src/assets/cssCoverage.spec.js` vérifie
+  que chaque classe d'un gabarit a une règle.
 - **Visuels de jeu officiels obligatoires** : énergie, puissance, runes et
   épuisement en glyphes Riot, mots-clés en pastilles colorées par famille, via
   `RiftText` (`tag="p"` pour une carte, `rules` pour le texte des règles). Jamais
