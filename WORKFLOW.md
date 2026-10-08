@@ -241,6 +241,9 @@ test/                     miroir de lib/ ; tests de widgets par écran, tests un
   `riftarium/docs/profils-et-hauts-faits.md` (réglages de confidentialité,
   catalogue des hauts faits, suivis). Les hauts faits de duel ne comptent que les
   matchs suivis confirmés, jamais la partie libre.
+- **Échanges entre joueurs** (`/api/trades`, liste « À échanger », correspondances
+  avec la wishlist, demandes, contact dévoilé après acceptation) : contrat dans
+  `riftarium/docs/echanges.md`, source de vérité pour l'API, le site et le mobile.
 - **Texte enrichi** : un seul rendu pour les cartes et les règles, dans
   `lib/app/design/rich_text.dart` (`parseRiftText`, `riftRichSpans`,
   `RiftRichText` — mots-clés en pastille, `**gras**`, capacités collées) et

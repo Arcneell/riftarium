@@ -116,6 +116,15 @@ def limit_auth(request: Request) -> None:
         raise HTTPException(status_code=429, detail="Trop de tentatives — réessayez dans une minute")
 
 
+TRADE_RATE_LIMIT = 30  # écritures d'échange (offres, demandes) par minute et par IP
+
+
+def limit_trades(request: Request) -> None:
+    """Rate limit des écritures d'échange, même mécanique que limit_play."""
+    if not allow_rate(f"trades:{client_ip(request)}", TRADE_RATE_LIMIT):
+        raise HTTPException(status_code=429, detail="Trop d'actions d'échange — réessayez dans une minute")
+
+
 PLAY_RATE_LIMIT = 20  # créations/jointures de salon par minute et par IP
 
 

@@ -13,6 +13,7 @@ export const APP_PATHS = [
   "/communaute",
   "/collection",
   "/wishlist",
+  "/echanges",
   "/regles",
   "/regles/debutant",
   "/regles/debutant/plateau",

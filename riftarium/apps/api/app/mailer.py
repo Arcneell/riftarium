@@ -309,3 +309,51 @@ def send_moderation_email_async(to: str, deck_name: str, deck_id: int, approved:
         log.exception("impossible de lancer l'envoi de la notification de modération vers %s", to)
         return None
     return thread
+
+
+# ---------- Échanges entre joueurs (docs/echanges.md) ----------
+# Le contact externe de l'autre joueur n'apparaît jamais dans un e-mail : il ne
+# se lit que sur le site, une fois la demande acceptée.
+
+
+def _trade_link(request_id: int) -> str:
+    return f"{settings.base_url}/echanges?onglet=demandes&id={request_id}"
+
+
+def _trade_request_copy(handle: str, card_name: str, message: str) -> MailCopy:
+    paragraphs = [f"{handle} est intéressé par votre carte « {card_name} » proposée à l'échange."]
+    if message:
+        paragraphs.append(f"Son message : « {message} »")
+    paragraphs.append("Acceptez la demande pour que chacun voie le contact de l'autre, ou refusez-la.")
+    return MailCopy(
+        subject=f"{handle} est intéressé par votre carte “{card_name}” — Riftarium",
+        preheader=f"Nouvelle demande d'échange pour « {card_name} ».",
+        title="Nouvelle demande d'échange",
+        paragraphs=tuple(paragraphs),
+        cta="Voir la demande",
+        validity="",
+        ignore=NOTIFY_OPT_OUT,
+    )
+
+
+def _trade_accepted_copy(handle: str, card_name: str) -> MailCopy:
+    return MailCopy(
+        subject=f"{handle} a accepté votre demande pour “{card_name}” — Riftarium",
+        preheader="Votre demande d'échange est acceptée : son contact vous attend sur le site.",
+        title="Demande acceptée",
+        paragraphs=(
+            f"Bonne nouvelle : {handle} a accepté votre demande pour « {card_name} ».",
+            "Son contact est visible sur la page Échanges de Riftarium : à vous de convenir de l'échange.",
+        ),
+        cta="Voir son contact",
+        validity="",
+        ignore=NOTIFY_OPT_OUT,
+    )
+
+
+def send_trade_request_email(to: str, handle: str, card_name: str, message: str, request_id: int) -> None:
+    _send_copy(to, _trade_request_copy(handle, card_name, message), _trade_link(request_id))
+
+
+def send_trade_accepted_email(to: str, handle: str, card_name: str, request_id: int) -> None:
+    _send_copy(to, _trade_accepted_copy(handle, card_name), _trade_link(request_id))
