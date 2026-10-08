@@ -372,7 +372,7 @@ function openVariant(id) {
   text-transform: uppercase;
   color: var(--ink-muted);
 }
-/* Neutralise le h1 doré animé hérité de l'ancien style global. */
+/* Titre de la fiche : Cinzel 700, plus grand que le style de base des h1. */
 .fiche-title {
   margin: 0;
   font-family: var(--font-display);
