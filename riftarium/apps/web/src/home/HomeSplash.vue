@@ -30,7 +30,7 @@ const format = (n) => n.toLocaleString("fr-FR")
         <b>{{ format(cardCount) }}</b> cartes · <b>{{ format(setCount) }}</b> sets
       </p>
     </div>
-    <span class="splash-credit">Visuel officiel Riftbound — © Riot Games</span>
+    <span class="splash-credit">Visuel officiel Riftbound © Riot Games</span>
   </section>
 </template>
 

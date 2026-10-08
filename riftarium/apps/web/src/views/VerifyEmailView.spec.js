@@ -50,7 +50,7 @@ describe("VerifyEmailView", () => {
       method: "POST",
       body: { token: "jeton-mail" }
     })
-    expect(wrapper.text()).toContain("Adresse vérifiée !")
+    expect(wrapper.text()).toContain("Adresse e-mail vérifiée.")
     const home = wrapper.findAll("a").find((a) => a.attributes("href") === "/")
     expect(home).toBeTruthy()
     const login = wrapper.findAll("a").find((a) => a.attributes("href") === "/connexion")
@@ -88,7 +88,7 @@ describe("VerifyEmailView", () => {
   it("sans jeton dans l'adresse : erreur immédiate, aucun appel à l'API", async () => {
     const { wrapper } = await mountView("/verification-email")
     expect(api).not.toHaveBeenCalled()
-    expect(wrapper.get("[role=alert]").text()).toContain("jeton est manquant")
+    expect(wrapper.get("[role=alert]").text()).toContain("Ce lien est incomplet.")
   })
 
   it("jeton expiré (400), visiteur déconnecté : message et invitation à se connecter", async () => {

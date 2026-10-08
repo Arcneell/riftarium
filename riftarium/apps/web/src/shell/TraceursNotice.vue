@@ -44,8 +44,8 @@ function dismiss() {
   >
     <p class="bandeau-court">Traceurs nécessaires et statistiques anonymes.</p>
     <p :id="fullId" class="bandeau-complet">
-      Riftarium n'utilise que des traceurs strictement nécessaires à la connexion, plus des statistiques de
-      fréquentation anonymes et agrégées, sans cookie — pas de publicité.
+      Riftarium n'utilise que les traceurs nécessaires à la connexion. Les visites sont comptées de façon anonyme, sans
+      cookie ni publicité.
       <RouterLink to="/cookies" class="bandeau-lien">Politique de traceurs</RouterLink>
     </p>
     <template #actions>

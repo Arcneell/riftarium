@@ -29,7 +29,7 @@ const submitting = ref(false)
 async function submit() {
   if (submitting.value) return // ignore les doubles soumissions pendant la requête
   if (password.value !== confirm.value) {
-    error.value = "Les mots de passe ne correspondent pas"
+    error.value = "Les mots de passe ne correspondent pas."
     return
   }
   error.value = ""
@@ -57,8 +57,7 @@ async function submit() {
   <AccessLayout title="Nouveau mot de passe">
     <template v-if="!token">
       <p class="acces-erreur" role="alert">
-        Ce lien de réinitialisation est incomplet : le jeton est manquant. Ouvrez le lien reçu par e-mail, ou
-        demandez-en un nouveau.
+        Ce lien est incomplet. Ouvrez le lien reçu par e-mail, ou demandez-en un nouveau.
       </p>
       <div class="acces-actions">
         <RiftButton to="/mot-de-passe-oublie">Demander un nouveau lien</RiftButton>

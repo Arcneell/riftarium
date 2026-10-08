@@ -30,8 +30,8 @@ describe("TraceursNotice", () => {
     /* Bandeau d'information : filet de bronze, pas d'action requise. */
     expect(region.classes()).toContain("bandeau-cadre--info")
     expect(wrapper.get(".bandeau-court").text()).toContain("Traceurs nécessaires")
-    expect(wrapper.text()).toContain("strictement nécessaires")
-    expect(wrapper.text()).toContain("statistiques de fréquentation anonymes et agrégées, sans cookie")
+    expect(wrapper.text()).toContain("traceurs nécessaires à la connexion")
+    expect(wrapper.text()).toContain("Les visites sont comptées de façon anonyme, sans cookie ni publicité.")
     expect(wrapper.get("a").attributes("href")).toBe("/cookies")
   })
 

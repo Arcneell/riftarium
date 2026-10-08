@@ -16,7 +16,7 @@ const art = pickSplash()
 <template>
   <div class="acces-page">
     <img class="acces-art" :src="art" alt="" fetchpriority="high" decoding="async" />
-    <span class="acces-credit">Visuel officiel Riftbound — © Riot Games</span>
+    <span class="acces-credit">Visuel officiel Riftbound © Riot Games</span>
     <RiftPanel tag="div" class="acces-panel">
       <p v-if="kicker" class="acces-kicker">{{ kicker }}</p>
       <h1 class="acces-titre">{{ title }}</h1>

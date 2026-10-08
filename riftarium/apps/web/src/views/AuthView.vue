@@ -108,7 +108,7 @@ async function submit() {
 
     <template v-else>
       <p v-if="CLOSED_BETA" class="acces-note">
-        Accès sur invitation. Pas d'annonce publique, pas d'indexation. Les retours de bugs vont sur
+        Bêta fermée, sur invitation. Un bug ? Signalez-le sur
         <a class="acces-lien" href="https://github.com/Arcneell/riftarium/issues" target="_blank" rel="noopener"
           >GitHub</a
         >.
@@ -142,7 +142,7 @@ async function submit() {
           maxlength="32"
           placeholder="3 à 32 caractères"
         />
-        <RiftField v-model="email" label="Email" type="email" name="email" autocomplete="email" required />
+        <RiftField v-model="email" label="E-mail" type="email" name="email" autocomplete="email" required />
         <RiftField
           v-model="password"
           label="Mot de passe"

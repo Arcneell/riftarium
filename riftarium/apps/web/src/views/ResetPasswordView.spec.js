@@ -43,7 +43,7 @@ describe("ResetPasswordView", () => {
   it("sans jeton dans l'adresse : message d'erreur et lien pour redemander un e-mail", async () => {
     const { wrapper } = await mountView("/reinitialisation")
     expect(wrapper.find("form").exists()).toBe(false)
-    expect(wrapper.get("[role=alert]").text()).toContain("jeton est manquant")
+    expect(wrapper.get("[role=alert]").text()).toContain("Ce lien est incomplet.")
     expect(wrapper.get("[role=alert]").text()).toContain("lien")
     const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
     expect(link).toBeTruthy()

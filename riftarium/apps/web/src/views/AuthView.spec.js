@@ -104,7 +104,7 @@ describe("AuthView", () => {
     const link = wrapper.findAll("a").find((a) => a.attributes("href") === "/mot-de-passe-oublie")
     expect(link).toBeTruthy()
     expect(link.text()).toBe("Mot de passe oublié ?")
-    expect(wrapper.text()).toContain("Accès sur invitation")
+    expect(wrapper.text()).toContain("Bêta fermée, sur invitation.")
     await wrapper.get("[role=tab]:last-child").trigger("click")
     expect(wrapper.findAll("a").some((a) => a.attributes("href") === "/mot-de-passe-oublie")).toBe(false)
   })

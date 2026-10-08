@@ -31,7 +31,7 @@ const shortcut = isMac ? "⌘ K" : "Ctrl K"
       <button
         type="button"
         class="topbar-icon topbar-account"
-        :aria-label="session.token ? `Compte de ${session.handle}` : 'Compte et Jouer'"
+        :aria-label="session.token ? `Compte de ${session.handle}` : 'Compte et parties'"
         @click="emit('account')"
       >
         <UserAvatar v-if="session.token" :src="session.avatarUrl" :handle="session.handle" :size="28" />
