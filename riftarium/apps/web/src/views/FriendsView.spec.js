@@ -67,11 +67,11 @@ describe("FriendsView", () => {
 
     expect(wrapper.get("h1").text()).toBe("Mes amis")
     const panels = wrapper.findAll(".amis-panel")
-    expect(panels[0].text()).toContain("Je suis")
+    expect(panels[0].text()).toContain("Joueurs suivis")
     expect(panels[0].text()).toContain("(1)")
     expect(panels[0].get(".amis-nom").attributes("href")).toBe("/u/nova")
     expect(panels[0].text()).toContain("Dernière partie")
-    expect(panels[1].text()).toContain("Ils me suivent")
+    expect(panels[1].text()).toContain("Abonnés")
     expect(panels[1].get(".amis-nom").attributes("href")).toBe("/u/kai")
     wrapper.unmount()
   })
@@ -163,13 +163,13 @@ describe("FriendsView", () => {
     wrapper.unmount()
   })
 
-  it("listes vides : précise que le suivi reste privé", async () => {
+  it("listes vides : précise ce que le suivi rend visible", async () => {
     setupApi({ following: [], followers: [] })
     const { wrapper } = await mountView()
     expect(wrapper.findAll(".amis-panel .rift-empty")).toHaveLength(2)
     expect(wrapper.text()).toContain("Personne pour l'instant")
     expect(wrapper.text()).toContain("Personne ne vous suit encore")
-    expect(wrapper.get(".amis-note").text()).toContain("reste privé")
+    expect(wrapper.get(".amis-note").text()).toContain("ne reçoit aucune notification")
     wrapper.unmount()
   })
 

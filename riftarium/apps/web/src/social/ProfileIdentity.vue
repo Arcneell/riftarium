@@ -55,7 +55,9 @@ async function submit() {
 
 <template>
   <RiftPanel tag="form" title="Identité" accent="var(--bronze)" class="compte-form" @submit.prevent="submit">
-    <p class="compte-intro">Le pseudo apparaît sur vos decks publics.</p>
+    <p class="compte-intro">
+      Votre pseudo est visible sur votre profil public, vos decks publics, dans les salons et les échanges.
+    </p>
     <RiftField
       v-model="form.handle"
       label="Pseudo"

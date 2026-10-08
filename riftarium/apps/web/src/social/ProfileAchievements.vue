@@ -28,7 +28,8 @@ const total = computed(() => props.groups.reduce((sum, group) => sum + group.tot
       <span v-if="total" class="profil-hf-compte">{{ showTotals ? `${unlocked} / ${total}` : unlocked }}</span>
     </template>
     <p class="profil-hf-note">
-      Les hauts faits liés aux parties ne comptent que les duels suivis et confirmés — jamais la partie libre.
+      Les hauts faits de parties ne comptent que les parties suivies confirmées par les deux joueurs ou terminées par un
+      abandon, jamais la partie libre.
     </p>
     <p v-if="error" class="profil-hf-erreur" role="alert">{{ error }}</p>
     <div v-else-if="loading" role="status">

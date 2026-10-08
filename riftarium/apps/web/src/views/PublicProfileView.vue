@@ -8,6 +8,7 @@ import MatchRow from "../play/MatchRow.vue"
 import ProfileAchievements from "../social/ProfileAchievements.vue"
 import ProfileHero from "../social/ProfileHero.vue"
 import RiftButton from "../ui/RiftButton.vue"
+import { plural } from "../ui/french.js"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftPanel from "../ui/RiftPanel.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
@@ -60,8 +61,8 @@ const decks = computed(() => profile.value?.decks || [])
 /* Mentions sous la bio : ancienneté puis compteurs (qui bougent avec le suivi optimiste). */
 const heroMeta = computed(() => [
   memberSince.value ? `Membre depuis ${memberSince.value}` : "",
-  `${profile.value?.followers_count || 0} abonné(s)`,
-  `${profile.value?.following_count || 0} suivi(s)`
+  plural(profile.value?.followers_count || 0, "abonné"),
+  plural(profile.value?.following_count || 0, "joueur suivi", "joueurs suivis")
 ])
 
 /* Le contrat ne chiffre pas le taux : il se déduit de J / G, comme sur /statistiques. */
@@ -129,8 +130,8 @@ async function load() {
   try {
     profile.value = await getPublicProfile(handle.value)
     applySeo({
-      title: `${profile.value.handle} — Profil de joueur`,
-      description: `Profil Riftbound de ${profile.value.handle} sur Riftarium : hauts faits, duels, collection et decks.`,
+      title: `${profile.value.handle} · Profil de joueur`,
+      description: `Profil Riftbound de ${profile.value.handle} sur Riftarium : hauts faits, parties suivies, collection et decks.`,
       path: route.path,
       /* Bêta fermée : un profil public reste hors des moteurs de recherche. */
       noindex: true
@@ -239,7 +240,7 @@ onMounted(load)
         empty-text="Aucun haut fait débloqué pour l'instant."
       />
 
-      <RiftPanel v-if="shows('show_stats')" data-section="duels" title="Duels">
+      <RiftPanel v-if="shows('show_stats')" data-section="duels" title="Parties suivies">
         <div v-if="totals" class="profil-stats">
           <RiftStat label="Parties jouées" :value="totals.played || 0" />
           <RiftStat label="Victoires" :value="totals.won || 0" />

@@ -162,7 +162,7 @@ describe("social — libellés et progression", () => {
       { key: "streak_3", family: "duels", current: 1, threshold: 3, unlocked_at: null }
     ])
     expect(groups.map((group) => group.family)).toEqual(["duels", "decks"])
-    expect(groups[0].label).toBe("Duels")
+    expect(groups[0].label).toBe("Parties suivies")
     expect(groups[0].unlocked).toBe(1)
     expect(groups[0].total).toBe(3)
     /* Débloqué d'abord, puis le plus proche de son seuil. */

@@ -146,7 +146,7 @@ describe("TradesView", () => {
     expect(offerLine.text()).toContain("Échange possible")
     expect(wrapper.text()).toContain("dina")
 
-    await buttonWith(offerLine, "Je suis intéressé").trigger("click")
+    await buttonWith(offerLine, "Ça m'intéresse").trigger("click")
     await flushPromises()
     const dialog = document.body.querySelector("[role=dialog]")
     expect(dialog.textContent).toContain("Immortal Phoenix")

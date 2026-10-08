@@ -20,6 +20,7 @@ import {
   updateMe
 } from "../play.js"
 import RiftButton from "../ui/RiftButton.vue"
+import { plural } from "../ui/french.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftField from "../ui/RiftField.vue"
 import RiftPanel from "../ui/RiftPanel.vue"
@@ -122,7 +123,7 @@ async function loadRoom({ silent = false } = {}) {
       error.value = "Salon introuvable : ce code n'existe plus (salon expiré ou annulé)."
     } else if (silent) {
       /* Sondage : on garde le dernier état connu plutôt que de vider la page sur un hoquet réseau. */
-      pollError.value = "Mise à jour interrompue — dernier état connu affiché."
+      pollError.value = "Mise à jour impossible : le salon affiche le dernier état connu."
     } else {
       error.value = e.message
       room.value = null
@@ -338,8 +339,7 @@ onBeforeUnmount(() => {
     <!-- Sans code : saisie manuelle, pour qui a reçu le code sans le lien. -->
     <RiftPanel v-if="!code" class="salon-rejoindre" title="Rejoindre un salon">
       <p class="salon-note">
-        Saisissez le code à six caractères affiché sur le téléphone de l'hôte, ou ouvrez simplement le lien qu'il vous a
-        partagé.
+        Saisissez le code à six caractères affiché sur le téléphone de l'hôte, ou ouvrez le lien qu'il vous a envoyé.
       </p>
       <form class="salon-code-form" @submit.prevent="openCode">
         <div class="salon-code-field">
@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
             <RiftChip class="salon-statut" static selected :label="roomStatusLabel(room.status)" />
             <RiftChip class="salon-format" static :label="modeLabel(room.mode)" />
             <span class="salon-regles">
-              {{ room.victory_score }} points · {{ room.rounds_to_win }} manche(s) gagnante(s)
+              {{ room.victory_score }} points · {{ plural(room.rounds_to_win, "manche gagnante", "manches gagnantes") }}
             </span>
           </div>
 
@@ -421,7 +421,7 @@ onBeforeUnmount(() => {
                 />
               </div>
               <div v-else class="salon-seat salon-seat-libre">
-                <p class="salon-note">Place libre — en attente d'un adversaire.</p>
+                <p class="salon-note">Place libre : en attente d'un adversaire.</p>
               </div>
             </template>
           </div>
@@ -547,7 +547,7 @@ onBeforeUnmount(() => {
                 <span v-else class="salon-pseudo salon-ellipse salon-faint">Compte supprimé</span>
               </span>
               <b class="salon-score" aria-hidden="true">{{ player.score }}</b>
-              <span v-if="match.mode === 'match'" class="salon-manches">{{ player.rounds_won }} manche(s)</span>
+              <span v-if="match.mode === 'match'" class="salon-manches">{{ plural(player.rounds_won, "manche") }}</span>
               <RiftChip v-if="player.confirmed" class="salon-confirme" static selected label="Confirmé" />
             </li>
           </ul>
@@ -562,7 +562,7 @@ onBeforeUnmount(() => {
               <RouterLink class="salon-link" to="/statistiques">statistiques</RouterLink>.
             </p>
             <p v-else-if="match.status === 'confirmed' || match.status === 'abandoned'" class="salon-note">
-              Partie close — elle apparaît dans votre
+              Partie terminée. Retrouvez-la dans votre
               <RouterLink class="salon-link" to="/historique">historique</RouterLink>.
             </p>
           </div>

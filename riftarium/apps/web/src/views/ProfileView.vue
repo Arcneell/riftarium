@@ -56,7 +56,7 @@ const kpis = computed(() => {
     { label: "Exemplaires", value: stats.total_cards },
     { label: "Decks", value: stats.decks },
     { label: "Decks publics", value: stats.public_decks },
-    { label: "Likes reçus", value: stats.likes_received }
+    { label: "J'aime reçus", value: stats.likes_received }
   ]
 })
 
@@ -283,7 +283,8 @@ onMounted(() => {
 
           <RiftPanel title="Vos données" accent="var(--bronze)">
             <p class="profil-texte">
-              Export JSON de votre compte (collection, decks, profil) — droit d'accès RGPD. Détail des traitements :
+              Téléchargez vos données (collection, decks, profil) dans un fichier JSON : c'est votre droit d'accès prévu
+              par le RGPD. Le détail des traitements est dans la
               <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
             </p>
             <RiftButton variant="secondary" :disabled="exporting" @click="downloadExport">

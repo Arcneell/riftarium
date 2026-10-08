@@ -42,7 +42,7 @@ const achievements = [
     key: "veteran_10",
     family: "duels",
     title: "Vétéran",
-    description: "Jouer 10 duels suivis.",
+    description: "Jouer 10 parties suivies.",
     icon: "military_tech",
     tier: "silver",
     threshold: 10,
@@ -163,7 +163,7 @@ describe("ProfileView", () => {
     const { wrapper } = await mountView()
     expect(wrapper.get("h1").text()).toBe("testeur")
     expect(wrapper.text()).toContain("12")
-    expect(wrapper.text()).toContain("Likes reçus")
+    expect(wrapper.text()).toContain("J'aime reçus")
     expect(wrapper.text()).toContain("Membre depuis")
     expect(wrapper.text()).toContain("Daughter of the Void")
     expect(wrapper.findAll(".profil-portrait")).toHaveLength(2)
@@ -224,7 +224,7 @@ describe("ProfileView", () => {
     expect(call[1].body).toEqual({ email: "nouvelle@example.org", current_password: "motdepasse123" })
     const status = formWith(wrapper, "email").get(".compte-succes")
     expect(status.attributes("role")).toBe("status")
-    expect(status.text()).toBe("Email mis à jour — un e-mail de vérification a été envoyé à la nouvelle adresse.")
+    expect(status.text()).toBe("Adresse mise à jour. Un e-mail de vérification a été envoyé à la nouvelle adresse.")
     wrapper.unmount()
   })
 
@@ -383,7 +383,7 @@ describe("ProfileView", () => {
     expect(api).toHaveBeenCalledWith("/api/me/achievements")
 
     const families = wrapper.findAll(".profil-famille-titre").map((node) => node.text())
-    expect(families[0]).toContain("Duels")
+    expect(families[0]).toContain("Parties suivies")
     expect(families[1]).toContain("Decks")
     const title = wrapper.findAll(".rift-panel-title").find((node) => node.text().includes("Hauts faits"))
     expect(title.text()).toContain("2 / 3")
