@@ -3,7 +3,7 @@
 Contrat : docs/echanges.md.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import app.db as db_module
 from app.models import User
@@ -188,3 +188,97 @@ def test_offer_dropped_when_lot_removed(client, register_user):
     put = client.put(f"/api/collection/{PHOENIX}", json={"qty": 0, "condition": "NM", "lang": "EN"}, headers=headers)
     assert put.status_code == 200
     assert my_offers(client, headers) == []
+
+
+# ---------- Correspondances ----------
+
+
+def offers_by_handle(card_block):
+    return [item["owner"]["handle"] for item in card_block["offers"]]
+
+
+def test_matches_require_enabled(client, register_user):
+    headers = account(client, register_user, "alice")
+    for path in ("/api/trades/matches/wanted", "/api/trades/matches/offered", f"/api/trades/cards/{PHOENIX}/offers"):
+        assert client.get(path, headers=headers).status_code == 403
+
+
+def test_wanted_crosses_wishlist(client, register_user):
+    bob = account(client, register_user, "bob", zone="sud")
+    offer(client, bob, add_lot(client, bob, PHOENIX, qty=2), qty=2)
+    offer(client, bob, add_lot(client, bob, LEE))  # pas dans la wishlist d'alice
+    # Comptes exclus : non inscrit aux échanges, suspendu.
+    carl = account(client, register_user, "carl")
+    offer(client, carl, add_lot(client, carl, PHOENIX))
+    dave = account(client, register_user, "dave", zone="sud")
+    offer(client, dave, add_lot(client, dave, PHOENIX))
+    set_user("dave", suspended_until=datetime.now(UTC) + timedelta(days=3))
+
+    alice = account(client, register_user, "alice", zone="sud")
+    offer(client, alice, add_lot(client, alice, PHOENIX))  # sa propre offre n'apparaît pas
+    wish(client, alice, PHOENIX)
+    body = client.get("/api/trades/matches/wanted", headers=alice).json()
+    assert body["total"] == 1
+    block = body["items"][0]
+    assert block["card"]["id"] == PHOENIX and block["wanted_qty"] == 1
+    assert offers_by_handle(block) == ["bob"]
+    first = block["offers"][0]
+    assert first["qty"] == 2 and first["owner"]["zone"] == "sud"
+    assert first["mutual"] is False and first["pending_request_id"] is None
+    assert "contact" not in str(first)
+
+
+def test_wanted_sorts_my_zone_then_mutual(client, register_user):
+    north = account(client, register_user, "nordiste", zone="nord")
+    offer(client, north, add_lot(client, north, PHOENIX))
+    plain = account(client, register_user, "sudiste", zone="sud")
+    offer(client, plain, add_lot(client, plain, PHOENIX))
+    friend = account(client, register_user, "complice", zone="sud")
+    offer(client, friend, add_lot(client, friend, PHOENIX))
+    wish(client, friend, LEE)  # cherche une carte qu'alice propose
+
+    alice = account(client, register_user, "alice", zone="sud")
+    offer(client, alice, add_lot(client, alice, LEE))
+    wish(client, alice, PHOENIX)
+    block = client.get("/api/trades/matches/wanted", headers=alice).json()["items"][0]
+    assert offers_by_handle(block) == ["complice", "sudiste", "nordiste"]
+    assert block["offers"][0]["mutual"] is True
+
+
+def test_wanted_zone_and_search_filters(client, register_user):
+    north = account(client, register_user, "nordiste", zone="nord")
+    offer(client, north, add_lot(client, north, PHOENIX))
+    offer(client, north, add_lot(client, north, AHRI))
+    alice = account(client, register_user, "alice", zone="sud")
+    wish(client, alice, PHOENIX)
+    wish(client, alice, AHRI)
+    assert client.get("/api/trades/matches/wanted", headers=alice).json()["total"] == 2
+    assert client.get("/api/trades/matches/wanted?zone=sud", headers=alice).json()["total"] == 0
+    found = client.get("/api/trades/matches/wanted?q=ahri", headers=alice).json()
+    assert [block["card"]["id"] for block in found["items"]] == [AHRI]
+
+
+def test_offered_lists_seekers(client, register_user):
+    alice = account(client, register_user, "alice", zone="sud")
+    offer(client, alice, add_lot(client, alice, PHOENIX))
+    bob = account(client, register_user, "bob", zone="est")
+    wish(client, bob, PHOENIX)
+    wish(client, bob, AHRI)  # alice ne la propose pas
+    carl = account(client, register_user, "carl")  # non inscrit
+    wish(client, carl, PHOENIX)
+    body = client.get("/api/trades/matches/offered", headers=alice).json()
+    assert body["total"] == 1
+    item = body["items"][0]
+    assert item["user"]["handle"] == "bob" and item["user"]["zone"] == "est"
+    assert [card["id"] for card in item["cards"]] == [PHOENIX]
+
+
+def test_card_offers_counts_my_zone(client, register_user):
+    for handle, zone in (("bob1", "sud"), ("bob2", "nord"), ("bob3", "sud")):
+        headers = account(client, register_user, handle, zone=zone)
+        offer(client, headers, add_lot(client, headers, PHOENIX))
+    alice = account(client, register_user, "alice", zone="sud")
+    body = client.get(f"/api/trades/cards/{PHOENIX}/offers", headers=alice).json()
+    assert body["total"] == 3 and body["in_my_zone"] == 2
+    assert [item["owner"]["zone"] for item in body["offers"]] == ["sud", "sud", "nord"]
+    assert client.get(f"/api/trades/cards/{PHOENIX}/offers?zone=nord", headers=alice).json()["total"] == 1

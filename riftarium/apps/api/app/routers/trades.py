@@ -4,7 +4,9 @@ Contrat : docs/echanges.md. La logique vit dans app/trades.py ; ce routeur ne
 fait que l'authentification, la validation et la sérialisation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -71,3 +73,44 @@ def delete_offer(entry_id: int, user: User = Depends(current_user), db: Session 
     if existing is not None:
         trades.remove_offer(db, existing)
         db.commit()
+
+
+# ---------- Correspondances ----------
+
+Zone = Literal["nord", "sud", "est", "ouest"]
+
+
+@router.get("/matches/wanted")
+def matches_wanted(
+    zone: Zone | None = None,
+    q: str = Query(default="", max_length=80),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=24, ge=1, le=48),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    trades.require_enabled(user)
+    return trades.matches_wanted(db, user, zone=zone, q=q, page=page, size=size)
+
+
+@router.get("/matches/offered")
+def matches_offered(
+    zone: Zone | None = None,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=24, ge=1, le=48),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    trades.require_enabled(user)
+    return trades.matches_offered(db, user, zone=zone, page=page, size=size)
+
+
+@router.get("/cards/{card_id}/offers")
+def card_offers(
+    card_id: str,
+    zone: Zone | None = None,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    trades.require_enabled(user)
+    return trades.card_offers(db, user, card_id, zone=zone)
