@@ -183,6 +183,12 @@ class ProfilePatch(BaseModel):
     show_collection: bool | None = None
     show_decks: bool | None = None
     show_achievements: bool | None = None
+    # Échanges (docs/echanges.md) : activer exige une zone et un contact (vérifié
+    # dans apply_profile, qui voit aussi l'état déjà enregistré).
+    trade_enabled: bool | None = None
+    trade_zone: Literal["nord", "sud", "est", "ouest"] | None = None
+    trade_contact: str | None = Field(default=None, max_length=80)
+    notify_trades: bool | None = None
     current_password: str | None = Field(default=None, max_length=128)
 
 
@@ -447,3 +453,16 @@ class PublicProfileOut(BaseModel):
     achievements: list[AchievementOut] | None = None
     collection_summary: ProfileCollectionOut | None = None
     decks: list[ProfileDeckOut] | None = None
+
+
+class TradeOfferPut(BaseModel):
+    """Quantité proposée à l'échange sur un lot (0 retire l'offre)."""
+
+    qty: int = Field(ge=0, le=999)
+
+
+class TradeRequestIn(BaseModel):
+    """Demande sur l'offre d'un autre joueur, avec un message optionnel."""
+
+    offer_id: int
+    message: str = Field(default="", max_length=280)

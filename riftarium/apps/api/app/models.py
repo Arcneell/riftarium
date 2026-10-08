@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,6 +52,12 @@ class User(Base):
     show_collection: Mapped[bool] = mapped_column(Boolean, default=False)
     show_decks: Mapped[bool] = mapped_column(Boolean, default=True)
     show_achievements: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Échanges entre joueurs (docs/echanges.md) : opt-in, zone de La Réunion et
+    # contact externe dévoilé seulement aux parties d'une demande acceptée.
+    trade_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    trade_zone: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    trade_contact: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notify_trades: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -366,3 +373,64 @@ class Follow(Base):
     follower_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     followed_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# Échanges entre joueurs : contrat dans docs/echanges.md.
+TRADE_ZONES = ("nord", "sud", "est", "ouest")
+
+
+class TradeOffer(Base):
+    """Lot de collection proposé à l'échange : une offre par lot, quantité bornée par le lot.
+
+    La quantité est recalée par trades.sync_offers à chaque modification de la
+    collection (le lot peut diminuer, fusionner ou disparaître).
+    """
+
+    __tablename__ = "trade_offers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    collection_item_id: Mapped[int] = mapped_column(ForeignKey("collection_items.id", ondelete="CASCADE"), unique=True)
+    qty: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    entry: Mapped[CollectionItem] = relationship(lazy="joined")
+
+
+class TradeRequest(Base):
+    """Demande d'un joueur sur l'offre d'un autre.
+
+    Carte, état et langue sont copiés à la création : la demande reste lisible
+    quand l'offre disparaît (trade_offer_id passe alors à NULL). Une seule
+    demande « pending » par couple (demandeur, offre) — index unique partiel.
+    """
+
+    __tablename__ = "trade_requests"
+    __table_args__ = (
+        CheckConstraint("requester_id <> owner_id", name="ck_trade_request_not_self"),
+        Index(
+            "uq_trade_request_pending",
+            "requester_id",
+            "trade_offer_id",
+            unique=True,
+            sqlite_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    requester_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    trade_offer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("trade_offers.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    card_id: Mapped[str] = mapped_column(ForeignKey("cards.id"))
+    condition: Mapped[str] = mapped_column(String(8))
+    lang: Mapped[str] = mapped_column(String(8))
+    message: Mapped[str] = mapped_column(String(280), default="")
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    card: Mapped[Card] = relationship(lazy="joined")

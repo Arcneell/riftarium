@@ -108,6 +108,16 @@ export const router = createRouter({
       }
     },
     {
+      path: "/echanges",
+      component: () => import("./views/TradesView.vue"),
+      meta: {
+        auth: true,
+        noindex: true,
+        title: "Échanges",
+        description: "Échanges de cartes Riftbound entre joueurs de La Réunion : correspondances et demandes."
+      }
+    },
+    {
       path: "/decks",
       component: () => import("./views/DecksView.vue"),
       meta: { auth: true, noindex: true, title: "Mes decks", description: "Vos decks Riftbound sur Riftarium." }

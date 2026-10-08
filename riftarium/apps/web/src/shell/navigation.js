@@ -21,10 +21,13 @@ export const NAV = [
     label: "Collection",
     to: "/collection",
     icon: "collection",
-    prefixes: ["/collection", "/wishlist"],
+    prefixes: ["/collection", "/wishlist", "/echanges"],
+    /* `badge` : compteur affiché par le rail (demandes d'échange reçues en attente). */
+    badge: "trades",
     children: [
       { label: "Collection", to: "/collection" },
-      { label: "Wishlist", to: "/wishlist" }
+      { label: "Wishlist", to: "/wishlist" },
+      { label: "Échanges", to: "/echanges", badge: "trades" }
     ]
   },
   {

@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import CardCollectionPanel from "./CardCollectionPanel.vue"
 import { api, session } from "../api.js"
+import { tradeSettings } from "../trades.js"
 
 vi.mock("../api.js", async (importOriginal) => {
   const actual = await importOriginal()
@@ -369,6 +370,45 @@ describe("CardCollectionPanel", () => {
     expect(wrapper.findAll(".panel-lot")).toHaveLength(1)
     expect(wrapper.get(".panel-count .rift-stepper-value").text()).toBe("2")
     expect(wrapper.find(".panel-saved").exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe("CardCollectionPanel — à échanger", () => {
+  beforeEach(() => {
+    localStorage.clear()
+    api.mockReset()
+    Object.assign(tradeSettings, { loaded: false, enabled: false, zone: null })
+    login()
+  })
+
+  function setupApi({ enabled }) {
+    api.mockImplementation((path, options = {}) => {
+      if (path === "/api/auth/me") return Promise.resolve({ trade_enabled: enabled, trade_zone: "sud" })
+      if (path === "/api/collection/ogn-037-298")
+        return Promise.resolve(stateOf([{ id: 5, qty: 3, condition: "NM", lang: "FR" }]))
+      if (path === "/api/trades/offers") return Promise.resolve([{ id: 1, entry_id: 5, qty: 1, entry_qty: 3 }])
+      return Promise.resolve(options.method ? null : {})
+    })
+  }
+
+  it("règle la quantité proposée de chaque lot quand les échanges sont activés", async () => {
+    setupApi({ enabled: true })
+    const { wrapper } = await mountPanel()
+    const trade = wrapper.get(".panel-lot-trade")
+    expect(trade.get(".rift-stepper-value").text()).toBe("1")
+    await trade.get(".rift-stepper-plus").trigger("click")
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith("/api/trades/offers/5", { method: "PUT", body: { qty: 2 } })
+    expect(wrapper.get(".panel-lot-trade .rift-stepper-value").text()).toBe("2")
+    wrapper.unmount()
+  })
+
+  it("masque la ligne quand les échanges ne sont pas activés", async () => {
+    setupApi({ enabled: false })
+    const { wrapper } = await mountPanel()
+    expect(wrapper.find(".panel-lot-trade").exists()).toBe(false)
+    expect(api).not.toHaveBeenCalledWith("/api/trades/offers")
     wrapper.unmount()
   })
 })

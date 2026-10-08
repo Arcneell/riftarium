@@ -9,6 +9,7 @@ describe("activeSection", () => {
     ["/decks/42", "decks"],
     ["/communaute", "decks"],
     ["/wishlist", "collection"],
+    ["/echanges", "collection"],
     ["/regles/officielles", "rules"],
     ["/salon/ABCD", "play"],
     ["/historique", "play"]
