@@ -10,12 +10,14 @@ import path from "node:path"
 // Chemins relatifs à la racine vitest (import.meta.url est une URL http sous jsdom).
 const SRC = path.resolve("src")
 const INDEX_HTML = path.resolve("index.html")
+const VITE_CONFIG = path.resolve("vite.config.js")
 
 // Classes volontairement sans règle. Une classe qui reçoit un jour une règle, ou qui
 // disparaît des gabarits, doit sortir de cette liste ; le second test le rappelle.
 const UNSTYLED_ALLOWLIST = new Map([
+  // Racine de modificateurs : seuls shell--mobile et shell--collapsed (App.vue) ont une règle.
+  ["shell", "App.vue : racine de la coquille, porteuse des modificateurs shell--mobile et shell--collapsed"],
   // Crochets de test : sélecteurs visés par une spec, sans style propre.
-  ["shell", "App.vue : racine de la coquille, visée par App.spec et sw.spec"],
   ["bandeau-ok", "TraceursNotice : bouton d'acquittement visé par sa spec"],
   ["bandeau-verif", "EmailVerifyNotice : racine du bandeau visée par sa spec"],
   ["bandeau-verif-renvoi", "EmailVerifyNotice : bouton de renvoi visé par sa spec"],
@@ -24,6 +26,7 @@ const UNSTYLED_ALLOWLIST = new Map([
   ["topbar-account", "AppTopbar : zone de compte visée par sa spec"],
   ["rift-text", "RiftText : racine visée par ses specs et celles de CardHoverPreview"],
   ["souhait-remove", "WishlistView : bouton de retrait visé par sa spec"],
+  ["empty", "UserAvatar : modificateur « sans image » (:class), vérifié par UserAvatar.spec"],
   ["console-row", "Administration : lignes visées par AdminView.spec"],
   ["console-deck-name", "Administration : nom du deck visé par AdminView.spec"],
   // Modificateur de glyphe : `rb-glyph rune` (CardView) distingue une rune d'un glyphe
@@ -52,14 +55,26 @@ function definedClasses(vueFiles) {
   return defined
 }
 
-// Classes littérales des gabarits : class="…" hors <script>/<style>, sans les liaisons (:class)
-// ni les interpolations {{ }}.
+const CLASS_NAME_RE = /^-?[_a-zA-Z][\w-]*$/
+// Dans une liaison :class, chaînes entre apostrophes (éléments de tableau, branches d'un
+// ternaire, clés d'objet citées), sauf l'opérande d'une comparaison, un argument d'appel ou
+// un index (`x === 'deck'`, `f('a')`, `o['k']`) ; les gabarits `…${}` sont ignorés.
+const BOUND_STRING_RE = /(?<!(?:[=!]=|\(|\w\[)\s*)'([^'`$]*)'/g
+// Clés d'objet non citées : `{ selected: …, removable: … }` (après { ou une virgule, suivies de :).
+const BOUND_KEY_RE = /[{,]\s*([_a-zA-Z]\w*)\s*:/g
+
+// Classes littérales des gabarits, hors <script>/<style> : class="…" (sans les interpolations
+// {{ }}) et littéraux des liaisons :class décrits ci-dessus.
 function templateClasses(text) {
   const tpl = text.replace(STYLE_RE, "").replace(SCRIPT_RE, "")
   const found = new Set()
-  for (const m of tpl.matchAll(/(?<![\w:.@#-])class="([^"]*)"/g)) {
-    if (m[1].includes("{{")) continue
-    for (const c of m[1].split(/\s+/)) if (/^-?[_a-zA-Z][\w-]*$/.test(c)) found.add(c)
+  const add = (value) => {
+    for (const c of value.split(/\s+/)) if (CLASS_NAME_RE.test(c)) found.add(c)
+  }
+  for (const m of tpl.matchAll(/(?<![\w:.@#-])class="([^"]*)"/g)) if (!m[1].includes("{{")) add(m[1])
+  for (const m of tpl.matchAll(/(?<![\w-])(?::|v-bind:)class="([^"]*)"/g)) {
+    for (const s of m[1].matchAll(BOUND_STRING_RE)) add(s[1])
+    for (const k of m[1].matchAll(BOUND_KEY_RE)) add(k[1])
   }
   return found
 }
@@ -88,10 +103,15 @@ describe("couverture CSS des classes de gabarit", () => {
 describe("ancienne feuille globale", () => {
   it("main.css n'existe plus et n'est importé nulle part", () => {
     expect(fs.existsSync(path.join(SRC, "assets", "main.css"))).toBe(false)
-    // Import JS ou CSS (`import "…/main.css"`, `@import`) et lien HTML : les commentaires
+    // Import JS ou CSS (`import "…/main.css"`, `@import`, avec ou sans guillemets), `<style src>`
+    // et lien HTML, dans src, index.html et vite.config.js : les commentaires
     // qui citent encore l'ancien nom ne comptent pas.
-    const IMPORT_RE = /(?:import\s*(?:\(\s*)?|@import\s+(?:url\()?\s*|href=)["'][^"']*main\.css["']/
-    const sources = [...walk(SRC).filter((f) => /\.(js|vue|css)$/.test(f) && !f.endsWith(".spec.js")), INDEX_HTML]
+    const IMPORT_RE = /(?:import\s*(?:\(\s*)?["']|@import\s+(?:url\(\s*)?["']?|(?:href|src)=["'])[^"')\s]*main\.css\b/
+    const sources = [
+      ...walk(SRC).filter((f) => /\.(js|vue|css)$/.test(f) && !f.endsWith(".spec.js")),
+      INDEX_HTML,
+      VITE_CONFIG
+    ]
     const importers = sources.filter((f) => IMPORT_RE.test(fs.readFileSync(f, "utf8")))
     expect(importers.map((f) => path.relative(SRC, f))).toEqual([])
   })

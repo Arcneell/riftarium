@@ -154,6 +154,7 @@
   color: var(--ink-muted);
 }
 .graphe-table .num {
+  font-family: var(--font-label);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
