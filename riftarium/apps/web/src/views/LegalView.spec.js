@@ -33,7 +33,7 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("Banque centrale européenne")
     expect(wrapper.text()).toContain("OVH SAS")
     expect(wrapper.text()).toContain("contact@riftarium.re")
-    expect(wrapper.find(".legal-nav").text()).toContain("CGU")
+    expect(wrapper.find(".mentions-toc").text()).toContain("CGU")
   })
 
   it("décrit le hash d'IP et l'export du compte dans la confidentialité", async () => {
@@ -64,5 +64,38 @@ describe("LegalView", () => {
     expect(wrapper.text()).toContain("par jour et par rubrique")
     expect(wrapper.text()).toContain("sans aucune donnée personnelle ni cookie")
     expect(wrapper.text()).toContain("48 heures")
+  })
+
+  it("mentions : sommaire avec aria-current, ancres conservées", async () => {
+    const wrapper = await mountPage("/mentions-legales")
+    expect(wrapper.get("h1").text()).toBe("Mentions légales")
+    expect(wrapper.find(".mentions-layout").exists()).toBe(true)
+    expect(wrapper.text()).toContain("Mise à jour")
+    const current = wrapper.get('.mentions-toc a[aria-current="page"]')
+    expect(current.text()).toBe("Mentions légales")
+    const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+    expect(anchors.map((a) => a.attributes("href"))).toEqual([
+      "#editeur",
+      "#hebergement",
+      "#propriete-intellectuelle",
+      "#code-source"
+    ])
+    for (const a of anchors) {
+      const target = wrapper.find(a.attributes("href"))
+      expect(target.exists()).toBe(true)
+      expect(target.text()).toBe(a.text())
+    }
+    expect(wrapper.findAll(".mentions-quote").length).toBe(2)
+  })
+
+  it("chaque page légale expose un sommaire dont les ancres existent", async () => {
+    for (const path of ["/confidentialite", "/cgu", "/cookies", "/signalement"]) {
+      const wrapper = await mountPage(path)
+      const anchors = wrapper.findAll('.mentions-toc a[href^="#"]')
+      expect(anchors.length).toBeGreaterThan(1)
+      expect(wrapper.findAll("h2").length).toBe(anchors.length)
+      for (const a of anchors) expect(wrapper.find(a.attributes("href")).exists()).toBe(true)
+      expect(wrapper.get('.mentions-toc a[aria-current="page"]').attributes("href")).toBe(path)
+    }
   })
 })

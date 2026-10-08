@@ -1,7 +1,6 @@
 <script setup>
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
-import { BANNERS } from "../banners.js"
 import {
   CONTACT_EMAIL,
   CONTACT_MAILTO,
@@ -19,7 +18,7 @@ import {
   RIFTBOUND_OFFICIAL,
   RIFTCODEX
 } from "../legal.js"
-import PageBanner from "../components/PageBanner.vue"
+import { useBreakpoint } from "../composables/useBreakpoint.js"
 
 const TITLES = {
   mentions: { title: "Mentions légales" },
@@ -29,25 +28,97 @@ const TITLES = {
   report: { title: "Signaler un contenu" }
 }
 
+/* Sommaire de chaque page : les identifiants sont les ancres des titres h2 ci-dessous. */
+const SECTIONS = {
+  mentions: [
+    { id: "editeur", label: "Éditeur" },
+    { id: "hebergement", label: "Hébergement" },
+    { id: "propriete-intellectuelle", label: "Propriété intellectuelle — Riot Games" },
+    { id: "code-source", label: "Code source" }
+  ],
+  privacy: [
+    { id: "responsable", label: "Responsable de traitement" },
+    { id: "donnees", label: "Données traitées" },
+    { id: "finalites", label: "Finalités et bases" },
+    { id: "durees", label: "Durées de conservation" },
+    { id: "destinataires", label: "Destinataires et sous-traitants techniques" },
+    { id: "droits", label: "Vos droits" },
+    { id: "age", label: "Âge" }
+  ],
+  terms: [
+    { id: "objet", label: "Objet" },
+    { id: "compte", label: "Compte" },
+    { id: "formats", label: "Formats de decks" },
+    { id: "contenus", label: "Contenus publiés" },
+    { id: "donnees-cartes", label: "Données de cartes et de règles" },
+    { id: "disponibilite", label: "Disponibilité" },
+    { id: "droit", label: "Droit applicable" }
+  ],
+  cookies: [
+    { id: "consentement", label: "Consentement : ce qui est obligatoire, ce qui ne l'est pas" },
+    { id: "stockage", label: "Stockage strictement nécessaire" },
+    { id: "traitement", label: "Ce qui n'est pas un cookie, mais un traitement" },
+    { id: "tiers", label: "Tiers au chargement des pages" }
+  ],
+  report: [
+    { id: "pourquoi", label: "Pourquoi signaler" },
+    { id: "comment", label: "Comment faire" }
+  ]
+}
+
 const route = useRoute()
+const breakpoint = useBreakpoint()
 const page = computed(() => route.meta.legal || "mentions")
 const copy = computed(() => TITLES[page.value] || TITLES.mentions)
+const sections = computed(() => SECTIONS[page.value] || SECTIONS.mentions)
+
+/* Section courante du sommaire : la première par défaut, puis celle qu'on active. */
+const activeId = ref(sections.value[0].id)
+const toc = ref(null)
+watch(sections, (list) => {
+  activeId.value = list[0].id
+})
+
+function pick(id) {
+  activeId.value = id
+  /* sous 1 024 px, le sommaire se referme une fois la section choisie */
+  if (toc.value && "open" in toc.value) toc.value.open = false
+}
 </script>
 
 <template>
-  <PageBanner :art="BANNERS.rules" :title="copy.title" show-title />
+  <div class="wrap mentions-page">
+    <header class="mentions-head">
+      <h1 class="mentions-titre">{{ copy.title }}</h1>
+      <p class="mentions-maj">Mise à jour : {{ LEGAL_UPDATED }}</p>
+    </header>
 
-  <section class="legal-page">
-    <div class="wrap legal-layout">
-      <nav class="legal-nav" aria-label="Pages légales">
-        <RouterLink v-for="item in LEGAL_NAV" :key="item.key" :to="item.path">{{ item.label }}</RouterLink>
-      </nav>
+    <div class="mentions-layout">
+      <component :is="breakpoint === 'desktop' ? 'aside' : 'details'" ref="toc" class="mentions-toc">
+        <summary v-if="breakpoint !== 'desktop'" class="mentions-toc-summary">Sommaire</summary>
+        <nav aria-label="Pages légales">
+          <p class="mentions-toc-titre">Pages légales</p>
+          <RouterLink v-for="item in LEGAL_NAV" :key="item.key" class="mentions-toc-link" :to="item.path">{{
+            item.label
+          }}</RouterLink>
+        </nav>
+        <nav aria-label="Sur cette page">
+          <p class="mentions-toc-titre">Sur cette page</p>
+          <a
+            v-for="item in sections"
+            :key="item.id"
+            class="mentions-toc-link"
+            :href="'#' + item.id"
+            :aria-current="item.id === activeId ? 'location' : undefined"
+            @click="pick(item.id)"
+            >{{ item.label }}</a
+          >
+        </nav>
+      </component>
 
-      <article class="legal-doc panel">
-        <p class="muted mono legal-updated">Mise à jour : {{ LEGAL_UPDATED }}</p>
-
+      <article class="mentions-doc">
         <template v-if="page === 'mentions'">
-          <h3>Éditeur</h3>
+          <h2 id="editeur">Éditeur</h2>
           <p>
             Riftarium est un site communautaire édité à titre non professionnel, bénévole et non commercial, par
             l'auteur du dépôt
@@ -62,7 +133,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             <a :href="GITHUB_ISSUES" target="_blank" rel="noopener">issues GitHub</a>.
           </p>
 
-          <h3>Hébergement</h3>
+          <h2 id="hebergement">Hébergement</h2>
           <p>
             Le site est hébergé par {{ HOST.name }}, {{ HOST.form }}, {{ HOST.address }}. {{ HOST.rcs }}. TVA :
             {{ HOST.tva }}. Tél. {{ HOST.phone }}. <a :href="HOST.site" target="_blank" rel="noopener">ovhcloud.com</a>.
@@ -72,10 +143,10 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             redistribution locale. Les polices d'écriture sont hébergées sur le même serveur que le site.
           </p>
 
-          <h3>Propriété intellectuelle — Riot Games</h3>
-          <p class="legal-quote">{{ RIOT_DISCLAIMER_EN }}</p>
+          <h2 id="propriete-intellectuelle">Propriété intellectuelle — Riot Games</h2>
+          <p class="mentions-quote">{{ RIOT_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_DISCLAIMER_FR }}</p>
-          <p class="legal-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
+          <p class="mentions-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
           <p>
             Riftbound, League of Legends, les visuels de cartes, illustrations, glyphes, textes de cartes et documents
@@ -98,7 +169,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             ni une offre d'achat.
           </p>
 
-          <h3>Code source</h3>
+          <h2 id="code-source">Code source</h2>
           <p>
             Le code de Riftarium est consultable sur GitHub sous licence « source accessible » : lecture et
             contributions, pas de copie ni de redéploiement sans autorisation. Cette licence ne couvre aucun actif Riot.
@@ -106,14 +177,14 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
         </template>
 
         <template v-else-if="page === 'privacy'">
-          <h3>Responsable de traitement</h3>
+          <h2 id="responsable">Responsable de traitement</h2>
           <p>
             L'éditeur de Riftarium (voir
             <RouterLink to="/mentions-legales">mentions légales</RouterLink>) est responsable des traitements décrits
             ici.
           </p>
 
-          <h3>Données traitées</h3>
+          <h2 id="donnees">Données traitées</h2>
           <ul>
             <li>
               <strong>Compte</strong> : pseudo, adresse e-mail, mot de passe haché (scrypt), biographie, avatar choisi
@@ -134,7 +205,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             </li>
           </ul>
 
-          <h3>Finalités et bases</h3>
+          <h2 id="finalites">Finalités et bases</h2>
           <ul>
             <li>Fournir le compte, la collection et le deck builder — exécution du service demandé.</li>
             <li>Publier les decks que vous rendez publics — exécution du service / intérêt légitime communautaire.</li>
@@ -144,7 +215,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
           </ul>
           <p>Aucune donnée n'est vendue. Aucune publicité, aucun traceur publicitaire, aucun profilage commercial.</p>
 
-          <h3>Durées de conservation</h3>
+          <h2 id="durees">Durées de conservation</h2>
           <ul>
             <li>
               Compte, collection, decks : jusqu'à suppression du compte par vos soins, ou suppression par l'éditeur.
@@ -156,7 +227,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             </li>
           </ul>
 
-          <h3>Destinataires et sous-traitants techniques</h3>
+          <h2 id="destinataires">Destinataires et sous-traitants techniques</h2>
           <ul>
             <li>{{ HOST.name }} (hébergement de l'application et de la base), {{ HOST.address }}.</li>
             <li>
@@ -169,7 +240,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             </li>
           </ul>
 
-          <h3>Vos droits</h3>
+          <h2 id="droits">Vos droits</h2>
           <p>
             Vous pouvez accéder à vos données, les rectifier, les exporter et supprimer votre compte depuis
             <RouterLink to="/profil">Mon profil</RouterLink>
@@ -183,7 +254,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.
           </p>
 
-          <h3>Âge</h3>
+          <h2 id="age">Âge</h2>
           <p>
             Le service n'est pas destiné aux moins de 15 ans (âge du consentement numérique en France). L'inscription
             exige de le confirmer.
@@ -191,24 +262,24 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
         </template>
 
         <template v-else-if="page === 'terms'">
-          <h3>Objet</h3>
+          <h2 id="objet">Objet</h2>
           <p>
             Riftarium est un compagnon fan-made gratuit pour le jeu de cartes Riftbound : cartothèque, règles,
             collection personnelle, deck builder et partage de decks. C'est un projet en <strong>bêta fermée</strong>,
             indépendant de Riot Games, non annoncé publiquement.
           </p>
-          <p class="legal-quote">{{ RIOT_DISCLAIMER_EN }}</p>
+          <p class="mentions-quote">{{ RIOT_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_DISCLAIMER_FR }}</p>
-          <p class="legal-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
+          <p class="mentions-quote">{{ RIOT_GENERAL_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_GENERAL_DISCLAIMER_FR }}</p>
 
-          <h3>Compte</h3>
+          <h2 id="compte">Compte</h2>
           <p>
             L'inscription est réservée aux personnes d'au moins 15 ans. Vous êtes responsable de la confidentialité de
             votre mot de passe et des contenus que vous publiez (pseudo, bio, decks, descriptions).
           </p>
 
-          <h3>Formats de decks</h3>
+          <h2 id="formats">Formats de decks</h2>
           <ul>
             <li>
               <strong>Légal</strong> : le site vérifie les règles officielles de construction (légende, champs de
@@ -220,7 +291,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             </li>
           </ul>
 
-          <h3>Contenus publiés</h3>
+          <h2 id="contenus">Contenus publiés</h2>
           <p>
             En rendant un deck public ou en remplissant une bio, vous autorisez Riftarium à l'afficher aux visiteurs du
             site, uniquement pour le fonctionnement du service. Vous gardez la responsabilité de vos textes. Un filtre
@@ -231,32 +302,32 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             usurpation, contenu illégal.
           </p>
 
-          <h3>Données de cartes et de règles</h3>
+          <h2 id="donnees-cartes">Données de cartes et de règles</h2>
           <p>
             Les cartes et règles reproduites restent la propriété de Riot Games. En cas d'écart, les documents et
             traductions officiels font foi. Le site n'est pas un client de jeu : aucune partie n'est simulée, aucun
             classement de joueurs, aucun score de victoire.
           </p>
 
-          <h3>Disponibilité</h3>
+          <h2 id="disponibilite">Disponibilité</h2>
           <p>
             Le service est fourni « en l'état », sans garantie de disponibilité ni d'exactitude des données pendant la
             bêta. L'éditeur peut modifier, suspendre ou arrêter le site, notamment si Riot le demande.
           </p>
 
-          <h3>Droit applicable</h3>
+          <h2 id="droit">Droit applicable</h2>
           <p>Les présentes sont soumises au droit français. Tout litige relève des tribunaux compétents en France.</p>
         </template>
 
         <template v-else-if="page === 'cookies'">
-          <h3>Consentement : ce qui est obligatoire, ce qui ne l'est pas</h3>
+          <h2 id="consentement">Consentement : ce qui est obligatoire, ce qui ne l'est pas</h2>
           <p>
             La CNIL n'exige un bandeau de consentement que pour les traceurs non nécessaires (publicité, réseaux
             sociaux, mesure d'audience). Riftarium n'en dépose aucun. Un bandeau d'information s'affiche à la première
             visite pour l'expliquer ; il n'y a rien à « accepter » au-delà de cette information.
           </p>
 
-          <h3>Stockage strictement nécessaire</h3>
+          <h2 id="stockage">Stockage strictement nécessaire</h2>
           <ul>
             <li>
               <strong>cookie HTTP-only</strong> (<code>riftarium_session</code>) : jeton de session, inaccessible au
@@ -272,7 +343,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             </li>
           </ul>
 
-          <h3>Ce qui n'est pas un cookie, mais un traitement</h3>
+          <h2 id="traitement">Ce qui n'est pas un cookie, mais un traitement</h2>
           <p>
             Les vues de decks publics dédupliquent les visiteurs anonymes via un hash d'adresse IP côté serveur. Voir la
             <RouterLink to="/confidentialite">politique de confidentialité</RouterLink>.
@@ -283,7 +354,7 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
             48 heures, sert uniquement à dédupliquer les visiteurs du jour.
           </p>
 
-          <h3>Tiers au chargement des pages</h3>
+          <h2 id="tiers">Tiers au chargement des pages</h2>
           <ul>
             <li>Illustrations : CDN Riot Games. Requête technique d'image, pas un cookie déposé par Riftarium.</li>
             <li>Polices : servies par Riftarium, pas par Google Fonts.</li>
@@ -291,14 +362,14 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
         </template>
 
         <template v-else>
-          <h3>Pourquoi signaler</h3>
+          <h2 id="pourquoi">Pourquoi signaler</h2>
           <p>
             Riftarium héberge des textes d'utilisateurs (bios, noms et descriptions de decks). Si un contenu est
             illicite, contraire aux
             <RouterLink to="/cgu">CGU</RouterLink>, ou porte atteinte à un droit, signalez-le.
           </p>
 
-          <h3>Comment faire</h3>
+          <h2 id="comment">Comment faire</h2>
           <p>
             Écrivez à
             <a :href="CONTACT_MAILTO">{{ CONTACT_EMAIL }}</a>
@@ -317,5 +388,169 @@ const copy = computed(() => TITLES[page.value] || TITLES.mentions)
         </template>
       </article>
     </div>
-  </section>
+  </div>
 </template>
+
+<style scoped>
+.mentions-page {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-7);
+}
+.mentions-head {
+  margin-bottom: var(--space-5);
+}
+/* neutralise le h1 dégradé hérité de main.css (retiré à la tâche 5) */
+.mentions-page .mentions-titre {
+  margin: 0 0 var(--space-2);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  animation: none;
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+}
+.mentions-maj {
+  margin: 0;
+  color: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mentions-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.mentions-toc {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  max-height: calc(100dvh - var(--topbar-h) - 32px);
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.mentions-toc nav {
+  display: flex;
+  flex-direction: column;
+}
+.mentions-toc nav + nav {
+  margin-top: var(--space-4);
+}
+.mentions-toc-titre {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-muted);
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mentions-toc-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2);
+  border-left: 2px solid transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.3;
+  text-decoration: none;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast);
+}
+.mentions-toc-link:hover {
+  background: var(--bg-sunken);
+}
+.mentions-toc-link[aria-current] {
+  background: var(--bg-sunken);
+  border-left-color: var(--blood);
+  color: var(--bronze-light);
+}
+.mentions-toc-link:focus-visible,
+.mentions-toc-summary:focus-visible,
+.mentions-doc a:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: -3px;
+}
+.mentions-toc-summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bronze-light);
+  font-family: var(--font-label);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Typographie de lecture */
+.mentions-doc {
+  min-width: 0;
+  max-width: 760px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+}
+.mentions-doc h2 {
+  margin: var(--space-6) 0 var(--space-3);
+  padding: 0;
+  scroll-margin-top: calc(var(--topbar-h) + var(--space-4));
+  color: var(--bronze-light);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.mentions-doc h2:first-child {
+  margin-top: 0;
+}
+.mentions-doc p,
+.mentions-doc li {
+  margin: 0 0 var(--space-3);
+  line-height: 1.65;
+}
+.mentions-doc ul {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.3em;
+}
+.mentions-doc a {
+  color: var(--blood-text);
+  text-underline-offset: 3px;
+}
+.mentions-doc a:hover {
+  color: var(--bronze-light);
+}
+.mentions-doc code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.9em;
+}
+.mentions-quote {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--bronze);
+  background: var(--bg-raised);
+  color: var(--ink-muted);
+  font-style: italic;
+}
+@media (max-width: 1023px) {
+  .mentions-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .mentions-toc {
+    position: static;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mentions-toc-link {
+    transition: none;
+  }
+}
+</style>

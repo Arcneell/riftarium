@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils"
 import { createMemoryHistory, createRouter } from "vue-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import AdminGateView from "./AdminGateView.vue"
+import NotFoundView from "./NotFoundView.vue"
 import { api, session } from "../api.js"
 import { router as appRouter } from "../router.js"
 
@@ -45,6 +46,22 @@ describe("AdminGateView (/admin masqué)", () => {
     expect(wrapper.text()).toContain("Page introuvable")
     expect(wrapper.find(".admin-tabs").exists()).toBe(false)
     expect(api).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it("la porte admin rend la 404 à l'identique", async () => {
+    const wrapper = await mountGate()
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        { path: "/admin", component: { template: "<div />" } }
+      ]
+    })
+    router.push("/admin")
+    await router.isReady()
+    const notFound = mount(NotFoundView, { global: { plugins: [router] } })
+    expect(wrapper.get(".perdu-page").html()).toBe(notFound.html())
     wrapper.unmount()
   })
 
