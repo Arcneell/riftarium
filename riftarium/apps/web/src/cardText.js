@@ -146,7 +146,7 @@ export function isFoil(card) {
 export function variantLabel(card) {
   if (card?.signature) return "Signature"
   if (card?.overnumbered) return "Overnumbered"
-  if (card?.alternate_art) return "Alt"
+  if (card?.alternate_art) return "Alt-art"
   return "Normale"
 }
 

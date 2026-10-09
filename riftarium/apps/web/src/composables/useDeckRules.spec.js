@@ -91,7 +91,7 @@ describe("useDeckRules", () => {
     expect(rules.inDeckQty(unit)).toBe(3)
 
     expect(rules.addCard(unit)).toBe(false)
-    expect(onLimit).toHaveBeenCalledWith("Maximum 3 exemplaires de Phénix Immortel.", "u1")
+    expect(onLimit).toHaveBeenCalledWith("3 exemplaires maximum de Phénix Immortel.", "u1")
 
     /* La variante overnumbered appartient à la même famille de copies. */
     expect(rules.inDeckQty(unitReprint)).toBe(3)
@@ -109,7 +109,7 @@ describe("useDeckRules", () => {
     expect(onLimit).toHaveBeenCalledWith("3 champs de bataille maximum.", "b4")
 
     expect(rules.addCard(battlefield(1))).toBe(false)
-    expect(onLimit).toHaveBeenCalledWith("Maximum 1 exemplaire(s) de Champ 1.", "b1")
+    expect(onLimit).toHaveBeenCalledWith("Un seul exemplaire de Champ 1 par deck.", "b1")
     expect(rules.zoneCounts.value.Battlefield).toBe(3)
   })
 
@@ -121,7 +121,7 @@ describe("useDeckRules", () => {
       ]
     })
     expect(rules.addCard(rune)).toBe(false)
-    expect(onLimit).toHaveBeenCalledWith("Maximum 12 exemplaire(s) de Rune de Fureur.", "r1")
+    expect(onLimit).toHaveBeenCalledWith("12 exemplaires maximum de Rune de Fureur.", "r1")
   })
 
   it("deck illégal : ni légende requise ni domaines, plafond global de 12 exemplaires", () => {
@@ -131,7 +131,7 @@ describe("useDeckRules", () => {
     expect(rules.inDeckQty(calmUnit)).toBe(12)
 
     expect(rules.addCard(calmUnit)).toBe(false)
-    expect(onLimit).toHaveBeenCalledWith("12 exemplaires maximum.", "c1")
+    expect(onLimit).toHaveBeenCalledWith(`12 exemplaires maximum de ${calmUnit.name}.`, "c1")
   })
 
   it("regroupe les cartes par zone et compte chaque zone", () => {

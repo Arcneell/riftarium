@@ -18,7 +18,7 @@ const props = defineProps({
 const emit = defineEmits(["update", "liked"])
 
 const SORTS = [
-  { value: "likes", label: "Tendance" },
+  { value: "likes", label: "Plus aimés" },
   { value: "views", label: "Plus vus" },
   { value: "recent", label: "Récents" }
 ]
@@ -95,9 +95,9 @@ function toggle(key, value) {
     </fieldset>
 
     <fieldset class="communaute-facet">
-      <legend>Mes decks aimés</legend>
+      <legend>Mes favoris</legend>
       <div class="communaute-facet-options">
-        <RiftChip label="Aimés" :selected="state.liked" @toggle="emit('liked')" />
+        <RiftChip label="Decks aimés" :selected="state.liked" @toggle="emit('liked')" />
       </div>
     </fieldset>
 

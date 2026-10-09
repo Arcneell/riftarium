@@ -158,12 +158,12 @@ def apply_profile(db: Session, user: User, data: dict) -> None:
             raise HTTPException(status_code=422, detail="Ce pseudo n'est pas autorisé")
         taken = db.scalar(select(User).where(User.handle == data["handle"], User.id != user.id))
         if taken:
-            raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
+            raise HTTPException(status_code=409, detail="Ce pseudo est déjà pris")
         user.handle = data["handle"]
     if "email" in data and data["email"] != user.email:
         taken = db.scalar(select(User).where(User.email == data["email"], User.id != user.id))
         if taken:
-            raise HTTPException(status_code=409, detail="Cette valeur est déjà utilisée")
+            raise HTTPException(status_code=409, detail="Cette adresse e-mail est déjà utilisée")
         user.email = data["email"]
         user.email_verified_at = None  # la nouvelle adresse devra être vérifiée à son tour
 

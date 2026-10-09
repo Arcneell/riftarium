@@ -3,6 +3,7 @@ import { FORMAT_OPTIONS } from "../deckDisplay.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftChoice from "../ui/RiftChoice.vue"
+import { pluralWord } from "../ui/french.js"
 
 /* Barre d'édition d'un deck (édition seulement : la lecture passe par DeckView) : nom, format, visibilité, mentions et état de sauvegarde.
    Elle ne modifie pas `deck` : la page applique les changements émis. */
@@ -55,7 +56,7 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
         <Icon name="heart" :size="16" />
         {{ deck.likes }}
       </button>
-      <span class="atelier-stat" :title="`${deck.views ?? 0} vue(s)`">
+      <span class="atelier-stat" :title="`${deck.views ?? 0} ${pluralWord(deck.views, 'vue', 'vues')}`">
         <Icon name="eye" :size="16" />
         {{ deck.views ?? 0 }}
       </span>
@@ -66,7 +67,7 @@ const emit = defineEmits(["like", "export", "update:name", "update:format", "upd
     <span v-if="canEdit" class="atelier-save" :class="[saveState, { idle: !saveState }]" role="status">
       <template v-if="saveState === 'saving'">Enregistrement…</template>
       <template v-else-if="saveState === 'saved'">Enregistré</template>
-      <template v-else-if="saveState === 'error'">Erreur de sauvegarde</template>
+      <template v-else-if="saveState === 'error'">Échec de l'enregistrement</template>
     </span>
     <span v-if="error" class="atelier-error">{{ error }}</span>
   </div>

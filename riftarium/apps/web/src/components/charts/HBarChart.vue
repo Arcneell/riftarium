@@ -107,7 +107,7 @@ const tooltipStyle = computed(() => {
         :viewBox="`0 0 ${plotWidth} ${height}`"
         :height="height"
         role="img"
-        :aria-label="`${title} — barres horizontales, bouton « Voir les données » pour le détail`"
+        :aria-label="`${title}, barres horizontales. Détail : bouton « Voir les données ».`"
       >
         <g v-for="(row, i) in shownRows" :key="row.label">
           <!-- Le nom entier reste accessible : <title> au survol, infobulle, tableau des données. -->
@@ -136,7 +136,7 @@ const tooltipStyle = computed(() => {
            tableau « Voir les données » (voir ColumnChart). -->
       <div v-if="hovered >= 0" class="graphe-tooltip" :style="tooltipStyle" aria-hidden="true">
         <span class="graphe-tooltip-row">
-          <i class="graphe-dot" :style="{ background: color }"></i>{{ rows[hovered].label }} — {{ valueLabel }}
+          <i class="graphe-dot" :style="{ background: color }"></i>{{ rows[hovered].label }} : {{ valueLabel }}
           <b>{{ rows[hovered].value }}</b>
         </span>
       </div>

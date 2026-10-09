@@ -24,7 +24,7 @@ import 'deck_widgets.dart';
 
 /// Tris proposés par l'API (`sort`), dans l'ordre du site.
 const List<(String, String)> _sorts = [
-  ('likes', 'Tendance'),
+  ('likes', 'Plus aimés'),
   ('views', 'Plus vus'),
   ('recent', 'Récents'),
 ];

@@ -16,8 +16,8 @@ describe("DeckStatsPanel", () => {
     const wrapper = mountPanel()
     const bars = wrapper.findAll(".analyse-bar")
     expect(bars).toHaveLength(8)
-    expect(bars[2].find(".sr-only").text()).toBe("3 carte(s) à 2 d'énergie")
-    expect(bars[7].find(".sr-only").text()).toBe("2 carte(s) à 7 d'énergie")
+    expect(bars[2].find(".sr-only").text()).toBe("3 cartes à 2 d'énergie")
+    expect(bars[7].find(".sr-only").text()).toBe("2 cartes à 7 d'énergie")
     expect(bars[7].get(".analyse-bar-cost").text()).toBe("+")
     expect(bars[2].get(".analyse-bar-fill").attributes("style")).toContain("height: 100%")
     expect(wrapper.get(".analyse-curve").attributes("aria-label")).toBe(

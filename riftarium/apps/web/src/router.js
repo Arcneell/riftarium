@@ -60,7 +60,7 @@ export const router = createRouter({
       component: () => import("./views/LearnGuideView.vue"),
       meta: {
         title: "Apprendre à jouer à Riftbound",
-        description: "Chapitre du guide Riftbound : notions essentielles pour la première partie."
+        description: "Chapitre du guide Riftbound pour préparer sa première partie."
       }
     },
     {
@@ -177,7 +177,7 @@ export const router = createRouter({
         auth: true,
         noindex: true,
         title: "Historique des parties",
-        description: "Mes parties Riftbound suivies : adversaire, légendes, decks et score."
+        description: "Vos parties Riftbound suivies : adversaire, légendes, decks et score."
       }
     },
     {
@@ -187,7 +187,7 @@ export const router = createRouter({
         auth: true,
         noindex: true,
         title: "Mes statistiques",
-        description: "Bilan de mes parties Riftbound suivies : taux de victoire, decks et légendes."
+        description: "Bilan de vos parties Riftbound suivies : taux de victoire, decks et légendes."
       }
     },
     {
@@ -269,7 +269,7 @@ export const router = createRouter({
       meta: {
         legal: "cookies",
         title: "Cookies et traceurs",
-        description: "Traceurs utilisés par Riftarium : session uniquement, pas de publicité."
+        description: "Traceurs de Riftarium : cookie de session et mesure d'audience anonyme sans cookie."
       }
     },
     {

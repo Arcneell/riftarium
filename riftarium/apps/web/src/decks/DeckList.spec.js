@@ -69,7 +69,7 @@ describe("DeckList", () => {
 
   it("sans légende : bouton Voir les légendes émet show-legends", async () => {
     const wrapper = mountList()
-    expect(wrapper.text()).toContain("Choisissez votre légende : elle fixe les deux domaines du deck.")
+    expect(wrapper.text()).toContain("Choisissez d'abord votre légende : elle fixe les deux domaines du deck.")
     const button = wrapper.findAll("button").find((b) => b.text() === "Voir les légendes")
     await button.trigger("click")
     expect(wrapper.emitted("show-legends")).toHaveLength(1)

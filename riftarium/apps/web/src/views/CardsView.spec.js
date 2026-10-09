@@ -220,7 +220,7 @@ describe("CardsView", () => {
       document.body.innerHTML = ""
       return text
     }
-    expect(await labelFor(0)).toBe("Aucune carte")
+    expect(await labelFor(0)).toBe("Fermer · aucune carte")
     expect(await labelFor(1)).toBe("Voir la carte")
     expect(await labelFor(42)).toBe("Voir les 42 cartes")
   })

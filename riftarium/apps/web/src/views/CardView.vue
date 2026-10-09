@@ -23,7 +23,7 @@ const backLink = computed(() => {
   void route.fullPath // history.state n'est pas réactif : on réévalue à chaque navigation
   const back = window.history.state?.back
   if (typeof back === "string" && back.startsWith("/collection")) return { label: "Ma collection", useBack: true }
-  return { label: "Cartothèque", useBack: typeof back === "string" && back.startsWith("/cartes") }
+  return { label: "Cartes", useBack: typeof back === "string" && back.startsWith("/cartes") }
 })
 
 const foil = computed(() => isFoil(card.value))
@@ -75,7 +75,7 @@ watch(
       card.value = loaded
       setPageCrumb(loaded.name)
       applySeo({
-        title: `${loaded.name} — Carte Riftbound`,
+        title: `${loaded.name} · Carte Riftbound`,
         description: `${loaded.name} (${loaded.set_id}) : ${TYPES[loaded.type] || loaded.type} Riftbound. Fiche, visuel officiel et variantes sur Riftarium.`,
         path: route.path,
         image: loaded.image_url
@@ -107,7 +107,7 @@ function openVariant(id) {
         <button v-if="backLink.useBack" type="button" class="fiche-back-link" @click="router.back()">
           ← {{ backLink.label }}
         </button>
-        <RouterLink v-else class="fiche-back-link" to="/cartes">← Cartothèque</RouterLink>
+        <RouterLink v-else class="fiche-back-link" to="/cartes">← Cartes</RouterLink>
       </p>
       <p v-if="error" class="fiche-error" role="alert">{{ error }}</p>
 

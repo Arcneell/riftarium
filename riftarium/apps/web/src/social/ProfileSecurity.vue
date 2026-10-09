@@ -32,7 +32,7 @@ async function submitEmail() {
     const saved = await props.saveEmail({ email: account.email, current_password: account.password })
     if (saved?.email) account.email = saved.email
     account.password = ""
-    account.ok = "Email mis à jour — un e-mail de vérification a été envoyé à la nouvelle adresse."
+    account.ok = "Adresse mise à jour. Un e-mail de vérification a été envoyé à la nouvelle adresse."
   } catch (e) {
     account.error = e.message
   } finally {
@@ -81,7 +81,7 @@ async function submitPassword() {
 </script>
 
 <template>
-  <RiftPanel tag="form" title="Email" accent="var(--bronze)" class="compte-form" @submit.prevent="submitEmail">
+  <RiftPanel tag="form" title="Adresse e-mail" accent="var(--bronze)" class="compte-form" @submit.prevent="submitEmail">
     <div v-if="unverified" class="compte-verif">
       <p class="compte-intro">Adresse e-mail non vérifiée.</p>
       <RiftButton variant="secondary" size="sm" :disabled="verification.sending" @click="resend">
@@ -103,7 +103,7 @@ async function submitPassword() {
     <p v-if="account.ok" class="compte-succes" role="status">{{ account.ok }}</p>
     <div class="compte-pied">
       <RiftButton type="submit" :disabled="account.saving">
-        {{ account.saving ? "Enregistrement…" : "Changer l'email" }}
+        {{ account.saving ? "Enregistrement…" : "Changer d'adresse" }}
       </RiftButton>
     </div>
   </RiftPanel>

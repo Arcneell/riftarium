@@ -262,7 +262,7 @@ def test_state_is_host_only_versioned_and_validated(client, auth, register_user)
     assert updated.json()["state"]["scores"][str(host_id)] == 3
 
     stale = client.put(url, json={"version": 1, "state": snapshot}, headers=auth)
-    assert stale.status_code == 409 and stale.json()["detail"] == "Instantané dépassé, recharge le match"
+    assert stale.status_code == 409 and stale.json()["detail"] == "Le match a changé entre-temps : rechargez-le."
 
     read = client.get(f"/api/play/matches/{match['id']}", headers=guest)
     assert read.status_code == 200 and read.json()["version"] == 2

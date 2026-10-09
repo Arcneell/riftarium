@@ -3,6 +3,7 @@ import "./console.css"
 import { computed, nextTick, reactive, ref, watch } from "vue"
 import { api } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
+import { plural } from "../ui/french.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftField from "../ui/RiftField.vue"
@@ -162,7 +163,7 @@ async function submitRemoval() {
         spellcheck="false"
       />
       <span class="console-mono console-count" aria-live="polite">
-        {{ users.total }} compte(s) <span v-if="users.loading">— chargement…</span>
+        {{ plural(users.total, "compte") }} <span v-if="users.loading">· chargement…</span>
       </span>
     </div>
     <p v-if="users.error" class="console-error" role="alert">{{ users.error }}</p>

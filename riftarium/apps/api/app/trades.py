@@ -397,7 +397,7 @@ def create_request(db: Session, viewer: User, offer_id: int, message: str) -> Tr
     if item is None or not _is_active(db.get(User, item.user_id)):
         raise HTTPException(status_code=404, detail="Offre introuvable")
     if item.user_id == viewer.id:
-        raise HTTPException(status_code=409, detail="C'est votre propre offre")
+        raise HTTPException(status_code=409, detail="Vous ne pouvez pas répondre à votre propre offre")
     text = message.strip()
     if text and review(text) != "published":
         raise HTTPException(status_code=422, detail="Ce message n'est pas autorisé")

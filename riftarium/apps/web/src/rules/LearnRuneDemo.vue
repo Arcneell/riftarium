@@ -89,7 +89,7 @@ const label = (state) => ({ ready: "Préparée", exhausted: "Épuisée", recycle
     </div>
 
     <p v-if="paid" class="lecon-runes-ok">Les deux cartes sont payées. Vous pourriez les jouer ce tour-ci.</p>
-    <p v-else class="lecon-runes-hint">Épuisez les deux runes, puis recyclez celle de Fureur — dans cet ordre.</p>
+    <p v-else class="lecon-runes-hint">Épuisez les deux runes, puis recyclez celle de Fureur, dans cet ordre.</p>
     <RiftButton variant="ghost" size="sm" @click="reset">Réinitialiser</RiftButton>
 
     <CardZoom v-if="zoomCard" :card="zoomCard" @close="zoomCard = null" />

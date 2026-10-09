@@ -8,6 +8,7 @@ import LessonBlock from "../rules/LessonBlock.vue"
 import RulesHeader from "../rules/RulesHeader.vue"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
+import RiftText from "../ui/RiftText.vue"
 import { CHAPTERS, chapterBySlug, chapterIndex, chapterPath, DEFAULT_CHAPTER } from "../rules/learn.js"
 
 const route = useRoute()
@@ -96,7 +97,7 @@ const zoomCard = ref(null)
         </component>
 
         <article class="chapitre-main">
-          <p class="chapitre-lead">{{ chapter.lead }}</p>
+          <p class="chapitre-lead"><RiftText rules :text="chapter.lead" /></p>
 
           <LessonBlock
             v-for="(block, i) in chapter.blocks"

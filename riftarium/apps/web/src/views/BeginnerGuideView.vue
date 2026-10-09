@@ -108,12 +108,12 @@ onBeforeUnmount(() => {
     >
       <div class="plateau-board">
         <TableBoard :scene="step.scene" :spots="SPOTS" :cards="CARDS" @zoom="zoomCard = $event" />
-        <p class="plateau-credit">Cartes et visuels officiels Riftbound — © Riot Games, servis par le CDN officiel.</p>
+        <p class="plateau-credit">Cartes et visuels officiels Riftbound © Riot Games.</p>
       </div>
 
       <div class="plateau-panel">
         <div class="plateau-toolbar">
-          <p class="plateau-count">Étape {{ stepIndex + 1 }} / {{ STEPS.length }} — {{ step.title }}</p>
+          <p class="plateau-count">Étape {{ stepIndex + 1 }} / {{ STEPS.length }} · {{ step.title }}</p>
           <RiftButton
             class="plateau-fullscreen"
             variant="ghost"

@@ -29,7 +29,7 @@ describe("CardTile", () => {
   it("foil, badge de variante, quantité et prix quand ils existent", () => {
     const wrapper = mountTile({ ...base, alternate_art: true, owned_qty: 2, price_eur: 12.4 })
     expect(wrapper.find(".tile-foil").exists()).toBe(true)
-    expect(wrapper.get(".tile-badge").text()).toBe("Alt")
+    expect(wrapper.get(".tile-badge").text()).toBe("Alt-art")
     expect(wrapper.get(".tile-owned").text()).toBe("×2")
     expect(wrapper.get(".tile-price").text()).toMatch(/12,40/)
   })

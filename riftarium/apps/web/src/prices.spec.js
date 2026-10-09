@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { cardmarketUrl, formatEur, resetPricesMeta, usePricesMeta, PRICE_NOTE } from "./prices.js"
+import { cardmarketUrl, formatEur, missingCardsText, resetPricesMeta, usePricesMeta, PRICE_NOTE } from "./prices.js"
 import { api } from "./api.js"
 
 vi.mock("./api.js", async (importOriginal) => {
@@ -92,5 +92,13 @@ describe("PRICE_NOTE", () => {
     expect(PRICE_NOTE).toContain("taux BCE")
     expect(PRICE_NOTE).toContain("Ni cote officielle ni offre d'achat")
     expect(PRICE_NOTE).not.toContain("Cardmarket")
+  })
+})
+
+describe("missingCardsText", () => {
+  it("accorde le nombre de cartes manquantes et ajoute le coût", () => {
+    expect(missingCardsText({ missing: 0 })).toBe("set complet")
+    expect(missingCardsText({ missing: 1 })).toBe("1 carte manquante")
+    expect(plain(missingCardsText({ missing: 3, missing_cost_eur: 4.2 }))).toBe("3 cartes manquantes (~4,20 €)")
   })
 })

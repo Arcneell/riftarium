@@ -150,15 +150,41 @@ describe("session", () => {
     await expect(api("/api/x")).rejects.toMatchObject({ message: "Deck introuvable" })
   })
 
-  it("rend lisible le detail des erreurs 422 de FastAPI", async () => {
-    const detail = [{ loc: ["body", "email"], msg: "Adresse email invalide", type: "value_error" }]
+  it("garde le message français d'un validateur de l'API (422, « Value error, »)", async () => {
+    const detail = [
+      {
+        loc: ["body", "password"],
+        msg: "Value error, Ce mot de passe est trop courant : choisissez-en un plus original.",
+        type: "value_error"
+      }
+    ]
     const fetchMock = vi.fn().mockResolvedValue({ status: 422, ok: false, json: async () => ({ detail }) })
     vi.stubGlobal("fetch", fetchMock)
     const { api } = await import("./api.js")
     await expect(api("/api/auth/register", { method: "POST", body: {} })).rejects.toMatchObject({
       status: 422,
-      message: "Adresse email invalide"
+      message: "Ce mot de passe est trop courant : choisissez-en un plus original."
     })
+  })
+
+  it("n'affiche jamais le message anglais brut de Pydantic (422)", async () => {
+    const detail = [
+      { loc: ["body", "handle"], msg: "String should have at least 3 characters", type: "string_too_short" }
+    ]
+    const fetchMock = vi.fn().mockResolvedValue({ status: 422, ok: false, json: async () => ({ detail }) })
+    vi.stubGlobal("fetch", fetchMock)
+    const { api } = await import("./api.js")
+    await expect(api("/api/auth/register", { method: "POST", body: {} })).rejects.toMatchObject({
+      status: 422,
+      message: "Certaines informations envoyées ne sont pas valides"
+    })
+  })
+
+  it("donne une piste d'action sur une erreur serveur (5xx)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: 500, ok: false, json: async () => ({}) })
+    vi.stubGlobal("fetch", fetchMock)
+    const { api } = await import("./api.js")
+    await expect(api("/api/x")).rejects.toMatchObject({ message: "Erreur du serveur, réessayez dans un instant" })
   })
 
   it("traduit un 405 HTML (BunkerWeb) au lieu de « Erreur inattendue »", async () => {
@@ -177,7 +203,7 @@ describe("session", () => {
     })
   })
 
-  it("retombe sur « Requête invalide » quand le detail 422 est inexploitable", async () => {
+  it("retombe sur un message générique quand le detail 422 est inexploitable", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 422,
       ok: false,
@@ -185,6 +211,8 @@ describe("session", () => {
     })
     vi.stubGlobal("fetch", fetchMock)
     const { api } = await import("./api.js")
-    await expect(api("/api/x")).rejects.toMatchObject({ message: "Requête invalide" })
+    await expect(api("/api/x")).rejects.toMatchObject({
+      message: "Certaines informations envoyées ne sont pas valides"
+    })
   })
 })

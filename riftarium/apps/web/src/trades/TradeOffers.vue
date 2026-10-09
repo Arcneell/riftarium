@@ -7,6 +7,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import RiftStepper from "../ui/RiftStepper.vue"
+import { de } from "../ui/french.js"
 
 /* Ma liste « À échanger » : chaque offre se règle de 0 (retirée) à la quantité
    du lot. On ajoute une offre depuis le détail des exemplaires d'une fiche carte. */
@@ -63,7 +64,8 @@ onMounted(load)
             :value="item.qty"
             :max="item.entry_qty"
             :busy="busy"
-            :label="item.card.name"
+            :increment-label="`Ajouter un exemplaire ${de(item.card.name)} à l'échange`"
+            :decrement-label="`Retirer un exemplaire ${de(item.card.name)} de l'échange`"
             @increment="change(item, item.qty + 1)"
             @decrement="change(item, item.qty - 1)"
           />

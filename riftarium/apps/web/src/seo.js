@@ -3,9 +3,9 @@ import { CLOSED_BETA } from "./legal.js"
 
 const SITE_ORIGIN = "https://riftarium.re"
 export const SITE_NAME = "Riftarium"
-export const DEFAULT_TITLE = "Riftarium — Cartes, decks et règles Riftbound"
+export const DEFAULT_TITLE = "Riftarium · Cartes, decks et règles Riftbound"
 export const DEFAULT_DESCRIPTION =
-  "Bêta fermée. Cartothèque, deck builder, règles officielles et collection pour Riftbound. Site fan-made gratuit, en français, non affilié à Riot Games."
+  "Bêta fermée. Base de cartes, création de decks, règles officielles et collection pour Riftbound. Site de fan gratuit, en français, non affilié à Riot Games."
 
 function origin() {
   if (typeof window !== "undefined" && /^https?:/.test(window.location.origin)) return window.location.origin

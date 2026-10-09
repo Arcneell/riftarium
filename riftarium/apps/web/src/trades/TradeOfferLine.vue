@@ -8,7 +8,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
 
 /* Une offre d'un autre joueur (OfferOut du contrat) : qui, où, quel lot, et
-   « Je suis intéressé ». Partagée par la page Échanges et la fiche carte ; la
+   « Ça m'intéresse ». Partagée par la page Échanges et la fiche carte ; la
    demande elle-même est envoyée par le parent (TradeInterestDialog). */
 const props = defineProps({
   offer: { type: Object, required: true }
@@ -31,7 +31,7 @@ const lot = computed(() => defaultsLabel(props.offer))
     </span>
     <span v-if="offer.pending_request_id" class="offre-envoyee" role="status">Demande envoyée</span>
     <RiftButton v-else size="sm" variant="secondary" class="offre-action" @click="emit('interest', offer)">
-      Je suis intéressé
+      Ça m'intéresse
     </RiftButton>
   </li>
 </template>

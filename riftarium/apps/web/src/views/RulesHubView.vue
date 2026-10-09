@@ -41,7 +41,7 @@ const TIERS = [
     numeral: "III",
     kicker: "Dernier recours",
     title: "Règles officielles",
-    text: `Les ${RULE_COUNTS.core.toLocaleString("fr-FR")} règles du jeu et les ${RULE_COUNTS.tournament.toLocaleString("fr-FR")} règles de tournoi, intégrales et cherchables. Le texte qui fait foi.`,
+    text: `Les ${RULE_COUNTS.core.toLocaleString("fr-FR")} règles du jeu et les ${RULE_COUNTS.tournament.toLocaleString("fr-FR")} règles de tournoi, en intégralité, avec recherche. C'est ce texte qui fait foi.`,
     go: "Ouvrir le texte intégral"
   }
 ]
@@ -64,7 +64,9 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
 <template>
   <div class="wrap cards-wrap regles-hub">
     <RulesHeader title="Règles" kicker="Riftbound" />
-    <p v-if="!online" class="regles-offline" role="status">Hors ligne — règles servies depuis le cache</p>
+    <p v-if="!online" class="regles-offline" role="status">
+      Hors ligne : vous lisez les règles enregistrées sur cet appareil.
+    </p>
 
     <div class="regles-portails">
       <RouterLink
@@ -100,7 +102,7 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
         <RouterLink class="chapitre-card" to="/regles/debutant">
           <span class="chapitre-num">+</span>
           <b>Tous les chapitres</b>
-          <span class="chapitre-sum">{{ CHAPTERS.length }} leçons, puis le plateau animé</span>
+          <span class="chapitre-sum">Les {{ CHAPTERS.length }} chapitres, puis le plateau animé</span>
         </RouterLink>
       </div>
     </section>
@@ -120,7 +122,7 @@ const QUICK_TOPICS = QUICK_SLUGS.map((slug) => TOPICS.find((t) => t.slug === slu
     </section>
 
     <aside class="regles-or">
-      <p class="regles-or-kicker">Règle 002 — la Règle d'or</p>
+      <p class="regles-or-kicker">Règle 002 : la Règle d'or</p>
       <p class="regles-or-text">
         « Ce qui est inscrit sur une carte a priorité sur ce qui est inscrit dans les règles du jeu. »
       </p>

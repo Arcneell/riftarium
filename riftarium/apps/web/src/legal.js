@@ -15,7 +15,7 @@ export const RIOT_GENERAL_DISCLAIMER_EN =
 export const RIOT_GENERAL_DISCLAIMER_FR =
   "Riftarium n'est pas approuvé par Riot Games et ne reflète pas les opinions de Riot Games ni de quiconque officiellement impliqué dans la production ou la gestion des propriétés de Riot Games. Riot Games et toutes les propriétés associées sont des marques ou des marques déposées de Riot Games, Inc."
 
-export const LEGAL_UPDATED = "19 août 2026"
+export const LEGAL_UPDATED = "8 octobre 2026"
 
 export const LEGAL_NAV = [
   { path: "/mentions-legales", key: "mentions", label: "Mentions légales" },

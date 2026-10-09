@@ -89,7 +89,7 @@ describe("CommunityView", () => {
     expect(wrapper.get("a.deck-card-link").attributes("href")).toBe("/decks/3")
     expect(wrapper.get(".deck-card-meta").text()).toContain("testeur")
     expect(wrapper.get(".deck-card-foot").text()).toContain("12") // compteur de vues
-    expect(wrapper.get(".communaute-count").text()).toBe("1 deck(s)")
+    expect(wrapper.get(".communaute-count").text()).toBe("1 deck")
     wrapper.unmount()
   })
 
@@ -122,7 +122,7 @@ describe("CommunityView", () => {
     wrapper.unmount()
   })
 
-  it("sous Aimés, ne plus aimer retire la fiche et décrémente le total", async () => {
+  it("sous Decks aimés, ne plus aimer retire la fiche et décrémente le total", async () => {
     session.token = "jeton"
     session.handle = "visiteur"
     api.mockImplementation((path, options = {}) => {
@@ -137,11 +137,11 @@ describe("CommunityView", () => {
     })
     const { wrapper } = await mountView("/communaute?liked=1")
     expect(wrapper.findAll(".deck-card")).toHaveLength(1)
-    expect(wrapper.get(".communaute-count").text()).toBe("1 deck(s)")
+    expect(wrapper.get(".communaute-count").text()).toBe("1 deck")
     await wrapper.get("button.deck-card-like").trigger("click")
     await flushPromises()
     expect(wrapper.findAll(".deck-card")).toHaveLength(0)
-    expect(wrapper.get(".communaute-count").text()).toBe("0 deck(s)")
+    expect(wrapper.get(".communaute-count").text()).toBe("0 deck")
     wrapper.unmount()
   })
 
@@ -221,7 +221,7 @@ describe("CommunityView", () => {
     const cards = wrapper.findAll(".deck-card")
     expect(cards[0].get(".deck-card-complete").text()).toContain("Complet")
     expect(cards[0].find(".deck-card-missing").exists()).toBe(false)
-    expect(cards[1].get(".deck-card-missing").text()).toContain("3 manquante(s) (~4,50")
+    expect(cards[1].get(".deck-card-missing").text()).toContain("3 manquantes (~4,50")
     wrapper.unmount()
   })
 
@@ -242,9 +242,9 @@ describe("CommunityView", () => {
     wrapper.unmount()
   })
 
-  it("visiteur : la puce Aimés mène à la connexion", async () => {
+  it("visiteur : la puce Decks aimés mène à la connexion", async () => {
     const { wrapper, router } = await mountView()
-    await facet(wrapper, "Mes decks aimés").get("button.rift-chip").trigger("click")
+    await facet(wrapper, "Mes favoris").get("button.rift-chip").trigger("click")
     await flushPromises()
     expect(router.currentRoute.value.path).toBe("/connexion")
     wrapper.unmount()

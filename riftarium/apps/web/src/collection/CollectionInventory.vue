@@ -12,6 +12,7 @@ import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftModal from "../ui/RiftModal.vue"
 import RiftSheet from "../ui/RiftSheet.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
+import { plural } from "../ui/french.js"
 
 /* Inventaire de la collection : filtres en feuille, tri par prix, grille des cartes
    possédées avec leurs lots, sélection et opérations de masse. L'état des filtres
@@ -61,7 +62,7 @@ function toggleSort(value) {
 const sheetOpen = ref(false)
 const sheetLabel = computed(() => {
   const total = result.value.total
-  if (!total) return "Aucune carte"
+  if (!total) return "Fermer · aucune carte"
   return total === 1 ? "Voir la carte" : `Voir les ${total} cartes`
 })
 
@@ -186,7 +187,9 @@ async function applyBulk(payload) {
     <ActiveFilters :state="state" :sets="sets" @update="setFilter" @reset="reset" />
 
     <div v-if="selectMode" class="inventaire-bulk" role="group" aria-label="Opérations sur la sélection">
-      <span class="inventaire-count" aria-live="polite">{{ selected.size }} carte(s)</span>
+      <span class="inventaire-count" aria-live="polite">{{
+        plural(selected.size, "carte sélectionnée", "cartes sélectionnées")
+      }}</span>
       <RiftButton variant="ghost" size="sm" @click="selectPage">Toute la page</RiftButton>
       <span class="inventaire-sep" aria-hidden="true"></span>
       <RiftButton
@@ -245,7 +248,7 @@ async function applyBulk(payload) {
     </div>
 
     <p class="inventaire-total" aria-live="polite">
-      {{ result.total }} carte(s) unique(s) <span v-if="loading">— chargement…</span>
+      {{ plural(result.total, "carte unique", "cartes uniques") }} <span v-if="loading">· chargement…</span>
     </p>
     <p v-if="error" class="inventaire-error" role="alert">{{ error }}</p>
 
@@ -294,7 +297,7 @@ async function applyBulk(payload) {
 
     <RiftEmpty
       v-if="!loading && !error && !result.items.length && !result.unique_cards"
-      title="Votre vitrine est encore vide"
+      title="Votre collection est vide"
       text="Notez vos exemplaires depuis une fiche carte."
     >
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
@@ -320,7 +323,14 @@ async function applyBulk(payload) {
   </RiftSheet>
 
   <RiftModal v-if="pendingRemove" title="Retirer de la collection" @close="cancelRemove">
-    <p>{{ selected.size }} carte(s) seront retirées de votre inventaire, sans retour en arrière possible.</p>
+    <p>
+      {{
+        selected.size === 1
+          ? "1 carte sera retirée de votre collection."
+          : `${selected.size} cartes seront retirées de votre collection.`
+      }}
+      Cette action est définitive.
+    </p>
     <p v-if="removeError" class="inventaire-error" role="alert">{{ removeError }}</p>
     <div class="inventaire-modal-actions">
       <RiftButton variant="ghost" :disabled="bulk.busy" @click="cancelRemove">Annuler</RiftButton>

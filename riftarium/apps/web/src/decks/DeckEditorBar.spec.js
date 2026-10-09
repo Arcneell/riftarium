@@ -60,7 +60,7 @@ describe("DeckEditorBar", () => {
     await wrapper.setProps({ saveState: "saved" })
     expect(save.text()).toBe("Enregistré")
     await wrapper.setProps({ saveState: "error" })
-    expect(save.text()).toBe("Erreur de sauvegarde")
+    expect(save.text()).toBe("Échec de l'enregistrement")
     expect(save.classes()).toContain("error")
   })
 

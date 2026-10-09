@@ -177,9 +177,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           ),
         ),
 
-      // Duels
+      // Parties suivies
       const SliverToBoxAdapter(
-        child: SectionTitle(eyebrow: 'Parties suivies', title: 'Duels'),
+        child: SectionTitle(eyebrow: 'Statistiques', title: 'Parties suivies'),
       ),
       if (!showStats || stats == null)
         const SliverToBoxAdapter(child: HiddenNote())
@@ -244,7 +244,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
       // Historique
       const SliverToBoxAdapter(
-        child: SectionTitle(eyebrow: 'Derniers duels', title: 'Historique'),
+        child: SectionTitle(eyebrow: 'Dernières parties', title: 'Historique'),
       ),
       if (!showStats)
         const SliverToBoxAdapter(child: HiddenNote())

@@ -1,15 +1,28 @@
 <script setup>
 /* Compteur d'exemplaires de la Forge : « − valeur + ». Le parent tient la valeur et
-   répond aux événements ; `busy` désactive les deux boutons pendant une requête. */
-defineProps({
+   répond aux événements ; `busy` désactive les deux boutons pendant une requête.
+   Noms accessibles des boutons : `label` est le nom de ce qu'on compte (« Ahri », « ce lot »)
+   et donne « Ajouter un exemplaire d'Ahri » / « Retirer un exemplaire d'Ahri », élision comprise.
+   Quand cette phrase ne convient pas (quantité proposée à l'échange…), l'appelant passe les
+   libellés complets dans `incrementLabel` et `decrementLabel`, qui priment sur `label`. */
+import { computed } from "vue"
+import { de } from "./french.js"
+
+const props = defineProps({
   value: { type: Number, required: true },
   min: { type: Number, default: 0 },
   max: { type: Number, default: 999 },
   busy: { type: Boolean, default: false },
   label: { type: String, default: "" },
+  incrementLabel: { type: String, default: "" },
+  decrementLabel: { type: String, default: "" },
   size: { type: String, default: "md", validator: (v) => ["md", "sm"].includes(v) }
 })
 defineEmits(["increment", "decrement"])
+
+const subject = computed(() => (props.label ? ` ${de(props.label)}` : ""))
+const minusLabel = computed(() => props.decrementLabel || `Retirer un exemplaire${subject.value}`)
+const plusLabel = computed(() => props.incrementLabel || `Ajouter un exemplaire${subject.value}`)
 </script>
 
 <template>
@@ -17,7 +30,7 @@ defineEmits(["increment", "decrement"])
     <button
       type="button"
       class="rift-stepper-btn rift-stepper-minus"
-      :aria-label="`Retirer un exemplaire de ${label}`"
+      :aria-label="minusLabel"
       :disabled="busy || value <= min"
       @click="$emit('decrement')"
     >
@@ -27,7 +40,7 @@ defineEmits(["increment", "decrement"])
     <button
       type="button"
       class="rift-stepper-btn rift-stepper-plus"
-      :aria-label="`Ajouter un exemplaire de ${label}`"
+      :aria-label="plusLabel"
       :disabled="busy || value >= max"
       @click="$emit('increment')"
     >

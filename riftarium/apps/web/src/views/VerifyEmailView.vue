@@ -29,7 +29,7 @@ onMounted(async () => {
   if (token.value) router.replace({ query: {} })
   if (!token.value) {
     state.value = "fail"
-    error.value = "Ce lien de vérification est incomplet : le jeton est manquant. Ouvrez le lien reçu par e-mail."
+    error.value = "Ce lien est incomplet. Ouvrez le lien reçu par e-mail."
     return
   }
   try {
@@ -71,7 +71,7 @@ async function resend() {
     <p v-if="state === 'loading'" class="acces-note" role="status">Vérification en cours…</p>
 
     <template v-else-if="state === 'ok'">
-      <p class="acces-succes" role="status">Adresse vérifiée ! Votre compte est maintenant confirmé.</p>
+      <p class="acces-succes" role="status">Adresse e-mail vérifiée.</p>
       <div class="acces-actions">
         <RiftButton to="/">Retour à l'accueil</RiftButton>
         <RiftButton v-if="!session.token" to="/connexion" variant="secondary">Se connecter</RiftButton>

@@ -24,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2 sur 3'), findsOneWidget);
-    expect(find.text('Duels'), findsOneWidget);
+    expect(find.text('Parties suivies'), findsOneWidget);
     expect(find.text('Collection'), findsOneWidget);
     expect(find.text('Premier sang'), findsOneWidget);
     expect(find.text('Débloqué le 20/08/2026'), findsNWidgets(2));

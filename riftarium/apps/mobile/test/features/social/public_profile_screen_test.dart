@@ -42,7 +42,7 @@ void main() {
     expect(find.text('abonnés'), findsOneWidget);
     expect(find.text('suivis'), findsOneWidget);
     expect(find.text('Premier sang'), findsOneWidget);
-    expect(find.text('Duels'), findsOneWidget);
+    expect(find.text('Parties suivies'), findsOneWidget);
     expect(find.text('10'), findsWidgets); // parties jouées
     expect(find.text('Collection'), findsOneWidget);
     expect(

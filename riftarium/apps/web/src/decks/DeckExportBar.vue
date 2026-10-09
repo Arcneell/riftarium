@@ -44,7 +44,7 @@ async function copyLink() {
   note.value = ""
   try {
     await copyText(pageUrl(`/decks/${props.deck.id}`))
-    flash("Lien copié — Discord affichera l'aperçu du deck")
+    flash("Lien copié. Sur Discord, il affichera l'aperçu du deck.")
   } catch (error) {
     flash(error.message || "Copie impossible")
   }

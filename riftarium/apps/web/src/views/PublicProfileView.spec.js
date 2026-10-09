@@ -131,14 +131,14 @@ describe("PublicProfileView", () => {
     expect(hero.get("h1").text()).toBe("nova")
     expect(hero.text()).toContain("Main Ahri")
     expect(hero.text()).toContain("Membre depuis janvier 2026")
-    expect(hero.text()).toContain("2 abonné(s)")
-    expect(hero.text()).toContain("5 suivi(s)")
+    expect(hero.text()).toContain("2 abonnés")
+    expect(hero.text()).toContain("5 joueurs suivis")
 
     /* Hauts faits débloqués, en médaillons. */
     expect(wrapper.get(".profil-medaille").text()).toContain("Premier sang")
     expect(wrapper.get(".profil-medaille-meta").text()).toContain("Bronze")
 
-    /* Duels : totaux (RiftStat) puis historique du point de vue du profil. */
+    /* Parties suivies : totaux (RiftStat) puis historique du point de vue du profil. */
     const duels = wrapper.get("[data-section='duels']")
     expect(duels.text()).toContain("Taux de victoire")
     expect(duels.findAll(".rift-stat")).toHaveLength(4)
@@ -284,7 +284,7 @@ describe("PublicProfileView", () => {
     expect(toggle.attributes("aria-pressed")).toBeUndefined()
     expect(toggle.attributes("aria-label")).toBe("Suivre nova")
     await toggle.trigger("click")
-    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonné(s)")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonnés")
     expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-label")).toBe("Ne plus suivre nova")
     expect(buttonWith(wrapper, "Ne plus suivre").attributes("aria-pressed")).toBeUndefined()
     await flushPromises()
@@ -293,7 +293,7 @@ describe("PublicProfileView", () => {
     await buttonWith(wrapper, "Ne plus suivre").trigger("click")
     await flushPromises()
     expect(api).toHaveBeenCalledWith("/api/users/nova/follow", { method: "DELETE" })
-    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonné(s)")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonnés")
     wrapper.unmount()
   })
 
@@ -311,7 +311,7 @@ describe("PublicProfileView", () => {
     release(null)
     await flushPromises()
     expect(api.mock.calls.filter(([path]) => path === "/api/users/nova/follow")).toHaveLength(1)
-    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonné(s)")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("3 abonnés")
     wrapper.unmount()
   })
 
@@ -325,7 +325,7 @@ describe("PublicProfileView", () => {
     await buttonWith(wrapper, "Suivre").trigger("click")
     await flushPromises()
     expect(wrapper.get("[role='alert']").text()).toBe("On ne se suit pas soi-même")
-    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonné(s)")
+    expect(wrapper.get(".profil-hero-meta").text()).toContain("2 abonnés")
     expect(buttonWith(wrapper, "Suivre")).toBeTruthy()
     wrapper.unmount()
   })

@@ -82,7 +82,7 @@ const tooltipStyle = computed(() => {
         :viewBox="`0 0 ${plotWidth} ${HEIGHT}`"
         :height="HEIGHT"
         role="img"
-        :aria-label="`${title} — barre empilée, bouton « Voir les données » pour le détail`"
+        :aria-label="`${title}, barre empilée. Détail : bouton « Voir les données ».`"
       >
         <clipPath :id="clipId">
           <polygon :points="clipPoints" />

@@ -146,7 +146,7 @@ const tooltipRows = computed(() => {
         :viewBox="`0 0 ${plotWidth} ${HEIGHT}`"
         :height="HEIGHT"
         role="img"
-        :aria-label="`${title} — graphique en colonnes, bouton « Voir les données » pour le détail`"
+        :aria-label="`${title}, graphique en colonnes. Détail : bouton « Voir les données ».`"
       >
         <!-- Grille horizontale hairline + ticks Y arrondis -->
         <g v-for="tick in scale.ticks" :key="tick">

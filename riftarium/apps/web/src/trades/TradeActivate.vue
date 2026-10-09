@@ -36,7 +36,7 @@ async function activate() {
 <template>
   <RiftEmpty
     title="Échangez avec les joueurs de La Réunion"
-    text="Proposez vos cartes en trop, retrouvez qui a celles de votre wishlist et manifestez votre intérêt. Votre contact n'est montré qu'aux joueurs dont vous acceptez la demande."
+    text="Proposez vos cartes en trop et trouvez qui a celles de votre wishlist. Votre contact n'est montré qu'aux joueurs dont vous acceptez la demande."
   >
     <form class="activer" @submit.prevent="activate">
       <RiftChoice v-model="zone" label="Votre zone" :options="TRADE_ZONES" />

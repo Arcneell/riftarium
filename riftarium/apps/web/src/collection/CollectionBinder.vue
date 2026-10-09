@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, watch } from "vue"
 import { RouterLink } from "vue-router"
 import { cardThumb, session } from "../api.js"
 import { isFoil } from "../cardText.js"
-import { PRICE_NOTE, formatEur } from "../prices.js"
+import { PRICE_NOTE, formatEur, missingCardsText as missingText } from "../prices.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
@@ -72,12 +72,6 @@ function percentOf(row) {
   return Math.round((row.owned / row.total) * 100)
 }
 
-function missingText(row) {
-  if (!row.missing) return "set complet"
-  const cost = formatEur(row.missing_cost_eur)
-  return `il manque ${row.missing} carte(s)${cost ? ` (~${cost})` : ""}`
-}
-
 /* Set ouvert par défaut : le premier incomplet, celui qu'on a envie de finir. Rien à ouvrir
    tant que l'état vide est affiché (collection à 0, hors saisie rapide). */
 function openDefaultSet() {
@@ -112,7 +106,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
 
 <template>
   <div class="classeur">
-    <RiftEmpty v-if="isEmptyCollection" title="Votre classeur attend ses premières cartes">
+    <RiftEmpty v-if="isEmptyCollection" title="Votre classeur est vide">
       <RiftButton to="/cartes">Parcourir les cartes</RiftButton>
       <RiftChip v-if="session.token" label="Saisie rapide" :selected="quickOn" @toggle="toggleQuick" />
     </RiftEmpty>
@@ -150,7 +144,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         <div>
           <h2 class="classeur-title">{{ currentSet ? currentSet.name : "Classeur" }}</h2>
           <p v-if="currentSet" class="classeur-sub" :title="PRICE_NOTE">
-            {{ currentSet.owned }}/{{ currentSet.total }} · {{ percentOf(currentSet) }} % —
+            {{ currentSet.owned }}/{{ currentSet.total }} · {{ percentOf(currentSet) }} % ·
             {{ missingText(currentSet) }}
           </p>
         </div>
@@ -227,7 +221,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             "
             :text="
               binderOwned === '0'
-                ? 'Ce set est complet — votre classeur est plein.'
+                ? 'Vous avez toutes les cartes de ce set.'
                 : 'Ouvrez une fiche carte pour remplir les pochettes.'
             "
           />

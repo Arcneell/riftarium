@@ -309,7 +309,7 @@ describe("CollectionInventory", () => {
 
     const modal = document.body.querySelector(".rift-modal")
     expect(modal).not.toBeNull()
-    expect(modal.textContent).toContain("1 carte(s)")
+    expect(modal.textContent).toContain("1 carte sera retirée de votre collection.")
     modalButton("Retirer").click()
     await flushPromises()
 
@@ -367,7 +367,7 @@ describe("CollectionInventory", () => {
     )
     const { wrapper } = await mountInventory()
     const empty = wrapper.get(".rift-empty")
-    expect(empty.text()).toContain("Votre vitrine est encore vide")
+    expect(empty.text()).toContain("Votre collection est vide")
     expect(empty.get("a").attributes("href")).toBe("/cartes")
     wrapper.unmount()
   })

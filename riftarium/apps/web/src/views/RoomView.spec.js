@@ -194,7 +194,7 @@ describe("RoomView", () => {
     /* Le salon reste affiché, l'erreur d'action aussi, et un avis de sondage s'ajoute. */
     expect(wrapper.get(".salon-error").text()).toContain("Salon complet")
     expect(wrapper.find(".salon-seat").exists()).toBe(true)
-    expect(wrapper.text()).toContain("Mise à jour interrompue")
+    expect(wrapper.text()).toContain("Mise à jour impossible")
     /* Backoff : la tentative suivante est repoussée à 10 s. */
     expect(pollTick(timeoutSpy, 10000)).toBeTruthy()
     wrapper.unmount()
@@ -519,7 +519,7 @@ describe("RoomView", () => {
     const live = wrapper.get(".salon-scores")
     expect(live.attributes("aria-live")).toBe("polite")
     expect(live.findAll(".salon-score").map((node) => node.text())).toEqual(["3", "2"])
-    expect(live.text()).toContain("1 manche(s)")
+    expect(live.text()).toContain("1 manche")
     const first = live.findAll("li")[0]
     expect(first.attributes("aria-atomic")).toBe("true")
     expect(first.get(".sr-only").text()).toBe(`${HOST.handle} : 3`)

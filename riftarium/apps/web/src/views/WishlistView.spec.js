@@ -81,7 +81,7 @@ describe("WishlistView", () => {
     expect(stats.text()).toContain("Cartes souhaitées")
     expect(stats.text()).toContain("2")
     expect(stats.text()).toContain("12,25")
-    expect(stats.findAll(".rift-stat")[1].attributes("title")).toContain("marché US")
+    expect(stats.findAll(".rift-stat")[1].attributes("title")).toContain("marché américain")
     expect(wrapper.findAll(".souhait-cell")).toHaveLength(2)
     expect(wrapper.get(".rift-tile").attributes("href")).toBe("/cartes/card-1")
     expect(wrapper.get(".souhait-stepper input").element.value).toBe("2")

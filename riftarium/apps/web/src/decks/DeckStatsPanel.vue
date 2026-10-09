@@ -7,6 +7,7 @@ import { PRICE_NOTE, formatEur } from "../prices.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftPanel from "../ui/RiftPanel.vue"
 import RiftStat from "../ui/RiftStat.vue"
+import { pluralWord } from "../ui/french.js"
 
 const props = defineProps({
   cards: { type: Array, default: () => [] },
@@ -30,7 +31,9 @@ const deckValue = computed(() => formatEur(props.prices?.total_eur))
     <div class="analyse-curve" role="group" aria-label="Répartition des coûts en énergie du deck principal">
       <div v-for="bucket in curve" :key="bucket.cost" class="analyse-bar">
         <i class="analyse-bar-fill" :style="{ height: bucket.height + '%' }"></i>
-        <span class="sr-only">{{ bucket.count }} carte(s) à {{ bucket.cost }} d'énergie</span>
+        <span class="sr-only"
+          >{{ bucket.count }} {{ pluralWord(bucket.count, "carte", "cartes") }} à {{ bucket.cost }} d'énergie</span
+        >
         <span class="analyse-bar-cost" aria-hidden="true">
           <img class="rb-glyph energy" :src="glyphUrl(`energy_${bucket.cost}`)" alt="" width="16" height="16" />
           <small v-if="bucket.cost === 7">+</small>

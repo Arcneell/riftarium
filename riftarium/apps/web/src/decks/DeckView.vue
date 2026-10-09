@@ -12,6 +12,7 @@ import DeckExportBar from "./DeckExportBar.vue"
 import DeckLegalBadge from "./DeckLegalBadge.vue"
 import DeckStatsPanel from "./DeckStatsPanel.vue"
 import DeckVisual from "./DeckVisual.vue"
+import { pluralWord } from "../ui/french.js"
 
 const props = defineProps({
   deck: { type: Object, required: true },
@@ -30,8 +31,8 @@ const zoneCounts = computed(() => {
   return counts
 })
 
-/* Copier le deck d'un autre joueur dans « Mes decks » : copie privée, modifiable,
-   avec la modale des cartes manquantes pour savoir quoi acheter. */
+/* Copier le deck d'un autre joueur dans « Mes decks » : copie privée (« Nom (copie) »,
+   créditée à l'auteur) qui s'ouvre dans l'éditeur. */
 const router = useRouter()
 const copying = ref(false)
 const copyError = ref("")
@@ -95,7 +96,7 @@ async function copyDeck() {
           <Icon name="heart" :size="16" />
           {{ deck.likes ?? 0 }}
         </button>
-        <span class="lecture-stat" :title="`${deck.views ?? 0} vue(s)`">
+        <span class="lecture-stat" :title="`${deck.views ?? 0} ${pluralWord(deck.views, 'vue', 'vues')}`">
           <Icon name="eye" :size="16" />
           {{ deck.views ?? 0 }}
         </span>
@@ -103,7 +104,7 @@ async function copyDeck() {
           v-if="canCopy"
           variant="secondary"
           :disabled="copying"
-          title="Crée votre copie privée, modifiable, avec la liste des cartes manquantes"
+          title="Crée une copie privée de ce deck dans vos decks et l'ouvre dans l'éditeur"
           @click="copyDeck"
         >
           {{ copying ? "Copie…" : "Copier dans mes decks" }}

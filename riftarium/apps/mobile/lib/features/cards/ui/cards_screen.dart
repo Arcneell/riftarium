@@ -104,7 +104,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             PageBanner(
-              title: 'Cartothèque',
+              title: 'Cartes',
               eyebrow: _eyebrow(data?.total, sets.length),
               art: RiftBanners.cards,
               focus: const Alignment(0.1, -0.15),

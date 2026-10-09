@@ -61,7 +61,7 @@ watch(() => props.sets, load, { immediate: true })
       <h2 class="wall-title">Tout le <em>Rift</em><br />sur une table.</h2>
       <RiftButton :to="`/cartes?set=${set.set_id}`">Explorer {{ set.name }}</RiftButton>
     </div>
-    <span class="wall-credit">Visuels officiels Riftbound — © Riot Games</span>
+    <span class="wall-credit">Visuels officiels Riftbound © Riot Games</span>
   </section>
 </template>
 

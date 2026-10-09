@@ -5,7 +5,7 @@ import { MESSAGE_MAX, sendRequest, zoneLabel } from "../trades.js"
 import RiftButton from "../ui/RiftButton.vue"
 import RiftModal from "../ui/RiftModal.vue"
 
-/* « Je suis intéressé » : rappel de la carte et du joueur, message optionnel,
+/* « Ça m'intéresse » : rappel de la carte et du joueur, message optionnel,
    envoi. Une erreur reste dans la modale sans effacer le message saisi. */
 const props = defineProps({
   card: { type: Object, required: true },

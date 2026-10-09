@@ -14,7 +14,7 @@ import { formatDate, moderationColor, moderationLabel } from "./useAdmin.js"
 /* Libellés des rubriques du comptage de fréquentation anonyme (voir router.js). */
 const SECTION_LABELS = {
   home: "Accueil",
-  cartes: "Cartothèque",
+  cartes: "Cartes",
   carte: "Fiche carte",
   regles: "Règles",
   decks: "Mes decks",
@@ -98,7 +98,7 @@ const groups = computed(() => {
         { label: "Total", value: s.decks.total, delta: s.series ? decksNew7d.value : null },
         { label: "Publics", value: s.decks.public },
         { label: "En attente", value: s.decks.pending },
-        { label: "Likes", value: s.decks.likes_total },
+        { label: "J'aime", value: s.decks.likes_total },
         { label: "Vues", value: s.decks.views_total }
       ]
     },

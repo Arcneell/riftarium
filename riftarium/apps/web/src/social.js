@@ -84,7 +84,7 @@ export const PRIVACY_TOGGLES = [
   },
   {
     key: "show_stats",
-    label: "Mes statistiques de duels",
+    label: "Mes parties suivies",
     hint: "Bilan des parties suivies, meilleures légendes et historique."
   },
   {
@@ -95,7 +95,7 @@ export const PRIVACY_TOGGLES = [
   {
     key: "show_decks",
     label: "Mes decks publics",
-    hint: "La liste sur le profil. Un deck public reste accessible par son lien dans tous les cas."
+    hint: "Affiche vos decks publics sur votre profil. Masqués ici, ils restent accessibles par leur lien."
   }
 ]
 
@@ -108,7 +108,7 @@ export function tierLabel(tier) {
   return TIERS[tier] || TIERS.bronze
 }
 
-const FAMILIES = { duels: "Duels", collection: "Collection", decks: "Decks", social: "Communauté" }
+const FAMILIES = { duels: "Parties suivies", collection: "Collection", decks: "Decks", social: "Communauté" }
 /* Ordre d'affichage des familles ; une famille inconnue passe à la fin. */
 const FAMILY_ORDER = Object.keys(FAMILIES)
 

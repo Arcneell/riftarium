@@ -119,8 +119,7 @@ const zoomCard = ref(null)
         </template>
 
         <p v-if="officialError" class="sujet-note">
-          Texte officiel indisponible pour l'instant. Il reste consultable dans le
-          <RouterLink to="/regles/officielles">lecteur des règles</RouterLink>.
+          Impossible de charger le texte officiel. Vérifiez votre connexion, puis rechargez la page.
         </p>
 
         <template v-if="officialSections.length">

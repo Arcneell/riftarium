@@ -190,7 +190,7 @@ export const STEPS = [
     terms: ["deck principal", "deck de runes", "légende de champion", "champion élu"],
     text: [
       "Quatre éléments : un **deck principal** d'au moins 40 cartes (unités, sorts, équipements), un **deck de runes** de 12 runes, une **légende de champion** et 3 **champs de bataille**.",
-      "La légende fixe les **domaines** du deck — ici Fureur + Chaos pour la démonstration : chaque carte du deck doit appartenir à ces domaines.",
+      "La légende fixe les **domaines** du deck (ici Fureur + Chaos pour la démonstration) : chaque carte du deck doit appartenir à ces domaines.",
       "Le **champion élu** est une carte du deck mise à part : elle commence la partie visible, dans sa propre zone. Vous la jouerez plus tard, comme si elle était dans votre main."
     ],
     scene: {
@@ -213,9 +213,9 @@ export const STEPS = [
     ref: "107",
     terms: ["base", "zone de légende", "zone de champion", "défausse"],
     text: [
-      "Votre moitié suit le tapis officiel : **légende** et **champion élu** à gauche, votre **base** au centre, **deck principal** à droite. En dessous : **deck de runes**, zone de **runes**, **défausse** — et votre main. Votre score se lit sur la piste verticale, de bas en haut.",
+      "Votre moitié suit le tapis officiel : **légende** et **champion élu** à gauche, votre **base** au centre, **deck principal** à droite. En dessous : **deck de runes**, zone de **runes**, **défausse**, et votre main à côté. Votre score se lit sur la piste verticale, de bas en haut.",
       "Au centre, **2 champs de bataille** : chaque joueur en présente 1, tiré au hasard parmi ses 3 (les 2 autres ne serviront pas cette partie).",
-      "L'adversaire est installé en miroir, en haut. Tout ce qui est sur la table est public — seules les mains restent secrètes."
+      "L'adversaire est installé en miroir, en haut. Les cartes posées face visible sont publiques. Les mains et l'ordre des decks restent secrets."
     ],
     scene: {
       cards: board(),
@@ -248,7 +248,7 @@ export const STEPS = [
     ref: "110",
     terms: ["piocher", "mulligan", "recycler"],
     text: [
-      "Chaque joueur **pioche 4 cartes** — les vôtres sont là, faces visibles. On détermine au hasard qui commence : ce sera vous.",
+      "Chaque joueur **pioche 4 cartes**. Les vôtres sont là, faces visibles. On détermine au hasard qui commence : ce sera vous.",
       "Main décevante ? Un seul **mulligan** : mettez jusqu'à **2 cartes de côté**, piochez-en autant, puis **recyclez** celles mises de côté : elles sont placées **sous votre deck principal**.",
       "Ici, on garde les 4 cartes."
     ],
@@ -265,9 +265,9 @@ export const STEPS = [
     terms: ["phase d'éveil", "canaliser", "piocher"],
     text: [
       "**Éveil** : vous redressez (**préparez**) toutes vos cartes épuisées.",
-      "**Étape des scores** : vous marquez 1 point par champ de bataille contrôlé.",
-      "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles **restent en zone de runes de tour en tour** : 2 au premier tour, 4 au deuxième, 6 au troisième. (Le joueur qui commence en second en canalise 3 à son tout premier tour.)",
-      "**Pioche** : **1 carte** — suivez-la, elle glisse du deck principal vers votre main : Get Excited!, le sort signature de Jinx."
+      "**Départ** (étape des scores) : vous marquez 1 point par champ de bataille que vous contrôlez.",
+      "**Canalisation** : **2 runes** passent du deck de runes à votre zone de runes. Elles **restent en zone de runes de tour en tour** : 2 au premier tour, 4 au deuxième, 6 au troisième, si vous n'en recyclez aucune. (Le joueur qui commence en second en canalise 3 à son tout premier tour.)",
+      "**Pioche** : **1 carte**. Suivez-la des yeux : elle glisse du deck principal vers votre main. C'est Get Excited!, le sort signature de Jinx."
     ],
     scene: {
       cards: board([
@@ -289,8 +289,8 @@ export const STEPS = [
     ref: "160",
     terms: ["épuiser", "recycler", "énergie", "essence runique"],
     text: [
-      "Lisez la carte en gros plan — Jinx - Demolitionist. **① Le chiffre** : le coût en **énergie**. **② Les symboles de domaine** en dessous : le coût en **essence runique**. **③ La puissance** de l'unité. **④ Ses mots-clés et effets**. (Cliquez n'importe quelle carte de la table pour la lire en grand.)",
-      "Chaque rune de votre zone paie ces coûts de deux façons. **L'épuiser** (la tourner) : **+1 énergie** — elle se redressera à votre prochain éveil. **La recycler** : **+1 essence** de son domaine — la rune est glissée **sous votre deck de runes** (règle 416) et reviendra quand vous la canaliserez.",
+      "Lisez la carte en gros plan : Jinx - Demolitionist. **① Le chiffre** : le coût en **énergie**. **② Les symboles de domaine** en dessous : le coût en **essence runique**. **③ La puissance** de l'unité. **④ Ses mots-clés et effets**. (Touchez ou cliquez une carte de la table pour la lire en grand.)",
+      "Chaque rune de votre zone paie ces coûts de deux façons. **L'épuiser** (la tourner) : **+1 énergie**. Elle se redressera à votre prochain éveil. **La recycler** : **+1 essence** de son domaine. La rune est glissée **sous votre deck de runes** (règle 416) et reviendra quand vous la canaliserez.",
       "On épuise pour les chiffres ; on ne recycle que pour les symboles de domaine.",
       "Votre main : Legion Rearguard coûte **2 énergie**, Seal of Rage **0 énergie + 1 symbole Fureur**. Vous avez exactement de quoi jouer les deux."
     ],
@@ -322,7 +322,7 @@ export const STEPS = [
     ref: "140",
     terms: ["épuisé", "préparé", "phase principale", "Accélération"],
     text: [
-      "Vous **épuisez vos 2 runes** : 2 énergie, le coût exact de **Legion Rearguard**. Il quitte votre main et entre dans votre **base**, **épuisé** — couché sur le côté, il ne fera rien ce tour-ci.",
+      "Vous **épuisez vos 2 runes** : 2 énergie, le coût exact de **Legion Rearguard**. Il quitte votre main et entre dans votre **base**, **épuisé** : couché sur le côté, il ne fera rien ce tour-ci.",
       "Son texte propose **Accélération** : payer 1 énergie + 1 Fureur de plus pour qu'il arrive **préparé**. Vous n'avez plus de quoi payer.",
       "Les unités, équipements et sorts se jouent pendant votre **phase principale**, dans l'ordre que vous voulez, tant que vos runes peuvent payer."
     ],
@@ -351,7 +351,7 @@ export const STEPS = [
     text: [
       "**Seal of Rage** coûte 0 énergie + **1 symbole Fureur**. Vos runes sont épuisées, mais une rune épuisée peut toujours être **recyclée**.",
       "Vous recyclez votre **Fury Rune** : regardez-la glisser **sous le deck de runes**. Elle produit 1 essence Fureur, qui paie l'équipement. Il ne reste qu'une rune en zone.",
-      "Seal of Rage arrive **préparé** (c'est un équipement) — et lisez son texte : « Épuiser : Réaction — Ajoutez 1 Fureur. » Il produira lui-même de l'essence Fureur, à n'importe quel moment où un coût se paie. Fin de votre tour 1."
+      "Seal of Rage arrive **préparé** (c'est un équipement). Lisez son texte : « Épuiser : Réaction — Ajoutez 1 Fureur. » Il produira lui-même de l'essence Fureur, à n'importe quel moment où un coût se paie. Fin de votre tour 1."
     ],
     scene: {
       cards: board([
@@ -375,7 +375,7 @@ export const STEPS = [
     ref: "301",
     terms: ["joueur du tour", "ordre des tours"],
     text: [
-      "À lui : mêmes phases, dans le même ordre. Il canalise **3 runes** (bonus du joueur qui commence en second), pioche, puis joue **Sunlit Guardian** dans **sa** base — **épuisé**, comme toute unité qui arrive.",
+      "À lui : mêmes phases, dans le même ordre. Il canalise **3 runes** (bonus du joueur qui commence en second), pioche, puis joue **Sunlit Guardian** dans **sa** base. Il arrive **épuisé**, comme toute unité.",
       "Lisez sa carte : **Bouclier** (+1 puissance quand il défend) et **Tank** (les dégâts de combat doivent lui être attribués en premier).",
       "Il termine son tour. Les tours alternent ainsi jusqu'à 8 points."
     ],
@@ -400,7 +400,7 @@ export const STEPS = [
     terms: ["phase d'éveil", "canaliser"],
     text: [
       "Votre **éveil** redresse Legion Rearguard et votre rune. Vous **canalisez 2 runes** : 3 en zone de runes. Vous piochez.",
-      "3 runes épuisées = 3 énergie : **Flame Chompers** (coût 3) entre en jeu dans votre base, **épuisé**. Remarquez Sunlit Guardian : lui reste épuisé — une carte ne se **prépare** qu'à l'éveil de **son** propriétaire.",
+      "3 runes épuisées = 3 énergie : **Flame Chompers** (coût 3) entre en jeu dans votre base, **épuisé**. Remarquez Sunlit Guardian : il reste épuisé, car une carte ne se **prépare** qu'à l'éveil du joueur qui la **contrôle**.",
       "Votre base tient maintenant deux unités et un équipement. Fin de votre tour 2."
     ],
     scene: {
@@ -428,8 +428,8 @@ export const STEPS = [
     ref: "140",
     terms: ["déplacement standard", "conquête"],
     text: [
-      "**Son éveil prépare Sunlit Guardian** — voilà pourquoi il ne pouvait pas bouger avant : une unité arrive épuisée et attend l'éveil suivant de son propriétaire.",
-      "Il fait son **déplacement standard** : Guardian s'épuise et marche sur le **Monastery of Hirana**, son champ de bataille. Personne n'y était : il en prend le contrôle → **conquête, 1 point pour lui**.",
+      "**Son éveil prépare Sunlit Guardian.** C'est pour cela qu'il ne pouvait pas bouger avant : une unité arrive épuisée et attend l'éveil suivant du joueur qui la contrôle.",
+      "Il fait son **déplacement standard** : Guardian s'épuise et marche sur le **Monastery of Hirana**, son champ de bataille. Personne n'y était : une confrontation s'ouvre quand même. Personne ne joue de sort, il en prend donc le contrôle : **conquête, 1 point pour lui**.",
       "Au début de **son** prochain tour, ce champ lui rapportera encore 1 point d'**occupation**."
     ],
     scene: {
@@ -458,8 +458,8 @@ export const STEPS = [
     ref: "140",
     terms: ["déplacement standard", "contesté"],
     text: [
-      "Éveil (tout se redresse), canalisation (**5 runes**), pioche. Au passage, votre **légende** travaille pour vous : Jinx - Loose Cannon fait piocher 1 carte au début de votre phase de départ si votre main compte 1 carte ou moins — un filet de sécurité permanent.",
-      "Vos deux unités, **préparées**, s'épuisent pour un **déplacement standard** groupé vers le Monastery of Hirana. (De la base vers un champ, ou l'inverse — jamais de champ à champ, sauf mot-clé **Gank**.)",
+      "Éveil (tout se redresse), départ, canalisation (**5 runes**), pioche. Au passage, votre **légende** travaille pour vous : au début de votre phase de départ, Jinx - Loose Cannon vous fait piocher 1 carte si votre main compte 1 carte ou moins. C'est un filet de sécurité permanent.",
+      "Vos deux unités, **préparées**, s'épuisent pour un **déplacement standard** groupé vers le Monastery of Hirana. (De la base vers un champ, ou l'inverse. Jamais d'un champ à l'autre, sauf avec le mot-clé **Gank**.)",
       "Le champ devient **contesté** : deux joueurs y ont des unités, un **combat** se prépare."
     ],
     scene: {
@@ -490,8 +490,8 @@ export const STEPS = [
     ref: "464",
     terms: ["attaquant", "défenseur", "chaîne", "Action"],
     text: [
-      "Vous avez contesté : vous êtes l'**attaquant**, lui le **défenseur**. Avant les dégâts, la **confrontation** : chacun à son tour joue un sort **Action** ou **Réaction**, ou **passe** — les sorts s'empilent dans la **chaîne** et se résolvent du dernier au premier.",
-      "**Get Excited!** (Action, 2 énergie + 1 Fureur) : vous épuisez 2 runes pour l'énergie et **épuisez Seal of Rage** pour l'essence Fureur — sa Réaction produit au moment exact où un coût se paie.",
+      "Vous avez contesté : vous êtes l'**attaquant**, lui le **défenseur**. Avant les dégâts, la **confrontation** : chacun à son tour joue un sort **Action** ou **Réaction**, ou **passe**. Les sorts s'empilent dans la **chaîne** et se résolvent du dernier au premier.",
+      "**Get Excited!** (Action, 2 énergie + 1 Fureur) : vous épuisez 2 runes pour l'énergie et **épuisez Seal of Rage** pour l'essence Fureur : sa Réaction produit l'essence au moment même où le coût se paie.",
       "Son effet : **défaussez 1 carte, infligez son coût en énergie en dégâts** à une unité du champ. Vous défaussez Jinx - Demolitionist (coût 3) : **3 dégâts** sur Sunlit Guardian. En défense, son **Bouclier** porte sa puissance à 4 : il tient, marqué de 3 dégâts.",
       "Les deux joueurs passent : place aux dégâts de combat."
     ],
@@ -524,7 +524,7 @@ export const STEPS = [
     terms: ["puissance", "dégâts mortels", "attribuer", "Tank"],
     text: [
       "Chaque camp additionne la **puissance** de ses unités : vous 3 + 2 = **5**. Lui : 3 + 1 de **Bouclier** = **4**.",
-      "Vous attribuez vos 5 dégâts : **Tank** oblige à viser Guardian d'abord — il porte déjà 3 dégâts, 1 de plus suffit pour des **dégâts mortels** (4 ≥ 4). Le reste lui est attribué faute d'autre cible.",
+      "Vous attribuez vos 5 dégâts. **Tank** oblige à viser Guardian d'abord. Il porte déjà 3 dégâts : 1 de plus suffit pour des **dégâts mortels** (4 ≥ 4). Le reste lui est attribué faute d'autre cible.",
       "Il attribue ses 4 : 2 éliminent Legion Rearguard (**mortels**), les 2 restants marquent Flame Chompers (3 de puissance : il tient). Tout est infligé **simultanément**."
     ],
     scene: {
@@ -533,7 +533,7 @@ export const STEPS = [
         { key: "h2", card: CARDS.rearguard, spot: SPOTS.onBfFoeB, tapped: true, might: true, dmg: 2, dead: true },
         { key: "h3", card: CARDS.gear, spot: SPOTS.youBaseB, tapped: true },
         { key: "h4", card: CARDS.demolitionist, spot: SPOTS.discardA },
-        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true, dmg: 5, dead: true },
+        { key: "def", card: CARDS.foeUnit, spot: SPOTS.onBfFoeDef, might: true, dmg: 8, dead: true },
         ...runes([
           { k: "rune1", d: "C", t: true },
           { k: "rune2", d: "F", t: true },
@@ -553,8 +553,8 @@ export const STEPS = [
     ref: "466",
     terms: ["nettoyage", "conquête", "soigner"],
     text: [
-      "**Nettoyage de combat** : chaque carte éliminée part dans la **défausse de son propriétaire** — Legion Rearguard rejoint Get Excited! et Jinx - Demolitionist dans la vôtre, Sunlit Guardian part dans la sienne. Les survivants sont **soignés** : Flame Chompers repart à pleine puissance.",
-      "Seul camp restant sur le champ : vous en prenez le **contrôle** → **conquête, +1 point**, immédiatement.",
+      "**Nettoyage de combat** : chaque carte éliminée part dans la **défausse de son propriétaire**. Legion Rearguard rejoint Get Excited! et Jinx - Demolitionist dans la vôtre, Sunlit Guardian part dans la sienne. Les survivants sont **soignés** : les 2 dégâts marqués sur Flame Chompers sont retirés.",
+      "Vous êtes le seul camp restant sur le champ : vous en prenez le **contrôle**. **Conquête, +1 point**, immédiatement.",
       "Si les **deux** camps avaient survécu, les attaquants auraient été **rappelés** à leur base et le défenseur aurait gardé le contrôle."
     ],
     scene: {
@@ -586,9 +586,9 @@ export const STEPS = [
     ref: "108",
     terms: ["occupation", "zone de champion", "recycler"],
     text: [
-      "Début de votre tour 4 : à l'**étape des scores**, le champ que vous tenez rapporte **+1 point d'occupation**. Éveil, canalisation (**7 runes** — 6 affichées ici), pioche.",
-      "Place au **champion élu** : **Jinx - Rebel** (5 énergie + 1 symbole Chaos) se joue **depuis sa zone de champion**, exactement comme depuis votre main. Vous épuisez 5 runes et **recyclez une Chaos Rune** pour le symbole.",
-      "Elle entre en jeu **épuisée**, dans votre base. Si elle est éliminée, elle ira à la défausse comme n'importe quelle carte — la zone de champion ne sert qu'au départ."
+      "Début de votre tour 4 : éveil, puis **départ**, où le champ que vous tenez rapporte **+1 point d'occupation** (étape des scores). Canalisation (**7 runes**), pioche.",
+      "Place au **champion élu** : **Jinx - Rebel** (5 énergie + 1 symbole Chaos) se joue **depuis sa zone de champion**, exactement comme depuis votre main. Vous épuisez 5 runes et **recyclez une Chaos Rune** pour le symbole. Il vous reste 6 runes en zone.",
+      "Elle entre en jeu **épuisée**, dans votre base. Si elle est éliminée, elle ira à la défausse comme n'importe quelle carte : la zone de champion ne sert qu'au départ."
     ],
     scene: {
       cards: board([
@@ -621,9 +621,9 @@ export const STEPS = [
     ref: "193",
     terms: ["score de la victoire", "conquête", "occupation", "exténuation"],
     text: [
-      "La rapide : **conquérir les 2 champs de bataille dans le même tour** — le point de la victoire par conquête n'est accordé que si vous avez marqué sur chaque champ ce tour-là (sinon, vous piochez une carte à la place).",
-      "La patiente : **tenir un champ** et laisser l'**occupation**, sans restriction, vous porter à 8.",
-      "Cas particulier : si vous devez piocher avec un deck principal vide, vous êtes **exténué** — votre défausse est remélangée en un nouveau deck et un adversaire de votre choix gagne 1 point.",
+      "Par la conquête : à 7 points, conquérir un champ ne donne le point de la victoire que si vous avez marqué sur **les 2 champs de bataille dans le même tour**. Sinon, vous piochez une carte à la place.",
+      "Par l'occupation : **tenez un champ**. L'**occupation** n'a pas cette restriction et peut vous porter à 8.",
+      "Cas particulier : si vous devez piocher avec un deck principal vide, vous êtes **exténué** : votre défausse est remélangée en un nouveau deck, un adversaire de votre choix gagne 1 point, puis vous piochez.",
       "Pour chaque mécanique en détail, voir l'**aide avancée** ; en cas de doute, le texte officiel tranche."
     ],
     scene: {

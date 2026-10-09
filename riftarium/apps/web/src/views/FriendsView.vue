@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
     <template v-else>
       <RiftPanel class="amis-panel">
         <template #title>
-          Je suis <span class="amis-compte">({{ following.length }})</span>
+          Joueurs suivis <span class="amis-compte">({{ following.length }})</span>
         </template>
         <ul v-if="following.length" class="amis-liste">
           <li v-for="user in following" :key="user.id || user.handle" class="amis-row">
@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
       <RiftPanel class="amis-panel">
         <template #title>
-          Ils me suivent <span class="amis-compte">({{ followers.length }})</span>
+          Abonnés <span class="amis-compte">({{ followers.length }})</span>
         </template>
         <ul v-if="followers.length" class="amis-liste">
           <li v-for="user in followers" :key="user.id || user.handle" class="amis-row">
@@ -292,7 +292,11 @@ onBeforeUnmount(() => {
         <RiftEmpty v-else title="Personne ne vous suit encore" />
       </RiftPanel>
 
-      <p v-if="empty" class="amis-note">Suivre un joueur reste privé : rien n'est publié, rien n'est notifié.</p>
+      <p v-if="empty" class="amis-note">
+        Le joueur que vous suivez ne reçoit aucune notification. Il vous voit dans ses abonnés, sur sa page Amis. Les
+        profils publics affichent seulement le nombre d'abonnés et de joueurs suivis, quels que soient les réglages de
+        confidentialité.
+      </p>
     </template>
   </div>
 </template>

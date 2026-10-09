@@ -9,10 +9,10 @@ const EUR_FORMAT = new Intl.NumberFormat("fr-FR", { style: "currency", currency:
 
 /* Note légale affichée (texte gris ou tooltip) partout où un prix apparaît en bloc. */
 export const PRICE_NOTE =
-  "Prix indicatifs : marché US (TCGplayer), convertis en € (taux BCE). Ni cote officielle ni offre d'achat."
+  "Prix indicatifs : marché américain (TCGplayer), convertis en euros (taux BCE). Ni cote officielle ni offre d'achat."
 
 /* Phrase de repli quand la méta n'est pas (encore) chargée sur la fiche carte. */
-export const PRICE_SOURCE_NOTE = "Prix du marché US (TCGplayer), convertis en € (taux BCE)."
+export const PRICE_SOURCE_NOTE = "Prix du marché américain (TCGplayer), convertis en euros (taux BCE)."
 
 /** « 13,30 € », ou null si la valeur n'est pas un prix exploitable. */
 export function formatEur(value) {
@@ -20,6 +20,14 @@ export function formatEur(value) {
   const amount = Number(value)
   if (Number.isNaN(amount)) return null
   return EUR_FORMAT.format(amount)
+}
+
+/** Complétion d'un set ou de la collection : « set complet » ou « 3 cartes manquantes (~4,20 €) ». */
+export function missingCardsText(row) {
+  if (!row.missing) return "set complet"
+  const cost = formatEur(row.missing_cost_eur)
+  const count = row.missing === 1 ? "1 carte manquante" : `${row.missing} cartes manquantes`
+  return `${count}${cost ? ` (~${cost})` : ""}`
 }
 
 /** Recherche Cardmarket (lien sortant non affilié — Cardmarket n'est pas la source des prix). */

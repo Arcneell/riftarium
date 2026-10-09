@@ -7,7 +7,7 @@ import { ensureTradeSettings, getCardOffers, tradeSettings } from "../trades.js"
 import RiftButton from "../ui/RiftButton.vue"
 
 /* Bloc « À l'échange » de la fiche carte : qui la propose, dont combien dans
-   ma zone, et « Je suis intéressé ». Rien pour un visiteur ; une invitation
+   ma zone, et « Ça m'intéresse ». Rien pour un visiteur ; une invitation
    pour un compte qui n'a pas activé les échanges. */
 const props = defineProps({
   card: { type: Object, required: true }
@@ -50,7 +50,7 @@ watch(() => [props.card.id, session.token], load, { immediate: true })
   <section v-if="session.token && tradeSettings.loaded" class="echange-fiche" aria-labelledby="echange-fiche-titre">
     <h2 id="echange-fiche-titre" class="echange-fiche-titre">À l'échange</h2>
     <p v-if="!tradeSettings.enabled" class="echange-fiche-texte">
-      Des joueurs de La Réunion la proposent peut-être.
+      Activez les échanges pour voir qui la propose à La Réunion.
       <RiftButton to="/echanges" variant="ghost" size="sm">Activer les échanges</RiftButton>
     </p>
     <p v-else-if="error" class="echange-fiche-erreur" role="alert">{{ error }}</p>

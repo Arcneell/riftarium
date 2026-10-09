@@ -86,7 +86,7 @@ def test_preview_of_a_private_deck_stays_generic(client, auth):
     body = client.get(f"/api/decks/{deck['id']}/preview").text
 
     assert "Liste secrète" not in body
-    assert "Riftarium — Cartes, decks et règles Riftbound" in body
+    assert "Riftarium · Cartes, decks et règles Riftbound" in body
     assert client.get("/api/decks/999999/preview").status_code == 200
 
 

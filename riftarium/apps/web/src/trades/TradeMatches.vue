@@ -26,7 +26,7 @@ const loading = ref(true)
 const error = ref("")
 const onlyMyZone = ref(false)
 const query = ref("")
-/* Offre visée par « Je suis intéressé » : { card, offer } ou null. */
+/* Offre visée par « Ça m'intéresse » : { card, offer } ou null. */
 const interest = ref(null)
 
 async function load() {
@@ -118,11 +118,11 @@ onMounted(load)
       </RiftEmpty>
       <nav v-if="wanted.total > SIZE" class="correspondances-pages" aria-label="Pages des correspondances">
         <RiftButton variant="ghost" size="sm" :disabled="page <= 1 || loading" @click="goTo(page - 1)"
-          >Précédentes</RiftButton
+          >← Précédent</RiftButton
         >
-        <span class="correspondances-page">Page {{ page }} / {{ Math.ceil(wanted.total / SIZE) }}</span>
+        <span class="correspondances-page">page {{ page }} / {{ Math.ceil(wanted.total / SIZE) }}</span>
         <RiftButton variant="ghost" size="sm" :disabled="page * SIZE >= wanted.total || loading" @click="goTo(page + 1)"
-          >Suivantes</RiftButton
+          >Suivant →</RiftButton
         >
       </nav>
     </section>
@@ -130,8 +130,8 @@ onMounted(load)
     <section v-if="!loading && offered.items.length" aria-labelledby="ils-cherchent">
       <h2 id="ils-cherchent" class="correspondances-titre">Ils cherchent ce que j'ai</h2>
       <p class="correspondances-aide">
-        Ces joueurs ont dans leur wishlist une carte que vous proposez. Jetez un œil à leurs offres : c'est peut-être
-        l'occasion d'un échange.
+        Ces joueurs ont dans leur wishlist une carte que vous proposez. Si l'un d'eux s'y intéresse, sa demande arrivera
+        dans l'onglet « Demandes ».
       </p>
       <ul class="chercheurs">
         <li v-for="item in offered.items" :key="item.user.handle" class="chercheur">

@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import RiftText from "../ui/RiftText.vue"
 import LearnRuneDemo from "./LearnRuneDemo.vue"
-import { ABCD_PHASES, LEARN_INTRO } from "./learn.js"
+import { ABCD_NOTE, ABCD_PHASES, LEARN_INTRO } from "./learn.js"
 
 /* Rendu d'un bloc de leçon (voir learn.js). Les cartes agrandies sont signalées par
    `zoom` : la page ouvre CardZoom. */
@@ -71,6 +71,7 @@ const selectedType = ref(props.block.type === "types" ? (props.block.items[0]?.k
   </div>
 
   <div v-else-if="block.type === 'abcd'" class="lecon-abcd">
+    <p class="lecon-abcd-note">{{ ABCD_NOTE }}</p>
     <div v-for="phase in ABCD_PHASES" :key="phase.name" class="lecon-abcd-step">
       <b class="lecon-abcd-letter">{{ phase.letter }}</b>
       <div>
@@ -310,6 +311,13 @@ const selectedType = ref(props.block.type === "types" ? (props.block.items[0]?.k
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: var(--space-3);
   margin: var(--space-4) 0;
+}
+.lecon-abcd-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .lecon-abcd-step {
   display: flex;

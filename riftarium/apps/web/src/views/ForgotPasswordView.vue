@@ -48,7 +48,7 @@ async function submit() {
     </template>
 
     <form v-else class="acces-form" @submit.prevent="submit">
-      <RiftField v-model="email" label="Email" type="email" name="email" autocomplete="email" required />
+      <RiftField v-model="email" label="E-mail" type="email" name="email" autocomplete="email" required />
       <RiftButton type="submit" block :disabled="submitting">
         {{ submitting ? "Un instant…" : "Envoyer le lien" }}
       </RiftButton>

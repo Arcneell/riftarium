@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue"
 import MatchRow from "../play/MatchRow.vue"
 import RiftButton from "../ui/RiftButton.vue"
+import { plural } from "../ui/french.js"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
 import { getHistory } from "../play.js"
@@ -56,7 +57,7 @@ onMounted(load)
     </div>
 
     <template v-else-if="items.length">
-      <p class="histo-count">{{ total }} partie(s) terminée(s)</p>
+      <p class="histo-count">{{ plural(total, "partie terminée", "parties terminées") }}</p>
 
       <ol class="histo-list">
         <MatchRow v-for="item in items" :key="item.match_id" :item="item" />
@@ -77,7 +78,7 @@ onMounted(load)
       v-else-if="empty"
       class="histo-empty"
       title="Aucune partie suivie"
-      text="Les parties suivies se créent depuis l'application mobile (« Jouer », puis « Partie suivie »). Un code reçu se saisit dans le salon."
+      text="Lancez une partie suivie depuis l'application mobile (« Jouer », puis « Partie suivie »). Si un joueur vous a donné un code, saisissez-le dans « Rejoindre un salon »."
     >
       <RiftButton variant="primary" to="/salon">Rejoindre un salon</RiftButton>
     </RiftEmpty>

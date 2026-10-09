@@ -6,6 +6,7 @@ import { PRICE_NOTE, formatEur } from "../prices.js"
 import { profilePath } from "../social.js"
 import RiftButton from "../ui/RiftButton.vue"
 import DeckLegalBadge from "./DeckLegalBadge.vue"
+import { pluralWord } from "../ui/french.js"
 
 const props = defineProps({
   deck: { type: Object, required: true },
@@ -28,10 +29,10 @@ const runes = computed(() => runesOf(props.deck))
 const score = computed(() => (!props.community && props.record?.played ? props.record : null))
 const mine = computed(() => !props.community && !props.readonly)
 
-/* « 3 manquante(s) (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
+/* « 3 manquantes (~4,50 €) » — le coût n'apparaît que si l'API l'a chiffré. */
 function missingNote(deck) {
   const cost = formatEur(deck.missing_cost_eur)
-  return `${deck.missing_cards} manquante(s)${cost ? ` (~${cost})` : ""}`
+  return `${deck.missing_cards} ${pluralWord(deck.missing_cards, "manquante", "manquantes")}${cost ? ` (~${cost})` : ""}`
 }
 </script>
 
@@ -98,7 +99,7 @@ function missingNote(deck) {
         <span
           v-if="score"
           class="deck-card-record"
-          :title="`Parties suivies : ${score.won} victoire(s), ${score.lost} défaite(s)`"
+          :title="`Parties suivies : ${score.won} ${pluralWord(score.won, 'victoire', 'victoires')}, ${score.lost} ${pluralWord(score.lost, 'défaite', 'défaites')}`"
         >
           {{ score.won }} V · {{ score.lost }} D
         </span>
@@ -119,7 +120,11 @@ function missingNote(deck) {
           <Icon name="heart" :size="16" />
           {{ deck.likes ?? 0 }}
         </span>
-        <span v-if="community" class="deck-card-stat" :title="`${deck.views ?? 0} vue(s)`">
+        <span
+          v-if="community"
+          class="deck-card-stat"
+          :title="`${deck.views ?? 0} ${pluralWord(deck.views, 'vue', 'vues')}`"
+        >
           <Icon name="eye" :size="16" />
           {{ deck.views ?? 0 }}
         </span>

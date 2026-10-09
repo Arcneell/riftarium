@@ -52,6 +52,14 @@ describe("LearnGuideView", () => {
     wrapper.unmount()
   })
 
+  it("le chapeau rend le gras au lieu d'afficher les astérisques", async () => {
+    const { wrapper } = await mountGuide("/regles/debutant/victoire")
+    const lead = wrapper.get(".chapitre-lead")
+    expect(lead.text()).not.toContain("**")
+    expect(lead.get("b").text()).toBe("en étant strictement devant")
+    wrapper.unmount()
+  })
+
   it("redirige /regles/debutant/apercu vers l'URL courte", async () => {
     const { router, wrapper } = await mountGuide(`/regles/debutant/${DEFAULT_CHAPTER}`)
     await flushPromises()

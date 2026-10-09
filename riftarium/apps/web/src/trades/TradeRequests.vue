@@ -128,7 +128,7 @@ onMounted(async () => {
           </RiftButton>
         </RiftPanel>
         <p v-else-if="item.status === 'accepted' || item.status === 'done'" class="demande-sans-contact">
-          Ce joueur a retiré son contact de son profil : retrouvez-le via son profil public.
+          Ce joueur a retiré son contact de son profil.
         </p>
         <div v-if="actionsFor(item).length" class="demande-actions">
           <RiftButton
@@ -150,7 +150,7 @@ onMounted(async () => {
       :text="
         box === 'in'
           ? 'Quand un joueur s\'intéresse à une de vos offres, sa demande arrive ici (et par e-mail).'
-          : 'Depuis les correspondances, « Je suis intéressé » envoie une demande au joueur.'
+          : 'Depuis les correspondances, « Ça m\'intéresse » envoie une demande au joueur.'
       "
     />
   </div>

@@ -203,7 +203,7 @@ describe("AdminView", () => {
     /* Rubriques : barres horizontales avec libellés traduits et valeurs directes. */
     const rubriques = figures.find((figure) => figure.text().includes("Rubriques les plus visitées"))
     expect(rubriques.findAll(".graphe-bar")).toHaveLength(2)
-    expect(rubriques.findAll(".graphe-row-label").map((node) => node.text())).toEqual(["Cartothèque", "Accueil"])
+    expect(rubriques.findAll(".graphe-row-label").map((node) => node.text())).toEqual(["Cartes", "Accueil"])
     expect(rubriques.findAll(".graphe-value-text").map((node) => node.text())).toEqual(["120", "60"])
 
     /* Modération : barre empilée avec légende comptée. */

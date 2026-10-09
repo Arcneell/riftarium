@@ -3,6 +3,7 @@ import "./console.css"
 import { reactive, watch } from "vue"
 import { api } from "../api.js"
 import RiftButton from "../ui/RiftButton.vue"
+import { plural } from "../ui/french.js"
 import RiftChip from "../ui/RiftChip.vue"
 import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftField from "../ui/RiftField.vue"
@@ -115,7 +116,7 @@ async function submitDeckRemoval() {
         spellcheck="false"
       />
       <span class="console-mono console-count" aria-live="polite">
-        {{ decks.total }} deck(s) <span v-if="decks.loading">— chargement…</span>
+        {{ plural(decks.total, "deck") }} <span v-if="decks.loading">· chargement…</span>
       </span>
     </div>
     <p v-if="decks.error" class="console-error" role="alert">{{ decks.error }}</p>
@@ -151,7 +152,9 @@ async function submitDeckRemoval() {
               <RiftChip v-if="deck.is_public" static label="Public" />
             </div>
           </td>
-          <td class="console-mono" data-label="Activité">{{ deck.likes_count }} likes · {{ deck.views_count }} vues</td>
+          <td class="console-mono" data-label="Activité">
+            {{ deck.likes_count }} j'aime · {{ plural(deck.views_count, "vue") }}
+          </td>
           <td class="console-actions-cell" data-label="Actions">
             <div class="console-actions">
               <RiftButton

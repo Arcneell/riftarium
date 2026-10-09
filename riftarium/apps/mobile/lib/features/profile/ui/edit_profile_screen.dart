@@ -270,7 +270,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   children: [
                     _PrivacySwitch(
-                      title: 'Mes statistiques de duels',
+                      title: 'Mes parties suivies',
                       detail: 'Visibles sur mon profil public.',
                       value: _showStats,
                       onChanged: (value) => setState(() => _showStats = value),

@@ -8,6 +8,7 @@ import RiftButton from "../ui/RiftButton.vue"
 import AccountMenu from "./AccountMenu.vue"
 import { refreshTradeBadge, tradeBadge } from "../trades.js"
 import { activeChild, activeSection, NAV } from "./navigation.js"
+import { plural } from "../ui/french.js"
 
 /* Rail latéral de la Forge (bureau et tablette). Seules les sous-pages de la
    rubrique active sont dépliées, pour que le rail reste court. */
@@ -58,9 +59,12 @@ watch(
           >
             <Icon :name="item.icon" :size="18" />
             <span v-if="!collapsed" class="rail-label">{{ item.label }}</span>
-            <span v-if="badgeCount(item)" class="rail-badge" :aria-label="`${badgeCount(item)} demande(s) reçue(s)`">{{
-              badgeCount(item)
-            }}</span>
+            <span
+              v-if="badgeCount(item)"
+              class="rail-badge"
+              :aria-label="plural(badgeCount(item), 'demande reçue', 'demandes reçues')"
+              >{{ badgeCount(item) }}</span
+            >
           </RouterLink>
           <ul v-if="!collapsed && item === section && item.children" class="rail-sub">
             <li v-for="sub in item.children" :key="sub.to">
@@ -72,7 +76,7 @@ watch(
                 }}<span
                   v-if="badgeCount(sub)"
                   class="rail-badge"
-                  :aria-label="`${badgeCount(sub)} demande(s) reçue(s)`"
+                  :aria-label="plural(badgeCount(sub), 'demande reçue', 'demandes reçues')"
                   >{{ badgeCount(sub) }}</span
                 ></RouterLink
               >

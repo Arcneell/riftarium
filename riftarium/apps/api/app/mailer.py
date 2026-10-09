@@ -63,7 +63,7 @@ _VERIFY = MailCopy(
     preheader="Un clic pour confirmer votre adresse. Lien valable 7 jours.",
     title="Bienvenue sur Riftarium",
     paragraphs=(
-        "Votre compte est créé : cartothèque, collection et deck builder vous attendent.",
+        "Votre compte est créé : base de cartes, collection et création de decks vous attendent.",
         "Il ne reste plus qu'à confirmer que cette adresse vous appartient.",
     ),
     cta="Confirmer mon adresse",
@@ -178,7 +178,7 @@ def _html(copy: MailCopy, link: str) -> str:
         <tr>
           <td style="padding:20px 32px 28px;font-family:{_BODY};font-size:12px;line-height:1.5;color:{_MUTED};">
             <hr style="border:0;border-top:1px solid {_LINE};margin:0 0 16px;">
-            Projet fan-made à but non lucratif, non affilié à Riot Games.<br>
+            Projet de fan à but non lucratif, non affilié à Riot Games.<br>
             <a href="{site}" style="color:{_BRONZE_LIGHT};text-decoration:none;">{domain}</a>
           </td>
         </tr>

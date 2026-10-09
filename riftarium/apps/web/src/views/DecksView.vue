@@ -11,6 +11,7 @@ import RiftEmpty from "../ui/RiftEmpty.vue"
 import RiftField from "../ui/RiftField.vue"
 import RiftModal from "../ui/RiftModal.vue"
 import RiftSkeleton from "../ui/RiftSkeleton.vue"
+import { pluralWord } from "../ui/french.js"
 
 const router = useRouter()
 /* Un seul GET /api/play/stats pour toute la session : chaque fiche y lit son W/L. */
@@ -133,7 +134,9 @@ onMounted(load)
   <div class="wrap cards-wrap mesdecks">
     <header class="mesdecks-head">
       <h1 class="mesdecks-title">Mes decks</h1>
-      <p v-if="!loading && !error" class="mesdecks-count">{{ decks.length }} deck(s)</p>
+      <p v-if="!loading && !error" class="mesdecks-count">
+        {{ decks.length }} {{ pluralWord(decks.length, "deck", "decks") }}
+      </p>
       <RiftButton class="mesdecks-new" variant="primary" @click="openCreate">Nouveau deck</RiftButton>
     </header>
 
@@ -228,7 +231,7 @@ onMounted(load)
 
   <RiftModal v-if="pendingDelete" title="Supprimer le deck" @close="cancelRemove">
     <p>
-      Le deck <strong>{{ pendingDelete.name }}</strong> sera supprimé pour de bon — impossible de le récupérer ensuite.
+      Le deck <strong>{{ pendingDelete.name }}</strong> sera supprimé définitivement.
     </p>
     <p v-if="deleteError" class="mesdecks-error" role="alert">{{ deleteError }}</p>
     <div class="mesdecks-actions">

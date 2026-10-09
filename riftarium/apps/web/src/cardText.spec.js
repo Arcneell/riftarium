@@ -80,7 +80,7 @@ describe("isFoil / variantLabel", () => {
   it("étiquette les variantes", () => {
     expect(variantLabel({ signature: true })).toBe("Signature")
     expect(variantLabel({ overnumbered: true })).toBe("Overnumbered")
-    expect(variantLabel({ alternate_art: true })).toBe("Alt")
+    expect(variantLabel({ alternate_art: true })).toBe("Alt-art")
     expect(variantLabel({})).toBe("Normale")
   })
 })
