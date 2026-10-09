@@ -61,7 +61,7 @@ app = FastAPI(
     version="0.1.0",
     description=(
         "API du projet Riftarium — compagnon communautaire Riftbound. "
-        "Projet fan-made à but non lucratif, non affilié à Riot Games. "
+        "Projet de fan à but non lucratif, non affilié à Riot Games. "
         "Données de cartes : API communautaire Riftcodex ; visuels servis par le CDN officiel Riot."
     ),
     lifespan=lifespan,
