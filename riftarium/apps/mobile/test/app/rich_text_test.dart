@@ -152,6 +152,13 @@ void main() {
       );
     });
 
+    test('[A] est la rune libre, [C] reste une pastille', () {
+      final parts = parse('Payez [A], puis [C].');
+      final glyphs = parts.whereType<RiftTextGlyph>().toList();
+      expect(glyphs.map((g) => g.glyph.token), ['rune_rainbow']);
+      expect(parts.whereType<RiftTextKeyword>().single.label, 'C');
+    });
+
     test('un shortcode inconnu reste du texte', () {
       final parts = parse('Voir :rb_inconnu: ici.');
       expect(parts.single, isA<RiftTextRun>());

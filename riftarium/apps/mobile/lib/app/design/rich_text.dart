@@ -172,7 +172,8 @@ final RegExp _arrowPattern = RegExp(r'^>+$');
 
 /// Abréviations du texte officiel : `[R]` (rune), `[1]` (énergie), `[E]`.
 /// `[A]` est la rune libre ; `[C]` (puissance du domaine de la carte, règle
-/// 135.2.e.6) n'a pas de glyphe et reste une pastille, comme sur le site.
+/// 135.2.e.6) n'a pas de glyphe : il retombe sur la pastille de mot-clé
+/// « C ». Le site, lui, l'annonce comme « puissance du domaine de la carte ».
 final RegExp _shortTokenPattern = RegExp(r'\[([RGBOPYAEM]|\d{1,2})\]');
 final RegExp _digit = RegExp(r'^\d');
 

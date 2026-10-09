@@ -291,7 +291,7 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
               sliver: SliverToBoxAdapter(
                 child: Text(
-                  'Projet fan-made à but non lucratif, non affilié à Riot Games.',
+                  'Projet de fan à but non lucratif, non affilié à Riot Games.',
                   textAlign: TextAlign.center,
                   style: riftText(context).small,
                 ),

@@ -65,7 +65,7 @@ void main() {
     await open(tester, server);
 
     expect(find.text('Confidentialité'), findsOneWidget);
-    expect(find.text('Mes statistiques de duels'), findsOneWidget);
+    expect(find.text('Mes parties suivies'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(1), 'Explorateur');
     await tester.tap(find.byType(SwitchListTile).first);
