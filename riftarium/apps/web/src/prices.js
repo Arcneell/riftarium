@@ -30,9 +30,17 @@ export function missingCardsText(row) {
   return `${count}${cost ? ` (~${cost})` : ""}`
 }
 
-/** Recherche Cardmarket (lien sortant non affilié — Cardmarket n'est pas la source des prix). */
-export function cardmarketUrl(name) {
-  return `https://www.cardmarket.com/fr/Riftbound/Products/Search?searchString=${encodeURIComponent(name || "")}`
+const PRINT_SUFFIX = /\s*\((?:alternate art|overnumbered|signature)\)\s*$/i
+
+/** Recherche Cardmarket (lien sortant non affilié : Cardmarket n'est pas la source des prix).
+    Accepte un nom ou une carte. Cardmarket range alt-arts, overnumbered et signatures sous
+    « showcase » : on cherche donc le nom sans suffixe suivi de « showcase ». */
+export function cardmarketUrl(cardOrName) {
+  const card = typeof cardOrName === "object" && cardOrName ? cardOrName : { name: cardOrName }
+  const name = String(card.name || "")
+  const showcase = card.alternate_art || card.overnumbered || card.signature || PRINT_SUFFIX.test(name)
+  const search = showcase ? `${name.replace(PRINT_SUFFIX, "")} showcase` : name
+  return `https://www.cardmarket.com/fr/Riftbound/Products/Search?searchString=${encodeURIComponent(search)}`
 }
 
 const META_DEFAULTS = {

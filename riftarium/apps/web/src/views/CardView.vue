@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import { api, cardThumb, DOMAINS, TYPES, RARITIES } from "../api.js"
 import CardCollectionPanel from "../cards/CardCollectionPanel.vue"
 import CardTradeOffers from "../cards/CardTradeOffers.vue"
-import { DOMAIN_RUNE, glyphUrl, isFoil, powerRuneGlyphs, variantLabel } from "../cardText.js"
+import { DOMAIN_RUNE, glyphUrl, isFoil, powerRuneGlyphs, variantChipLabel } from "../cardText.js"
 import { PRICE_SOURCE_NOTE, cardmarketUrl, formatEur, usePricesMeta } from "../prices.js"
 import { applySeo } from "../seo.js"
 import { setPageCrumb } from "../shell/pageCrumb.js"
@@ -187,7 +187,7 @@ function openVariant(id) {
             <RiftChip
               v-for="item in variants"
               :key="item.id"
-              :label="variantLabel(item)"
+              :label="variantChipLabel(item, variants)"
               :selected="item.id === card.id"
               @toggle="openVariant(item.id)"
             />
@@ -204,7 +204,7 @@ function openVariant(id) {
               }}<template v-if="pricesMeta.updated_day"> Mise à jour : {{ pricesMeta.updated_day }}.</template>
               Ni cote officielle ni offre d'achat.
             </p>
-            <a class="fiche-price-link" :href="cardmarketUrl(card.name)" target="_blank" rel="noopener">
+            <a class="fiche-price-link" :href="cardmarketUrl(card)" target="_blank" rel="noopener">
               Voir sur Cardmarket ↗
             </a>
           </div>
