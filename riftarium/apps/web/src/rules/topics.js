@@ -94,7 +94,7 @@ export const TOPICS = [
       },
       {
         q: "Qui commence la deuxième manche ?",
-        a: "Le premier joueur est de nouveau tiré au sort à chaque manche, comme au début d'un duel."
+        a: "Le perdant de la manche précédente choisit de jouer en premier ou en second, comme en tournoi (RT 407.4)."
       },
       {
         q: "Puis-je modifier mon deck entre deux manches ?",
@@ -1595,13 +1595,13 @@ export const TOPICS = [
     details: [
       "Texte : « Au début de la phase de départ du joueur qui contrôle ce permanent, avant d'octroyer les points, éliminez cet élément. »",
       "L'élimination a lieu **avant l'étape des scores** : une unité Temporaire seule sur un champ ne vous fera **pas** marquer l'occupation.",
-      "Le permanent reste donc en jeu au plus jusqu'au début de votre prochaine phase de départ : le reste de votre tour, puis les tours de vos adversaires.",
+      "Le permanent reste donc en jeu au plus jusqu'au début de la prochaine phase de départ de son contrôleur.",
       "C'est une élimination : elle déclenche [Agonie] et les effets « quand une unité est éliminée »."
     ],
     cases: [
       {
         q: "Ma création Temporaire tient un champ de bataille. Vais-je marquer l'occupation ?",
-        a: "Non : elle est éliminée avant l'octroi des points. Le champ peut rester à vous, mais il est vide et l'adversaire peut le prendre sans combat."
+        a: "Non : elle est éliminée avant l'octroi des points. Le champ, désormais vide, n'est plus contrôlé au nettoyage qui suit (règle 323.6), et l'adversaire peut le prendre sans combat."
       },
       {
         q: "Une unité Temporaire volée à l'adversaire disparaît quand ?",
