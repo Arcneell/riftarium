@@ -299,10 +299,10 @@ function pick(id) {
         <template v-else-if="page === 'terms'">
           <h2 id="objet">Objet</h2>
           <p>
-            Riftarium est un compagnon gratuit, fait par un fan, pour le jeu de cartes Riftbound : cartothèque, règles,
-            collection personnelle, wishlist, deck builder et partage de decks, suivi de parties entre joueurs, profils
-            publics et mise en relation pour des échanges de cartes. C'est un projet en <strong>bêta fermée</strong>,
-            indépendant de Riot Games, non annoncé publiquement.
+            Riftarium est un compagnon gratuit, fait par un fan, pour le jeu de cartes Riftbound : base de cartes,
+            règles, collection personnelle, wishlist, deck builder et partage de decks, suivi de parties entre joueurs,
+            profils publics et mise en relation pour des échanges de cartes. C'est un projet en
+            <strong>bêta fermée</strong>, indépendant de Riot Games, non annoncé publiquement.
           </p>
           <p class="mentions-quote">{{ RIOT_DISCLAIMER_EN }}</p>
           <p>{{ RIOT_DISCLAIMER_FR }}</p>
@@ -347,11 +347,11 @@ function pick(id) {
 
           <h2 id="parties">Parties suivies</h2>
           <p>
-            Deux joueurs inscrits peuvent suivre une partie réelle dans un salon. Les joueurs saisissent eux-mêmes les
-            points, l'XP et les tours ; le site ne résout aucune règle. Le résultat, envoyé par l'hôte, ne compte dans
-            l'historique, les statistiques (victoires, défaites, taux de victoire, séries) et les hauts faits que s'il
-            est confirmé par les deux joueurs. Un résultat contesté n'est pas compté. Un abandon compte comme une
-            défaite pour celui qui abandonne. La partie libre, sans compte, n'est pas enregistrée.
+            Deux joueurs inscrits peuvent suivre une partie réelle dans un salon. L'hôte saisit les points, l'XP et les
+            tours ; le site ne résout aucune règle. Le résultat, envoyé par l'hôte, compte dans les statistiques
+            (victoires, défaites, taux de victoire, séries) et les hauts faits une fois confirmé par les deux joueurs.
+            Un résultat contesté reste visible dans l'historique, sans être compté. Un abandon compte immédiatement
+            comme une défaite pour celui qui abandonne. La partie libre, sans compte, n'est pas enregistrée.
           </p>
           <p>
             Le site ne publie aucun classement général des joueurs. Vos statistiques de parties suivies et vos hauts
@@ -409,6 +409,11 @@ function pick(id) {
             <li>
               <strong>localStorage</strong> (<code>riftarium_traceurs_ack</code>) : mémorise que le bandeau
               d'information a été lu, pour ne pas le réafficher.
+            </li>
+            <li>
+              <strong>localStorage</strong> et <strong>sessionStorage</strong> : préférences d'affichage
+              (<code>riftarium_rail_collapsed</code>, <code>riftarium_collection_defaults</code>), position de
+              défilement et ajout rapide en cours. Rien n'est envoyé au serveur.
             </li>
           </ul>
 
