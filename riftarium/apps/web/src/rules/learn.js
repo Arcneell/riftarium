@@ -136,7 +136,7 @@ export const CHAPTERS = [
       },
       {
         type: "p",
-        text: "**Exténuation** : si vous devez piocher alors que votre deck principal est vide, mélangez votre défausse pour en faire un nouveau deck, un adversaire gagne 1 point, puis vous piochez."
+        text: "**Exténuation** : si vous devez piocher alors que votre deck principal est vide, vous mélangez votre défausse (la pile de vos sorts joués et de vos cartes éliminées ou défaussées) pour en faire un nouveau deck. Un adversaire gagne 1 point, puis vous piochez."
       }
     ]
   },
