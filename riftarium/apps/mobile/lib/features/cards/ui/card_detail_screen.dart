@@ -22,6 +22,7 @@ import '../application/cards_controller.dart';
 import '../domain/card.dart';
 import '../domain/card_labels.dart';
 import '../domain/card_text.dart';
+import '../domain/cardmarket.dart';
 import '../domain/prices_meta.dart';
 
 /// Fiche d'une carte : on l'ouvre sur son visuel, posé dans la lueur de son
@@ -553,7 +554,7 @@ class _PriceBlock extends ConsumerWidget {
               padding: EdgeInsets.zero,
               minimumSize: const Size(0, 34),
             ),
-            onPressed: () => _openCardmarket(context, card.name),
+            onPressed: () => _openCardmarket(context, card),
             child: const Text('Voir sur Cardmarket ↗'),
           ),
         ],
@@ -563,11 +564,8 @@ class _PriceBlock extends ConsumerWidget {
 }
 
 /// Recherche de la carte sur Cardmarket, comme le lien de la fiche du site.
-Future<void> _openCardmarket(BuildContext context, String name) async {
-  final uri = Uri.parse(
-    'https://www.cardmarket.com/fr/Riftbound/Products/Search'
-    '?searchString=${Uri.encodeComponent(name)}',
-  );
+Future<void> _openCardmarket(BuildContext context, RiftCard card) async {
+  final uri = cardmarketUri(card);
   final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
   if (opened || !context.mounted) return;
   await showAdaptiveMessage(
@@ -638,7 +636,7 @@ class _VariantsCarousel extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            variantLabel(variant),
+                            variantChipLabel(variant, variants),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,

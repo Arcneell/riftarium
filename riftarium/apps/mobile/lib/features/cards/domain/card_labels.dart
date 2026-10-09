@@ -56,8 +56,16 @@ String? domainsLabel(List<String> domains) =>
 String variantLabel(RiftCard card) {
   if (card.signature) return 'Signature';
   if (card.overnumbered) return 'Overnumbered';
-  if (card.alternateArt) return 'Alt';
+  if (card.alternateArt) return 'Alt-art';
   return 'Normale';
+}
+
+/// Libellé d'une variante dans la fiche : le set s'ajoute quand la liste mêle
+/// plusieurs sets (runes de base OGN, VEN…), comme `variantChipLabel` du site.
+String variantChipLabel(RiftCard card, List<RiftCard> variants) {
+  final sets = variants.map((item) => item.setId).toSet();
+  final label = variantLabel(card);
+  return sets.length > 1 ? '$label · ${card.setId}' : label;
 }
 
 /// Tri de la cartothèque : valeur du paramètre `sort` de `GET /api/cards`.
