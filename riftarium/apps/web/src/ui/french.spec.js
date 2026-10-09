@@ -15,6 +15,7 @@ describe("de", () => {
     expect(de("Ahri")).toBe("d'Ahri")
     expect(de("Irelia")).toBe("d'Irelia")
     expect(de("Écho")).toBe("d'Écho")
+    expect(de("Œil du néant")).toBe("d'Œil du néant")
   })
   it("garde « de » devant une consonne, un h ou un y consonne", () => {
     expect(de("Jinx")).toBe("de Jinx")

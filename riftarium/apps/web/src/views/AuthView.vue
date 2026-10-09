@@ -140,6 +140,8 @@ async function submit() {
           required
           minlength="3"
           maxlength="32"
+          pattern="[A-Za-z0-9_\-]+"
+          title="Lettres sans accent, chiffres, tiret et tiret bas"
           placeholder="3 à 32 caractères"
         />
         <RiftField v-model="email" label="E-mail" type="email" name="email" autocomplete="email" required />

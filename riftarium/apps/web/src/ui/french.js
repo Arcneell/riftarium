@@ -11,7 +11,7 @@ export function plural(count, singular, pluralForm = `${singular}s`) {
    sont aspirés ou étrangers (« de Heimerdinger »). */
 export function de(name) {
   const text = String(name ?? "").trim()
-  return /^[aeiouyàâäéèêëîïôöùûü]/i.test(text) && !/^y[aeiou]/i.test(text) ? `d'${text}` : `de ${text}`
+  return /^[aeiouyàâäéèêëîïôöùûüœæ]/i.test(text) && !/^y[aeiou]/i.test(text) ? `d'${text}` : `de ${text}`
 }
 
 /* Forme seule, sans le nombre, quand celui-ci est affiché à part :

@@ -67,6 +67,8 @@ async function submit() {
       spellcheck="false"
       minlength="3"
       maxlength="32"
+      pattern="[A-Za-z0-9_\-]+"
+      title="Lettres sans accent, chiffres, tiret et tiret bas"
       autocomplete="username"
       required
     />
