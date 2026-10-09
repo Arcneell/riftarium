@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy import String, case, cast, func, or_, select
+from sqlalchemy import String, and_, case, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..auth import optional_user
@@ -13,7 +13,7 @@ from ..imagehash import ALGO as HASH_ALGO
 from ..models import Card, CardSet, CollectionItem, User, WishlistItem
 from ..prices import CURRENCY_NOTE, RATE_DATE_KEY, UPDATED_DAY_KEY, current_rate, state_get, to_eur
 from ..security import sanitize_image_url
-from ..variants import variant_family, variant_id_clause
+from ..variants import canonical_name, variant_family, variant_id_clause
 
 router = APIRouter(prefix="/api", tags=["cards"])
 
@@ -142,17 +142,40 @@ def wished_quantities(db: Session, user: User | None, card_ids: list[str]) -> di
     return {card_id: qty for card_id, qty in rows}
 
 
+def _same_name_clause(card: Card):
+    """Impressions du même nom de jeu que la famille d'id ne relie pas.
+
+    Une légende overnumbered n'a pas le numéro de sa version de base (ogn-251 / ogn-301) :
+    on relie le même nom et le même type dans le même set (une réimpression promo reste à part).
+    Les runes de base sont identiques d'un set à l'autre : le nom suffit, tous sets confondus.
+    """
+    base_name = canonical_name(card.name)
+    if not base_name:
+        return None
+    prefix = (card.name or "").split("(")[0].strip()
+    clause = and_(Card.type == card.type, Card.name.ilike(f"{escape_like(prefix)}%", escape="\\"))
+    if card.type != "Rune":
+        clause = and_(clause, Card.set_id == card.set_id)
+    return clause
+
+
 def variant_cards(db: Session, card: Card) -> list[Card]:
     family = variant_family(card.riftbound_id)
-    if not family:
+    same_name = _same_name_clause(card)
+    clauses = [clause for clause in (variant_id_clause(family) if family else None, same_name) if clause is not None]
+    if not clauses:
         return [card]
-    rows = list(
-        db.scalars(
+    base_name = canonical_name(card.name)
+    rows = [
+        row
+        for row in db.scalars(
             select(Card)
-            .where(variant_id_clause(family))
-            .order_by(Card.alternate_art, Card.signature, Card.overnumbered, Card.id)
+            .where(or_(*clauses))
+            .order_by(Card.alternate_art, Card.signature, Card.overnumbered, Card.set_id, Card.id)
         ).all()
-    )
+        # Le préfixe SQL est large (« Jinx » attrape « Jinx - Rebel ») : le nom canonique tranche.
+        if (family and variant_family(row.riftbound_id) == family) or canonical_name(row.name) == base_name
+    ]
     seen: dict[str, Card] = {}
     for row in rows:
         key = (row.riftbound_id or row.id).lower()
