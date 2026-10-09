@@ -150,6 +150,13 @@ export function variantLabel(card) {
   return "Normale"
 }
 
+/* Puce d'une variante dans la fiche : le set s'ajoute quand la liste mêle plusieurs sets
+   (runes de base OGN, VEN…), sinon deux « Normale » se ressembleraient. */
+export function variantChipLabel(card, variants = []) {
+  const sets = new Set(variants.map((item) => item?.set_id))
+  return sets.size > 1 ? `${variantLabel(card)} · ${card?.set_id}` : variantLabel(card)
+}
+
 /* `rules` : texte officiel des règles, où le symbole [>] peut apparaître seul (135.2.e.7). */
 export function parseCardText(text, { rules = false } = {}) {
   if (!text) return []

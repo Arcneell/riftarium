@@ -33,6 +33,20 @@ describe("cardmarketUrl", () => {
     )
     expect(cardmarketUrl("Vi & Jinx ?")).toContain("searchString=Vi%20%26%20Jinx%20%3F")
   })
+
+  it("cherche « showcase » pour un alt-art, un overnumbered ou une signature", () => {
+    const search = (card) => decodeURIComponent(cardmarketUrl(card).split("searchString=")[1])
+    expect(search({ name: "Jinx - Loose Cannon (Overnumbered)", overnumbered: true })).toBe(
+      "Jinx - Loose Cannon showcase"
+    )
+    expect(search({ name: "Jinx - Loose Cannon (Signature)", signature: true })).toBe("Jinx - Loose Cannon showcase")
+    expect(search({ name: "Jinx - Rebel (Alternate Art)", alternate_art: true })).toBe("Jinx - Rebel showcase")
+  })
+
+  it("garde le nom seul pour une impression normale", () => {
+    const search = (card) => decodeURIComponent(cardmarketUrl(card).split("searchString=")[1])
+    expect(search({ name: "Jinx - Rebel" })).toBe("Jinx - Rebel")
+  })
 })
 
 describe("usePricesMeta", () => {

@@ -33,7 +33,7 @@ export const TOPICS = [
       "**Marquer des points.** Deux façons, liées aux champs de bataille. **Conquérir** : prendre le contrôle d'un champ qui ne vous a pas encore rapporté ce tour (+1 point). **Occuper** : le contrôler encore à l'étape des scores de votre phase de départ (+1). Un même champ ne rapporte qu'**un point par tour et par joueur**.",
       "**La règle du dernier point.** À **7 points**, la conquête ne suffit plus : pour gagner le dernier point en conquérant, il faut avoir marqué **sur chaque champ de bataille pendant ce tour** (ici, les deux). Sinon, à la place du point, vous **piochez une carte**. L'occupation, elle, n'est pas restreinte : tenir un champ jusqu'à votre phase de départ donne le 8ᵉ point normalement.",
       "**Victoire.** Dès qu'un nettoyage a lieu (le jeu vérifie l'état après chaque action), un joueur ayant **au moins 8 points et strictement plus que l'adversaire** gagne. Une égalité à 8 ne donne donc pas la victoire : il faut creuser l'écart.",
-      "**Deck vide : l'exténuation.** Si vous devez piocher et que le deck est vide, vous **mélangez votre défausse pour reformer votre deck**, votre **adversaire marque 1 point**, puis vous terminez la pioche. Défausse vide aussi ? L'exténuation se répète à chaque tentative, jusqu'à ce que l'adversaire gagne."
+      "**Deck vide : l'exténuation.** Si vous devez piocher et que le deck est vide, vous **mélangez votre défausse** (la pile de vos sorts joués et de vos cartes éliminées ou défaussées) **pour reformer votre deck**, votre **adversaire marque 1 point**, puis vous terminez la pioche. Défausse vide aussi ? L'exténuation se répète à chaque tentative, jusqu'à ce que l'adversaire gagne."
     ],
     cases: [
       {
@@ -46,7 +46,7 @@ export const TOPICS = [
       },
       {
         q: "Mon deck est vide et je dois piocher. Que se passe-t-il exactement ?",
-        a: "Exténuation : vous mélangez votre défausse pour reformer votre deck, votre adversaire marque 1 point, puis vous piochez. Si la défausse est vide aussi, l'exténuation se répète jusqu'à ce que l'adversaire gagne."
+        a: "Exténuation : vous mélangez votre défausse (la pile de vos sorts joués et de vos cartes éliminées ou défaussées) pour reformer votre deck. Votre adversaire marque 1 point, puis vous piochez. Si la défausse est vide aussi, l'exténuation se répète jusqu'à ce que l'adversaire gagne."
       },
       {
         q: "Combien de cartes puis-je changer au mulligan ?",

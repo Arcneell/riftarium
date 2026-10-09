@@ -169,7 +169,7 @@ void main() {
 
     expect(find.text('Variantes'), findsOneWidget);
     expect(find.text('Normale'), findsOneWidget);
-    expect(find.text('Alt'), findsOneWidget);
+    expect(find.text('Alt-art'), findsOneWidget);
   });
 
   testWidgets('sans variante supplémentaire, la section reste masquée', (

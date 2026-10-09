@@ -12,6 +12,7 @@ import {
   parseCardText,
   powerRuneGlyphs,
   toggleValue,
+  variantChipLabel,
   variantLabel
 } from "./cardText.js"
 
@@ -82,6 +83,17 @@ describe("isFoil / variantLabel", () => {
     expect(variantLabel({ overnumbered: true })).toBe("Overnumbered")
     expect(variantLabel({ alternate_art: true })).toBe("Alt-art")
     expect(variantLabel({})).toBe("Normale")
+  })
+
+  it("ajoute le set quand les variantes viennent de plusieurs sets", () => {
+    const runes = [{ set_id: "OGN" }, { set_id: "VEN" }, { set_id: "OGN", alternate_art: true }]
+    expect(runes.map((item) => variantChipLabel(item, runes))).toEqual([
+      "Normale · OGN",
+      "Normale · VEN",
+      "Alt-art · OGN"
+    ])
+    const legend = [{ set_id: "OGN" }, { set_id: "OGN", overnumbered: true }]
+    expect(legend.map((item) => variantChipLabel(item, legend))).toEqual(["Normale", "Overnumbered"])
   })
 })
 
